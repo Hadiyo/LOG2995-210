@@ -1,0 +1,89 @@
+{
+    "name": "server",
+    "description": "Serveur du projet de base pour le cours de LOG2995",
+    "version": "1.4.0",
+    "private": true,
+    "scripts": {
+        "start": "nodemon",
+        "build": "rimraf out && tsc --project tsconfig.app.json",
+        "format": "prettier --config ../.prettierrc.yaml --write \"app/**/*\"",
+        "lint": "eslint --config eslint.config.mjs \"./app/**/*.ts\"",
+        "lint:fix": "eslint --config eslint.config.mjs \"./app/**/*.ts\" --fix",
+        "test": "cross-env TS_NODE_PROJECT='./tsconfig.spec.json' mocha --config=.mocharc.json --node-env=test",
+        "coverage": "cross-env TS_NODE_PROJECT='./tsconfig.spec.json' nyc mocha --config=.mocharc.json --node-env=test --exit"
+    },
+    "nyc": {
+        "per-file": true,
+        "include": [
+            "app/**/*.ts"
+        ],
+        "extension": [
+            ".ts"
+        ],
+        "exclude": [
+            "**/*.spec.ts",
+            "app/index.ts",
+            "app/server.ts",
+            "app/app.ts"
+        ],
+        "require": [
+            "ts-node/register",
+            "tsconfig-paths/register"
+        ],
+        "reporter": [
+            "html",
+            "text"
+        ],
+        "all": true,
+        "cache": true,
+        "sourceMap": true,
+        "instrument": true
+    },
+    "_moduleAliases": {
+        "@app": "out/server/app",
+        "@common": "out/common"
+    },
+    "dependencies": {
+        "cookie-parser": "1.4.7",
+        "cors": "2.8.5",
+        "express": "5.1.0",
+        "http-status-codes": "2.1.4",
+        "module-alias": "2.2.2",
+        "mongodb": "6.12.0",
+        "prettier": "3.4.2",
+        "reflect-metadata": "0.2.2",
+        "swagger-jsdoc": "6.2.8",
+        "swagger-ui-express": "5.0.0",
+        "typedi": "0.10.0"
+    },
+    "devDependencies": {
+        "@types/body-parser": "1.19.5",
+        "@types/chai": "5.0.1",
+        "@types/cookie-parser": "1.4.7",
+        "@types/cors": "2.8.17",
+        "@types/express": "5.0.3",
+        "@types/mocha": "10.0.7",
+        "@types/node": "22.10.2",
+        "@types/node-uuid": "0.0.32",
+        "@types/sinon": "17.0.3",
+        "@types/supertest": "2.0.12",
+        "@types/swagger-jsdoc": "6.0.4",
+        "@types/swagger-ui-express": "4.1.6",
+        "@eslint/js": "9.39.1",
+        "@typescript-eslint/eslint-plugin": "8.49.0",
+        "@typescript-eslint/parser": "8.49.0",
+        "chai": "4.5.0",
+        "cross-env": "7.0.3",
+        "eslint": "9.39.1",
+        "mocha": "11.0.1",
+        "nodemon": "3.1.4",
+        "nyc": "17.0.0",
+        "rimraf": "6.0.1",
+        "sinon": "19.0.2",
+        "source-map-support": "0.5.21",
+        "supertest": "7.0.0",
+        "ts-node": "10.9.2",
+        "tsconfig-paths": "4.2.0",
+        "typescript": "5.8.3"
+    }
+}
