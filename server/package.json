@@ -1,89 +1,87 @@
 {
-    "name": "server",
+    "name": "server-nestjs",
     "description": "Serveur du projet de base pour le cours de LOG2995",
     "version": "1.4.0",
     "private": true,
     "scripts": {
-        "start": "nodemon",
-        "build": "rimraf out && tsc --project tsconfig.app.json",
+        "prebuild": "rimraf out",
+        "build": "rimraf out && nest build",
         "format": "prettier --config ../.prettierrc.yaml --write \"app/**/*\"",
+        "start": "rimraf out && nest start --watch",
+        "start:debug": "rimraf out && nest start --watch --debug",
         "lint": "eslint --config eslint.config.mjs \"./app/**/*.ts\"",
         "lint:fix": "eslint --config eslint.config.mjs \"./app/**/*.ts\" --fix",
-        "test": "cross-env TS_NODE_PROJECT='./tsconfig.spec.json' mocha --config=.mocharc.json --node-env=test",
-        "coverage": "cross-env TS_NODE_PROJECT='./tsconfig.spec.json' nyc mocha --config=.mocharc.json --node-env=test --exit"
-    },
-    "nyc": {
-        "per-file": true,
-        "include": [
-            "app/**/*.ts"
-        ],
-        "extension": [
-            ".ts"
-        ],
-        "exclude": [
-            "**/*.spec.ts",
-            "app/index.ts",
-            "app/server.ts",
-            "app/app.ts"
-        ],
-        "require": [
-            "ts-node/register",
-            "tsconfig-paths/register"
-        ],
-        "reporter": [
-            "html",
-            "text"
-        ],
-        "all": true,
-        "cache": true,
-        "sourceMap": true,
-        "instrument": true
-    },
-    "_moduleAliases": {
-        "@app": "out/server/app",
-        "@common": "out/common"
+        "test": "jest",
+        "coverage": "jest --coverage",
+        "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
     },
     "dependencies": {
-        "cookie-parser": "1.4.7",
-        "cors": "2.8.5",
-        "express": "5.1.0",
-        "http-status-codes": "2.1.4",
-        "module-alias": "2.2.2",
-        "mongodb": "6.12.0",
-        "prettier": "3.4.2",
-        "reflect-metadata": "0.2.2",
-        "swagger-jsdoc": "6.2.8",
-        "swagger-ui-express": "5.0.0",
-        "typedi": "0.10.0"
+        "@nestjs/common": "11.1.6",
+        "@nestjs/config": "4.0.2",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/mongoose": "11.0.3",
+        "@nestjs/platform-express": "11.1.6",
+        "@nestjs/platform-socket.io": "11.1.6",
+        "@nestjs/swagger": "11.2.3",
+        "@nestjs/websockets": "11.1.6",
+        "class-transformer": "^0.5.1",
+        "class-validator": "^0.14.2",
+        "module-alias": "^2.2.3",
+        "mongoose": "8.17.1",
+        "reflect-metadata": "^0.2.2",
+        "rimraf": "6.0.1",
+        "rxjs": "^7.8.2"
     },
     "devDependencies": {
-        "@types/body-parser": "1.19.5",
-        "@types/chai": "5.0.1",
-        "@types/cookie-parser": "1.4.7",
-        "@types/cors": "2.8.17",
-        "@types/express": "5.0.3",
-        "@types/mocha": "10.0.7",
-        "@types/node": "22.10.2",
-        "@types/node-uuid": "0.0.32",
-        "@types/sinon": "17.0.3",
-        "@types/supertest": "2.0.12",
-        "@types/swagger-jsdoc": "6.0.4",
-        "@types/swagger-ui-express": "4.1.6",
+        "@nestjs/cli": "^11.0.10",
+        "@nestjs/schematics": "^11.0.7",
+        "@nestjs/testing": "^11.1.6",
+        "@types/express": "^5.0.3",
+        "@types/jest": "30.0.0",
+        "@types/node": "^24.2.1",
+        "@types/sinon": "^17.0.4",
+        "@types/supertest": "^6.0.3",
         "@eslint/js": "9.39.1",
         "@typescript-eslint/eslint-plugin": "8.49.0",
         "@typescript-eslint/parser": "8.49.0",
-        "chai": "4.5.0",
-        "cross-env": "7.0.3",
         "eslint": "9.39.1",
-        "mocha": "11.0.1",
-        "nodemon": "3.1.4",
-        "nyc": "17.0.0",
-        "rimraf": "6.0.1",
-        "sinon": "19.0.2",
-        "source-map-support": "0.5.21",
-        "supertest": "7.0.0",
-        "ts-node": "10.9.2",
+        "jest": "30.2.0",
+        "mongodb-memory-server": "10.2.0",
+        "prettier": "^3.6.2",
+        "sinon": "^21.0.0",
+        "source-map-support": "^0.5.21",
+        "supertest": "^7.1.4",
+        "ts-jest": "29.4.1",
+        "ts-loader": "^9.5.2",
+        "ts-node": "^10.9.2",
         "tsconfig-paths": "4.2.0",
-        "typescript": "5.8.3"
+        "typescript": "5.9.2"
+    },
+    "_moduleAliases": {
+        "@app": "out/server-nestjs/app",
+        "@common": "out/common"
+    },
+    "jest": {
+        "moduleFileExtensions": [
+            "js",
+            "json",
+            "ts"
+        ],
+        "rootDir": "./",
+        "testRegex": ".*\\.spec\\.ts$",
+        "transform": {
+            "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "collectCoverageFrom": [
+            "app/**/*.(t|j)s",
+            "!app/app.module.ts",
+            "!app/index.ts"
+        ],
+        "coverageDirectory": "./coverage",
+        "testEnvironment": "node",
+        "moduleNameMapper": {
+            "^@app(.*)$": "<rootDir>/app/$1",
+            "^@common(.*)$": "<rootDir>/../common/$1"
+        }
     }
 }
