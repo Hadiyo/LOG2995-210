@@ -1,0 +1,11 @@
+<div class="main-actions">
+  @for (action of actions; track action.label) {
+    <button
+      class="action {{ action.variant }}"
+      [routerLink]="action.link"
+      [disabled]="action.disabled"
+    >
+      {{ action.label }}
+    </button>
+  }
+</div>
