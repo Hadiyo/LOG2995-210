@@ -1,17 +1,18 @@
 <div class="ticker">
-  <div class="ticker__viewport">
-    <div class="ticker__track" #track>
-      <div class="ticker__group" #group>
+  <div class="team-tag">Equipe 210</div>
+  <div class="ticker_viewport">
+    <div class="ticker_track" #track>
+      <div class="ticker_group" #group>
         @for (name of names; track name) {
-          <span class="ticker__item">{{ name }}</span>
+          <span class="ticker_item">{{ name }}</span>
         }
       </div>
 
       @for (g of groups; track g) {
         @if (g > 0) {
-          <div class="ticker__group" aria-hidden="true">
+          <div class="ticker_group" aria-hidden="true">
             @for (name of names; track $index) {
-              <span class="ticker__item">{{ name }}</span>
+              <span class="ticker_item">{{ name }}</span>
             }
           </div>
         }
