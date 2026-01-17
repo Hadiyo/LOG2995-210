@@ -13,7 +13,8 @@ export enum TileType {
     DIRT = 'DIRT',
     WATER = 'WATER',
     ICE = 'ICE',
-    WALL = 'WALL'
+    WALL = 'WALL',
+    DOOR = 'DOOR',
 }
 
 export enum ObjectType {
