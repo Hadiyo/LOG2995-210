@@ -27,6 +27,7 @@ export class MainActionsComponent {
     {
       id:'admin-game',
       label: 'Administrer les jeux',
+      link:'/admin',
       variant: 'ghost',
       disabled: true,
     },
