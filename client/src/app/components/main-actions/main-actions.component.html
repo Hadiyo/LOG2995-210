@@ -1,6 +1,7 @@
 <div class="main-actions">
-  @for (action of actions; track action.label) {
+  @for (action of actions; track action.id) {
     <button
+      type="button"
       class="action {{ action.variant }}"
       [routerLink]="action.link"
       [disabled]="action.disabled"
