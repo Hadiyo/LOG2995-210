@@ -2,6 +2,8 @@
   position: relative;
   width: 100%;
   padding-top: 34px;
+
+  overflow-x: clip;
 }
 
 .team-tag {
@@ -29,22 +31,18 @@
   background: linear-gradient(90deg, transparent, #7ee8ff, transparent);
 }
 
-
 .ticker_viewport {
   overflow: hidden;
   width: 100%;
   padding: 14px 0;
   background: rgba(11, 11, 13, 0.35);
 
-
   border-top: 1px solid rgba(126, 232, 255, 0.25);
   border-bottom: 1px solid rgba(126, 232, 255, 0.25);
 
-  /* fade sur les cotes*/
   -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
   mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
 }
-
 
 .ticker_track {
   display: inline-flex;
@@ -77,4 +75,57 @@
 @keyframes tickerMove {
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(-25%, 0, 0); }
+}
+
+
+@media (max-width: 1280px) {
+  .team-tag { font-size: 15px; }
+}
+
+@media (max-width: 1024px) {
+  .team-tag { font-size: 14px; }
+  .ticker_item { font-size: 15px; }
+}
+
+@media (max-width: 768px) {
+  .team-tag {
+    font-size: 13px;
+    letter-spacing: 0.35em;
+  }
+
+  .ticker_item { font-size: 14px; }
+
+  .ticker_group {
+    gap: 34px;
+    padding-right: 34px;
+  }
+}
+
+@media (max-width: 480px) {
+  .team-tag {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+  }
+
+  .ticker_item {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .ticker_group {
+    gap: 28px;
+    padding-right: 28px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .team-tag {
+    font-size: 18px;
+    letter-spacing: 0.45em;
+  }
+
+  .ticker_item {
+    font-size: 18px;
+    letter-spacing: 2.8px;
+  }
 }

@@ -1,10 +1,14 @@
 :host {
   --argent: #d4e7f3;
+
   display: block;
   color: var(--argent);
   font-family: 'Cinzel', 'Times New Roman', serif;
+
   min-height: 100vh;
-  overflow: hidden;
+
+  overflow-x: clip;
+
   background:
     radial-gradient(circle at 20% 18%, rgba(79, 217, 255, 0.35), transparent 45%),
     radial-gradient(circle at 80% 15%, rgba(20, 80, 130, 0.45), transparent 50%),
@@ -20,7 +24,7 @@
   gap: 40px;
 
   padding: 56px 6vw 40px;
-  overflow: hidden;
+  overflow-x: clip;
 }
 
 .hero {
@@ -36,6 +40,12 @@
   gap: clamp(18px, 4vw, 40px);
 }
 
+.hero-logo {
+  width: clamp(240px, 34vw, 520px);
+  height: auto;
+  display: block;
+}
+
 app-main-actions {
   justify-self: center;
   width: min(640px, 100%);
@@ -48,15 +58,48 @@ app-name-slider {
   align-self: center;
 }
 
+@media (max-width: 1280px) {
+  .hero-logo { width: clamp(250px, 34vw, 400px); }
+}
 
-@media (min-width: 900px) {
+@media (max-width: 1024px) {
+  .hero-logo { width: clamp(240px, 38vw, 360px); }
+}
+
+@media (max-width: 768px) {
+  .hero-logo { width: clamp(220px, 48vw, 320px); }
+}
+
+@media (max-width: 480px) {
+  .hero-logo { width: clamp(180px, 62vw, 240px); }
+}
+
+@media (min-width: 1440px) {
+  .hero-logo { width: clamp(320px, 28vw, 520px); }
+}
+
+@media (max-height: 820px) {
   .page {
-    align-content: center;
+    padding: 28px 6vw 22px;
+    gap: 22px;
+  }
+
+  app-name-slider {
+    margin-top: 0;
+  }
+
+  .hero-logo {
+    width: clamp(200px, 30vw, 360px);
   }
 }
-.hero-logo {
-  width: clamp(260px, 30vw, 420px);
-  height: auto;
-  display: block;
-  filter: drop-shadow(0 12px 30px rgba(79, 217, 255, 0.35));
+
+@media (max-height: 720px) {
+  .page {
+    padding: 18px 6vw 18px;
+    gap: 16px;
+  }
+
+  .hero-logo {
+    width: clamp(180px, 28vw, 320px);
+  }
 }
