@@ -1,0 +1,207 @@
+/* =========================
+   Editor canvas container
+   ========================= */
+.canvas {
+    /* Take all available vertical space from parent */
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+
+    /* Layout: grid on top, hint panel below */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    /* Inherit main text color from theme */
+    color: var(--text-main);
+}
+
+
+/* =========================
+   Map grid container
+   ========================= */
+.grid {
+    /* Dynamic grid size (overridden from Angular bindings) */
+    --cols: 10;
+    --rows: 10;
+
+    /* Allow grid to grow and shrink inside canvas */
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+
+    /* Constrain grid size for large screens */
+    width: 100%;
+    height: 100%;
+    max-width: 960px;
+    max-height: 960px;
+
+    /* Always keep the grid perfectly square */
+    aspect-ratio: 1 / 1;
+
+    /* Center the grid horizontally */
+    margin: 0 auto;
+    align-self: center;
+    justify-self: center;
+
+    box-sizing: border-box;
+
+    /* CSS Grid layout driven by --cols / --rows */
+    display: grid;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    grid-template-rows: repeat(var(--rows), 1fr);
+
+    /* Visual styling */
+    background: var(--bg-panel);
+    border: 1px dashed var(--border-soft);
+    border-radius: 18px;
+    padding: 14px;
+    gap: 0;
+
+    /* Prevent text selection while dragging */
+    user-select: none;
+}
+
+
+/* =========================
+   Individual grid cell
+   ========================= */
+.cell {
+    position: relative;
+    padding: 0;
+
+    /* Cell borders to show grid structure */
+    border: 1px solid var(--border-soft);
+    background: transparent;
+    cursor: pointer;
+
+    /* Force square cells regardless of grid size */
+    aspect-ratio: 1 / 1;
+
+    /* Prevent image dragging behaviors */
+    -webkit-user-drag: none;
+}
+
+/* Hover feedback for editor interactions */
+.cell.hovered {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    z-index: 2;
+}
+
+
+/* =========================
+   Tile layer (background)
+   ========================= */
+.tile {
+    /* Fill the entire cell */
+    position: absolute;
+    inset: 0;
+
+    border-radius: 0;
+    background: transparent;
+}
+
+/* Terrain tile types */
+.tile[data-tile='WALL'] {
+    background: var(--tile-wall);
+}
+
+.tile[data-tile='WATER'] {
+    background: var(--tile-water);
+}
+
+.tile[data-tile='ICE'] {
+    background: var(--tile-ice);
+}
+
+/* Base tile (default terrain) */
+.tile[data-tile='DIRT'] {
+    background: transparent;
+}
+
+/* Door states based on walkability */
+.tile[data-tile='DOOR'][data-door-open='true'] {
+    background: var(--tile-door-open);
+}
+
+.tile[data-tile='DOOR'][data-door-closed='true'] {
+    background: var(--tile-door-closed);
+}
+
+
+/* =========================
+   Object layer (foreground)
+   ========================= */
+.obj {
+    position: absolute;
+    inset: 0;
+
+    /* Objects should never block mouse interactions */
+    pointer-events: none;
+    z-index: 3;
+
+    /* Default object size: centered 1x1 marker */
+    width: 34%;
+    height: 34%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    /* Circular marker for small objects */
+    border-radius: 999px;
+
+    /* Outline to separate object from tile background */
+    box-shadow: 0 0 0 2px var(--bg-panel);
+}
+
+
+/* Object type colors */
+.obj[data-obj='START'] {
+    background: var(--object-spawn);
+}
+
+.obj[data-obj='FLAG'] {
+    background: var(--object-flag);
+}
+
+.obj[data-obj='REGEN'] {
+    background: var(--object-heal);
+}
+
+.obj[data-obj='ARENA'] {
+    background: var(--object-fight);
+}
+
+
+/* =========================
+   Large objects (2x2 tiles)
+   ========================= */
+.obj[data-size='2x2'] {
+    /* Span across 4 tiles visually */
+    width: 200%;
+    height: 200%;
+    left: 0;
+    top: 0;
+    transform: none;
+
+    /* Square shape fits grid better */
+    border-radius: 0;
+    box-shadow: none;
+
+    /* Slight transparency for readability */
+    opacity: 0.9;
+}
+
+
+/* =========================
+   Editor hint panel
+   ========================= */
+.hint {
+    display: flex;
+    gap: 16px;
+
+    /* Subtle informational styling */
+    color: var(--text-muted);
+    font-size: 13px;
+}

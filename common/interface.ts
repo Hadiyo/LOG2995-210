@@ -1,4 +1,4 @@
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from './enum.ts';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from './enum';
 
 export interface Vec2 {
     x: number;

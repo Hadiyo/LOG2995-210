@@ -1,0 +1,31 @@
+:root {
+    /* Backgrounds */
+    --bg-main: #0b1623;
+    --bg-panel: #101e2e;
+    --bg-panel-soft: #16283c;
+
+    /* Accents */
+    --accent-primary: #6ea8ff;
+    --accent-secondary: #5bd1ff;
+    --accent-danger: #ff6b6b;
+
+    /* Text */
+    --text-main: #e6f0ff;
+    --text-muted: #9bb3d3;
+
+    /* Borders */
+    --border-soft: rgba(255, 255, 255, 0.08);
+
+    /* Tiles */
+    --tile-wall: #4b5563;
+    --tile-door-open: var(--accent-primary);
+    --tile-door-closed: #2f4a7a;
+    --tile-water: #3bb3ff;
+    --tile-ice: #bfe8ff;
+
+    /* Objects */
+    --object-spawn: #7cffa6;
+    --object-flag: #ffd166;
+    --object-heal: #ff77aa;
+    --object-fight: var(--accent-danger);
+}

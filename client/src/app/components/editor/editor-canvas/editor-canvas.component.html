@@ -1,0 +1,60 @@
+<!-- Main canvas wrapper for the map editor -->
+<div class="canvas">
+
+    <!-- Grid container
+         - CSS variables (--cols, --rows) are bound dynamically
+         - Used by CSS Grid to size the map
+         - Mouse events here manage drag interactions -->
+    <div class="grid" [style.--cols]="editorState.cols()" [style.--rows]="editorState.rows()"
+        (mouseup)="onCellMouseUp()" (mouseleave)="onGridLeave()">
+
+        <!-- Loop through every cell in the editor state
+             - track $index for performance
+             - each cell is rendered as a button -->
+        @for (cell of editorState.cells(); track $index) {
+
+        <!-- Individual grid cell
+             - button allows mouse interaction (click, drag, hover)
+             - index is passed to handlers to know which cell is affected -->
+        <button type="button" class="cell" (mousedown)="onCellMouseDown($index, $event)"
+            (mouseenter)="onCellMouseEnter($index)" (mouseleave)="onCellHover(null)" (mouseup)="onCellMouseUp()"
+            (click)="onCellClick($index)" [class.hovered]="hoveredIndex === $index">
+
+            <!-- Tile visual layer
+                 - data attributes drive CSS sprites / visuals
+                 - door state (open/closed) is expressed explicitly -->
+            <span class="tile" [attr.data-tile]="cell.tileType" [attr.data-door-open]="
+                    cell.tileType === tileType.DOOR && cell.isWalkable ? 'true' : null
+                " [attr.data-door-closed]="
+                    cell.tileType === tileType.DOOR && !cell.isWalkable ? 'true' : null
+                "></span>
+
+            <!-- Object layer (optional)
+                 - Rendered only if an object exists at this exact cell position
+                 - Position check avoids rendering objects on wrong cells -->
+            @if (
+            editorState.getObjectAtIndex($index) &&
+            editorState.getObjectAtIndex($index)!.position.x === cell.position.x &&
+            editorState.getObjectAtIndex($index)!.position.y === cell.position.y
+            ) {
+
+            <!-- Object visual representation
+                 - data attributes used for CSS sizing and sprite selection -->
+            <span class="obj" [attr.data-obj]="editorState.getObjectAtIndex($index)!.type"
+                [attr.data-size]="editorState.getObjectAtIndex($index)!.size"></span>
+            }
+
+        </button>
+        }
+    </div>
+
+    <!-- Editor hint panel
+         - Displays current tool selections
+         - Helps with usability and debugging -->
+    <div class="hint">
+        <span>Tool: {{ editorState.selectedTool() }}</span>
+        <span>Tile: {{ editorState.selectedTileType() ?? '—' }}</span>
+        <span>Obj: {{ editorState.selectedObjectType() ?? '—' }}</span>
+    </div>
+
+</div>
