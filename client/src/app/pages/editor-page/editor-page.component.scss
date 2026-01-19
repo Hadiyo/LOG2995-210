@@ -1,0 +1,75 @@
+/* =========================
+   Editor page layout shell
+   ========================= */
+.editor-layout {
+  display: flex;
+
+  /* Use full viewport height for the editor page */
+  height: 100vh;
+  width: 100%;
+
+  /* Prevent child overflow from causing page scroll */
+  overflow: hidden;
+
+  background: var(--bg-main);
+}
+
+/* =========================
+   Sidebar region
+   ========================= */
+.sidebar {
+  /* Fixed width sidebar */
+  width: 320px;
+
+  /* Full height */
+  height: 100%;
+
+  /* Separation line */
+  border-right: 1px solid var(--border-soft);
+
+  /* Sidebar itself can scroll */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* =========================
+   Main region (Topbar + Canvas)
+   ========================= */
+.main {
+  flex: 1;
+  min-width: 0; /* super important: prevents flex overflow */
+
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden; /* keep layout stable */
+}
+
+/* Topbar stays at the top */
+.topbar {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+/* Canvas fills remaining space */
+.canvas {
+  flex: 1 1 auto;
+  min-height: 0; /* important so canvas can shrink without overflow */
+  overflow: hidden;
+}
+
+/* =========================
+   Global input defaults for this page
+   ========================= */
+input,
+textarea {
+  background: var(--bg-panel-soft);
+  color: var(--text-main);
+  border: 1px solid var(--border-soft);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
