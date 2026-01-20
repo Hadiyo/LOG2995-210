@@ -1,0 +1,144 @@
+<!-- Top bar wrapper
+     - Global editor controls (tools, mode, size, actions)
+     - Stays visually compact and always accessible -->
+<div class="topbar-wrap">
+
+  <!-- =========================
+       Tool selection
+       ========================= -->
+  <div class="group">
+    <span class="group-label">Outils</span>
+
+    <!-- Segmented control for editor tools -->
+    <div class="segmented">
+      @for (t of tools; track t.id) {
+
+      <!-- Tool button
+           - Updates the active tool in editor state
+           - Visually highlighted when selected -->
+      <button
+        type="button"
+        class="seg-btn"
+        (click)="editorState.selectTool(t.id)"
+        [class.active]="editorState.selectedTool() === t.id"
+      >
+        {{ t.label }}
+      </button>
+      }
+    </div>
+  </div>
+
+
+  <!-- =========================
+       Game mode selection
+       ========================= -->
+  <div class="group">
+    <span class="group-label">Mode</span>
+
+    <!-- Segmented control for game mode -->
+    <div class="segmented">
+      @for (m of modeOptions; track m.value) {
+
+      <!-- Mode button
+           - Calls setMode to apply constraints / side effects
+           - Active state reflects editor map configuration -->
+      <button
+        type="button"
+        class="seg-btn"
+        (click)="setMode(m.value)"
+        [class.active]="editorState.editorMap().mode === m.value"
+      >
+        {{ m.label }}
+      </button>
+      }
+    </div>
+  </div>
+
+
+  <!-- =========================
+       Map size selection
+       ========================= -->
+  <div class="group">
+    <span class="group-label">Taille</span>
+
+    <!-- Segmented control for map size -->
+    <div class="segmented">
+      @for (s of sizeOptions; track s.value) {
+
+      <!-- Size button
+           - Updates grid dimensions through editor state
+           - Active state reflects current map size -->
+      <button
+        type="button"
+        class="seg-btn"
+        (click)="setSize(s.value)"
+        [class.active]="editorState.editorMap().size === s.value"
+      >
+        {{ s.label }}
+      </button>
+      }
+    </div>
+  </div>
+
+
+  <!-- Spacer pushes action buttons to the right -->
+  <div class="spacer"></div>
+
+
+  <!-- =========================
+       Save action
+       ========================= -->
+  <button
+    type="button"
+    class="icon-btn primary"
+    (click)="onSave()"
+    title="Enregistrer"
+    aria-label="Enregistrer"
+  >
+    <!-- Save icon -->
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Zm0 2.5L19.5 8H17V5.5ZM7 5h8v5H7V5Zm12 14H5V5h1v7h10V5h.5L19 7.5V19Z"
+      />
+    </svg>
+  </button>
+
+
+  <!-- =========================
+       Reset action
+       ========================= -->
+  <button
+    type="button"
+    class="icon-btn"
+    (click)="onReset()"
+    title="Réinitialiser"
+    aria-label="Réinitialiser"
+  >
+    <!-- Reset / refresh icon -->
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5a5 5 0 1 1-9.9-1h-2.02A7 7 0 1 0 12 6Z"
+      />
+    </svg>
+  </button>
+
+
+  <!-- =========================
+       Cancel action
+       ========================= -->
+  <button
+    type="button"
+    class="icon-btn danger"
+    (click)="onCancel()"
+    title="Annuler"
+    aria-label="Annuler"
+  >
+    <!-- Cancel / close icon -->
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L10.59 13.4 4.29 19.71 2.88 18.29 9.17 12 2.88 5.71 4.29 4.29l6.3 6.31 6.3-6.31 1.41 1.42Z"
+      />
+    </svg>
+  </button>
+
+</div>

@@ -1,0 +1,123 @@
+<!-- Sidebar container: editor controls -->
+<div class="sidebar">
+  <h2 class="title">Éditeur</h2>
+
+  <!-- =========================
+       Game metadata section
+       ========================= -->
+  <section class="section">
+    <h3>Jeu</h3>
+
+    <!-- Game name field -->
+    <label class="field">
+      <span>Nom</span>
+
+      <!-- Two-way style binding (manual)
+           - Value comes from editor state
+           - Changes are propagated via service -->
+      <input type="text" [ngModel]="editorState.editorMap().name" (ngModelChange)="editorState.setName($event)"
+        [maxLength]="nameMax" placeholder="Nom du jeu" />
+
+      <!-- Live character counter -->
+      <small>
+        {{ editorState.editorMap().name.length }} / {{ nameMax }}
+      </small>
+    </label>
+
+    <!-- Game description field -->
+    <label class="field">
+      <span>Description</span>
+
+      <textarea [ngModel]="editorState.editorMap().description" (ngModelChange)="editorState.setDescription($event)"
+        [maxLength]="descMax" placeholder="Description du jeu" rows="3"></textarea>
+
+      <!-- Live character counter -->
+      <small>
+        {{ editorState.editorMap().description.length }} / {{ descMax }}
+      </small>
+    </label>
+  </section>
+
+  <!-- =========================
+       Tile palette
+       ========================= -->
+  <section class="section">
+    <h3>Tuiles</h3>
+
+    <!-- Palette of selectable tile types -->
+    <div class="palette">
+      @for (tile of tiles; track tile.id) {
+
+      <!-- Tile selection button -->
+      <button class="palette-item" type="button" (click)="editorState.selectTile(tile.id)"
+        [class.active]="editorState.selectedTileType() === tile.id">
+        <!-- Visual swatch driven by CSS variables -->
+        <span class="swatch" [style.background]="'var(' + tile.cssVar + ')'"></span>
+
+        <!-- Readable label -->
+        <span class="label">{{ tile.label }}</span>
+      </button>
+      }
+    </div>
+  </section>
+
+  <!-- =========================
+       Object palette
+       ========================= -->
+  <section class="section">
+    <h3>Objets</h3>
+
+    <div class="palette">
+      @for (obj of objects; track obj.id) {
+
+      <!-- Object selection button -->
+      <!-- CTF rule enforcement:
+            - Flag can only be placed in CTF mode -->
+      <button class="palette-item" type="button" (click)="editorState.selectObject(obj.id)"
+        [class.active]="editorState.selectedObjectType() === obj.id" [disabled]="
+          obj.id === objectType.FLAG &&
+          editorState.editorMap().mode !== gameMode.CTF
+        " [class.disabled]="
+          obj.id === objectType.FLAG &&
+          editorState.editorMap().mode !== gameMode.CTF
+        ">
+        <!-- Object color swatch -->
+        <span class="swatch" [style.background]="'var(' + obj.cssVar + ')'"></span>
+
+        <span class="label">{{ obj.label }}</span>
+      </button>
+      }
+    </div>
+  </section>
+
+  <!-- =========================
+       Edit / delete actions
+       ========================= -->
+  <section class="section">
+    <h3>Édition</h3>
+
+    <!-- Show delete button ONLY when:
+         - Mouse tool is active
+         - A cell with an object is selected -->
+    @if (
+    editorState.selectedTool() === 'mouse' &&
+    editorState.selectedCell()?.objectId
+    ) {
+
+    <button type="button" class="btn danger full" (click)="editorState.removeObjectAtSelectedCell()">
+      Supprimer l’objet
+    </button>
+
+    <small class="muted">
+      Sélectionne une case (outil Souris) pour supprimer l’objet.
+    </small>
+
+    } @else {
+
+    <!-- Contextual hint when deletion is not available -->
+    <small class="muted">
+      Utilise l’outil Souris et clique une case contenant un objet.
+    </small>
+    }
+  </section>
+</div>
