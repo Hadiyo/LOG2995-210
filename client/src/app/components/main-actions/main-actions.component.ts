@@ -1,33 +1,36 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 
 @Component({
   selector: 'app-main-actions',
-  imports: [RouterLink],
+  standalone: true,
+  imports: [AppButtonComponent],
   templateUrl: './main-actions.component.html',
   styleUrl: './main-actions.component.scss',
-  standalone: true,
 })
 export class MainActionsComponent {
-  actions = [
+  readonly actions: readonly {
+    id: 'create-game' | 'join-game' | 'admin-game';
+    label: string;
+    variant: 'primary' | 'secondary' | 'ghost';
+    link?: string;
+    disabled?: boolean;
+  }[] = [
     {
-      id:'create-game',
-      label: 'Creer une partie',
+      id: 'create-game',
+      label: 'CREER UNE PARTIE',
       link: '/game',
       variant: 'primary',
-      disabled: false,
     },
     {
-      id:'join-game',
-      label: 'Joindre une partie',
+      id: 'join-game',
+      label: 'JOINDRE UNE PARTIE',
       link: '/material',
       variant: 'secondary',
-      disabled: false,
     },
     {
-      id:'admin-game',
-      label: 'Administrer les jeux',
-      link:'/admin',
+      id: 'admin-game',
+      label: 'ADMINISTRER LES JEUX',
       variant: 'ghost',
       disabled: true,
     },
