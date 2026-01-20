@@ -14,9 +14,8 @@ export class MainPageComponent {
   readonly actions: readonly {
     id: 'create-game' | 'join-game' | 'admin-game';
     label: string;
-    variant: 'primary' | 'secondary' | 'ghost';
+    variant: 'primary' | 'secondary' | 'tertiary' | 'ghost';
     link?: string;
-    disabled?: boolean;
   }[] = [
     {
       id: 'create-game',
@@ -33,8 +32,7 @@ export class MainPageComponent {
     {
       id: 'admin-game',
       label: 'ADMINISTRER LES JEUX',
-      variant: 'ghost',
-      disabled: true,
+      variant: 'tertiary',
     },
   ];
 

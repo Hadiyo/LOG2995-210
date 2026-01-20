@@ -11,6 +11,5 @@ import { RouterLink } from '@angular/router';
 export class AppButtonComponent {
   @Input({ required: true }) label!: string;
   @Input() link?: string;
-  @Input() disabled = false;
-  @Input() variant: 'primary' | 'secondary' | 'ghost' = 'primary';
+  @Input() variant: 'primary' | 'secondary' | 'tertiary' | 'ghost' = 'primary';
 }
