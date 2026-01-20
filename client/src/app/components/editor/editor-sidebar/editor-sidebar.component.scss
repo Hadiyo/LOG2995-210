@@ -243,3 +243,8 @@
     background: var(--bg-panel-soft);
     color: var(--text-main);
 }
+
+/* Disable hover on tooltip */
+::ng-deep .cdk-overlay-pane .tooltip {
+    pointer-events: none;
+}
