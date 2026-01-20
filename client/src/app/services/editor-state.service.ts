@@ -1,6 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 
-import { GameMode, MapSize, TileType, ObjectType, ObjectSize } from '@common/enum';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
 import type { EditorCell, EditorMap, MapObject, Vec2 } from '@common/interface';
 
 /* =========================================================
@@ -27,7 +27,7 @@ const FLAG_LIMIT = 1;
  * - 'applicator': place tiles/objects
  * - 'eraser': remove objects (only objects here, not tiles)
  */
-export type EditorToolId = 'mouse' | 'applicator' | 'eraser';
+// export type EditorToolId = 'mouse' | 'applicator' | 'eraser';
 
 /**
  * Snapshot of what the user is currently inspecting (mouse tool)
@@ -48,7 +48,7 @@ export class EditorStateService {
        ========================================================= */
 
     // Which editor tool is currently active
-    readonly selectedTool = signal<EditorToolId>('mouse');
+    // readonly selectedTool = signal<EditorToolId>('mouse');
 
     /**
      * We select WHAT we want to apply:
@@ -81,9 +81,9 @@ export class EditorStateService {
        Public API — tool + palette selection
        ========================================================= */
 
-    selectTool(tool: EditorToolId): void {
-        this.selectedTool.set(tool);
-    }
+    // selectTool(tool: EditorToolId): void {
+    //     this.selectedTool.set(tool);
+    // }
 
     /**
      * Select a tile to paint:
@@ -93,7 +93,7 @@ export class EditorStateService {
     selectTile(tileType: TileType): void {
         this.selectedTileType.set(tileType);
         this.selectedObjectType.set(null);
-        this.selectedTool.set('applicator');
+        // this.selectedTool.set('applicator');
     }
 
     /**
@@ -108,7 +108,7 @@ export class EditorStateService {
 
         this.selectedObjectType.set(objectType);
         this.selectedTileType.set(null);
-        this.selectedTool.set('applicator');
+        // this.selectedTool.set('applicator');
     }
 
     /**
@@ -118,7 +118,7 @@ export class EditorStateService {
     clearSelection(): void {
         this.selectedTileType.set(null);
         this.selectedObjectType.set(null);
-        this.selectedTool.set('mouse');
+        // this.selectedTool.set('mouse');
     }
 
     /* =========================================================
@@ -220,14 +220,14 @@ export class EditorStateService {
      * - if applicator: apply selected tile OR object
      */
     applyAtIndex(index: number): void {
-        const tool = this.selectedTool();
+        // const tool = this.selectedTool();
 
-        if (tool === 'eraser') {
-            this.eraseObjectAtIndex(index);
-            return;
-        }
+        // if (tool === 'eraser') {
+        //     this.eraseObjectAtIndex(index);
+        //     return;
+        // }
 
-        if (tool !== 'applicator') return;
+        // if (tool !== 'applicator') return;
 
         const tileType = this.selectedTileType();
         const objectType = this.selectedObjectType();
@@ -595,7 +595,7 @@ export class EditorStateService {
             case TileType.DOOR:
                 return false; // default closed
             case TileType.WATER:
-                return false;
+                return true;
             case TileType.ICE:
                 return true;
             case TileType.DIRT:

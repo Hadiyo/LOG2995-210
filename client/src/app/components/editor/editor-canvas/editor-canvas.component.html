@@ -15,10 +15,11 @@
 
         <!-- Individual grid cell
              - button allows mouse interaction (click, drag, hover)
-             - index is passed to handlers to know which cell is affected -->
+             - index is passed to handlers to know which cell is affected
+             removed: (click)="onCellClick($index)" -->
         <button type="button" class="cell" (mousedown)="onCellMouseDown($index, $event)"
             (mouseenter)="onCellMouseEnter($index)" (mouseleave)="onCellHover(null)" (mouseup)="onCellMouseUp()"
-            (click)="onCellClick($index)" [class.hovered]="hoveredIndex === $index">
+             [class.hovered]="hoveredIndex === $index">
 
             <!-- Tile visual layer
                  - data attributes drive CSS sprites / visuals
@@ -52,7 +53,7 @@
          - Displays current tool selections
          - Helps with usability and debugging -->
     <div class="hint">
-        <span>Tool: {{ editorState.selectedTool() }}</span>
+        <!-- <span>Tool: {{ editorState.selectedTool() }}</span> -->
         <span>Tile: {{ editorState.selectedTileType() ?? '—' }}</span>
         <span>Obj: {{ editorState.selectedObjectType() ?? '—' }}</span>
     </div>

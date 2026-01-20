@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
+import { ObjectType, TileType } from '@common/enum';
 import { EditorStateService } from 'src/app/services/editor-state.service';
-import { TileType, ObjectType } from '@common/enum';
 
 @Component({
   selector: 'app-editor-canvas',
@@ -59,13 +59,13 @@ export class EditorCanvasComponent {
   /* =========================================================
      Click (single action)
      ========================================================= */
-  onCellClick(index: number): void {
-    // Click is ONLY for the mouse tool (inspect).
-    // Applicator uses mousedown + drag painting, so we do nothing here.
-    if (this.editorState.selectedTool() === 'mouse') {
-      this.editorState.inspectCellByIndex(index);
-    }
-  }
+  // onCellClick(index: number): void {
+  //   // Click is ONLY for the mouse tool (inspect).
+  //   // Applicator uses mousedown + drag painting, so we do nothing here.
+  //   if (this.editorState.selectedTool() === 'mouse') {
+  //     this.editorState.inspectCellByIndex(index);
+  //   }
+  // }
 
   /* =========================================================
      Drag interactions (paint tiles)
@@ -77,20 +77,22 @@ export class EditorCanvasComponent {
    */
   private canPaintTiles(): boolean {
     return (
-      this.editorState.selectedTool() === 'applicator' &&
       this.editorState.selectedTileType() !== null
     );
   }
 
   onCellMouseDown(index: number, event: MouseEvent): void {
-    // Only respond to left-click (0 = main button)
-    if (event.button !== 0) return;
-
     // Prevent text selection
     event.preventDefault();
 
     // Mouse tool: treat press like inspect
-    if (this.editorState.selectedTool() === 'mouse') {
+    // if (this.editorState.selectedTool() === 'mouse') {
+
+    //   return;
+    // }
+
+    // Respond to left-click (0 = main button)
+    if (event.button === 0) {
       this.editorState.inspectCellByIndex(index);
       return;
     }
