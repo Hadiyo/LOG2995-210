@@ -5,7 +5,16 @@
     </div>
   </header>
 
-  <app-main-actions></app-main-actions>
+  <div class="main-actions">
+    @for (action of actions; track action.id) {
+      <app-button
+        [label]="action.label"
+        [link]="action.link"
+        [variant]="action.variant"
+        [disabled]="action.disabled ?? false"
+      ></app-button>
+    }
+  </div>
 
   <app-name-slider [names]="teamNames"></app-name-slider>
 </main>
