@@ -50,7 +50,7 @@
 
       <!-- Tile selection button -->
       <button class="palette-item" type="button" (click)="editorState.selectTile(tile.id)"
-        [class.active]="editorState.selectedTileType() === tile.id">
+        [class.active]="editorState.selectedTileType() === tile.id" matTooltip="{{ tile.description }}">
         <!-- Visual swatch driven by CSS variables -->
         <span class="swatch" [style.background]="'var(' + tile.cssVar + ')'"></span>
 
@@ -80,7 +80,8 @@
         " [class.disabled]="
           obj.id === objectType.FLAG &&
           editorState.editorMap().mode !== gameMode.CTF
-        ">
+        "
+        matTooltip="{{ obj.description }}" >
         <!-- Object color swatch -->
         <span class="swatch" [style.background]="'var(' + obj.cssVar + ')'"></span>
 
