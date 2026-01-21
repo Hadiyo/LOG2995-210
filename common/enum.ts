@@ -28,3 +28,11 @@ export enum ObjectSize {
     S = '1x1',
     L = '2x2'
 }
+
+export enum MouseButton {
+    Left = 0,
+    Middle = 1,
+    Right = 2,
+    Back = 3,
+    Forward = 4,
+}

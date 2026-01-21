@@ -15,11 +15,10 @@
 
         <!-- Individual grid cell
              - button allows mouse interaction (click, drag, hover)
-             - index is passed to handlers to know which cell is affected
-             removed: (click)="onCellClick($index)" -->
+             - index is passed to handlers to know which cell is affected -->
         <button type="button" class="cell" (mousedown)="onCellMouseDown($index, $event)"
             (mouseenter)="onCellMouseEnter($index)" (mouseleave)="onCellHover(null)" (mouseup)="onCellMouseUp()"
-             [class.hovered]="hoveredIndex === $index">
+            (contextmenu)="onContextMenu($event)" [class.hovered]="hoveredIndex === $index">
 
             <!-- Tile visual layer
                  - data attributes drive CSS sprites / visuals

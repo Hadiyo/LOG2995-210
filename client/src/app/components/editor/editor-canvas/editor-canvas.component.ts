@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { ObjectType, TileType } from '@common/enum';
+import { Component, HostListener } from '@angular/core';
+import { MouseButton, ObjectType, TileType } from '@common/enum';
 import { EditorStateService } from 'src/app/services/editor-state.service';
 
 @Component({
@@ -24,6 +24,22 @@ export class EditorCanvasComponent {
 
   // Drag-paint state (true while mouse is held down and tile tool is active)
   isPainting = false;
+
+  // Used to track SHIFT key state for right-click removal of objects
+  isShiftPressed = false;
+
+  // Used to track mouse button state globally
+  activeButton: MouseButton | null = null;
+
+  @HostListener('document:keydown.shift', ['$event'])
+  onShiftDown(event: Event): void {
+    this.isShiftPressed = true;
+  }
+
+  @HostListener('document:keyup.shift', ['$event'])
+  onShiftUp(event: Event): void {
+    this.isShiftPressed = false;
+  }
 
   /* =========================================================
      Dependencies
@@ -52,20 +68,17 @@ export class EditorCanvasComponent {
     // - Only active when isPainting = true (set on mousedown)
     // - We restrict drag painting to tiles (not objects)
     if (this.isPainting) {
-      this.editorState.applyAtIndex(index);
+      switch (this.activeButton) {
+        case MouseButton.Left:
+          this.editorState.applyAtIndex(index);
+          break;
+        case MouseButton.Right:
+          if (this.isShiftPressed) return; // Disables drag-erase for objects
+          this.editorState.eraseTileAtIndex(index);
+          break;
+      }
     }
   }
-
-  /* =========================================================
-     Click (single action)
-     ========================================================= */
-  // onCellClick(index: number): void {
-  //   // Click is ONLY for the mouse tool (inspect).
-  //   // Applicator uses mousedown + drag painting, so we do nothing here.
-  //   if (this.editorState.selectedTool() === 'mouse') {
-  //     this.editorState.inspectCellByIndex(index);
-  //   }
-  // }
 
   /* =========================================================
      Drag interactions (paint tiles)
@@ -81,38 +94,62 @@ export class EditorCanvasComponent {
     );
   }
 
+  // Disables context menu on right click
+  onContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+  }
+
   onCellMouseDown(index: number, event: MouseEvent): void {
     // Prevent text selection
     event.preventDefault();
 
-    // Mouse tool: treat press like inspect
-    // if (this.editorState.selectedTool() === 'mouse') {
-
-    //   return;
-    // }
+    this.activeButton = event.button;
 
     // Respond to left-click (0 = main button)
-    if (event.button === 0) {
-      this.editorState.inspectCellByIndex(index);
-      return;
+    switch (this.activeButton) {
+      case MouseButton.Left:
+        // Enable drag painting ONLY if we're applying tiles
+        this.isPainting = this.canPaintTiles();
+
+        // Always apply once immediately on press:
+        // - supports normal click placement
+        // - gives instant feedback even before dragging
+        this.editorState.applyAtIndex(index);
+
+        break;
+
+      case MouseButton.Right:
+        // SHIFT + Right-click: remove object at index
+        if (this.isShiftPressed) {
+          this.editorState.eraseObjectAtIndex(index);
+          return;
+        }
+
+        // Right-click: remove tile at index
+        // Enables drag-erase behavior for tiles
+        this.isPainting = true;
+        this.editorState.eraseTileAtIndex(index);
+
+        break;
+
+      default:
+        return;
     }
-
-    // Enable drag painting ONLY if we're applying tiles
-    this.isPainting = this.canPaintTiles();
-
-    // Always apply once immediately on press:
-    // - supports normal click placement
-    // - gives instant feedback even before dragging
-    this.editorState.applyAtIndex(index);
   }
 
   onCellMouseUp(): void {
     // Stop drag painting when mouse is released anywhere inside the grid
     this.isPainting = false;
+
+    // Reset active button
+    this.activeButton = null;
   }
 
   onGridLeave(): void {
     // Safety: if user drags outside the grid, stop painting
     this.isPainting = false;
+
+    // Reset active button
+    this.activeButton = null;
   }
 }
