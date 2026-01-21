@@ -1,0 +1,27 @@
+<button type="button" class="cell" 
+    (click)="onMouseEvent(mouseEvent.CLICK, $event)"
+    (mouseup)="onMouseEvent(mouseEvent.UP, $event)"
+    (mousedown)="onMouseEvent(mouseEvent.DOWN, $event)"
+    (mouseenter)="onMouseEvent(mouseEvent.ENTER, $event)"
+    (mouseleave)="onMouseEvent(mouseEvent.LEAVE, $event)"
+    [class.hovered]="isHovered">
+
+    <!-- Tile visual layer 
+        - data attributes drive CSS sprites / visuals 
+        - door state (open/closed) is expressed explicitly -->
+    <span class="tile" [attr.data-tile]="tile.tileType" [attr.data-door-open]="
+            tile.tileType === tileType.DOOR && tile.isWalkable ? 'true' : null
+        " [attr.data-door-closed]="
+            tile.tileType === tileType.DOOR && !tile.isWalkable ? 'true' : null
+        "></span>
+
+    <!-- Object layer (optional) 
+        - Rendered only if an object exists at this exact cell position 
+        - Position check avoids rendering objects on wrong cells -->
+    @if (object && object!.position.x === tile.position.x && object!.position.y === tile.position.y) {
+    <!-- Object visual representation 
+        - data attributes used for CSS sizing and sprite selection -->
+    <span class="obj" [attr.data-obj]="object!.type"
+        [attr.data-size]="object!.size"></span>
+    }
+</button>

@@ -28,3 +28,11 @@ export enum ObjectSize {
     S = '1x1',
     L = '2x2'
 }
+
+export enum MouseEventType {
+    CLICK = "click",
+    UP = "mouseUp",
+    DOWN = "mouseDown",
+    ENTER = "mouseEnter",
+    LEAVE = "mouseLeave"
+}
