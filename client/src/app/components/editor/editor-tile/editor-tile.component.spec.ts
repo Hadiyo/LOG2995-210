@@ -8,7 +8,7 @@ describe('EditorTileComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditorTileComponent]
+      imports: [EditorTileComponent],
     })
     .compileComponents();
 
