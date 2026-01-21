@@ -5,7 +5,7 @@
   display: contents;
 }
 
-   .cell {
+.cell {
     position: relative;
     padding: 0;
 
@@ -13,9 +13,6 @@
     border: 1px solid var(--border-soft);
     background: transparent;
     cursor: pointer;
-
-    /* Force square cells regardless of grid size */
-    aspect-ratio: 1 / 1;
 
     /* Prevent image dragging behaviors */
     -webkit-user-drag: none;
