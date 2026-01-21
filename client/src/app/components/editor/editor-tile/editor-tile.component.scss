@@ -1,7 +1,11 @@
 /* =========================
    Individual grid cell
    ========================= */
-.cell {
+:host {
+  display: contents;
+}
+
+   .cell {
     position: relative;
     padding: 0;
 

@@ -8,7 +8,7 @@ import { TileEvent } from '@common/types';
   standalone: true,
   imports: [],
   templateUrl: './editor-tile.component.html',
-  styleUrl: './editor-tile.component.scss',
+  styleUrls: ['./editor-tile.component.scss'],
 })
 export class EditorTileComponent {
   @Input() index!: number; // Index of the tile in the canva needed for communication
@@ -20,7 +20,7 @@ export class EditorTileComponent {
   readonly tileType = TileType;
   readonly mouseEvent = MouseEventType;
 
-  protected isHovered: boolean;
+  protected isHovered = false;
 
   /* =========================================================
     Tile Event Logic

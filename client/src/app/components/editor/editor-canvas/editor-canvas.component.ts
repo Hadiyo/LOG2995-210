@@ -45,9 +45,6 @@ export class EditorCanvasComponent {
       case MouseEventType.ENTER:
         this.onCellMouseEnter(event.index);
         break;
-      case MouseEventType.LEAVE:
-        this.onGridLeave();
-        break;
     }
   }
 
