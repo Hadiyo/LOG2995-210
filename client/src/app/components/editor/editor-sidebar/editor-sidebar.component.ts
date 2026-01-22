@@ -1,15 +1,16 @@
-import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { GameMode, ObjectType, TileType } from '@common/enum';
 import { EditorStateService } from 'src/app/services/editor-state.service';
-import { GameMode, TileType, ObjectType } from '@common/enum';
 
 /**
  * Simple UI types for palette rendering
  * - Keeps template clean and strongly typed
  */
-type TilePaletteItem = { id: TileType; label: string; cssVar: string };
-type ObjectPaletteItem = { id: ObjectType; label: string; cssVar: string };
+type TilePaletteItem = { id: TileType; label: string; description: string; cssVar: string };
+type ObjectPaletteItem = { id: ObjectType; label: string; description: string; cssVar: string };
 
 @Component({
   selector: 'app-editor-sidebar',
@@ -19,8 +20,9 @@ type ObjectPaletteItem = { id: ObjectType; label: string; cssVar: string };
    * Standalone component imports:
    * - CommonModule: *ngIf, ngClass, etc. 
    * - FormsModule: ngModel bindings used in the template inputs
+   * - MatTooltipModule: tooltips for the buttons
    */
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatTooltipModule],
 
   templateUrl: './editor-sidebar.component.html',
   styleUrls: ['./editor-sidebar.component.scss'],
@@ -44,7 +46,11 @@ export class EditorSidebarComponent {
      - readonly in constructor auto-creates a property
      - used directly in the template (editorState.xxx)
      ========================================================= */
-  constructor(readonly editorState: EditorStateService) {}
+  readonly editorState: EditorStateService;
+
+  constructor(editorState: EditorStateService) {
+    this.editorState = editorState;
+  }
 
   /* =========================================================
      Tile palette configuration
@@ -53,13 +59,18 @@ export class EditorSidebarComponent {
        toggling open/closed handled by editor logic
      ========================================================= */
   tiles: TilePaletteItem[] = [
-    { id: TileType.WALL, label: 'Mur', cssVar: '--tile-wall' },
-    { id: TileType.DOOR, label: 'Porte (toggle)', cssVar: '--tile-door-closed' },
-    { id: TileType.WATER, label: 'Eau', cssVar: '--tile-water' },
-    { id: TileType.ICE, label: 'Glace', cssVar: '--tile-ice' },
+    { id: TileType.WALL, label: 'Mur', description: 'Tuile non traversable.', cssVar: '--tile-wall' },
+    {
+      id: TileType.DOOR,
+      label: 'Porte (toggle)',
+      description: 'Une porte doit se situer entre 2 murs. Elle peut être ouverte ou fermée.',
+      cssVar: '--tile-door-closed',
+    },
+    { id: TileType.WATER, label: 'Eau', description: 'Tuile traversable qui prend deux points de mouvement.', cssVar: '--tile-water' },
+    { id: TileType.ICE, label: 'Glace', description: 'Tuile traversable qui prend aucun point de mouvement.', cssVar: '--tile-ice' },
 
     // Optional: allows painting a normal floor tile explicitly
-    { id: TileType.DIRT, label: 'Sol', cssVar: '--bg-panel-soft' },
+    { id: TileType.DIRT, label: 'Sol', description: 'Tuile de base', cssVar: '--bg-panel-soft' },
   ];
 
   /* =========================================================
@@ -67,9 +78,22 @@ export class EditorSidebarComponent {
      - Maps ObjectType enum → labels + theme color variables
      ========================================================= */
   objects: ObjectPaletteItem[] = [
-    { id: ObjectType.START, label: 'Point de départ', cssVar: '--object-spawn' },
-    { id: ObjectType.FLAG, label: 'Drapeau', cssVar: '--object-flag' },
-    { id: ObjectType.REGEN, label: 'Sanctuaire de soin', cssVar: '--object-heal' },
-    { id: ObjectType.ARENA, label: 'Sanctuaire de combat', cssVar: '--object-fight' },
+    {
+      id: ObjectType.START,
+      label: 'Point de départ',
+      description: "Un joueur est assigné aléatoirement un point de départ au début d'une partie.",
+      cssVar: '--object-spawn',
+    },
+    { id: ObjectType.FLAG, label: 'Drapeau', description: "L'objectif principal de mode CTF.", cssVar: '--object-flag' },
+    {
+      id: ObjectType.REGEN, label: 'Sanctuaire de soin',
+      description: `Activer pour regagner 2 points de vie au joueur.`,
+      cssVar: '--object-heal',
+    },
+    {
+      id: ObjectType.ARENA, label: 'Sanctuaire de combat',
+      description: `Activer pour un bonus temporaire de +1 à l'attaque et à la défense. Ce bonus reste jusqu'à la fin de son prochain tour.`,
+      cssVar: '--object-fight',
+    },
   ];
 }

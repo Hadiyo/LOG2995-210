@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
 
-import { EditorStateService, EditorToolId } from 'src/app/services/editor-state.service';
 import { GameMode, MapSize } from '@common/enum';
+import { EditorStateService } from 'src/app/services/editor-state.service';
 
 @Component({
   selector: 'app-editor-topbar',
@@ -39,10 +39,10 @@ export class EditorTopbarComponent {
      Tool selection
      ========================================================= */
   // Available editor tools (segmented control)
-  readonly tools: { id: EditorToolId; label: string }[] = [
-    { id: 'mouse', label: 'Souris' },
-    { id: 'applicator', label: 'Applicateur' },
-  ];
+  // readonly tools: { id: EditorToolId; label: string }[] = [
+  //   { id: 'mouse', label: 'Souris' },
+  //   { id: 'applicator', label: 'Applicateur' },
+  // ];
 
   /* =========================================================
      Mode & size options

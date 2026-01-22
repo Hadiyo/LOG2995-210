@@ -232,3 +232,19 @@
     background: var(--accent-danger);
     color: var(--bg-main);
 }
+
+/* =========================
+   Tooltip
+   ========================= */
+::ng-deep .tooltip .mdc-tooltip__surface {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--bg-panel-soft);
+    color: var(--text-main);
+}
+
+/* Disable hover on tooltip */
+::ng-deep .cdk-overlay-pane .tooltip {
+    pointer-events: none;
+}
