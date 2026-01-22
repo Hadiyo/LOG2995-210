@@ -241,22 +241,6 @@ export class EditorStateService {
         this.refreshOccupied();
     }
 
-    // /**
-    //  * Remove object via the currently selected inspected cell.
-    //  * Used by Sidebar "Supprimer l’objet" action.
-    //  */
-    // removeObjectAtSelectedCell(): void {
-    //     const selected = this.selectedCell();
-    //     if (!selected?.objectId) return;
-
-    //     this.editorMap.update((m) => ({
-    //         ...m,
-    //         objects: m.objects.filter((o) => o.id !== selected.objectId),
-    //     }));
-
-    //     this.refreshOccupied();
-    // }
-
     /* =========================================================
        Internal helpers — apply tile/object
        ========================================================= */

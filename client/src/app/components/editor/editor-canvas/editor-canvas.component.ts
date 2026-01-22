@@ -1,29 +1,21 @@
 import { Component, HostListener } from '@angular/core';
-import { MouseButton, ObjectType, TileType } from '@common/enum';
+import { EditorTileComponent } from '@app/components/editor/editor-tile/editor-tile.component';
+import { MouseButton, MouseEventType } from '@common/enum';
+import { TileEvent } from '@common/types';
 import { EditorStateService } from 'src/app/services/editor-state.service';
 
 @Component({
   selector: 'app-editor-canvas',
+  imports: [EditorTileComponent],
   templateUrl: './editor-canvas.component.html',
   styleUrls: ['./editor-canvas.component.scss'],
 })
 export class EditorCanvasComponent {
   /* =========================================================
-     Template helpers
-     - Expose enums so the HTML can compare values safely:
-       e.g. cell.tileType === tileType.DOOR
-     ========================================================= */
-  readonly tileType = TileType;
-  readonly objectType = ObjectType;
-
-  /* =========================================================
      UI state
      ========================================================= */
-  // Used to apply .hovered class in the template
-  hoveredIndex: number | null = null;
-
   // Drag-paint state (true while mouse is held down and tile tool is active)
-  isPainting = false;
+  private isPainting = false;
 
   // Used to track SHIFT key state for right-click removal of objects
   isShiftPressed = false;
@@ -31,6 +23,7 @@ export class EditorCanvasComponent {
   // Used to track mouse button state globally
   activeButton: MouseButton | null = null;
 
+  // Track state of shift key
   @HostListener('document:keydown.shift', ['$event'])
   onShiftDown(event: Event): void {
     this.isShiftPressed = true;
@@ -38,6 +31,12 @@ export class EditorCanvasComponent {
 
   @HostListener('document:keyup.shift', ['$event'])
   onShiftUp(event: Event): void {
+    this.isShiftPressed = false;
+  }
+
+  // Assume all keys are released when window loses focus
+  @HostListener('window:blur')
+  onBlur() {
     this.isShiftPressed = false;
   }
 
@@ -52,18 +51,7 @@ export class EditorCanvasComponent {
     this.editorState = editorState;
   }
 
-  /* =========================================================
-     Hover / feedback
-     ========================================================= */
-  onCellHover(index: number | null): void {
-    // Called on mouseleave of a cell
-    this.hoveredIndex = index;
-  }
-
   onCellMouseEnter(index: number): void {
-    // Update hover visuals immediately
-    this.hoveredIndex = index;
-
     // Drag-paint behavior:
     // - Only active when isPainting = true (set on mousedown)
     // - We restrict drag painting to tiles (not objects)
@@ -80,9 +68,19 @@ export class EditorCanvasComponent {
     }
   }
 
-  /* =========================================================
-     Drag interactions (paint tiles)
-     ========================================================= */
+  handleTileEvent(event: TileEvent) {
+    switch (event.type) {
+      case MouseEventType.UP:
+        this.onCellMouseUp();
+        break;
+      case MouseEventType.DOWN:
+        this.onCellMouseDown(event.index, event.originalEvent);
+        break;
+      case MouseEventType.ENTER:
+        this.onCellMouseEnter(event.index);
+        break;
+    }
+  }
 
   /**
    * Returns true when we are in a mode that supports drag painting for tiles.

@@ -36,3 +36,10 @@ export enum MouseButton {
     Back = 3,
     Forward = 4,
 }
+
+export enum MouseEventType {
+    UP = "mouseUp",
+    DOWN = "mouseDown",
+    ENTER = "mouseEnter",
+    LEAVE = "mouseLeave"
+}
