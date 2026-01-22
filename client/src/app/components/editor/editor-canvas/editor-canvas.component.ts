@@ -1,29 +1,21 @@
 import { Component } from '@angular/core';
+import { EditorTileComponent } from '@app/components/editor/editor-tile/editor-tile.component';
+import { MouseEventType } from '@common/enum';
+import { TileEvent } from '@common/types';
 import { EditorStateService } from 'src/app/services/editor-state.service';
-import { TileType, ObjectType } from '@common/enum';
 
 @Component({
   selector: 'app-editor-canvas',
+  imports: [EditorTileComponent],
   templateUrl: './editor-canvas.component.html',
   styleUrls: ['./editor-canvas.component.scss'],
 })
 export class EditorCanvasComponent {
   /* =========================================================
-     Template helpers
-     - Expose enums so the HTML can compare values safely:
-       e.g. cell.tileType === tileType.DOOR
-     ========================================================= */
-  readonly tileType = TileType;
-  readonly objectType = ObjectType;
-
-  /* =========================================================
      UI state
      ========================================================= */
-  // Used to apply .hovered class in the template
-  hoveredIndex: number | null = null;
-
   // Drag-paint state (true while mouse is held down and tile tool is active)
-  isPainting = false;
+  private isPainting = false;
 
   /* =========================================================
      Dependencies
@@ -37,29 +29,29 @@ export class EditorCanvasComponent {
   }
 
   /* =========================================================
-     Hover / feedback
+     Tile Event Handler
      ========================================================= */
-  onCellHover(index: number | null): void {
-    // Called on mouseleave of a cell
-    this.hoveredIndex = index;
-  }
-
-  onCellMouseEnter(index: number): void {
-    // Update hover visuals immediately
-    this.hoveredIndex = index;
-
-    // Drag-paint behavior:
-    // - Only active when isPainting = true (set on mousedown)
-    // - We restrict drag painting to tiles (not objects)
-    if (this.isPainting) {
-      this.editorState.applyAtIndex(index);
+  handleTileEvent(event: TileEvent) {
+    switch (event.type) {
+      case MouseEventType.CLICK:
+        this.onCellClick(event.index);
+        break;
+      case MouseEventType.UP:
+        this.onCellMouseUp();
+        break;
+      case MouseEventType.DOWN:
+        this.onCellMouseDown(event.index, event.originalEvent);
+        break;
+      case MouseEventType.ENTER:
+        this.onCellMouseEnter(event.index);
+        break;
     }
   }
 
   /* =========================================================
      Click (single action)
      ========================================================= */
-  onCellClick(index: number): void {
+  private onCellClick(index: number): void {
     // Click is ONLY for the mouse tool (inspect).
     // Applicator uses mousedown + drag painting, so we do nothing here.
     if (this.editorState.selectedTool() === 'mouse') {
@@ -70,6 +62,14 @@ export class EditorCanvasComponent {
   /* =========================================================
      Drag interactions (paint tiles)
      ========================================================= */
+  private onCellMouseEnter(index: number): void {
+    // Drag-paint behavior:
+    // - Only active when isPainting = true (set on mousedown)
+    // - We restrict drag painting to tiles (not objects)
+    if (this.isPainting) {
+      this.editorState.applyAtIndex(index);
+    }
+  }
 
   /**
    * Returns true when we are in a mode that supports drag painting for tiles.
