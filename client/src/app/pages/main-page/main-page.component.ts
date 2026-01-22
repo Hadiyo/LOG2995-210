@@ -32,6 +32,7 @@ export class MainPageComponent {
     {
       id: 'admin-game',
       label: 'ADMINISTRER LES JEUX',
+      link: '/admin',
       variant: 'tertiary',
     },
   ];
