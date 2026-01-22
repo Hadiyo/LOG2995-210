@@ -1,6 +1,6 @@
-import { Injectable, computed, signal } from '@angular/core';
-
-import { GameMode, MapSize, TileType, ObjectType, ObjectSize } from '@common/enum';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { EditorApiService } from '@app/services/editor-api.service';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
 import type { EditorCell, EditorMap, MapObject, Vec2 } from '@common/interface';
 
 /* =========================================================
@@ -80,6 +80,7 @@ export class EditorStateService {
     /* =========================================================
        Public API — tool + palette selection
        ========================================================= */
+    private editorApi = inject(EditorApiService);
 
     selectTool(tool: EditorToolId): void {
         this.selectedTool.set(tool);
