@@ -24,13 +24,13 @@ export class EditorCanvasComponent {
   activeButton: MouseButton | null = null;
 
   // Track state of shift key
-  @HostListener('document:keydown.shift', ['$event'])
-  onShiftDown(event: Event): void {
+  @HostListener('document:keydown.shift')
+  onShiftDown(): void {
     this.isShiftPressed = true;
   }
 
-  @HostListener('document:keyup.shift', ['$event'])
-  onShiftUp(event: Event): void {
+  @HostListener('document:keyup.shift')
+  onShiftUp(): void {
     this.isShiftPressed = false;
   }
 
@@ -50,6 +50,10 @@ export class EditorCanvasComponent {
     // Store injected service for template + event handlers
     this.editorState = editorState;
   }
+
+  /* =========================================================
+     Tile Event Handler
+     ========================================================= */
 
   private onCellMouseEnter(index: number): void {
     // Drag-paint behavior:
