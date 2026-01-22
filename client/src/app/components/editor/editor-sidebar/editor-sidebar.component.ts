@@ -46,7 +46,11 @@ export class EditorSidebarComponent {
      - readonly in constructor auto-creates a property
      - used directly in the template (editorState.xxx)
      ========================================================= */
-  constructor(readonly editorState: EditorStateService) {}
+  readonly editorState: EditorStateService;
+
+  constructor(editorState: EditorStateService) {
+    this.editorState = editorState;
+  }
 
   /* =========================================================
      Tile palette configuration

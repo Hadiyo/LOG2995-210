@@ -6,7 +6,7 @@
          - Used by CSS Grid to size the map
          - Mouse events here manage drag interactions -->
     <div class="grid" [style.--cols]="editorState.cols()" [style.--rows]="editorState.rows()"
-        (mouseup)="onCellMouseUp()" (mouseleave)="onGridLeave()">
+        (mouseleave)="onGridLeave()">
 
         <!-- Loop through every cell in the editor state
              - track $index for performance -->

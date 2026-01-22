@@ -178,6 +178,20 @@ export class EditorStateService {
     }
 
     /* =========================================================
+       Public API — called by Sidebar
+       ========================================================= */
+
+    /** 
+    * Get count of object of a given type and its limit
+    */
+    getObjectCountAndLimit(type: ObjectType): { count: number; limit: number } {
+        const m = this.editorMap();
+        const count = m.objects.filter((o) => o.type === type).length;
+        const limit = this.getObjectLimit(type, m.size, m.mode);
+        return { count, limit };
+    }
+
+    /* =========================================================
        Public API — called by Canvas
        ========================================================= */
 
@@ -220,10 +234,7 @@ export class EditorStateService {
             const pos = cell.position;
 
             // Keep only objects that DO NOT cover the clicked cell
-            const remaining = m.objects.filter((o) => {
-                const covered = this.getCoveredPositions(o.position, o.size);
-                return !covered.some((p) => p.x === pos.x && p.y === pos.y);
-            });
+            const remaining = this.removeObjectByPosition(pos);
 
             return { ...m, objects: remaining };
         });
@@ -272,6 +283,12 @@ export class EditorStateService {
                 }
             }
 
+            let existingObjects = m.objects;
+
+            if (!nextWalkable) {
+                existingObjects = this.removeObjectByPosition(cell.position);
+            }
+
             const updated: EditorCell = {
                 ...cell,
                 tileType: nextTileType,
@@ -282,7 +299,7 @@ export class EditorStateService {
             const newMap = m.map.slice();
             newMap[index] = updated;
 
-            return { ...m, map: newMap };
+            return { ...m, map: newMap, objects: existingObjects };
         });
 
         // Occupancy might change if tile became non-walkable under an object, etc.
@@ -463,6 +480,14 @@ export class EditorStateService {
         }
 
         return true;
+    }
+
+    // Filter out object to remove
+    private removeObjectByPosition(position: Vec2): MapObject[] {
+        return this.editorMap().objects.filter((o) => {
+            const covered = this.getCoveredPositions(o.position, o.size);
+            return !covered.some((p) => p.x === position.x && p.y === position.y);
+        });
     }
 
     /* =========================================================

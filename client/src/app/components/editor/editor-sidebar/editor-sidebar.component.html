@@ -79,8 +79,10 @@
           obj.id === objectType.FLAG &&
           editorState.editorMap().mode !== gameMode.CTF
         " [class.disabled]="
-          obj.id === objectType.FLAG &&
-          editorState.editorMap().mode !== gameMode.CTF
+          (obj.id === objectType.FLAG &&
+          editorState.editorMap().mode !== gameMode.CTF) ||
+          (this.editorState.getObjectCountAndLimit(obj.id).count 
+          === this.editorState.getObjectCountAndLimit(obj.id).limit)
         "
         matTooltip="{{ obj.description }}" matTooltipClass="tooltip">
         <!-- Object color swatch -->
@@ -88,38 +90,11 @@
 
         <span class="label">{{ obj.label }}</span>
       </button>
+
+      <div>
+        {{ editorState.getObjectCountAndLimit(obj.id).count }} / {{ editorState.getObjectCountAndLimit(obj.id).limit }}
+      </div>
       }
     </div>
   </section>
-
-  <!-- =========================
-       Edit / delete actions
-       ========================= -->
-  <!-- <section class="section">
-    <h3>Édition</h3>
-
-    !-- Show delete button ONLY when:
-         - Mouse tool is active
-         - A cell with an object is selected --
-    @if (
-    editorState.selectedTool() === 'mouse' &&
-    editorState.selectedCell()?.objectId
-    ) {
-
-    <button type="button" class="btn danger full" (click)="editorState.removeObjectAtSelectedCell()">
-      Supprimer l’objet
-    </button>
-
-    <small class="muted">
-      Sélectionne une case (outil Souris) pour supprimer l’objet.
-    </small>
-
-    } @else {
-
-    !-- Contextual hint when deletion is not available --
-    <small class="muted">
-      Utilise l’outil Souris et clique une case contenant un objet.
-    </small>
-    }
-  </section>
-</div> -->
+</div>

@@ -51,7 +51,7 @@ export class EditorCanvasComponent {
     this.editorState = editorState;
   }
 
-  onCellMouseEnter(index: number): void {
+  private onCellMouseEnter(index: number): void {
     // Drag-paint behavior:
     // - Only active when isPainting = true (set on mousedown)
     // - We restrict drag painting to tiles (not objects)
@@ -97,7 +97,7 @@ export class EditorCanvasComponent {
     event.preventDefault();
   }
 
-  onCellMouseDown(index: number, event: MouseEvent): void {
+  private onCellMouseDown(index: number, event: MouseEvent): void {
     // Prevent text selection
     event.preventDefault();
 
@@ -135,7 +135,7 @@ export class EditorCanvasComponent {
     }
   }
 
-  onCellMouseUp(): void {
+  private onCellMouseUp(): void {
     // Stop drag painting when mouse is released anywhere inside the grid
     this.isPainting = false;
 
