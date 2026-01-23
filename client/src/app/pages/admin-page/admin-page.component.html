@@ -1,1 +1,17 @@
-<div></div>
+<main class="page">
+  <h1 class="title">Administration</h1>
+  <div class="actions">
+    <app-button
+      label="Creer un nouveau jeu"
+      variant="primary"
+      (click)="openCreateGameDialog()"
+    ></app-button>
+  </div>
+
+  @if (isCreateDialogOpen) {
+    <app-create-game-dialog
+      (cancel)="closeCreateGameDialog()"
+      (confirm)="handleCreateGameDialog()"
+    ></app-create-game-dialog>
+  }
+</main>
