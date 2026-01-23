@@ -147,11 +147,9 @@ export class EditorCanvasComponent {
     this.activeButton = null;
   }
 
-  onGridLeave(): void {
-    // Safety: if user drags outside the grid, stop painting
-    this.isPainting = false;
-
-    // Reset active button
-    this.activeButton = null;
+  // Global mouseup listener to catch releases outside the grid
+  @HostListener('document:mouseup')
+  onDocumentMouseUp(): void {
+    this.onCellMouseUp();
   }
 }
