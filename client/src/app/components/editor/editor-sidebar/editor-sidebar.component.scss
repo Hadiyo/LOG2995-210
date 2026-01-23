@@ -195,10 +195,18 @@
     height: 28px;
     border-radius: 10px;
     border: 1px solid var(--border-soft);
+    
+    /* Background image styling */
+    background-size: contain;   
 }
 
 .label {
     font-size: 13px;
+}
+
+/* Flexible spacer to push counter to the right */
+.spacer {
+    flex: 1;
 }
 
 

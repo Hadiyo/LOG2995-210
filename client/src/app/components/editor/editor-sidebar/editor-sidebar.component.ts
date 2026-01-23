@@ -59,18 +59,15 @@ export class EditorSidebarComponent {
        toggling open/closed handled by editor logic
      ========================================================= */
   tiles: TilePaletteItem[] = [
-    { id: TileType.WALL, label: 'Mur', description: 'Tuile non traversable.', cssVar: '--tile-wall' },
+    { id: TileType.WALL, label: 'Mur', description: 'Tuile non traversable.', cssVar: '--tile-wall-img' },
     {
       id: TileType.DOOR,
       label: 'Porte (toggle)',
       description: 'Une porte doit se situer entre 2 murs. Elle peut être ouverte ou fermée.',
-      cssVar: '--tile-door-closed',
+      cssVar: '--tile-door-closed-img',
     },
-    { id: TileType.WATER, label: 'Eau', description: 'Tuile traversable qui prend deux points de mouvement.', cssVar: '--tile-water' },
-    { id: TileType.ICE, label: 'Glace', description: 'Tuile traversable qui prend aucun point de mouvement.', cssVar: '--tile-ice' },
-
-    // Optional: allows painting a normal floor tile explicitly
-    { id: TileType.DIRT, label: 'Sol', description: 'Tuile de base', cssVar: '--bg-panel-soft' },
+    { id: TileType.WATER, label: 'Eau', description: 'Tuile traversable qui prend deux points de mouvement.', cssVar: '--tile-water-img' },
+    { id: TileType.ICE, label: 'Glace', description: 'Tuile traversable qui prend aucun point de mouvement.', cssVar: '--tile-ice-img' },
   ];
 
   /* =========================================================
@@ -82,18 +79,18 @@ export class EditorSidebarComponent {
       id: ObjectType.START,
       label: 'Point de départ',
       description: "Un joueur est assigné aléatoirement un point de départ au début d'une partie.",
-      cssVar: '--object-spawn',
+      cssVar: '--object-spawn-img',
     },
-    { id: ObjectType.FLAG, label: 'Drapeau', description: "L'objectif principal de mode CTF.", cssVar: '--object-flag' },
+    { id: ObjectType.FLAG, label: 'Drapeau', description: "L'objectif principal de mode CTF.", cssVar: '--object-flag-img' },
     {
       id: ObjectType.REGEN, label: 'Sanctuaire de soin',
       description: `Activer pour regagner 2 points de vie au joueur.`,
-      cssVar: '--object-heal',
+      cssVar: '--object-heal-img',
     },
     {
       id: ObjectType.ARENA, label: 'Sanctuaire de combat',
       description: `Activer pour un bonus temporaire de +1 à l'attaque et à la défense. Ce bonus reste jusqu'à la fin de son prochain tour.`,
-      cssVar: '--object-fight',
+      cssVar: '--object-fight-img',
     },
   ];
 }

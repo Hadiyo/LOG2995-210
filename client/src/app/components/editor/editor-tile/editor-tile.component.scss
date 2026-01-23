@@ -2,7 +2,7 @@
    Individual grid cell
    ========================= */
 :host {
-  display: contents;
+    display: contents;
 }
 
 .cell {
@@ -36,33 +36,43 @@
 
     border-radius: 0;
     background: transparent;
+
+    /* Background image styling */
+    background-size: contain;
 }
 
 /* Terrain tile types */
+/* Using background-color as fallback if images fail to load */
 .tile[data-tile='WALL'] {
-    background: var(--tile-wall);
+    background-color: var(--tile-wall);
+    background-image: var(--tile-wall-img);
 }
 
 .tile[data-tile='WATER'] {
-    background: var(--tile-water);
+    background-color: var(--tile-water);
+    background-image: var(--tile-water-img);
 }
 
 .tile[data-tile='ICE'] {
-    background: var(--tile-ice);
+    background-color: var(--tile-ice);
+    background-image: var(--tile-ice-img);
 }
 
 /* Base tile (default terrain) */
 .tile[data-tile='DIRT'] {
-    background: transparent;
+    background-color: transparent;
+    background-image: var(--tile-dirt-img);
 }
 
 /* Door states based on walkability */
 .tile[data-tile='DOOR'][data-door-open='true'] {
-    background: var(--tile-door-open);
+    background-color: var(--tile-door-open);
+    background-image: var(--tile-door-open-img);
 }
 
 .tile[data-tile='DOOR'][data-door-closed='true'] {
-    background: var(--tile-door-closed);
+    background-color: var(--tile-door-closed);
+    background-image: var(--tile-door-closed-img);
 }
 
 
@@ -77,36 +87,32 @@
     pointer-events: none;
     z-index: 3;
 
-    /* Default object size: centered 1x1 marker */
-    width: 34%;
-    height: 34%;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-
-    /* Circular marker for small objects */
-    border-radius: 999px;
-
-    /* Outline to separate object from tile background */
-    box-shadow: 0 0 0 2px var(--bg-panel);
+    /* Background image styling */
+    background-size: contain;   
 }
 
 
 /* Object type colors */
 .obj[data-obj='START'] {
-    background: var(--object-spawn);
+    background-image: var(--object-spawn-img);
 }
 
 .obj[data-obj='FLAG'] {
-    background: var(--object-flag);
+    /* Make flag smaller and centered */
+    width: 70%;
+    height: 70%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background-image: var(--object-flag-img);
 }
 
 .obj[data-obj='REGEN'] {
-    background: var(--object-heal);
+    background-image: var(--object-heal-img);
 }
 
 .obj[data-obj='ARENA'] {
-    background: var(--object-fight);
+    background-image: var(--object-fight-img);
 }
 
 
