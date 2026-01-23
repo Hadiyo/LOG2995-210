@@ -16,16 +16,30 @@
     /* Borders */
     --border-soft: rgba(255, 255, 255, 0.08);
 
-    /* Tiles */
+    /* Tiles - keeping colors as fallbacks */
     --tile-wall: #4b5563;
     --tile-door-open: var(--accent-primary);
     --tile-door-closed: #2f4a7a;
     --tile-water: #3bb3ff;
     --tile-ice: #bfe8ff;
 
-    /* Objects */
+    /* Objects - keeping colors as fallbacks */
     --object-spawn: #7cffa6;
     --object-flag: #ffd166;
     --object-heal: #ff77aa;
     --object-fight: var(--accent-danger);
+
+    /* Tiles - images */
+    --tile-wall-img: url('/assets/tiles/wall.png');
+    --tile-water-img: url('/assets/tiles/water.png');
+    --tile-ice-img: url('/assets/tiles/ice.png');
+    --tile-dirt-img: url('/assets/tiles/dirt.png');
+    --tile-door-open-img: url('/assets/tiles/door_open.png');
+    --tile-door-closed-img: url('/assets/tiles/door_closed.png');
+
+    /* Objects – images */
+    --object-spawn-img: url('/assets/objects/start.png');
+    --object-flag-img: url('/assets/objects/flag.png');
+    --object-heal-img: url('/assets/objects/regen.png');
+    --object-fight-img: url('/assets/objects/arena.png');
 }
