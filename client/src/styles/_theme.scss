@@ -29,4 +29,18 @@
     --object-flag: #ffd166;
     --object-heal: #ff77aa;
     --object-fight: var(--accent-danger);
+
+    /* Tiles - images */
+    --tile-wall-img: url('/assets/tiles/wall.png');
+    --tile-water-img: url('/assets/tiles/water.png');
+    --tile-ice-img: url('/assets/tiles/ice.png');
+    --tile-dirt-img: url('/assets/tiles/dirt.png');
+    --tile-door-open-img: url('/assets/tiles/door_open.png');
+    --tile-door-closed-img: url('/assets/tiles/door_closed.png');
+
+    /* Objects - images */
+    --object-spawn-img: url('/assets/objects/start.png');
+    --object-flag-img: url('/assets/objects/flag.png');
+    --object-heal-img: url('/assets/objects/regen.png');
+    --object-fight-img: url('/assets/objects/arena.png');
 }
