@@ -1,0 +1,117 @@
+:host {
+  display: block;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 10, 18, 0.7);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.dialog {
+  width: min(640px, 92vw);
+  background: rgba(10, 16, 28, 0.95);
+  border: 1px solid rgba(126, 232, 255, 0.2);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  color: var(--text-main);
+}
+
+.dialog-header {
+  padding: 24px 28px 8px;
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 28px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 12px 28px 24px;
+}
+
+.section-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(247, 244, 239, 0.8);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(126, 232, 255, 0.15);
+  background: rgba(13, 22, 36, 0.7);
+  cursor: pointer;
+}
+
+.option input {
+  margin-top: 4px;
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.option-title {
+  font-weight: 600;
+}
+
+.option-meta {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-family: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+}
+
+.actions button[type='submit'] {
+  background: linear-gradient(135deg, #7ee8ff, #1b7bff);
+  color: rgba(247, 244, 239, 0.95);
+}
+
+.actions button.ghost {
+  background: rgba(10, 10, 12, 0.5);
+  color: rgba(247, 244, 239, 0.7);
+  border: 1px solid rgba(126, 232, 255, 0.2);
+}
+
+.actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
