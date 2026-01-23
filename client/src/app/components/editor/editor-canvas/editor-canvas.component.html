@@ -6,7 +6,7 @@
          - Used by CSS Grid to size the map
          - Mouse events here manage drag interactions -->
     <div class="grid" [style.--cols]="editorState.cols()" [style.--rows]="editorState.rows()"
-        (mouseup)="onCellMouseUp()" (mouseleave)="onGridLeave()">
+        (mouseleave)="onGridLeave()">
 
         <!-- Loop through every cell in the editor state
              - track $index for performance -->
@@ -15,6 +15,7 @@
                 [index]="$index"
                 [tile]="cell"
                 [object]="editorState.getObjectAtIndex($index)"
+                (contextmenu)="onContextMenu($event)" 
                 (tileEvent)="handleTileEvent($event)">
             </app-editor-tile>
         }
@@ -24,7 +25,7 @@
          - Displays current tool selections
          - Helps with usability and debugging -->
     <div class="hint">
-        <span>Tool: {{ editorState.selectedTool() }}</span>
+        <!-- <span>Tool: {{ editorState.selectedTool() }}</span> -->
         <span>Tile: {{ editorState.selectedTileType() ?? '—' }}</span>
         <span>Obj: {{ editorState.selectedObjectType() ?? '—' }}</span>
     </div>
