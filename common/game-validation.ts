@@ -82,13 +82,15 @@ const getInvalidDoorPositions = (cellsByKey: Map<string, Cell>): Vec2[] => {
         const up = getTileType(cellsByKey, x, y - 1);
         const down = getTileType(cellsByKey, x, y + 1);
 
-        const horizontalWalls =
-            left !== undefined && right !== undefined && isWallTile(left) && isWallTile(right);
-        const verticalWalls = up !== undefined && down !== undefined && isWallTile(up) && isWallTile(down);
-        const horizontalTerrain =
-            left !== undefined && right !== undefined && isTerrainTile(left) && isTerrainTile(right);
-        const verticalTerrain =
-            up !== undefined && down !== undefined && isTerrainTile(up) && isTerrainTile(down);
+        if (left === undefined || right === undefined || up === undefined || down === undefined) {
+            invalid.push({ x, y });
+            continue;
+        }
+
+        const horizontalWalls = isWallTile(left) && isWallTile(right);
+        const verticalWalls = isWallTile(up) && isWallTile(down);
+        const horizontalTerrain = isTerrainTile(left) && isTerrainTile(right);
+        const verticalTerrain = isTerrainTile(up) && isTerrainTile(down);
 
         const validPlacement = (horizontalWalls && verticalTerrain) || (verticalWalls && horizontalTerrain);
         if (!validPlacement) {
