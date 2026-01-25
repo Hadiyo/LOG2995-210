@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 
 import { GameMode, MapSize } from '@common/enum';
+import { validateGame } from '@common/game-validation';
 import { EditorStateService } from 'src/app/services/editor-state.service';
 
 @Component({
@@ -60,6 +61,9 @@ export class EditorTopbarComponent {
     { value: MapSize.L, label: '20×20' },
   ] as const;
 
+  readonly hasAttemptedSave = signal(false);
+  readonly validationResult = computed(() => validateGame(this.editorState.editorMap()));
+
   /* =========================================================
      Actions
      ========================================================= */
@@ -81,10 +85,15 @@ export class EditorTopbarComponent {
   }
 
   /**
-   * Save action placeholder.
+   * Save action.
    */
   onSave(): void {
-    // left blank for now
+    this.hasAttemptedSave.set(true);
+    const result = this.validationResult();
+
+    if (!result.isValid) return;
+
+    // TODO: wire up save action once persistence is implemented.
   }
 
   /* =========================================================

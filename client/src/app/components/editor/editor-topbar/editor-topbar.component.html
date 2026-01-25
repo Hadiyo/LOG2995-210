@@ -60,22 +60,27 @@
 
 
   <!-- =========================
-       Save action
+       Save action + validation status
        ========================= -->
-  <button
-    type="button"
-    class="icon-btn primary"
-    (click)="onSave()"
-    title="Enregistrer"
-    aria-label="Enregistrer"
-  >
-    <!-- Save icon -->
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Zm0 2.5L19.5 8H17V5.5ZM7 5h8v5H7V5Zm12 14H5V5h1v7h10V5h.5L19 7.5V19Z"
-      />
-    </svg>
-  </button>
+  @if (validationResult(); as result) {
+    <button
+      type="button"
+      class="icon-btn"
+      [class.success]="result.isValid"
+      [class.invalid]="!result.isValid"
+      (click)="onSave()"
+      title="Enregistrer"
+      aria-label="Enregistrer"
+    >
+      <!-- Save icon -->
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Zm0 2.5L19.5 8H17V5.5Z
+             M7 5h8v5H7V5Zm12 14H5V5h1v7h10V5h.5L19 7.5V19Z"
+        />
+      </svg>
+    </button>
+  }
 
 
   <!-- =========================
@@ -116,3 +121,14 @@
   </button>
 
 </div>
+
+@if (hasAttemptedSave() && !validationResult().isValid) {
+  <div class="validation-panel" role="alert" aria-live="polite">
+    <div class="validation-title">Problemes de validation</div>
+    <ul class="validation-list">
+      @for (issue of validationResult().issues; track issue.code) {
+        <li>{{ issue.message }}</li>
+      }
+    </ul>
+  </div>
+}
