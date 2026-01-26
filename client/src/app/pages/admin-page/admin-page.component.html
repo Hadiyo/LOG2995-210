@@ -11,7 +11,7 @@
   @if (isCreateDialogOpen) {
     <app-create-game-dialog
       (cancel)="closeCreateGameDialog()"
-      (confirm)="handleCreateGameDialog()"
+      (confirm)="onCreateGameDialogConfirm($event)"
     ></app-create-game-dialog>
   }
 </main>
