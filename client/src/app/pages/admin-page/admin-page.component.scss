@@ -1,1 +1,35 @@
-/* Intentionally empty */
+:host {
+  display: block;
+  min-height: 100vh;
+  color: var(--text-main);
+  background: var(--bg-main);
+}
+
+.page {
+  box-sizing: border-box;
+  min-height: 100svh;
+  padding: 56px 6vw 40px;
+}
+
+.title {
+  display: flex;
+  margin: 0;
+  font-size: clamp(28px, 4vw, 44px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+  align-items: center;
+  justify-content: center;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+@media (max-height: 720px) {
+  .page {
+    padding: 24px 6vw 20px;
+  }
+}
