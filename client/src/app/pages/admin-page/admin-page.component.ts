@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 import { CreateGameDialogComponent } from '@app/components/create-game-dialog/create-game-dialog.component';
-import { CreateGameDialogResult } from '@app/interfaces/create-game-dialog';
+import { MapConfig } from '@app/interfaces/create-game-dialog';
+import { AdminStateService } from '@app/services/admin-state.service';
 
 @Component({
   selector: 'app-admin-page',
@@ -11,19 +13,17 @@ import { CreateGameDialogResult } from '@app/interfaces/create-game-dialog';
   styleUrl: './admin-page.component.scss',
 })
 export class AdminPageComponent {
-  isCreateDialogOpen = false;
-  createGameDialogResult?: CreateGameDialogResult;
+  constructor(private router: Router) {}
+  protected isCreateDialogOpen = false;
+  private adminStateService = inject(AdminStateService);
 
-  openCreateGameDialog(): void {
-    this.isCreateDialogOpen = true;
+  protected onCreateGameDialogConfirm(result: MapConfig): void {
+    this.adminStateService.setMapProperties(result);
+    this.toggleGameDialog();
+    this.router.navigate(['/editor']);
   }
 
-  closeCreateGameDialog(): void {
-    this.isCreateDialogOpen = false;
-  }
-
-  onCreateGameDialogConfirm(result: CreateGameDialogResult): void {
-    this.createGameDialogResult = result;
-    this.closeCreateGameDialog();
+  protected toggleGameDialog(): void {
+    this.isCreateDialogOpen = !this.isCreateDialogOpen;
   }
 }

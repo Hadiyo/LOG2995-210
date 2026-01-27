@@ -1,5 +1,5 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { EditorApiService } from '@app/services/editor-api.service';
+import { Injectable, computed, signal } from '@angular/core';
+import { MapConfig } from '@app/interfaces/create-game-dialog';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
 import type { EditorCell, EditorMap, MapObject, Vec2 } from '@common/interface';
 
@@ -72,8 +72,6 @@ export class EditorStateService {
     /* =========================================================
        Public API — palette selection
        ========================================================= */
-    private editorApi = inject(EditorApiService);
-
     /**
      * Select a tile to paint:
      * - clears object selection
@@ -494,6 +492,17 @@ export class EditorStateService {
     /* =========================================================
        Map creation & rule helpers
        ========================================================= */
+    /**
+     * Creates a fresh empty editor map with a given mapSize and mode
+     * - Used on initialization, resize, and reset.
+     */
+    generateMap(mapConfig: MapConfig) {
+        const newMap = this.createEmptyMap({
+            size: mapConfig.size,
+            mode: mapConfig.mode,
+        });
+        this.editorMap.set(newMap); // update the readonly signal
+    }
 
     /**
      * Creates a fresh empty editor map.
