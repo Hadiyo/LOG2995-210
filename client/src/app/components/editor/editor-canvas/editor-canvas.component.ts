@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { EditorTileComponent } from '@app/components/editor/editor-tile/editor-tile.component';
-import { MouseEventType } from '@common/enum';
+import { MouseButton, MouseEventType } from '@common/enum';
 import { TileEvent } from '@common/types';
 import { EditorStateService } from 'src/app/services/editor-state.service';
 
@@ -17,6 +17,29 @@ export class EditorCanvasComponent {
   // Drag-paint state (true while mouse is held down and tile tool is active)
   private isPainting = false;
 
+  // Used to track SHIFT key state for right-click removal of objects
+  isShiftPressed = false;
+
+  // Used to track mouse button state globally
+  activeButton: MouseButton | null = null;
+
+  // Track state of shift key
+  @HostListener('document:keydown.shift')
+  onShiftDown(): void {
+    this.isShiftPressed = true;
+  }
+
+  @HostListener('document:keyup.shift')
+  onShiftUp(): void {
+    this.isShiftPressed = false;
+  }
+
+  // Assume all keys are released when window loses focus
+  @HostListener('window:blur')
+  onBlur() {
+    this.isShiftPressed = false;
+  }
+
   /* =========================================================
      Dependencies
      ========================================================= */
@@ -31,11 +54,26 @@ export class EditorCanvasComponent {
   /* =========================================================
      Tile Event Handler
      ========================================================= */
+
+  private onCellMouseEnter(index: number): void {
+    // Drag-paint behavior:
+    // - Only active when isPainting = true (set on mousedown)
+    // - We restrict drag painting to tiles (not objects)
+    if (this.isPainting) {
+      switch (this.activeButton) {
+        case MouseButton.Left:
+          this.editorState.applyAtIndex(index);
+          break;
+        case MouseButton.Right:
+          if (this.isShiftPressed) return; // Disables drag-erase for objects
+          this.editorState.eraseTileAtIndex(index);
+          break;
+      }
+    }
+  }
+
   handleTileEvent(event: TileEvent) {
     switch (event.type) {
-      case MouseEventType.CLICK:
-        this.onCellClick(event.index);
-        break;
       case MouseEventType.UP:
         this.onCellMouseUp();
         break;
@@ -48,69 +86,70 @@ export class EditorCanvasComponent {
     }
   }
 
-  /* =========================================================
-     Click (single action)
-     ========================================================= */
-  private onCellClick(index: number): void {
-    // Click is ONLY for the mouse tool (inspect).
-    // Applicator uses mousedown + drag painting, so we do nothing here.
-    if (this.editorState.selectedTool() === 'mouse') {
-      this.editorState.inspectCellByIndex(index);
-    }
-  }
-
-  /* =========================================================
-     Drag interactions (paint tiles)
-     ========================================================= */
-  private onCellMouseEnter(index: number): void {
-    // Drag-paint behavior:
-    // - Only active when isPainting = true (set on mousedown)
-    // - We restrict drag painting to tiles (not objects)
-    if (this.isPainting) {
-      this.editorState.applyAtIndex(index);
-    }
-  }
-
   /**
    * Returns true when we are in a mode that supports drag painting for tiles.
    * Used to conditionally enable drag painting on mousedown.
    */
   private canPaintTiles(): boolean {
     return (
-      this.editorState.selectedTool() === 'applicator' &&
       this.editorState.selectedTileType() !== null
     );
   }
 
-  onCellMouseDown(index: number, event: MouseEvent): void {
-    // Only respond to left-click (0 = main button)
-    if (event.button !== 0) return;
+  // Disables context menu on right click
+  onContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+  }
 
+  private onCellMouseDown(index: number, event: MouseEvent): void {
     // Prevent text selection
     event.preventDefault();
 
-    // Mouse tool: treat press like inspect
-    if (this.editorState.selectedTool() === 'mouse') {
-      this.editorState.inspectCellByIndex(index);
-      return;
+    this.activeButton = event.button;
+
+    // Respond to left-click (0 = main button)
+    switch (this.activeButton) {
+      case MouseButton.Left:
+        // Enable drag painting ONLY if we're applying tiles
+        this.isPainting = this.canPaintTiles();
+
+        // Always apply once immediately on press:
+        // - supports normal click placement
+        // - gives instant feedback even before dragging
+        this.editorState.applyAtIndex(index);
+
+        break;
+
+      case MouseButton.Right:
+        // SHIFT + Right-click: remove object at index
+        if (this.isShiftPressed) {
+          this.editorState.eraseObjectAtIndex(index);
+          return;
+        }
+
+        // Right-click: remove tile at index
+        // Enables drag-erase behavior for tiles
+        this.isPainting = true;
+        this.editorState.eraseTileAtIndex(index);
+
+        break;
+
+      default:
+        return;
     }
-
-    // Enable drag painting ONLY if we're applying tiles
-    this.isPainting = this.canPaintTiles();
-
-    // Always apply once immediately on press:
-    // - supports normal click placement
-    // - gives instant feedback even before dragging
-    this.editorState.applyAtIndex(index);
   }
 
-  onCellMouseUp(): void {
+  private onCellMouseUp(): void {
     // Stop drag painting when mouse is released anywhere inside the grid
     this.isPainting = false;
+
+    // Reset active button
+    this.activeButton = null;
   }
 
-  onGridLeave(): void {
-    // Safety: if user drags outside the grid, stop painting
-    this.isPainting = false;
+  // Global mouseup listener to catch releases outside the grid
+  @HostListener('document:mouseup')
+  onDocumentMouseUp(): void {
+    this.onCellMouseUp();
   }
 }

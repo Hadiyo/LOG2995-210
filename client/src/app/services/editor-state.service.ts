@@ -22,14 +22,6 @@ const SANCTUARY_LIMITS_BY_SIZE: Record<MapSize, number> = {
 const FLAG_LIMIT = 1;
 
 /**
- * Local UI tool IDs for the editor
- * - 'mouse': inspect only
- * - 'applicator': place tiles/objects
- * - 'eraser': remove objects (only objects here, not tiles)
- */
-export type EditorToolId = 'mouse' | 'applicator' | 'eraser';
-
-/**
  * Snapshot of what the user is currently inspecting (mouse tool)
  * Stored so Sidebar / UI can show contextual actions like "delete object".
  */
@@ -48,7 +40,7 @@ export class EditorStateService {
        ========================================================= */
 
     // Which editor tool is currently active
-    readonly selectedTool = signal<EditorToolId>('mouse');
+    // readonly selectedTool = signal<EditorToolId>('mouse');
 
     /**
      * We select WHAT we want to apply:
@@ -78,13 +70,9 @@ export class EditorStateService {
     readonly objects = computed(() => this.editorMap().objects);
 
     /* =========================================================
-       Public API — tool + palette selection
+       Public API — palette selection
        ========================================================= */
     private editorApi = inject(EditorApiService);
-
-    selectTool(tool: EditorToolId): void {
-        this.selectedTool.set(tool);
-    }
 
     /**
      * Select a tile to paint:
@@ -94,7 +82,7 @@ export class EditorStateService {
     selectTile(tileType: TileType): void {
         this.selectedTileType.set(tileType);
         this.selectedObjectType.set(null);
-        this.selectedTool.set('applicator');
+        // this.selectedTool.set('applicator');
     }
 
     /**
@@ -109,7 +97,7 @@ export class EditorStateService {
 
         this.selectedObjectType.set(objectType);
         this.selectedTileType.set(null);
-        this.selectedTool.set('applicator');
+        // this.selectedTool.set('applicator');
     }
 
     /**
@@ -119,7 +107,7 @@ export class EditorStateService {
     clearSelection(): void {
         this.selectedTileType.set(null);
         this.selectedObjectType.set(null);
-        this.selectedTool.set('mouse');
+        // this.selectedTool.set('mouse');
     }
 
     /* =========================================================
@@ -191,45 +179,28 @@ export class EditorStateService {
     }
 
     /* =========================================================
+       Public API — called by Sidebar
+       ========================================================= */
+
+    /** 
+    * Get count of object of a given type and its limit
+    */
+    getObjectCountAndLimit(type: ObjectType): { count: number; limit: number } {
+        const m = this.editorMap();
+        const count = m.objects.filter((o) => o.type === type).length;
+        const limit = this.getObjectLimit(type, m.size, m.mode);
+        return { count, limit };
+    }
+
+    /* =========================================================
        Public API — called by Canvas
        ========================================================= */
 
     /**
-     * Mouse tool: inspect a cell and store a snapshot for UI.
-     * - also detects if an object covers this cell (including 2x2 objects)
-     */
-    inspectCellByIndex(index: number): void {
-        const map = this.editorMap();
-        const cell = map.map[index];
-        if (!cell) return;
-
-        const pos = cell.position;
-        const obj = this.findObjectCoveringPosition(pos);
-
-        this.selectedCell.set({
-            index,
-            position: pos,
-            tileType: cell.tileType,
-            objectType: obj ? obj.type : null,
-            objectId: obj ? obj.id : null,
-        });
-    }
-
-    /**
      * Applicator tool entry point:
-     * - if eraser: remove object(s) that cover this cell
-     * - if applicator: apply selected tile OR object
+     * Applies either a tile or an object at the given index
      */
     applyAtIndex(index: number): void {
-        const tool = this.selectedTool();
-
-        if (tool === 'eraser') {
-            this.eraseObjectAtIndex(index);
-            return;
-        }
-
-        if (tool !== 'applicator') return;
-
         const tileType = this.selectedTileType();
         const objectType = this.selectedObjectType();
         if (!tileType && !objectType) return;
@@ -264,10 +235,7 @@ export class EditorStateService {
             const pos = cell.position;
 
             // Keep only objects that DO NOT cover the clicked cell
-            const remaining = m.objects.filter((o) => {
-                const covered = this.getCoveredPositions(o.position, o.size);
-                return !covered.some((p) => p.x === pos.x && p.y === pos.y);
-            });
+            const remaining = this.removeObjectByPosition(pos);
 
             return { ...m, objects: remaining };
         });
@@ -276,22 +244,13 @@ export class EditorStateService {
     }
 
     /**
-     * Remove object via the currently selected inspected cell.
-     * Used by Sidebar "Supprimer l’objet" action.
+     * Eraser behavior:
+     * - Removes tiles by resetting to default DIRT
      */
-    removeObjectAtSelectedCell(): void {
-        const selected = this.selectedCell();
-        if (!selected?.objectId) return;
-
-        this.editorMap.update((m) => ({
-            ...m,
-            objects: m.objects.filter((o) => o.id !== selected.objectId),
-        }));
+    eraseTileAtIndex(index: number): void {
+        this.applyTileAtIndex(index, TileType.DIRT);
 
         this.refreshOccupied();
-
-        // Refresh inspection after deletion so UI stays accurate
-        this.inspectCellByIndex(selected.index);
     }
 
     /* =========================================================
@@ -325,6 +284,12 @@ export class EditorStateService {
                 }
             }
 
+            let existingObjects = m.objects;
+
+            if (!nextWalkable) {
+                existingObjects = this.removeObjectByPosition(cell.position);
+            }
+
             const updated: EditorCell = {
                 ...cell,
                 tileType: nextTileType,
@@ -335,7 +300,7 @@ export class EditorStateService {
             const newMap = m.map.slice();
             newMap[index] = updated;
 
-            return { ...m, map: newMap };
+            return { ...m, map: newMap, objects: existingObjects };
         });
 
         // Occupancy might change if tile became non-walkable under an object, etc.
@@ -518,6 +483,14 @@ export class EditorStateService {
         return true;
     }
 
+    // Filter out object to remove
+    private removeObjectByPosition(position: Vec2): MapObject[] {
+        return this.editorMap().objects.filter((o) => {
+            const covered = this.getCoveredPositions(o.position, o.size);
+            return !covered.some((p) => p.x === position.x && p.y === position.y);
+        });
+    }
+
     /* =========================================================
        Map creation & rule helpers
        ========================================================= */
@@ -596,7 +569,7 @@ export class EditorStateService {
             case TileType.DOOR:
                 return false; // default closed
             case TileType.WATER:
-                return false;
+                return true;
             case TileType.ICE:
                 return true;
             case TileType.DIRT:

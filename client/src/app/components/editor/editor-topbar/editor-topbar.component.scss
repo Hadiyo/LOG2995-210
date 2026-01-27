@@ -137,8 +137,18 @@
     border-color: var(--accent-primary);
 }
 
+.icon-btn.success {
+    border-color: var(--accent-success);
+    color: var(--accent-success);
+}
+
 .icon-btn.danger {
     border-color: var(--accent-danger);
+}
+
+.icon-btn.invalid {
+    border-color: var(--accent-danger);
+    color: var(--accent-danger);
 }
 
 /* SVG icons inherit button color */
@@ -146,4 +156,34 @@
     width: 18px;
     height: 18px;
     fill: currentColor;
+}
+
+
+/* =========================
+   Validation summary (save-time)
+   ========================= */
+.validation-panel {
+    margin: 8px 16px 0;
+    padding: 10px 12px;
+
+    border: 1px solid var(--accent-danger);
+    border-radius: 12px;
+    background: rgba(255, 107, 107, 0.08);
+}
+
+.validation-title {
+    font-size: 12px;
+    color: var(--accent-danger);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.validation-list {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-main);
 }
