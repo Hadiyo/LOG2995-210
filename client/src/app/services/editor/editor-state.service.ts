@@ -188,14 +188,16 @@ export class EditorStateService {
     loadExistingEditorMap(mapId: string): void {
         this.api.getEditorMap(mapId).subscribe({
             next: map => {
+                // Only called if HTTP status is 200–299
                 this.editorMap.set(map);
                 this.errorMessage.set(null);
             },
-            error: () => {
+            error: err => {
+                // Called for HTTP status 404, 400, 500, etc.
                 this.editorMap.set(this.mapFactory.createEmptyMap());
                 showTemporaryMessage(
                     this.errorMessage,
-                    'Impossible de charger la carte. Une carte par défaut a été créée.',
+                    `Impossible de charger la carte. ${err}. Une carte par défaut a été créée.`,
                     TEMP_ERROR_DURATION_8000MS,
                 );
             },

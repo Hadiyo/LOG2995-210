@@ -17,7 +17,7 @@ export class EditorApiService {
      * @returns EditorMap interface
      */
     getEditorMap(mapId: string): Observable<EditorMap> {
-        return this.http.get<EditorMap>(`${this.serverUrl}/{gateway-name}/${mapId}`);
+        return this.http.get<EditorMap>(`${this.serverUrl}/editor/${mapId}`);
     }
 
 }
