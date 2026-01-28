@@ -40,7 +40,8 @@ export class AdminPageComponent {
    * to retrieve the given map for edition
    * @param mapId id of the map to retrieve for the editor view
    */
-  protected onEditExistingMap(mapId: number): void {
+  protected onEditExistingMap(mapId: string): void {
     this.adminService.fetchExistingMapForEditor(mapId);
+    this.router.navigate(['./editor']);
   }
 }

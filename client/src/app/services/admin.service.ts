@@ -1,12 +1,11 @@
 import { inject, Injectable } from '@angular/core';
 import { MapConfig } from '@app/interfaces/create-game-dialog';
-import { EditorApiService } from './editor/editor-api.service';
 import { EditorStateService } from './editor/editor-state.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
     private editorStateService = inject(EditorStateService);
-    private editorApiService = inject(EditorApiService);
+
 
     /**
      * Calls the editor to set the initial map with the given parameters
@@ -18,11 +17,11 @@ export class AdminService {
     }
 
     /**
-     * Calls the editor API to fetch the map defined by the mapId
+     * Calls the editor state to fetch the map defined by the mapId
      * for the editor view
      * @param mapId map identification number
      */
-    fetchExistingMapForEditor(mapId: number): void {
-        this.editorApiService.getEditorMap(mapId);
+    fetchExistingMapForEditor(mapId: string): void {
+        this.editorStateService.loadExistingEditorMap(mapId);
     }
 }

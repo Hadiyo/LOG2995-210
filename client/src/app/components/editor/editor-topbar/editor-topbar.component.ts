@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, signal } from '@angular/core';
 
-import { GameMode, MapSize } from '@common/enum';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
+import { GameMode, MapSize } from '@common/enum';
 import { validateGame } from '@common/game-validation';
 
 @Component({
@@ -29,21 +29,7 @@ export class EditorTopbarComponent {
   /* =========================================================
      Dependencies
      ========================================================= */
-  // Central editor state (single source of truth)
-  readonly editorState: EditorStateService;
-
-  constructor(editorState: EditorStateService) {
-    this.editorState = editorState;
-  }
-
-  /* =========================================================
-     Tool selection
-     ========================================================= */
-  // Available editor tools (segmented control)
-  // readonly tools: { id: EditorToolId; label: string }[] = [
-  //   { id: 'mouse', label: 'Souris' },
-  //   { id: 'applicator', label: 'Applicateur' },
-  // ];
+  constructor(readonly editorState: EditorStateService) {}
 
   /* =========================================================
      Mode & size options
@@ -63,6 +49,7 @@ export class EditorTopbarComponent {
 
   readonly hasAttemptedSave = signal(false);
   readonly validationResult = computed(() => validateGame(this.editorState.editorMap()));
+  readonly errorMessage = computed(() => this.editorState.errorMessage());
 
   /* =========================================================
      Actions

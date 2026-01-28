@@ -1,26 +1,21 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapObject } from '@common/interface';
-
-// Types
-import type { SelectedCellInfo } from './types/selected-cell-info.type';
-
-// Geometry utils
-import { getCoveredPositions } from './utils/editor-geometry.util';
-
-// Services
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { MapConfig } from '@app/interfaces/create-game-dialog';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
+import { showTemporaryMessage, TEMP_ERROR_DURATION_8000MS } from '@common/error-handling';
+import type { EditorCell, EditorMap, MapObject } from '@common/interface';
+import { EditorApiService } from './editor-api.service';
 import { EditorMapFactoryService } from './editor-map-factory.service';
 import { EditorOccupancyService } from './editor-occupancy.service';
 import { EditorPlacementRulesService } from './editor-placement-rules.service';
+import type { SelectedCellInfo } from './types/selected-cell-info.type';
+import { getCoveredPositions } from './utils/editor-geometry.util';
 
 @Injectable({ providedIn: 'root' })
 export class EditorStateService {
-    constructor(
-        private occupancy: EditorOccupancyService,
-        private mapFactory: EditorMapFactoryService,
-        private rules: EditorPlacementRulesService,
-    ) {}
+    private readonly occupancy = inject(EditorOccupancyService);
+    private readonly mapFactory = inject(EditorMapFactoryService);
+    private readonly rules = inject(EditorPlacementRulesService);
+    private readonly api = inject(EditorApiService);
 
     /* =========================================================
        Editor UI selection state (signals)
@@ -39,6 +34,9 @@ export class EditorStateService {
 
     // Current inspected cell info (used when tool = 'mouse')
     readonly selectedCell = signal<SelectedCellInfo | null>(null);
+
+    // Error message
+    readonly errorMessage = signal<string | null>(null);
 
     /* =========================================================
        Editor map state (single source of truth)
@@ -151,6 +149,11 @@ export class EditorStateService {
         this.clearSelection();
     }
 
+    /**
+     * sets mode and size for a newly created map and changes local editorMap copy
+     * and changes local editorMap copy.
+     * @param mapConfig mode and size interface
+     */
     setMapModeSize(mapConfig: MapConfig): void {
         this.editorMap.set(
             this.mapFactory.createEmptyMap({
@@ -175,6 +178,28 @@ export class EditorStateService {
             }),
         );
         this.clearSelection();
+    }
+
+    /**
+     * Uses the EditorAPI to fetch an existing map from its id and handles
+     * map creation in case of fetching error.
+     * @param mapId 
+     */
+    loadExistingEditorMap(mapId: string): void {
+        this.api.getEditorMap(mapId).subscribe({
+            next: map => {
+                this.editorMap.set(map);
+                this.errorMessage.set(null);
+            },
+            error: () => {
+                this.editorMap.set(this.mapFactory.createEmptyMap());
+                showTemporaryMessage(
+                    this.errorMessage,
+                    'Impossible de charger la carte. Une carte par défaut a été créée.',
+                    TEMP_ERROR_DURATION_8000MS,
+                );
+            },
+        });
     }
 
     /* =========================================================
