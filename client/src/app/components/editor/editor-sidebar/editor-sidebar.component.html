@@ -1,17 +1,19 @@
 <!-- Sidebar container: editor controls -->
 <div class="sidebar">
-  <h2 class="title">Éditeur</h2>
 
   <!-- =========================
        Game metadata section
        ========================= -->
   <section class="section">
-    <h3>Jeu</h3>
 
     <!-- Game name field -->
     <label class="field">
-      <span>Nom</span>
-
+      <div class="field-header">
+        <span>Nom</span>
+        <small>
+          {{ editorState.editorMap().name.length }} / {{ nameMax }}
+        </small>
+      </div>
       <!-- Two-way style binding (manual)
            - Value comes from editor state
            - Changes are propagated via service -->
@@ -19,22 +21,22 @@
         [maxLength]="nameMax" placeholder="Nom du jeu" />
 
       <!-- Live character counter -->
-      <small>
-        {{ editorState.editorMap().name.length }} / {{ nameMax }}
-      </small>
+      
     </label>
 
     <!-- Game description field -->
     <label class="field">
-      <span>Description</span>
-
+      <div class="field-header">
+        <span>Description</span>
+        <small>
+          {{ editorState.editorMap().description.length }} / {{ descMax }}
+        </small>
+      </div>
       <textarea [ngModel]="editorState.editorMap().description" (ngModelChange)="editorState.setDescription($event)"
         [maxLength]="descMax" placeholder="Description du jeu" rows="3"></textarea>
 
       <!-- Live character counter -->
-      <small>
-        {{ editorState.editorMap().description.length }} / {{ descMax }}
-      </small>
+      
     </label>
   </section>
 
@@ -45,7 +47,7 @@
     <h3>Tuiles</h3>
 
     <!-- Palette of selectable tile types -->
-    <div class="palette">
+    <div class="palette palette--tiles">
       @for (tile of tiles; track tile.id) {
 
       <!-- Tile selection button -->

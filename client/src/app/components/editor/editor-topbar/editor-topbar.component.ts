@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, signal } from '@angular/core';
 
 import { GameMode, MapSize } from '@common/enum';
+import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { validateGame } from '@common/game-validation';
-import { EditorStateService } from 'src/app/services/editor-state.service';
 
 @Component({
   selector: 'app-editor-topbar',
