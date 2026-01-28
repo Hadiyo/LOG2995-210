@@ -81,7 +81,6 @@ export class EditorStateService {
 
         this.selectedObjectType.set(objectType);
         this.selectedTileType.set(null);
-        // this.selectedTool.set('applicator');
     }
 
     /**
@@ -91,7 +90,6 @@ export class EditorStateService {
     clearSelection(): void {
         this.selectedTileType.set(null);
         this.selectedObjectType.set(null);
-        // this.selectedTool.set('mouse');
     }
 
     /* =========================================================

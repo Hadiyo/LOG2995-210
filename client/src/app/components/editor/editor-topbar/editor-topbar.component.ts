@@ -1,5 +1,9 @@
+import { Overlay } from '@angular/cdk/overlay';
+import { ComponentPortal } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
 import { Component, computed, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 
 import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { GameMode, MapSize } from '@common/enum';
@@ -29,7 +33,20 @@ export class EditorTopbarComponent {
   /* =========================================================
      Dependencies
      ========================================================= */
-  constructor(readonly editorState: EditorStateService) {}
+  // Central editor state (single source of truth)
+  readonly editorState: EditorStateService;
+
+  // Router for redirection 
+  readonly router: Router;
+
+  // Overlay service for pop-up
+  readonly overlay: Overlay;
+
+  constructor(editorState: EditorStateService, router: Router, overlay: Overlay) {
+    this.editorState = editorState;
+    this.router = router;
+    this.overlay = overlay;
+  }
 
   /* =========================================================
      Mode & size options
@@ -54,6 +71,34 @@ export class EditorTopbarComponent {
   /* =========================================================
      Actions
      ========================================================= */
+
+  /**
+   * Return to admin view without saving
+   */
+  onBack(): void {
+    // Styling for pop-up overlay
+    const overlayRef = this.overlay.create({
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      positionStrategy: this.overlay.position().global().centerHorizontally().centerVertically(),
+    });
+
+    // Portal in the pop-up component
+    const portal = new ComponentPortal(PopUpComponent);
+    const ref = overlayRef.attach(portal);
+
+    // On close: close overlay
+    ref.instance.closePopUp.subscribe(() => overlayRef.dispose());
+
+    // On backdrop click: close overlay
+    overlayRef.backdropClick().subscribe(() => overlayRef.dispose());
+
+    // On confirm: close overlay and navigate back to admin
+    ref.instance.confirmPopUp.subscribe(() => {
+      overlayRef.dispose();
+      this.router.navigate(['/admin']);
+    });
+  }
 
   /**
    * Reset the entire map to its initial state.
@@ -81,27 +126,7 @@ export class EditorTopbarComponent {
     if (!result.isValid) return;
 
     // TODO: wire up save action once persistence is implemented.
-  }
-
-  /* =========================================================
-     Editor configuration
-     ========================================================= */
-
-  /**
-   * Update game mode.
-   * Centralized in EditorStateService to enforce
-   * mode-specific constraints (ex. CTF rules).
-   */
-  setMode(mode: GameMode): void {
-    this.editorState.setMode(mode);
-  }
-
-  /**
-   * Update map size.
-   * EditorStateService is responsible for resizing
-   * the grid and handling data migration if needed.
-   */
-  setSize(size: MapSize): void {
-    this.editorState.setSize(size);
+    // Redirection towards admin view if valid save
+    this.router.navigate(['/admin']);
   }
 }
