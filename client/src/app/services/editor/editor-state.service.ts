@@ -9,8 +9,8 @@ import type { SelectedCellInfo } from './types/selected-cell-info.type';
 import { getCoveredPositions } from './utils/editor-geometry.util';
 
 // Services
-import { EditorOccupancyService } from './editor-occupancy.service';
 import { EditorMapFactoryService } from './editor-map-factory.service';
+import { EditorOccupancyService } from './editor-occupancy.service';
 import { EditorPlacementRulesService } from './editor-placement-rules.service';
 
 @Injectable({ providedIn: 'root' })
@@ -19,7 +19,7 @@ export class EditorStateService {
         private occupancy: EditorOccupancyService,
         private mapFactory: EditorMapFactoryService,
         private rules: EditorPlacementRulesService,
-    ) { }
+    ) {}
 
     /* =========================================================
        Editor UI selection state (signals)
@@ -82,7 +82,6 @@ export class EditorStateService {
 
         this.selectedObjectType.set(objectType);
         this.selectedTileType.set(null);
-        // this.selectedTool.set('applicator');
     }
 
     /**
@@ -92,7 +91,6 @@ export class EditorStateService {
     clearSelection(): void {
         this.selectedTileType.set(null);
         this.selectedObjectType.set(null);
-        // this.selectedTool.set('mouse');
     }
 
     /* =========================================================
