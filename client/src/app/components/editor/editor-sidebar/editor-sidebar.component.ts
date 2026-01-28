@@ -3,7 +3,7 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { GameMode, ObjectType, TileType } from '@common/enum';
-import { EditorStateService } from 'src/app/services/editor-state.service';
+import { EditorStateService } from '@app/services/editor/editor-state.service';
 
 /**
  * Simple UI types for palette rendering
@@ -62,7 +62,7 @@ export class EditorSidebarComponent {
     { id: TileType.WALL, label: 'Mur', description: 'Tuile non traversable.', cssVar: '--tile-wall-img' },
     {
       id: TileType.DOOR,
-      label: 'Porte (toggle)',
+      label: 'Porte',
       description: 'Une porte doit se situer entre 2 murs. Elle peut être ouverte ou fermée.',
       cssVar: '--tile-door-closed-img',
     },

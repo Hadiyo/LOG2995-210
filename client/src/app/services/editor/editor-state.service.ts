@@ -1,40 +1,26 @@
 import { Injectable, computed, signal } from '@angular/core';
-
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapObject, Vec2 } from '@common/interface';
+import type { EditorCell, EditorMap, MapObject } from '@common/interface';
 
-/* =========================================================
-   Placement limits by map size
-   - Enforces game rules at editor-time (prevents invalid maps)
-   ========================================================= */
-const START_LIMITS_BY_SIZE: Record<MapSize, number> = {
-    [MapSize.S]: 2,
-    [MapSize.M]: 4,
-    [MapSize.L]: 6,
-};
+// Types
+import type { SelectedCellInfo } from './types/selected-cell-info.type';
 
-const SANCTUARY_LIMITS_BY_SIZE: Record<MapSize, number> = {
-    [MapSize.S]: 1,
-    [MapSize.M]: 2,
-    [MapSize.L]: 4,
-};
+// Geometry utils
+import { getCoveredPositions } from './utils/editor-geometry.util';
 
-const FLAG_LIMIT = 1;
-
-/**
- * Snapshot of what the user is currently inspecting (mouse tool)
- * Stored so Sidebar / UI can show contextual actions like "delete object".
- */
-export type SelectedCellInfo = {
-    index: number;
-    position: Vec2;
-    tileType: TileType;
-    objectType: ObjectType | null;
-    objectId: number | null;
-};
+// Services
+import { EditorOccupancyService } from './editor-occupancy.service';
+import { EditorMapFactoryService } from './editor-map-factory.service';
+import { EditorPlacementRulesService } from './editor-placement-rules.service';
 
 @Injectable({ providedIn: 'root' })
 export class EditorStateService {
+    constructor(
+        private occupancy: EditorOccupancyService,
+        private mapFactory: EditorMapFactoryService,
+        private rules: EditorPlacementRulesService,
+    ) { }
+
     /* =========================================================
        Editor UI selection state (signals)
        ========================================================= */
@@ -58,10 +44,10 @@ export class EditorStateService {
        ========================================================= */
 
     // The current map being edited (cells + objects + metadata)
-    readonly editorMap = signal<EditorMap>(this.createEmptyMap());
+    readonly editorMap = signal<EditorMap>(this.mapFactory.createEmptyMap());
 
     // Derived dimensions based on chosen map size
-    readonly dimensions = computed(() => this.getDimensions(this.editorMap().size));
+    readonly dimensions = computed(() => this.mapFactory.getDimensions(this.editorMap().size));
     readonly cols = computed(() => this.dimensions().cols);
     readonly rows = computed(() => this.dimensions().rows);
 
@@ -137,7 +123,10 @@ export class EditorStateService {
                 ...m,
                 objects: m.objects.filter((o) => o.type !== ObjectType.FLAG),
             }));
-            this.refreshOccupied();
+            this.editorMap.update((m) => ({
+                ...m,
+                map: this.occupancy.refreshOccupied(m.map, m.objects),
+            }));
         }
     }
 
@@ -151,7 +140,7 @@ export class EditorStateService {
     setSize(size: MapSize): void {
         const current = this.editorMap();
         this.editorMap.set(
-            this.createEmptyMap({
+            this.mapFactory.createEmptyMap({
                 size,
                 mode: current.mode,
                 name: current.name,
@@ -167,7 +156,7 @@ export class EditorStateService {
     resetMap(): void {
         const current = this.editorMap();
         this.editorMap.set(
-            this.createEmptyMap({
+            this.mapFactory.createEmptyMap({
                 size: current.size,
                 mode: current.mode,
                 name: current.name,
@@ -187,7 +176,7 @@ export class EditorStateService {
     getObjectCountAndLimit(type: ObjectType): { count: number; limit: number } {
         const m = this.editorMap();
         const count = m.objects.filter((o) => o.type === type).length;
-        const limit = this.getObjectLimit(type, m.size, m.mode);
+        const limit = this.rules.getObjectLimit(type, m.size, m.mode);
         return { count, limit };
     }
 
@@ -218,7 +207,7 @@ export class EditorStateService {
         const cell = map.map[index];
         if (!cell) return null;
 
-        return this.findObjectCoveringPosition(cell.position);
+        return this.occupancy.findObjectCoveringPosition(map.objects, cell.position);
     }
 
     /**
@@ -231,15 +220,18 @@ export class EditorStateService {
             const cell = m.map[index];
             if (!cell) return m;
 
-            const pos = cell.position;
-
             // Keep only objects that DO NOT cover the clicked cell
-            const remaining = this.removeObjectByPosition(pos);
+            const remaining = this.occupancy.removeObjectByPosition(
+                m.objects,
+                cell.position,
+            );
 
-            return { ...m, objects: remaining };
+            return {
+                ...m,
+                objects: remaining,
+                map: this.occupancy.refreshOccupied(m.map, remaining),
+            };
         });
-
-        this.refreshOccupied();
     }
 
     /**
@@ -248,8 +240,6 @@ export class EditorStateService {
      */
     eraseTileAtIndex(index: number): void {
         this.applyTileAtIndex(index, TileType.DIRT);
-
-        this.refreshOccupied();
     }
 
     /* =========================================================
@@ -268,7 +258,7 @@ export class EditorStateService {
             if (!cell) return m;
 
             let nextTileType = tileType;
-            let nextWalkable = this.isWalkable(tileType);
+            let nextWalkable = this.rules.isWalkable(tileType);
 
             // Door toggling logic
             if (tileType === TileType.DOOR) {
@@ -286,7 +276,7 @@ export class EditorStateService {
             let existingObjects = m.objects;
 
             if (!nextWalkable) {
-                existingObjects = this.removeObjectByPosition(cell.position);
+                existingObjects = this.occupancy.removeObjectByPosition(m.objects, cell.position);
             }
 
             const updated: EditorCell = {
@@ -299,11 +289,9 @@ export class EditorStateService {
             const newMap = m.map.slice();
             newMap[index] = updated;
 
-            return { ...m, map: newMap, objects: existingObjects };
+            const next = { ...m, map: newMap, objects: existingObjects };
+            return { ...next, map: this.occupancy.refreshOccupied(next.map, next.objects) };
         });
-
-        // Occupancy might change if tile became non-walkable under an object, etc.
-        this.refreshOccupied();
     }
 
     /**
@@ -333,7 +321,7 @@ export class EditorStateService {
                 type === ObjectType.REGEN || type === ObjectType.ARENA ? ObjectSize.L : ObjectSize.S;
 
             // Enforce per-type limits based on map size + mode
-            const limit = this.getObjectLimit(type, m.size, m.mode);
+            const limit = this.rules.getObjectLimit(type, m.size, m.mode);
             if (limit === 0) return m;
 
             const existingOfType = m.objects.filter((o) => o.type === type);
@@ -343,76 +331,30 @@ export class EditorStateService {
             const objectsFiltered = m.objects;
 
             // Covered positions for this placement (1x1 or 2x2)
-            const covered = this.getCoveredPositions(anchor, size);
+            const covered = getCoveredPositions(anchor, size);
 
             // Must fit inside the map
-            if (!this.arePositionsInBounds(covered, m.size)) return m;
+            if (!this.rules.arePositionsInBounds(covered, m.size)) return m;
 
             // Must be walkable everywhere + no collisions
-            if (!this.canPlaceObject(covered, objectsFiltered, m)) return m;
+            if (!this.rules.canPlaceObject(covered, objectsFiltered, m)) return m;
 
-            /**
-             * Overwrite policy:
-             * If a new placement intersects an existing object, we remove the old one.
-             */
-            const objectsWithoutIntersect = objectsFiltered.filter(
-                (o) => !this.positionsIntersect(covered, this.getCoveredPositions(o.position, o.size)),
-            );
-
+            // Collision policy: placement is rejected if it intersects an existing object.
             const newObj: MapObject = {
-                id: this.nextObjectId(objectsWithoutIntersect),
+                id: this.nextObjectId(objectsFiltered),
                 type,
                 position: { ...anchor },
                 size,
             };
 
-            return { ...m, objects: [...objectsWithoutIntersect, newObj] };
+            const nextObjects = [...objectsFiltered, newObj];
+            return { ...m, objects: nextObjects, map: this.occupancy.refreshOccupied(m.map, nextObjects) };
         });
-
-        this.refreshOccupied();
     }
 
     /* =========================================================
        Occupancy + object lookup
        ========================================================= */
-
-    /**
-     * Recompute each cell's isOccupied flag based on current objects.
-     * This is derived data, but stored for convenience (UI + rules).
-     */
-    private refreshOccupied(): void {
-        this.editorMap.update((m) => {
-            const occupiedKey = new Set<string>();
-
-            // Mark all covered tiles of all objects as occupied
-            for (const o of m.objects) {
-                for (const p of this.getCoveredPositions(o.position, o.size)) {
-                    occupiedKey.add(`${p.x},${p.y}`);
-                }
-            }
-
-            // Copy cells and update isOccupied
-            const newCells = m.map.map((c) => ({
-                ...c,
-                isOccupied: occupiedKey.has(`${c.position.x},${c.position.y}`),
-            }));
-
-            return { ...m, map: newCells };
-        });
-    }
-
-    /**
-     * Returns the object covering a given position.
-     * Supports 2x2 objects by checking their covered area.
-     */
-    private findObjectCoveringPosition(pos: Vec2): MapObject | null {
-        const m = this.editorMap();
-        for (const o of m.objects) {
-            const covered = this.getCoveredPositions(o.position, o.size);
-            if (covered.some((p) => p.x === pos.x && p.y === pos.y)) return o;
-        }
-        return null;
-    }
 
     /**
      * Generates a new incremental object id.
@@ -421,181 +363,5 @@ export class EditorStateService {
         let max = 0;
         for (const o of objects) max = Math.max(max, o.id);
         return max + 1;
-    }
-
-    /**
-     * Converts an anchor + size into all grid positions covered by the object.
-     * - S => 1x1
-     * - L => 2x2 (anchor is top-left)
-     */
-    private getCoveredPositions(anchor: Vec2, size: ObjectSize): Vec2[] {
-        if (size === ObjectSize.L) {
-            return [
-                { x: anchor.x, y: anchor.y },
-                { x: anchor.x + 1, y: anchor.y },
-                { x: anchor.x, y: anchor.y + 1 },
-                { x: anchor.x + 1, y: anchor.y + 1 },
-            ];
-        }
-        return [{ x: anchor.x, y: anchor.y }];
-    }
-
-    /**
-     * Checks if two position sets overlap.
-     * Used for collision detection and overwrite behavior.
-     */
-    private positionsIntersect(a: Vec2[], b: Vec2[]): boolean {
-        const bKey = new Set(b.map((p) => `${p.x},${p.y}`));
-        return a.some((p) => bKey.has(`${p.x},${p.y}`));
-    }
-
-    /**
-     * Bounds check for any covered positions (prevents placing outside grid).
-     */
-    private arePositionsInBounds(positions: Vec2[], size: MapSize): boolean {
-        const { cols, rows } = this.getDimensions(size);
-        return positions.every((p) => p.x >= 0 && p.y >= 0 && p.x < cols && p.y < rows);
-    }
-
-    /**
-     * Placement validation:
-     * - all covered tiles must exist and be walkable
-     * - must not collide with existing objects
-     */
-    private canPlaceObject(covered: Vec2[], objects: MapObject[], m: EditorMap): boolean {
-        // Map cell lookup by "x,y" for fast access
-        const cellByKey = new Map(m.map.map((c) => [`${c.position.x},${c.position.y}`, c] as const));
-
-        // Check walkable
-        for (const p of covered) {
-            const cell = cellByKey.get(`${p.x},${p.y}`);
-            if (!cell) return false;
-            if (!cell.isWalkable) return false;
-        }
-
-        // Check collision with existing objects
-        for (const o of objects) {
-            const occ = this.getCoveredPositions(o.position, o.size);
-            if (this.positionsIntersect(covered, occ)) return false;
-        }
-
-        return true;
-    }
-
-    // Filter out object to remove
-    private removeObjectByPosition(position: Vec2): MapObject[] {
-        return this.editorMap().objects.filter((o) => {
-            const covered = this.getCoveredPositions(o.position, o.size);
-            return !covered.some((p) => p.x === position.x && p.y === position.y);
-        });
-    }
-
-    /* =========================================================
-       Map creation & rule helpers
-       ========================================================= */
-
-    /**
-     * Creates a fresh empty editor map.
-     * - Used on initialization, resize, and reset.
-     */
-    private createEmptyMap(opts?: {
-        size?: MapSize;
-        mode?: GameMode;
-        name?: string;
-        description?: string;
-    }): EditorMap {
-        const size = opts?.size ?? MapSize.S;
-        const mode = opts?.mode ?? GameMode.CLASSIC;
-        const name = opts?.name ?? '';
-        const description = opts?.description ?? '';
-
-        const { cols, rows } = this.getDimensions(size);
-
-        // Generate base grid (default: walkable dirt)
-        const cells: EditorCell[] = [];
-        for (let y = 0; y < rows; y++) {
-            for (let x = 0; x < cols; x++) {
-                cells.push({
-                    position: { x, y },
-                    tileType: TileType.DIRT,
-                    isWalkable: true,
-                    isOccupied: false,
-                });
-            }
-        }
-
-        const now = new Date().toISOString();
-
-        return {
-            id: 0,
-            name,
-            description,
-            mode,
-            size,
-            date: now,
-            map: cells,
-            objects: [],
-            visibility: true,
-        };
-    }
-
-    /**
-     * MapSize -> numeric dimensions.
-     */
-    private getDimensions(size: MapSize): { cols: number; rows: number } {
-        switch (size) {
-            case MapSize.S:
-                return { cols: 10, rows: 10 };
-            case MapSize.M:
-                return { cols: 15, rows: 15 };
-            case MapSize.L:
-                return { cols: 20, rows: 20 };
-            default:
-                return { cols: 10, rows: 10 };
-        }
-    }
-
-    /**
-     * Default walkability by tile type.
-     * Door special case:
-     * - default is closed when first placed (walkable=false)
-     * - toggling happens in applyTileAtIndex()
-     */
-    private isWalkable(tileType: TileType): boolean {
-        switch (tileType) {
-            case TileType.WALL:
-                return false;
-            case TileType.DOOR:
-                return false; // default closed
-            case TileType.WATER:
-                return true;
-            case TileType.ICE:
-                return true;
-            case TileType.DIRT:
-            default:
-                return true;
-        }
-    }
-
-    /**
-     * Object limits (editor-time validation)
-     * - FLAG: only in CTF, singleton
-     * - START: depends on map size
-     * - REGEN/ARENA: depends on map size
-     */
-    private getObjectLimit(type: ObjectType, size: MapSize, mode: GameMode): number {
-        if (type === ObjectType.FLAG) {
-            return mode === GameMode.CTF ? FLAG_LIMIT : 0;
-        }
-
-        if (type === ObjectType.START) {
-            return START_LIMITS_BY_SIZE[size];
-        }
-
-        if (type === ObjectType.REGEN || type === ObjectType.ARENA) {
-            return SANCTUARY_LIMITS_BY_SIZE[size];
-        }
-
-        return 0;
     }
 }

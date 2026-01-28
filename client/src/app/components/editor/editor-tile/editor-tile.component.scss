@@ -38,7 +38,7 @@
     background: transparent;
 
     /* Background image styling */
-    background-size: contain;
+    background-size: 100% 100%;
 }
 
 /* Terrain tile types */
@@ -88,7 +88,7 @@
     z-index: 3;
 
     /* Background image styling */
-    background-size: contain;   
+    background-size: 100% 100%; 
 }
 
 
