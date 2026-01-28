@@ -2,7 +2,7 @@ import { Component, HostListener } from '@angular/core';
 import { EditorTileComponent } from '@app/components/editor/editor-tile/editor-tile.component';
 import { MouseButton, MouseEventType } from '@common/enum';
 import { TileEvent } from '@common/types';
-import { EditorStateService } from 'src/app/services/editor-state.service';
+import { EditorStateService } from '@app/services/editor/editor-state.service';
 
 @Component({
   selector: 'app-editor-canvas',

@@ -5,28 +5,20 @@
          - CSS variables (--cols, --rows) are bound dynamically
          - Used by CSS Grid to size the map
          - Mouse events here manage drag interactions -->
-    <div class="grid" [style.--cols]="editorState.cols()" [style.--rows]="editorState.rows()">
+    <div class="grid-wrap">
+        <div class="grid" [style.--cols]="editorState.cols()" [style.--rows]="editorState.rows()">
 
-        <!-- Loop through every cell in the editor state
-             - track $index for performance -->
-        @for (cell of editorState.cells(); track $index) {
-            <app-editor-tile
-                [index]="$index"
-                [tile]="cell"
-                [object]="editorState.getObjectAtIndex($index)"
-                (contextmenu)="onContextMenu($event)" 
-                (tileEvent)="handleTileEvent($event)">
-            </app-editor-tile>
-        }
+            <!-- Loop through every cell in the editor state
+                - track $index for performance -->
+            @for (cell of editorState.cells(); track $index) {
+                <app-editor-tile
+                    [index]="$index"
+                    [tile]="cell"
+                    [object]="editorState.getObjectAtIndex($index)"
+                    (contextmenu)="onContextMenu($event)" 
+                    (tileEvent)="handleTileEvent($event)">
+                </app-editor-tile>
+            }
+        </div>
     </div>
-
-    <!-- Editor hint panel
-         - Displays current tool selections
-         - Helps with usability and debugging -->
-    <div class="hint">
-        <!-- <span>Tool: {{ editorState.selectedTool() }}</span> -->
-        <span>Tile: {{ editorState.selectedTileType() ?? '—' }}</span>
-        <span>Obj: {{ editorState.selectedObjectType() ?? '—' }}</span>
-    </div>
-
 </div>
