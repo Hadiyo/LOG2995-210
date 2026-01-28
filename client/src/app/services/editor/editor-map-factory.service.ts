@@ -50,7 +50,7 @@ export class EditorMapFactoryService {
         const now = new Date().toISOString();
 
         return {
-            id: 0,
+            _id: 'id',
             name,
             description,
             mode,
