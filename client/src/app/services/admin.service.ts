@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { MapConfig } from '@app/interfaces/create-game-dialog';
-import { EditorApiService } from './editor-api.service';
-import { EditorStateService } from './editor-state.service';
+import { EditorApiService } from './editor/editor-api.service';
+import { EditorStateService } from './editor/editor-state.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
@@ -14,7 +14,7 @@ export class AdminService {
      * @param result interface containing the map size and mode
      */
     setMapProperties(result: MapConfig): void {
-        this.editorStateService.generateMap(result);
+        this.editorStateService.setMapModeSize(result);
     }
 
     /**

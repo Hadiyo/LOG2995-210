@@ -9,6 +9,7 @@ import type { SelectedCellInfo } from './types/selected-cell-info.type';
 import { getCoveredPositions } from './utils/editor-geometry.util';
 
 // Services
+import { MapConfig } from '@app/interfaces/create-game-dialog';
 import { EditorMapFactoryService } from './editor-map-factory.service';
 import { EditorOccupancyService } from './editor-occupancy.service';
 import { EditorPlacementRulesService } from './editor-placement-rules.service';
@@ -145,6 +146,16 @@ export class EditorStateService {
                 mode: current.mode,
                 name: current.name,
                 description: current.description,
+            }),
+        );
+        this.clearSelection();
+    }
+
+    setMapModeSize(mapConfig: MapConfig): void {
+        this.editorMap.set(
+            this.mapFactory.createEmptyMap({
+                size: mapConfig.size,
+                mode: mapConfig.mode,
             }),
         );
         this.clearSelection();
