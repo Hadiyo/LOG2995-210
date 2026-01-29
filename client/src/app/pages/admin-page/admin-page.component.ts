@@ -1,29 +1,29 @@
 import { Component } from '@angular/core';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
-import { CreateGameDialogComponent } from '@app/components/create-game-dialog/create-game-dialog.component';
-import { CreateGameDialogResult } from '@app/interfaces/create-game-dialog';
+import { CreateMapDialogComponent } from '@app/components/create-map-dialog/create-map-dialog.component';
+import { CreateMapDialogResult } from '@app/interfaces/create-map-dialog';
 
 @Component({
   selector: 'app-admin-page',
   standalone: true,
-  imports: [AppButtonComponent, CreateGameDialogComponent],
+  imports: [AppButtonComponent, CreateMapDialogComponent],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
 export class AdminPageComponent {
   isCreateDialogOpen = false;
-  createGameDialogResult?: CreateGameDialogResult;
+  createMapDialogResult?: CreateMapDialogResult;
 
-  openCreateGameDialog(): void {
+  openCreateMapDialog(): void {
     this.isCreateDialogOpen = true;
   }
 
-  closeCreateGameDialog(): void {
+  closeCreateMapDialog(): void {
     this.isCreateDialogOpen = false;
   }
 
-  onCreateGameDialogConfirm(result: CreateGameDialogResult): void {
-    this.createGameDialogResult = result;
-    this.closeCreateGameDialog();
+  onCreateMapDialogConfirm(result: CreateMapDialogResult): void {
+    this.createMapDialogResult = result;
+    this.closeCreateMapDialog();
   }
 }

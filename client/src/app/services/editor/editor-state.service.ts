@@ -165,11 +165,11 @@ export class EditorStateService {
     }
 
     /**
-     * Load a persisted game into the editor.
+     * Load a persisted map into the editor.
      * Used for both create and edit flows.
      */
-    loadGame(game: EditorMap): void {
-        this.editorMap.set(this.mapFactory.cloneEditorMap(game));
+    loadMap(map: EditorMap): void {
+        this.editorMap.set(this.mapFactory.cloneEditorMap(map));
         this.clearSelection();
     }
 

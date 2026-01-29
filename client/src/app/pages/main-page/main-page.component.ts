@@ -14,7 +14,7 @@ export class MainPageComponent implements AfterViewInit {
 
   readonly title: string = 'LOG2995';
   readonly actions: readonly {
-    id: 'create-game' | 'join-game' | 'admin-game';
+    id: 'create-game' | 'join-game' | 'admin-map';
     label: string;
     variant: 'primary' | 'secondary' | 'tertiary' | 'ghost';
     link?: string;
@@ -32,8 +32,8 @@ export class MainPageComponent implements AfterViewInit {
       variant: 'secondary',
     },
     {
-      id: 'admin-game',
-      label: 'ADMINISTRER LES JEUX',
+      id: 'admin-map',
+      label: 'ADMINISTRER LES CARTES',
       link: '/admin',
       variant: 'tertiary',
     },

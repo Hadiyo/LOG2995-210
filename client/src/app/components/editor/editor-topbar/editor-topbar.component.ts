@@ -9,8 +9,8 @@ import { firstValueFrom } from 'rxjs';
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { GameMode, MapSize } from '@common/enum';
-import { validateGame, type GameValidationIssue, type GameValidationResult } from '@common/game-validation';
-import { GameService } from 'src/app/services/game.service';
+import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
+import { MapService } from 'src/app/services/map.service';
 
 @Component({
   selector: 'app-editor-topbar',
@@ -41,13 +41,13 @@ export class EditorTopbarComponent {
   readonly editorState: EditorStateService;
   readonly router: Router;
   readonly overlay: Overlay;
-  readonly gameService: GameService;
+  readonly mapService: MapService;
 
-  constructor(editorState: EditorStateService, router: Router, overlay: Overlay, gameService: GameService) {
+  constructor(editorState: EditorStateService, router: Router, overlay: Overlay, mapService: MapService) {
     this.editorState = editorState;
     this.router = router;
     this.overlay = overlay;
-    this.gameService = gameService;
+    this.mapService = mapService;
   }
 
   /* =========================================================
@@ -67,8 +67,8 @@ export class EditorTopbarComponent {
   ] as const;
 
   readonly hasAttemptedSave = signal(false);
-  readonly serverIssues = signal<GameValidationIssue[]>([]);
-  readonly localValidation = computed(() => validateGame(this.editorState.editorMap()));
+  readonly serverIssues = signal<MapValidationIssue[]>([]);
+  readonly localValidation = computed(() => validateMap(this.editorState.editorMap()));
   readonly activeIssues = computed(() => {
     const localValidation = this.localValidation();
     if (!localValidation.isValid) return localValidation.issues;
@@ -128,8 +128,8 @@ export class EditorTopbarComponent {
     if (!localValidation.isValid) return;
 
     try {
-      const savedGame = await firstValueFrom(this.gameService.saveGame(this.editorState.editorMap()));
-      this.editorState.loadGame(savedGame);
+      const savedMap = await firstValueFrom(this.mapService.saveMap(this.editorState.editorMap()));
+      this.editorState.loadMap(savedMap);
       await this.router.navigate(['/admin']);
     } catch (error) {
       this.applySaveErrorFeedback(error);
@@ -168,11 +168,11 @@ export class EditorTopbarComponent {
     window.alert('Echec de la sauvegarde.');
   }
 
-  private extractValidationResult(error: unknown): GameValidationResult | null {
+  private extractValidationResult(error: unknown): MapValidationResult | null {
     if (!(error instanceof HttpErrorResponse)) return null;
     if (error.status !== this.badRequestStatus) return null;
 
-    const payload = error.error as GameValidationResult;
+    const payload = error.error as MapValidationResult;
     if (!payload || !Array.isArray(payload.issues)) return null;
 
     return payload;

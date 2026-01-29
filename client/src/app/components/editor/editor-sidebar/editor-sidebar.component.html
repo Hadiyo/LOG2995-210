@@ -2,11 +2,11 @@
 <div class="sidebar">
 
   <!-- =========================
-       Game metadata section
+       Map metadata section
        ========================= -->
   <section class="section">
 
-    <!-- Game name field -->
+    <!-- Map name field -->
     <label class="field">
       <div class="field-header">
         <span>Nom</span>
@@ -18,13 +18,13 @@
            - Value comes from editor state
            - Changes are propagated via service -->
       <input type="text" [ngModel]="editorState.editorMap().name" (ngModelChange)="editorState.setName($event)"
-        [maxLength]="nameMax" placeholder="Nom du jeu" />
+        [maxLength]="nameMax" placeholder="Nom de la carte" />
 
       <!-- Live character counter -->
       
     </label>
 
-    <!-- Game description field -->
+    <!-- Map description field -->
     <label class="field">
       <div class="field-header">
         <span>Description</span>
@@ -33,7 +33,7 @@
         </small>
       </div>
       <textarea [ngModel]="editorState.editorMap().description" (ngModelChange)="editorState.setDescription($event)"
-        [maxLength]="descMax" placeholder="Description du jeu" rows="3"></textarea>
+        [maxLength]="descMax" placeholder="Description de la carte" rows="3"></textarea>
 
       <!-- Live character counter -->
       

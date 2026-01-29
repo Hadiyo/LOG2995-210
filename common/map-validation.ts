@@ -1,7 +1,7 @@
 import { GameMode, MapSize, ObjectType, TileType } from './enum';
 import type { EditorMap, Vec2 } from './interface';
 
-export type GameValidationIssueCode =
+export type MapValidationIssueCode =
     | 'NAME_REQUIRED'
     | 'DESCRIPTION_REQUIRED'
     | 'NAME_NOT_UNIQUE'
@@ -12,15 +12,15 @@ export type GameValidationIssueCode =
     | 'DOOR_INVALID_PLACEMENT'
     | 'UNREACHABLE_TILES';
 
-export interface GameValidationIssue {
-    code: GameValidationIssueCode;
+export interface MapValidationIssue {
+    code: MapValidationIssueCode;
     message: string;
     details?: Record<string, unknown>;
 }
 
-export interface GameValidationResult {
+export interface MapValidationResult {
     isValid: boolean;
-    issues: GameValidationIssue[];
+    issues: MapValidationIssue[];
 }
 
 const TERRAIN_TILES = new Set<TileType>([TileType.DIRT, TileType.WATER, TileType.ICE]);
@@ -134,29 +134,29 @@ const traverseFrom = (startKey: string, traversable: Set<string>, cellsByKey: Ma
     return visited;
 };
 
-const addNameIssues = (game: EditorMap, issues: GameValidationIssue[]): void => {
-    if (!isNonEmpty(game.name)) {
+const addNameIssues = (map: EditorMap, issues: MapValidationIssue[]): void => {
+    if (!isNonEmpty(map.name)) {
         issues.push({
             code: 'NAME_REQUIRED',
-            message: 'Le nom du jeu est requis.',
+            message: 'Le nom de la carte est requis.',
         });
     }
 };
 
-const addDescriptionIssues = (game: EditorMap, issues: GameValidationIssue[]): void => {
-    if (!isNonEmpty(game.description)) {
+const addDescriptionIssues = (map: EditorMap, issues: MapValidationIssue[]): void => {
+    if (!isNonEmpty(map.description)) {
         issues.push({
             code: 'DESCRIPTION_REQUIRED',
-            message: 'La description du jeu est requise.',
+            message: 'La description de la carte est requise.',
         });
     }
 };
 
-const addTerrainRatioIssues = (game: EditorMap, issues: GameValidationIssue[]): void => {
-    const totalTiles = game.map.length;
+const addTerrainRatioIssues = (map: EditorMap, issues: MapValidationIssue[]): void => {
+    const totalTiles = map.map.length;
     if (totalTiles === 0) return;
 
-    const terrainTiles = game.map.reduce((count, cell) => (isTerrainTile(cell.tileType) ? count + 1 : count), 0);
+    const terrainTiles = map.map.reduce((count, cell) => (isTerrainTile(cell.tileType) ? count + 1 : count), 0);
     const terrainRatio = terrainTiles / totalTiles;
 
     if (terrainRatio <= MIN_TERRAIN_RATIO) {
@@ -168,7 +168,7 @@ const addTerrainRatioIssues = (game: EditorMap, issues: GameValidationIssue[]): 
     }
 };
 
-const addDoorPlacementIssues = (cellsByKey: Map<string, Cell>, issues: GameValidationIssue[]): void => {
+const addDoorPlacementIssues = (cellsByKey: Map<string, Cell>, issues: MapValidationIssue[]): void => {
     const invalidDoors = getInvalidDoorPositions(cellsByKey);
     if (invalidDoors.length === 0) return;
 
@@ -179,9 +179,9 @@ const addDoorPlacementIssues = (cellsByKey: Map<string, Cell>, issues: GameValid
     });
 };
 
-const addStartPointIssues = (game: EditorMap, issues: GameValidationIssue[]): void => {
-    const requiredStarts = STARTS_REQUIRED_BY_SIZE[game.size];
-    const startCount = game.objects.filter((object) => object.type === ObjectType.START).length;
+const addStartPointIssues = (map: EditorMap, issues: MapValidationIssue[]): void => {
+    const requiredStarts = STARTS_REQUIRED_BY_SIZE[map.size];
+    const startCount = map.objects.filter((object) => object.type === ObjectType.START).length;
 
     if (startCount !== requiredStarts) {
         issues.push({
@@ -192,9 +192,9 @@ const addStartPointIssues = (game: EditorMap, issues: GameValidationIssue[]): vo
     }
 };
 
-const addFlagIssues = (game: EditorMap, issues: GameValidationIssue[]): void => {
-    const requiredFlags = FLAGS_REQUIRED_BY_MODE[game.mode];
-    const flagCount = game.objects.filter((object) => object.type === ObjectType.FLAG).length;
+const addFlagIssues = (map: EditorMap, issues: MapValidationIssue[]): void => {
+    const requiredFlags = FLAGS_REQUIRED_BY_MODE[map.mode];
+    const flagCount = map.objects.filter((object) => object.type === ObjectType.FLAG).length;
 
     if (requiredFlags > 0 && flagCount !== requiredFlags) {
         issues.push({
@@ -227,11 +227,11 @@ const collectUnreachablePositions = (
     return unreachable;
 };
 
-const addReachabilityIssues = (game: EditorMap, cellsByKey: Map<string, Cell>, issues: GameValidationIssue[]): void => {
+const addReachabilityIssues = (map: EditorMap, cellsByKey: Map<string, Cell>, issues: MapValidationIssue[]): void => {
     const traversable = collectTraversableKeys(cellsByKey);
     if (traversable.size === 0) return;
 
-    const startPositions = game.objects
+    const startPositions = map.objects
         .filter((object) => object.type === ObjectType.START)
         .map((object) => positionKey(object.position.x, object.position.y));
 
@@ -248,18 +248,18 @@ const addReachabilityIssues = (game: EditorMap, cellsByKey: Map<string, Cell>, i
     });
 };
 
-export const validateGame = (game: EditorMap): GameValidationResult => {
-    const issues: GameValidationIssue[] = [];
+export const validateMap = (map: EditorMap): MapValidationResult => {
+    const issues: MapValidationIssue[] = [];
 
-    addNameIssues(game, issues);
-    addDescriptionIssues(game, issues);
-    addTerrainRatioIssues(game, issues);
+    addNameIssues(map, issues);
+    addDescriptionIssues(map, issues);
+    addTerrainRatioIssues(map, issues);
 
-    const cellsByKey = buildCellMap(game.map);
+    const cellsByKey = buildCellMap(map.map);
     addDoorPlacementIssues(cellsByKey, issues);
-    addStartPointIssues(game, issues);
-    addFlagIssues(game, issues);
-    addReachabilityIssues(game, cellsByKey, issues);
+    addStartPointIssues(map, issues);
+    addFlagIssues(map, issues);
+    addReachabilityIssues(map, cellsByKey, issues);
 
     return { isValid: issues.length === 0, issues };
 };
