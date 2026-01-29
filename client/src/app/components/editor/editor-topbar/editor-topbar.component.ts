@@ -1,13 +1,16 @@
 import { Overlay } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
+import { firstValueFrom } from 'rxjs';
 
+import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { GameMode, MapSize } from '@common/enum';
-import { validateGame } from '@common/game-validation';
+import { validateGame, type GameValidationIssue, type GameValidationResult } from '@common/game-validation';
+import { GameService } from 'src/app/services/game.service';
 
 @Component({
   selector: 'app-editor-topbar',
@@ -23,6 +26,7 @@ import { validateGame } from '@common/game-validation';
   styleUrls: ['./editor-topbar.component.scss'],
 })
 export class EditorTopbarComponent {
+  private readonly badRequestStatus = 400;
   /* =========================================================
      Template helpers
      ========================================================= */
@@ -35,17 +39,15 @@ export class EditorTopbarComponent {
      ========================================================= */
   // Central editor state (single source of truth)
   readonly editorState: EditorStateService;
-
-  // Router for redirection 
   readonly router: Router;
-
-  // Overlay service for pop-up
   readonly overlay: Overlay;
+  readonly gameService: GameService;
 
-  constructor(editorState: EditorStateService, router: Router, overlay: Overlay) {
+  constructor(editorState: EditorStateService, router: Router, overlay: Overlay, gameService: GameService) {
     this.editorState = editorState;
     this.router = router;
     this.overlay = overlay;
+    this.gameService = gameService;
   }
 
   /* =========================================================
@@ -65,34 +67,34 @@ export class EditorTopbarComponent {
   ] as const;
 
   readonly hasAttemptedSave = signal(false);
-  readonly validationResult = computed(() => validateGame(this.editorState.editorMap()));
+  readonly serverIssues = signal<GameValidationIssue[]>([]);
+  readonly localValidation = computed(() => validateGame(this.editorState.editorMap()));
+  readonly activeIssues = computed(() => {
+    const localValidation = this.localValidation();
+    if (!localValidation.isValid) return localValidation.issues;
+    return this.serverIssues();
+  });
+  readonly shouldShowIssues = computed(() => this.hasAttemptedSave() && this.activeIssues().length > 0);
 
   /* =========================================================
      Actions
      ========================================================= */
 
   /**
-   * Return to admin view without saving
+   * Return to admin view without saving.
    */
   onBack(): void {
-    // Styling for pop-up overlay
     const overlayRef = this.overlay.create({
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-dark-backdrop',
       positionStrategy: this.overlay.position().global().centerHorizontally().centerVertically(),
     });
 
-    // Portal in the pop-up component
     const portal = new ComponentPortal(PopUpComponent);
     const ref = overlayRef.attach(portal);
 
-    // On close: close overlay
     ref.instance.closePopUp.subscribe(() => overlayRef.dispose());
-
-    // On backdrop click: close overlay
     overlayRef.backdropClick().subscribe(() => overlayRef.dispose());
-
-    // On confirm: close overlay and navigate back to admin
     ref.instance.confirmPopUp.subscribe(() => {
       overlayRef.dispose();
       this.router.navigate(['/admin']);
@@ -118,14 +120,61 @@ export class EditorTopbarComponent {
   /**
    * Save action.
    */
-  onSave(): void {
+  async onSave(): Promise<void> {
     this.hasAttemptedSave.set(true);
-    const result = this.validationResult();
+    this.serverIssues.set([]);
 
-    if (!result.isValid) return;
+    const localValidation = this.localValidation();
+    if (!localValidation.isValid) return;
 
-    // TODO: wire up save action once persistence is implemented.
-    // Redirection towards admin view if valid save
-    this.router.navigate(['/admin']);
+    try {
+      const savedGame = await firstValueFrom(this.gameService.saveGame(this.editorState.editorMap()));
+      this.editorState.loadGame(savedGame);
+      await this.router.navigate(['/admin']);
+    } catch (error) {
+      this.applySaveErrorFeedback(error);
+    }
+  }
+
+  /* =========================================================
+     Editor configuration
+     ========================================================= */
+
+  /**
+   * Update game mode.
+   * Centralized in EditorStateService to enforce
+   * mode-specific constraints (ex. CTF rules).
+   */
+  setMode(mode: GameMode): void {
+    this.editorState.setMode(mode);
+  }
+
+  /**
+   * Update map size.
+   * EditorStateService is responsible for resizing
+   * the grid and handling data migration if needed.
+   */
+  setSize(size: MapSize): void {
+    this.editorState.setSize(size);
+  }
+
+  private applySaveErrorFeedback(error: unknown): void {
+    const validation = this.extractValidationResult(error);
+    if (validation) {
+      this.serverIssues.set(validation.issues);
+      return;
+    }
+
+    window.alert('Echec de la sauvegarde.');
+  }
+
+  private extractValidationResult(error: unknown): GameValidationResult | null {
+    if (!(error instanceof HttpErrorResponse)) return null;
+    if (error.status !== this.badRequestStatus) return null;
+
+    const payload = error.error as GameValidationResult;
+    if (!payload || !Array.isArray(payload.issues)) return null;
+
+    return payload;
   }
 }

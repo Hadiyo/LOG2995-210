@@ -58,7 +58,7 @@
         "typescript": "5.9.2"
     },
     "_moduleAliases": {
-        "@app": "out/server-nestjs/app",
+        "@app": "out/server/app",
         "@common": "out/common"
     },
     "jest": {
