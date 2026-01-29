@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-import { GameMode, MapSize } from '@common/enum';
+import { GameMode, MapSize, MouseButton } from '@common/enum';
 import { validateGame } from '@common/game-validation';
 
 @Component({
@@ -47,6 +47,11 @@ export class EditorTopbarComponent {
     this.router = router;
     this.overlay = overlay;
   }
+
+  /* =========================================================
+     Hotkey UI
+     ========================================================= */
+  readonly isRightClicking = computed(() => this.editorState.activeButton() === MouseButton.Right);
 
   /* =========================================================
      Mode & size options

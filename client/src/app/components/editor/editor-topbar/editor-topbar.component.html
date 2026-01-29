@@ -22,6 +22,34 @@
     </svg>
   </button>
 
+  <!-- =========================
+       Hotkeys
+       ========================= -->
+  <div class="group-label">
+    <span 
+      class="key" 
+      [class.pressed]="this.isRightClicking() && !this.editorState.isShiftPressed()"
+    >
+      RMB
+    </span> 
+    pour effacer des tuiles,
+
+    <span 
+      class="key" 
+      [class.pressed]="this.editorState.isShiftPressed()"
+    >
+      SHIFT
+    </span> 
+    + 
+    <span 
+      class="key" 
+      [class.pressed]="this.isRightClicking() && this.editorState.isShiftPressed()"
+    >
+      RMB
+    </span> 
+    pour effacer des objets
+  </div>
+
   <!-- Spacer pushes action buttons to the right -->
   <div class="spacer"></div>
 

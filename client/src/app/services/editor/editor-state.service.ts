@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
+import { GameMode, MapSize, MouseButton, ObjectSize, ObjectType, TileType } from '@common/enum';
 import type { EditorCell, EditorMap, MapObject } from '@common/interface';
 
 // Types
@@ -25,8 +25,11 @@ export class EditorStateService {
        Editor UI selection state (signals)
        ========================================================= */
 
-    // Which editor tool is currently active
-    // readonly selectedTool = signal<EditorToolId>('mouse');
+    // Boolean for if Shift is pressed
+    readonly isShiftPressed = signal<boolean>(false);
+
+    // Used to track mouse button state globally
+    readonly activeButton = signal<MouseButton | null>(null);
 
     /**
      * We select WHAT we want to apply:
