@@ -16,7 +16,11 @@
       <span class="chip">Mode: {{ modeLabel }}</span>
       <span class="chip chip-muted">
         Modifiee:
-        <time [attr.datetime]="map.date">{{ map.date | date: 'mediumDate' }}</time>
+        @if (map.date) {
+          <time [attr.datetime]="map.date">{{ map.date | date: 'mediumDate' }}</time>
+        } @else {
+          <time>—</time>
+        }
       </span>
     </div>
   </div>
