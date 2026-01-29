@@ -2,16 +2,16 @@
   <h1 class="title">Administration</h1>
   <div class="actions">
     <app-button
-      label="Creer un nouveau jeu"
+      label="Creer une nouvelle carte"
       variant="primary"
       (click)="toggleGameDialog()"
     ></app-button>
   </div>
 
   @if (isCreateDialogOpen) {
-    <app-create-game-dialog
+    <app-create-map-dialog
       (cancel)="toggleGameDialog()"
       (confirm)="onCreateGameDialogConfirm($event)"
-    ></app-create-game-dialog>
+    ></app-create-map-dialog>
   }
 </main>

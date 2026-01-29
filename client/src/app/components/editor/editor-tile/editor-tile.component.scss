@@ -12,7 +12,7 @@
     /* Cell borders to show grid structure */
     border: 1px solid var(--border-soft);
     background: transparent;
-    cursor: pointer;
+    cursor: inherit;
 
     /* Prevent image dragging behaviors */
     -webkit-user-drag: none;

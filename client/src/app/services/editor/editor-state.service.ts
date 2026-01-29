@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MapConfig } from '@app/interfaces/create-game-dialog';
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
+import { GameMode, MapSize, MouseButton, ObjectSize, ObjectType, TileType } from '@common/enum';
 import { showTemporaryMessage, TEMP_ERROR_DURATION_8000MS } from '@common/error-handling';
 import type { EditorCell, EditorMap, MapObject } from '@common/interface';
 import { EditorApiService } from './editor-api.service';
@@ -21,8 +21,11 @@ export class EditorStateService {
        Editor UI selection state (signals)
        ========================================================= */
 
-    // Which editor tool is currently active
-    // readonly selectedTool = signal<EditorToolId>('mouse');
+    // Boolean for if Shift is pressed
+    readonly isShiftPressed = signal<boolean>(false);
+
+    // Used to track mouse button state globally
+    readonly activeButton = signal<MouseButton | null>(null);
 
     /**
      * We select WHAT we want to apply:
@@ -196,6 +199,15 @@ export class EditorStateService {
                 TEMP_ERROR_DURATION_8000MS,
             );
         }
+    }
+
+    /**
+     * Load a persisted map into the editor.
+     * Used for both create and edit flows.
+     */
+    loadMap(map: EditorMap): void {
+        this.editorMap.set(this.mapFactory.cloneEditorMap(map));
+        this.clearSelection();
     }
 
     /* =========================================================

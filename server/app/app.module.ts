@@ -1,3 +1,8 @@
+import { Logger, Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Course, courseSchema } from '@app/model/database/course';
+import { Map, mapSchema } from '@app/model/database/map';
 import { CourseController } from '@app/controllers/course/course.controller';
 import { DateController } from '@app/controllers/date/date.controller';
 import { ExampleController } from '@app/controllers/example/example.controller';
@@ -10,6 +15,8 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EditorController } from './controllers/editor/editor.controller';
+import { MapController } from '@app/controllers/map/map.controller';
+import { MapService } from '@app/services/map/map.service';
 import { EditorMap, editorMapSchema } from './model/database/editor-map';
 import { EditorService } from './services/editor/editor.service';
 
@@ -23,9 +30,12 @@ import { EditorService } from './services/editor/editor.service';
                 uri: config.get<string>('DATABASE_CONNECTION_STRING'), // Loaded from .env
             }),
         }),
-        MongooseModule.forFeature([{ name: Course.name, schema: courseSchema }, { name: EditorMap.name, schema: editorMapSchema }]),
+        MongooseModule.forFeature([
+            { name: Course.name, schema: courseSchema },
+            { name: Map.name, schema: mapSchema },
+        ]),
     ],
-    controllers: [CourseController, DateController, ExampleController, EditorController],
-    providers: [ChatGateway, CourseService, DateService, ExampleService, Logger, EditorService],
+    controllers: [CourseController, DateController, ExampleController, MapController],
+    providers: [ChatGateway, CourseService, DateService, ExampleService, MapService, Logger],
 })
 export class AppModule {}

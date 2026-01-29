@@ -8,7 +8,7 @@ import { AdminService } from '@app/services/admin.service';
 @Component({
   selector: 'app-admin-page',
   standalone: true,
-  imports: [AppButtonComponent, CreateGameDialogComponent],
+  imports: [AppButtonComponent, CreateMapDialogComponent],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })

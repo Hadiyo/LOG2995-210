@@ -30,4 +30,3 @@ export interface EditorMap {
     objects: MapObject[];
     visibility: boolean;
 }
-
