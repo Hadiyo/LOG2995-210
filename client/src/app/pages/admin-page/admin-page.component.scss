@@ -28,6 +28,38 @@
   margin-top: 20px;
 }
 
+.maps {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: clamp(18px, 2.6vw, 24px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.status {
+  margin: 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.status--error {
+  color: var(--accent-danger);
+}
+
 @media (max-height: 720px) {
   .page {
     padding: 24px 6vw 20px;
