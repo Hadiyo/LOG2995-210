@@ -8,7 +8,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-import { GameMode, MapSize } from '@common/enum';
+import { GameMode, MapSize, MouseButton } from '@common/enum';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
 import { MapService } from 'src/app/services/map.service';
 
@@ -49,6 +49,11 @@ export class EditorTopbarComponent {
     this.overlay = overlay;
     this.mapService = mapService;
   }
+
+  /* =========================================================
+     Hotkey UI
+     ========================================================= */
+  readonly isRightClicking = computed(() => this.editorState.activeButton() === MouseButton.Right);
 
   /* =========================================================
      Mode & size options

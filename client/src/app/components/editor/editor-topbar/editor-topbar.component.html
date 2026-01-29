@@ -24,56 +24,32 @@
   </button>
 
   <!-- =========================
-       Game mode selection
+       Hotkeys
        ========================= -->
-  <div class="group">
-    <span class="group-label">Mode</span>
+  <div class="group-label">
+    <span 
+      class="key" 
+      [class.pressed]="this.isRightClicking() && !this.editorState.isShiftPressed()"
+    >
+      RMB
+    </span> 
+    pour effacer des tuiles,
 
-    <!-- Segmented control for game mode -->
-    <div class="segmented">
-      @for (m of modeOptions; track m.value) {
-
-      <!-- Mode button
-           - Calls setMode to apply constraints / side effects
-           - Active state reflects editor map configuration -->
-      <button
-        type="button"
-        class="seg-btn"
-        (click)="setMode(m.value)"
-        [class.active]="editorState.editorMap().mode === m.value"
-      >
-        {{ m.label }}
-      </button>
-      }
-    </div>
+    <span 
+      class="key" 
+      [class.pressed]="this.editorState.isShiftPressed()"
+    >
+      SHIFT
+    </span> 
+    + 
+    <span 
+      class="key" 
+      [class.pressed]="this.isRightClicking() && this.editorState.isShiftPressed()"
+    >
+      RMB
+    </span> 
+    pour effacer des objets
   </div>
-
-
-  <!-- =========================
-       Map size selection
-       ========================= -->
-  <div class="group">
-    <span class="group-label">Taille</span>
-
-    <!-- Segmented control for map size -->
-    <div class="segmented">
-      @for (s of sizeOptions; track s.value) {
-
-      <!-- Size button
-           - Updates grid dimensions through editor state
-           - Active state reflects current map size -->
-      <button
-        type="button"
-        class="seg-btn"
-        (click)="setSize(s.value)"
-        [class.active]="editorState.editorMap().size === s.value"
-      >
-        {{ s.label }}
-      </button>
-      }
-    </div>
-  </div>
-
 
   <!-- Spacer pushes action buttons to the right -->
   <div class="spacer"></div>
