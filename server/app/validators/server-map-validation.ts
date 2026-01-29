@@ -2,12 +2,12 @@ import type { FilterQuery, Model } from 'mongoose';
 
 import type { EditorMap } from '@common/interface';
 import {
-    type GameValidationIssue,
-    type GameValidationResult,
-    validateGame,
-} from '@common/game-validation';
+    type MapValidationIssue,
+    type MapValidationResult,
+    validateMap,
+} from '@common/map-validation';
 
-export type GameNameUniquenessChecker = (name: string) => Promise<boolean>;
+export type MapNameUniquenessChecker = (name: string) => Promise<boolean>;
 
 export interface NameUniquenessOptions {
     excludeId?: string;
@@ -46,7 +46,7 @@ const withExcludeId = <T>(
 export const createNameUniquenessChecker = <T extends { name: string }>(
     model: Model<T>,
     options: NameUniquenessOptions = {},
-): GameNameUniquenessChecker => {
+): MapNameUniquenessChecker => {
     const { excludeId, caseInsensitive = true } = options;
 
     return async (name: string): Promise<boolean> => {
@@ -60,29 +60,29 @@ export const createNameUniquenessChecker = <T extends { name: string }>(
 };
 
 const addNameUniquenessIssue = async (
-    game: EditorMap,
-    isNameUnique: GameNameUniquenessChecker,
-    issues: GameValidationIssue[],
+    map: EditorMap,
+    isNameUnique: MapNameUniquenessChecker,
+    issues: MapValidationIssue[],
 ): Promise<void> => {
-    if (isEmptyName(game.name)) return;
+    if (isEmptyName(map.name)) return;
 
-    const unique = await isNameUnique(trimName(game.name));
+    const unique = await isNameUnique(trimName(map.name));
     if (unique) return;
 
     issues.push({
         code: 'NAME_NOT_UNIQUE',
-        message: 'Le nom du jeu doit etre unique.',
+        message: 'Le nom de la carte doit etre unique.',
     });
 };
 
-export const validateGameOnServer = async (
-    game: EditorMap,
-    isNameUnique: GameNameUniquenessChecker,
-): Promise<GameValidationResult> => {
-    const base = validateGame(game);
-    const issues: GameValidationIssue[] = [...base.issues];
+export const validateMapOnServer = async (
+    map: EditorMap,
+    isNameUnique: MapNameUniquenessChecker,
+): Promise<MapValidationResult> => {
+    const base = validateMap(map);
+    const issues: MapValidationIssue[] = [...base.issues];
 
-    await addNameUniquenessIssue(game, isNameUnique, issues);
+    await addNameUniquenessIssue(map, isNameUnique, issues);
 
     return { isValid: issues.length === 0, issues };
 };

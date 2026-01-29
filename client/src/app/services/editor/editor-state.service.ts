@@ -167,6 +167,15 @@ export class EditorStateService {
         this.clearSelection();
     }
 
+    /**
+     * Load a persisted map into the editor.
+     * Used for both create and edit flows.
+     */
+    loadMap(map: EditorMap): void {
+        this.editorMap.set(this.mapFactory.cloneEditorMap(map));
+        this.clearSelection();
+    }
+
     /* =========================================================
        Public API — called by Sidebar
        ========================================================= */
