@@ -50,7 +50,7 @@ export class EditorMapFactoryService {
         const now = new Date().toISOString();
 
         return {
-            id: 0,
+            id: '',
             name,
             description,
             mode,
@@ -59,6 +59,23 @@ export class EditorMapFactoryService {
             map: cells,
             objects: [],
             visibility: true,
+        };
+    }
+
+    /**
+     * Deep clone an editor map to avoid mutating persisted state.
+     */
+    cloneEditorMap(game: EditorMap): EditorMap {
+        return {
+            ...game,
+            map: game.map.map((cell) => ({
+                ...cell,
+                position: { ...cell.position },
+            })),
+            objects: game.objects.map((object) => ({
+                ...object,
+                position: { ...object.position },
+            })),
         };
     }
 

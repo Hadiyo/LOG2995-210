@@ -166,6 +166,15 @@ export class EditorStateService {
         this.clearSelection();
     }
 
+    /**
+     * Load a persisted game into the editor.
+     * Used for both create and edit flows.
+     */
+    loadGame(game: EditorMap): void {
+        this.editorMap.set(this.mapFactory.cloneEditorMap(game));
+        this.clearSelection();
+    }
+
     /* =========================================================
        Public API — called by Sidebar
        ========================================================= */

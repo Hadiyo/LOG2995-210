@@ -1,9 +1,14 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
-import { GameMode, MapSize } from '@common/enum';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
+import { GameMode, MapSize } from '@common/enum';
 import { validateGame } from '@common/game-validation';
+import type { GameValidationIssue, GameValidationResult } from '@common/game-validation';
+import { GameService } from 'src/app/services/game.service';
 
 @Component({
   selector: 'app-editor-topbar',
@@ -31,9 +36,13 @@ export class EditorTopbarComponent {
      ========================================================= */
   // Central editor state (single source of truth)
   readonly editorState: EditorStateService;
+  readonly router: Router;
+  readonly gameService: GameService;
 
-  constructor(editorState: EditorStateService) {
+  constructor(editorState: EditorStateService, router: Router, gameService: GameService) {
     this.editorState = editorState;
+    this.router = router;
+    this.gameService = gameService;
   }
 
   /* =========================================================
@@ -62,7 +71,14 @@ export class EditorTopbarComponent {
   ] as const;
 
   readonly hasAttemptedSave = signal(false);
-  readonly validationResult = computed(() => validateGame(this.editorState.editorMap()));
+  readonly serverIssues = signal<GameValidationIssue[]>([]);
+  readonly localValidation = computed(() => validateGame(this.editorState.editorMap()));
+  readonly activeIssues = computed(() => {
+    const localValidation = this.localValidation();
+    if (!localValidation.isValid) return localValidation.issues;
+    return this.serverIssues();
+  });
+  readonly shouldShowIssues = computed(() => this.hasAttemptedSave() && this.activeIssues().length > 0);
 
   /* =========================================================
      Actions
@@ -87,13 +103,20 @@ export class EditorTopbarComponent {
   /**
    * Save action.
    */
-  onSave(): void {
+  async onSave(): Promise<void> {
     this.hasAttemptedSave.set(true);
-    const result = this.validationResult();
+    this.serverIssues.set([]);
 
-    if (!result.isValid) return;
+    const localValidation = this.localValidation();
+    if (!localValidation.isValid) return;
 
-    // TODO: wire up save action once persistence is implemented.
+    try {
+      const savedGame = await firstValueFrom(this.gameService.saveGame(this.editorState.editorMap()));
+      this.editorState.loadGame(savedGame);
+      await this.router.navigate(['/admin']);
+    } catch (error) {
+      this.applySaveErrorFeedback(error);
+    }
   }
 
   /* =========================================================
@@ -116,5 +139,25 @@ export class EditorTopbarComponent {
    */
   setSize(size: MapSize): void {
     this.editorState.setSize(size);
+  }
+
+  private applySaveErrorFeedback(error: unknown): void {
+    const validation = this.extractValidationResult(error);
+    if (validation) {
+      this.serverIssues.set(validation.issues);
+      return;
+    }
+
+    window.alert('Echec de la sauvegarde.');
+  }
+
+  private extractValidationResult(error: unknown): GameValidationResult | null {
+    if (!(error instanceof HttpErrorResponse)) return null;
+    if (error.status !== 400) return null;
+
+    const payload = error.error as GameValidationResult;
+    if (!payload || !Array.isArray(payload.issues)) return null;
+
+    return payload;
   }
 }

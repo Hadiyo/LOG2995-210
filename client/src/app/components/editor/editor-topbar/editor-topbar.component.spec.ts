@@ -1,6 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
 import { EditorTopbarComponent } from './editor-topbar.component';
+import { GameService } from 'src/app/services/game.service';
 
 describe('EditorTopbarComponent', () => {
   let component: EditorTopbarComponent;
@@ -9,6 +12,15 @@ describe('EditorTopbarComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EditorTopbarComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: GameService,
+          useValue: {
+            saveGame: () => of(),
+          },
+        },
+      ],
     })
       .compileComponents();
 

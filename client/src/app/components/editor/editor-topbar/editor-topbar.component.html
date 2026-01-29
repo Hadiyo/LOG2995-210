@@ -62,7 +62,7 @@
   <!-- =========================
        Save action + validation status
        ========================= -->
-  @if (validationResult(); as result) {
+  @if (localValidation(); as result) {
     <button
       type="button"
       class="icon-btn"
@@ -122,11 +122,11 @@
 
 </div>
 
-@if (hasAttemptedSave() && !validationResult().isValid) {
+@if (shouldShowIssues()) {
   <div class="validation-panel" role="alert" aria-live="polite">
     <div class="validation-title">Problemes de validation</div>
     <ul class="validation-list">
-      @for (issue of validationResult().issues; track issue.code) {
+      @for (issue of activeIssues(); track issue.code) {
         <li>{{ issue.message }}</li>
       }
     </ul>
