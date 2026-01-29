@@ -8,6 +8,28 @@
     ></app-button>
   </div>
 
+  <section class="maps">
+    <h2 class="section-title">Cartes sauvegardees</h2>
+    @if (isLoading) {
+      <p class="status">Chargement des cartes...</p>
+    } @else if (errorMessage) {
+      <p class="status status--error">{{ errorMessage }}</p>
+    } @else if (maps.length === 0) {
+      <p class="status">Aucune carte n'est disponible.</p>
+    } @else {
+      <div class="grid">
+        @for (map of maps; track map.id) {
+          <app-game-card
+            [map]="map"
+            (edit)="onEditMap($event)"
+            (remove)="onDeleteMap($event)"
+            (toggleVisibility)="onToggleVisibility($event)"
+          ></app-game-card>
+        }
+      </div>
+    }
+  </section>
+
   @if (isCreateDialogOpen) {
     <app-create-map-dialog
       (cancel)="closeCreateMapDialog()"
