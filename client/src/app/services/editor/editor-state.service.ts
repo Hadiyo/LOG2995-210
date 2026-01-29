@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { MapConfig } from '@app/interfaces/create-game-dialog';
+import { MapConfig } from '@app/interfaces/create-map-dialog';
 import { GameMode, MapSize, MouseButton, ObjectSize, ObjectType, TileType } from '@common/enum';
 import { showTemporaryMessage, TEMP_ERROR_DURATION_8000MS } from '@common/error-handling';
 import type { EditorCell, EditorMap, MapObject } from '@common/interface';

@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { MapConfig } from '@app/interfaces/create-game-dialog';
+import { MapConfig } from '@app/interfaces/create-map-dialog';
 import { EditorStateService } from './editor/editor-state.service';
 
 @Injectable({ providedIn: 'root' })

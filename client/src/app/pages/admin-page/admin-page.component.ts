@@ -1,8 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
-import { CreateGameDialogComponent } from '@app/components/create-game-dialog/create-game-dialog.component';
-import { MapConfig } from '@app/interfaces/create-game-dialog';
+import { CreateMapDialogComponent } from '@app/components/create-map-dialog/create-map-dialog.component';
+import { MapConfig } from '@app/interfaces/create-map-dialog';
 import { AdminService } from '@app/services/admin.service';
 
 @Component({

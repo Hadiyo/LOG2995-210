@@ -20,7 +20,7 @@ export interface EditorCell {
 }
 
 export interface EditorMap {
-    _id?: string;
+    id: string;
     name: string;
     description: string;
     mode: GameMode;
