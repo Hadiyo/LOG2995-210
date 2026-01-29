@@ -39,7 +39,7 @@ describe('EditorTopbarComponent', () => {
                 },
               }),
               backdropClick: () => of(),
-              dispose: () => {},
+              dispose: () => undefined,
             }),
           },
         },

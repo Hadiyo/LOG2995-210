@@ -9,8 +9,7 @@ import { firstValueFrom } from 'rxjs';
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { GameMode, MapSize } from '@common/enum';
-import { validateGame } from '@common/game-validation';
-import type { GameValidationIssue, GameValidationResult } from '@common/game-validation';
+import { validateGame, type GameValidationIssue, type GameValidationResult } from '@common/game-validation';
 import { GameService } from 'src/app/services/game.service';
 
 @Component({
@@ -27,6 +26,7 @@ import { GameService } from 'src/app/services/game.service';
   styleUrls: ['./editor-topbar.component.scss'],
 })
 export class EditorTopbarComponent {
+  private readonly badRequestStatus = 400;
   /* =========================================================
      Template helpers
      ========================================================= */
@@ -170,7 +170,7 @@ export class EditorTopbarComponent {
 
   private extractValidationResult(error: unknown): GameValidationResult | null {
     if (!(error instanceof HttpErrorResponse)) return null;
-    if (error.status !== 400) return null;
+    if (error.status !== this.badRequestStatus) return null;
 
     const payload = error.error as GameValidationResult;
     if (!payload || !Array.isArray(payload.issues)) return null;
