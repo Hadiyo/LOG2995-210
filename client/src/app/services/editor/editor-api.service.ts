@@ -17,7 +17,7 @@ export class EditorApiService {
      * @returns EditorMap interface
      */
     async getEditorMap(mapId: string): Promise<EditorMap> {
-        return firstValueFrom(this.http.get<EditorMap>(`${this.serverUrl}/editor/${mapId}`));
+        return firstValueFrom(this.http.get<EditorMap>(`${this.serverUrl}/maps/${mapId}`));
     }
 
 }
