@@ -1,9 +1,12 @@
+import { Overlay } from '@angular/cdk/overlay';
+import { ComponentPortal } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
+import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { GameMode, MapSize } from '@common/enum';
 import { validateGame } from '@common/game-validation';
@@ -37,11 +40,13 @@ export class EditorTopbarComponent {
   // Central editor state (single source of truth)
   readonly editorState: EditorStateService;
   readonly router: Router;
+  readonly overlay: Overlay;
   readonly gameService: GameService;
 
-  constructor(editorState: EditorStateService, router: Router, gameService: GameService) {
+  constructor(editorState: EditorStateService, router: Router, overlay: Overlay, gameService: GameService) {
     this.editorState = editorState;
     this.router = router;
+    this.overlay = overlay;
     this.gameService = gameService;
   }
 
@@ -83,6 +88,27 @@ export class EditorTopbarComponent {
   /* =========================================================
      Actions
      ========================================================= */
+
+  /**
+   * Return to admin view without saving.
+   */
+  onBack(): void {
+    const overlayRef = this.overlay.create({
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-dark-backdrop',
+      positionStrategy: this.overlay.position().global().centerHorizontally().centerVertically(),
+    });
+
+    const portal = new ComponentPortal(PopUpComponent);
+    const ref = overlayRef.attach(portal);
+
+    ref.instance.closePopUp.subscribe(() => overlayRef.dispose());
+    overlayRef.backdropClick().subscribe(() => overlayRef.dispose());
+    ref.instance.confirmPopUp.subscribe(() => {
+      overlayRef.dispose();
+      this.router.navigate(['/admin']);
+    });
+  }
 
   /**
    * Reset the entire map to its initial state.

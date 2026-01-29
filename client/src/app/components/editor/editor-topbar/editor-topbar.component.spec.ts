@@ -1,3 +1,4 @@
+import { Overlay } from '@angular/cdk/overlay';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
@@ -18,6 +19,28 @@ describe('EditorTopbarComponent', () => {
           provide: GameService,
           useValue: {
             saveGame: () => of(),
+          },
+        },
+        {
+          provide: Overlay,
+          useValue: {
+            position: () => ({
+              global: () => ({
+                centerHorizontally: () => ({
+                  centerVertically: () => ({}),
+                }),
+              }),
+            }),
+            create: () => ({
+              attach: () => ({
+                instance: {
+                  closePopUp: of(),
+                  confirmPopUp: of(),
+                },
+              }),
+              backdropClick: () => of(),
+              dispose: () => {},
+            }),
           },
         },
       ],
