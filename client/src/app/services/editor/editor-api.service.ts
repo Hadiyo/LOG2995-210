@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { EditorMap } from '@common/interface';
-import { Observable } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -16,8 +16,8 @@ export class EditorApiService {
      * @param mapId 
      * @returns EditorMap interface
      */
-    getEditorMap(mapId: string): Observable<EditorMap> {
-        return this.http.get<EditorMap>(`${this.serverUrl}/editor/${mapId}`);
+    async getEditorMap(mapId: string): Promise<EditorMap> {
+        return firstValueFrom(this.http.get<EditorMap>(`${this.serverUrl}/editor/${mapId}`));
     }
 
 }

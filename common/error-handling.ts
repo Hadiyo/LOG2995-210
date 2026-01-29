@@ -3,6 +3,7 @@ export const TEMP_ERROR_DURATION_8000MS = 8000;
 
 /**
  * Generic function to create a temporary error message from a signal in the DOM with a custom message
+ * NOT TO BE USED FOR GAME LOGIC
  * @param signal 
  * @param message 
  * @param duration 
