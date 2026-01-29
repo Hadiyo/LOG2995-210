@@ -6,7 +6,6 @@ import { EditorStateService } from './editor/editor-state.service';
 export class AdminService {
     private editorStateService = inject(EditorStateService);
 
-
     /**
      * Calls the editor to set the initial map with the given parameters
      * in the editor view
