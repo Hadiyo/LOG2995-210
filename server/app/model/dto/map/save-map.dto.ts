@@ -4,7 +4,7 @@ import { IsArray, IsBoolean, IsEnum, IsString } from 'class-validator';
 import { GameMode, MapSize } from '@common/enum';
 import type { EditorCell, MapObject } from '@common/interface';
 
-export class SaveGameDto {
+export class SaveMapDto {
     @ApiProperty()
     @IsString()
     id: string;

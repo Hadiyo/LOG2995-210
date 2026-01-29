@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
 import { EditorPageComponent } from './editor-page.component';
-import { GameService } from 'src/app/services/game.service';
+import { MapService } from 'src/app/services/map.service';
 
 describe('EditorPageComponent', () => {
   let component: EditorPageComponent;
@@ -15,9 +15,9 @@ describe('EditorPageComponent', () => {
       providers: [
         provideRouter([]),
         {
-          provide: GameService,
+          provide: MapService,
           useValue: {
-            saveGame: () => of(),
+            saveMap: () => of(),
           },
         },
       ],

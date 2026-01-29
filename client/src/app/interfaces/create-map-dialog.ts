@@ -1,6 +1,6 @@
 import { GameMode, MapSize } from '@common/enum';
 
-export interface CreateGameDialogResult {
+export interface CreateMapDialogResult {
   size: MapSize;
   mode: GameMode;
 }

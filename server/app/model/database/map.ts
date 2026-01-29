@@ -6,7 +6,7 @@ import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enu
 import type { EditorCell, MapObject, Vec2 } from '@common/interface';
 import { Vec2Document, vec2Schema } from '@app/model/database/vec2';
 
-export type GameDocument = Game & Document;
+export type MapDocument = Map & Document;
 
 @Schema({ _id: false })
 class EditorCellDocument {
@@ -47,7 +47,7 @@ class MapObjectDocument {
 const mapObjectSchema = SchemaFactory.createForClass(MapObjectDocument);
 
 @Schema({ timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } })
-export class Game {
+export class Map {
     @ApiProperty()
     @Prop({ required: true })
     name: string;
@@ -90,4 +90,4 @@ export class Game {
     _id?: string;
 }
 
-export const gameSchema = SchemaFactory.createForClass(Game);
+export const mapSchema = SchemaFactory.createForClass(Map);

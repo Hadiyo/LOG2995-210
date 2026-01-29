@@ -4,7 +4,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
 import { EditorTopbarComponent } from './editor-topbar.component';
-import { GameService } from 'src/app/services/game.service';
+import { MapService } from 'src/app/services/map.service';
 
 describe('EditorTopbarComponent', () => {
   let component: EditorTopbarComponent;
@@ -16,9 +16,9 @@ describe('EditorTopbarComponent', () => {
       providers: [
         provideRouter([]),
         {
-          provide: GameService,
+          provide: MapService,
           useValue: {
-            saveGame: () => of(),
+            saveMap: () => of(),
           },
         },
         {
