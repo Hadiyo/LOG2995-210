@@ -1,5 +1,7 @@
+import { OverlayModule } from '@angular/cdk/overlay';
+import { PortalModule } from '@angular/cdk/portal';
 import { provideHttpClient } from '@angular/common/http';
-import { enableProdMode, enableProfiling, provideZoneChangeDetection } from '@angular/core';
+import { enableProdMode, enableProfiling, importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { Routes, provideRouter, withHashLocation } from '@angular/router';
 import { AdminPageComponent } from '@app/pages/admin-page/admin-page.component';
@@ -29,5 +31,14 @@ const routes: Routes = [
 
 enableProfiling();
 bootstrapApplication(AppComponent, {
-    providers: [provideZoneChangeDetection(), provideHttpClient(), provideRouter(routes, withHashLocation())],
+    providers:
+        [
+            provideZoneChangeDetection(),
+            provideHttpClient(),
+            provideRouter(routes, withHashLocation()),
+            importProvidersFrom(
+                OverlayModule,
+                PortalModule,
+            ),
+        ],
 });

@@ -51,15 +51,6 @@ export class EditorTopbarComponent {
   }
 
   /* =========================================================
-     Tool selection
-     ========================================================= */
-  // Available editor tools (segmented control)
-  // readonly tools: { id: EditorToolId; label: string }[] = [
-  //   { id: 'mouse', label: 'Souris' },
-  //   { id: 'applicator', label: 'Applicateur' },
-  // ];
-
-  /* =========================================================
      Mode & size options
      ========================================================= */
   // Game mode selection (mutually exclusive)
