@@ -59,7 +59,11 @@ export class EditorCanvasComponent {
           this.editorState.applyAtIndex(index);
           break;
         case MouseButton.Right:
-          if (this.editorState.isShiftPressed()) return; // Disables drag-erase for objects
+          if (this.editorState.isShiftPressed()) {
+            // SHIFT + Right-drag: remove object at index
+            this.editorState.eraseObjectAtIndex(index);
+            break;
+          }
           this.editorState.eraseTileAtIndex(index);
           break;
       }
@@ -111,21 +115,20 @@ export class EditorCanvasComponent {
         // - supports normal click placement
         // - gives instant feedback even before dragging
         this.editorState.applyAtIndex(index);
-
         break;
 
       case MouseButton.Right:
+        // Enables drag-erase behavior
+        this.isPainting = true;
+
         // SHIFT + Right-click: remove object at index
         if (this.editorState.isShiftPressed()) {
           this.editorState.eraseObjectAtIndex(index);
-          return;
+          break;
         }
 
         // Right-click: remove tile at index
-        // Enables drag-erase behavior for tiles
-        this.isPainting = true;
         this.editorState.eraseTileAtIndex(index);
-
         break;
 
       default:
