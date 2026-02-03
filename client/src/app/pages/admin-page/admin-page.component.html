@@ -21,7 +21,7 @@
         @for (map of maps; track map.id) {
           <app-game-card
             [map]="map"
-            (edit)="onEditMap($event)"
+            (edit)="onEditExistingMap($event)"
             (remove)="onDeleteMap($event)"
             (toggleVisibility)="onToggleVisibility($event)"
           ></app-game-card>

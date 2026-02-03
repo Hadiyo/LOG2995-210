@@ -1,9 +1,9 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MapConfig } from '@app/interfaces/create-map-dialog';
+import { MapService } from '@app/services/map.service';
 import { GameMode, MapSize, MouseButton, ObjectSize, ObjectType, TileType } from '@common/enum';
-import { showTemporaryMessage, TEMP_ERROR_DURATION_8000MS } from '@common/error-handling';
 import type { EditorCell, EditorMap, MapObject } from '@common/interface';
-import { EditorApiService } from './editor-api.service';
+import { catchError, map, Observable, of, tap } from 'rxjs';
 import { EditorMapFactoryService } from './editor-map-factory.service';
 import { EditorOccupancyService } from './editor-occupancy.service';
 import { EditorPlacementRulesService } from './editor-placement-rules.service';
@@ -15,7 +15,7 @@ export class EditorStateService {
     private readonly occupancy = inject(EditorOccupancyService);
     private readonly mapFactory = inject(EditorMapFactoryService);
     private readonly rules = inject(EditorPlacementRulesService);
-    private readonly api = inject(EditorApiService);
+    private readonly mapService = inject(MapService);
 
     /* =========================================================
        Editor UI selection state (signals)
@@ -47,6 +47,8 @@ export class EditorStateService {
 
     // The current map being edited (cells + objects + metadata)
     readonly editorMap = signal<EditorMap>(this.mapFactory.createEmptyMap());
+    // Map snapshot for edition revert operations
+    readonly editorMapSnapshot = signal<EditorMap>(this.mapFactory.createEmptyMap());
 
     // Derived dimensions based on chosen map size
     readonly dimensions = computed(() => this.mapFactory.getDimensions(this.editorMap().size));
@@ -151,21 +153,6 @@ export class EditorStateService {
     }
 
     /**
-     * sets mode and size for a newly created map and changes local editorMap copy
-     * and changes local editorMap copy.
-     * @param mapConfig mode and size interface
-     */
-    setMapModeSize(mapConfig: MapConfig): void {
-        this.editorMap.set(
-            this.mapFactory.createEmptyMap({
-                size: mapConfig.size,
-                mode: mapConfig.mode,
-            }),
-        );
-        this.clearSelection();
-    }
-
-    /**
      * Reset map content (cells + objects) but keep size/mode/name/description.
      */
     resetMap(): void {
@@ -182,31 +169,48 @@ export class EditorStateService {
     }
 
     /**
+     * sets mode and size for a newly created map and changes local editorMap copy
+     * and changes local editorMap copy.
+     * @param mapConfig mode and size interface
+     */
+    setMapModeSize(mapConfig: MapConfig): boolean {
+        try {
+            const newMap = this.mapFactory.createEmptyMap({
+                size: mapConfig.size,
+                mode: mapConfig.mode,
+            });
+            this.editorMap.set(newMap);
+            this.editorMapSnapshot.set(newMap);
+            this.clearSelection();
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
      * Uses the EditorAPI to fetch an existing map from its id and handles
      * map creation in case of fetching error.
      * @param mapId 
      */
-    async loadExistingEditorMap(mapId: string): Promise<void> {
-        try {
-            // Only called if HTTP status is 200–299
-            const remoteMap = await this.api.getEditorMap(mapId);
-            this.editorMap.set(remoteMap);
-            this.errorMessage.set(null);
-        } catch (error) {
-            showTemporaryMessage(
-                this.errorMessage,
-                `Impossible de charger la carte. ${error}. Une carte par défaut a été créée.`,
-                TEMP_ERROR_DURATION_8000MS,
-            );
-        }
+    loadExistingEditorMap(mapId: string): Observable<boolean> {
+        return this.mapService.getMapById(mapId).pipe(
+            tap(remoteMap => {
+                this.loadMap(remoteMap);
+            }),
+            map(() => true),
+            catchError(() => of(false)), // AdminService manages error handling with AdminPage
+        );
     }
 
     /**
      * Load a persisted map into the editor.
      * Used for both create and edit flows.
      */
-    loadMap(map: EditorMap): void {
-        this.editorMap.set(this.mapFactory.cloneEditorMap(map));
+    loadMap(remoteMap: EditorMap): void {
+        const snapshot = this.mapFactory.cloneEditorMap(remoteMap);
+        this.editorMapSnapshot.set(snapshot);
+        this.editorMap.set(remoteMap);
         this.clearSelection();
     }
 
@@ -247,11 +251,11 @@ export class EditorStateService {
      * Returns the object that covers the cell position (supports 2x2).
      */
     getObjectAtIndex(index: number): MapObject | null {
-        const map = this.editorMap();
-        const cell = map.map[index];
+        const tempMap = this.editorMap();
+        const cell = tempMap.map[index];
         if (!cell) return null;
 
-        return this.occupancy.findObjectCoveringPosition(map.objects, cell.position);
+        return this.occupancy.findObjectCoveringPosition(tempMap.objects, cell.position);
     }
 
     /**

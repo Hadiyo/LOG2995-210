@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { MapConfig } from '@app/interfaces/create-map-dialog';
+import { Observable } from 'rxjs';
 import { EditorStateService } from './editor/editor-state.service';
 
 @Injectable({ providedIn: 'root' })
@@ -11,8 +12,8 @@ export class AdminService {
      * in the editor view
      * @param result interface containing the map size and mode
      */
-    setMapProperties(result: MapConfig): void {
-        this.editorStateService.setMapModeSize(result);
+    setMapProperties(result: MapConfig): boolean {
+        return this.editorStateService.setMapModeSize(result);
     }
 
     /**
@@ -20,7 +21,7 @@ export class AdminService {
      * for the editor view
      * @param mapId map identification number
      */
-    fetchExistingMapForEditor(mapId: string): void {
-        this.editorStateService.loadExistingEditorMap(mapId);
+    fetchExistingMapForEditor(mapId: string): Observable<boolean> {
+        return this.editorStateService.loadExistingEditorMap(mapId);
     }
 }
