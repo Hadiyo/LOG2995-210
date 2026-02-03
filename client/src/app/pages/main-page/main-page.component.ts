@@ -19,25 +19,25 @@ export class MainPageComponent implements AfterViewInit {
     variant: 'primary' | 'secondary' | 'tertiary' | 'ghost';
     link?: string;
   }[] = [
-    {
-      id: 'create-game',
-      label: 'CREER UNE PARTIE',
-      link: '/game',
-      variant: 'primary',
-    },
-    {
-      id: 'join-game',
-      label: 'JOINDRE UNE PARTIE',
-      link: '/material',
-      variant: 'secondary',
-    },
-    {
-      id: 'admin-game',
-      label: 'ADMINISTRER LES JEUX',
-      link: '/admin',
-      variant: 'tertiary',
-    },
-  ];
+      {
+        id: 'create-game',
+        label: 'CREER UNE PARTIE',
+        link: '/game',
+        variant: 'primary',
+      },
+      {
+        id: 'join-game',
+        label: 'JOINDRE UNE PARTIE',
+        link: '/material',
+        variant: 'secondary',
+      },
+      {
+        id: 'admin-game',
+        label: 'ADMINISTRER LES JEUX',
+        link: '/admin',
+        variant: 'tertiary',
+      },
+    ];
 
   readonly teamNames = [
     'Nadim',
@@ -45,6 +45,7 @@ export class MainPageComponent implements AfterViewInit {
     'Hadi',
     'Ariane',
     'Thong',
+    'fallou',
   ];
 
   ngAfterViewInit(): void {

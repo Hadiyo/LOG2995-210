@@ -1,0 +1,31 @@
+<div class="waiting-room-container">
+  <h1 class="title">Salle d'attente</h1>
+
+  <div class="content-grid">
+    <div class="panel players-list">
+      <h2>Joueurs en attente</h2>
+      <ul>
+        @for (player of players; track player.name) {
+          <li [class.organizer]="player.isOrganizer">
+            <img [src]="player.avatar" alt="Avatar" class="avatar-small">
+            <span>{{ player.name }}</span>
+            <span *ngIf="player.isOrganizer" class="badge">Organisateur</span>
+          </li>
+        }
+        <li class="empty-slot">En attente de joueurs...</li>
+      </ul>
+    </div>
+
+    <div class="panel chat-area">
+      <h2>Clavardage</h2>
+      <div class="messages">
+        </div>
+      <input type="text" placeholder="Entrez votre message..." disabled title="Disponible au Sprint 2">
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-secondary" (click)="quitGame()">Quitter la partie</button>
+    <button class="btn-primary" (click)="startGame()">Lancer la partie</button>
+  </div>
+</div>
