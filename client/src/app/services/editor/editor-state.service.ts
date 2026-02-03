@@ -153,18 +153,14 @@ export class EditorStateService {
     }
 
     /**
-     * Reset map content (cells + objects) but keep size/mode/name/description.
+     * Reset map content (cells + objects) from snapshot but keep size/mode/name/description.
      */
     resetMap(): void {
-        const current = this.editorMap();
-        this.editorMap.set(
-            this.mapFactory.createEmptyMap({
-                size: current.size,
-                mode: current.mode,
-                name: current.name,
-                description: current.description,
-            }),
-        );
+        this.editorMap.update(current => ({
+            ...current,
+            map: this.editorMapSnapshot().map,
+            objects: this.editorMapSnapshot().objects,
+        }));
         this.clearSelection();
     }
 
@@ -179,9 +175,7 @@ export class EditorStateService {
                 size: mapConfig.size,
                 mode: mapConfig.mode,
             });
-            this.editorMap.set(newMap);
-            this.editorMapSnapshot.set(newMap);
-            this.clearSelection();
+            this.loadMap(newMap);
             return true;
         } catch {
             return false;
@@ -207,10 +201,10 @@ export class EditorStateService {
      * Load a persisted map into the editor.
      * Used for both create and edit flows.
      */
-    loadMap(remoteMap: EditorMap): void {
-        const snapshot = this.mapFactory.cloneEditorMap(remoteMap);
+    loadMap(tempMap: EditorMap): void {
+        const snapshot = this.mapFactory.cloneEditorMap(tempMap);
         this.editorMapSnapshot.set(snapshot);
-        this.editorMap.set(remoteMap);
+        this.editorMap.set(tempMap);
         this.clearSelection();
     }
 
