@@ -53,9 +53,43 @@
 
   <!-- Spacer pushes action buttons to the right -->
   <div class="spacer"></div>
+  <!-- =========================
+       Cancel action
+       ========================= -->
+  <button
+    type="button"
+    class="icon-btn"
+    (click)="onCancel()"
+    title="Curseur"
+    aria-label="Curseur"
+  >
+    <!-- Cancel / close icon -->
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path xmlns="http://www.w3.org/2000/svg" fill="#FFF" stroke="#000" stroke-width="1" stroke-linejoin="round" 
+      d="M18 14.88 8.16 3.15c-.26-.31-.76-.12-.76.28v15.31c0 .36.42.56.7.33l3.1-2.6 1.55 4.25c.08.22.33.34.55.26l1.61-.59a.43.43 0 0 0 .26-.55l-1.55-4.25h4.05c.36 0 .56-.42.33-.7Z"/>
+    </svg>
+  </button>
 
 
   <!-- =========================
+       Reset action
+       ========================= -->
+  <button
+    type="button"
+    class="icon-btn"
+    (click)="onReset()"
+    title="Réinitialiser"
+    aria-label="Réinitialiser"
+  >
+    <!-- Reset / refresh icon -->
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5a5 5 0 1 1-9.9-1h-2.02A7 7 0 1 0 12 6Z"
+      />
+    </svg>
+  </button>
+
+    <!-- =========================
        Save action + validation status
        ========================= -->
   @if (localValidation(); as result) {
@@ -78,44 +112,6 @@
     </button>
   }
 
-
-  <!-- =========================
-       Reset action
-       ========================= -->
-  <button
-    type="button"
-    class="icon-btn"
-    (click)="onReset()"
-    title="Réinitialiser"
-    aria-label="Réinitialiser"
-  >
-    <!-- Reset / refresh icon -->
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5a5 5 0 1 1-9.9-1h-2.02A7 7 0 1 0 12 6Z"
-      />
-    </svg>
-  </button>
-
-
-  <!-- =========================
-       Cancel action
-       ========================= -->
-  <button
-    type="button"
-    class="icon-btn danger"
-    (click)="onCancel()"
-    title="Annuler"
-    aria-label="Annuler"
-  >
-    <!-- Cancel / close icon -->
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L10.59 13.4 4.29 19.71 2.88 18.29 9.17 12 2.88 5.71 4.29 4.29l6.3 6.31 6.3-6.31 1.41 1.42Z"
-      />
-    </svg>
-  </button>
-
 </div>
 
 @if (shouldShowIssues()) {
@@ -128,3 +124,4 @@
     </ul>
   </div>
 }
+

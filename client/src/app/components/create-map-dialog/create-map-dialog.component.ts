@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MAP_SIZE_CONFIG, MapSizeOption, getPlayersLabel } from '@app/config/map-size.config';
-import { CreateMapDialogResult } from '@app/interfaces/create-map-dialog';
+import { getPlayersLabel, MAP_SIZE_CONFIG, MapSizeOption } from '@app/config/map-size.config';
+import { MapConfig } from '@app/interfaces/create-map-dialog';
 import { GameMode, MapSize } from '@common/enum';
 
 const MODE_OPTIONS = [
@@ -24,7 +24,7 @@ export class CreateMapDialogComponent {
   selectedMode?: GameMode;
 
   @Output() cancel = new EventEmitter<void>();
-  @Output() confirm = new EventEmitter<CreateMapDialogResult>();
+  @Output() confirm = new EventEmitter<MapConfig>();
 
   getPlayersLabel(option: MapSizeOption): string {
     return getPlayersLabel(option);

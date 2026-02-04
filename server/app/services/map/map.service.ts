@@ -2,10 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 
-import { ObjectSize, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapObject, Vec2 } from '@common/interface';
 import { Map, MapDocument } from '@app/model/database/map';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
+import { ObjectSize, TileType } from '@common/enum';
+import type { EditorCell, EditorMap, MapObject, Vec2 } from '@common/interface';
 
 type PersistedCell = Omit<EditorCell, 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean };
 type PersistedMap = Omit<EditorMap, 'id' | 'map'> & { map: PersistedCell[] };

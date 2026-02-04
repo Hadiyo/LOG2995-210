@@ -4,7 +4,7 @@
     <app-button
       label="Creer une nouvelle carte"
       variant="primary"
-      (click)="openCreateMapDialog()"
+      (click)="toggleGameDialog()"
     ></app-button>
   </div>
 
@@ -21,7 +21,7 @@
         @for (map of maps; track map.id) {
           <app-game-card
             [map]="map"
-            (edit)="onEditMap($event)"
+            (edit)="onEditExistingMap($event)"
             (remove)="onDeleteMap($event)"
             (toggleVisibility)="onToggleVisibility($event)"
           ></app-game-card>
@@ -32,8 +32,8 @@
 
   @if (isCreateDialogOpen) {
     <app-create-map-dialog
-      (cancel)="closeCreateMapDialog()"
-      (confirm)="onCreateMapDialogConfirm($event)"
+      (cancel)="toggleGameDialog()"
+      (confirm)="onCreateGameDialogConfirm($event)"
     ></app-create-map-dialog>
   }
 </main>

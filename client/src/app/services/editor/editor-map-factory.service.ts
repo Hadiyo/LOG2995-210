@@ -9,7 +9,7 @@ export class EditorMapFactoryService {
     /* =========================================================
        Map creation & rule helpers
        ========================================================= */
-       
+
     /**
      * MapSize -> numeric dimensions.
      */
