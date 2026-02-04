@@ -38,9 +38,6 @@ export class EditorStateService {
     // Current inspected cell info (used when tool = 'mouse')
     readonly selectedCell = signal<SelectedCellInfo | null>(null);
 
-    // Error message
-    readonly errorMessage = signal<string | null>(null);
-
     /* =========================================================
        Editor map state (single source of truth)
        ========================================================= */

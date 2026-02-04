@@ -102,6 +102,8 @@ export class AdminPageComponent implements OnInit {
    * Manages AdminPage response to HTTP GET all database maps by subscription:
    */
   private loadMaps(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
     this.mapService.getAllMaps().subscribe({
       next: (maps) => {
         this.maps = maps;

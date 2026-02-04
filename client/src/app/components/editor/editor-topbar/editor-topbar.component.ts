@@ -74,7 +74,6 @@ export class EditorTopbarComponent {
   readonly hasAttemptedSave = signal(false);
   readonly serverIssues = signal<MapValidationIssue[]>([]);
   readonly localValidation = computed(() => validateMap(this.editorState.editorMap()));
-  readonly errorMessage = computed(() => this.editorState.errorMessage());
   readonly activeIssues = computed(() => {
     const localValidation = this.localValidation();
     if (!localValidation.isValid) return localValidation.issues;
