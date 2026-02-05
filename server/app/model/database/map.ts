@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Document } from 'mongoose';
 
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
-import type { EditorCell, MapObject, Vec2 } from '@common/interface';
+import { EditorCell, MapObject, Vec2, PreviewImageFormat } from '@common/interface';
 import { Vec2Document, vec2Schema } from '@app/model/database/vec2';
 
 export type MapDocument = Map & Document;
@@ -71,6 +71,14 @@ export class Map {
     @ApiProperty()
     @Prop({ required: true })
     visibility: boolean;
+
+    @ApiProperty({ required: false })
+    @Prop({ required: false })
+    previewImage?: string;
+
+    @ApiProperty({ required: false, enum: PreviewImageFormat })
+    @Prop({ required: false, enum: PreviewImageFormat })
+    previewImageFormat?: PreviewImageFormat;
 
     @ApiProperty({ type: [EditorCellDocument] })
     @Prop({ required: true, type: [editorCellSchema] })
