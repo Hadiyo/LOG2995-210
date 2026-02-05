@@ -16,13 +16,13 @@ import { take } from 'rxjs';
   styleUrl: './admin-page.component.scss',
 })
 export class AdminPageComponent implements OnInit {
-  isCreateDialogOpen = false;
-  isDeleteDialogOpen = false;
-  isDeleting = false;
-  mapPendingDeletion?: EditorMap;
-  maps: EditorMap[] = [];
-  isLoading = false;
-  errorMessage = '';
+  protected isCreateDialogOpen = false; // Create map popup state
+  protected isDeleteDialogOpen = false; // Delete map popup state
+  protected isLoading = false; // Map loading state
+  protected isDeleting = false;  // Delete button state
+  protected mapPendingDeletion?: EditorMap;
+  protected maps: EditorMap[] = [];
+  protected errorMessage = '';
 
   constructor(
     private readonly mapService: MapService,
@@ -37,7 +37,7 @@ export class AdminPageComponent implements OnInit {
   /**
    * Opens or closes the dialog box to create a new map
    */
-  toggleGameDialog(): void {
+  protected toggleGameDialog(): void {
     this.isCreateDialogOpen = !this.isCreateDialogOpen;
   }
 
@@ -45,7 +45,7 @@ export class AdminPageComponent implements OnInit {
    * Sends a signal to editor view to create a new map and display it in editor view
    * @param result GameMode and MapSize
    */
-  onCreateGameDialogConfirm(result: MapConfig): void {
+  protected onCreateGameDialogConfirm(result: MapConfig): void {
     const ok = this.adminService.setMapProperties(result);
     if (ok) {
       this.toggleGameDialog();
@@ -60,7 +60,7 @@ export class AdminPageComponent implements OnInit {
    * to retrieve the given map for edition
    * @param mapId id of the map to retrieve for the editor view
    */
-  onEditExistingMap(map: EditorMap): void {
+  protected onEditExistingMap(map: EditorMap): void {
     this.adminService
       .fetchExistingMapForEditor(map.id)
       .pipe(take(1))
@@ -73,17 +73,17 @@ export class AdminPageComponent implements OnInit {
       });
   }
 
-  onDeleteMap(map: EditorMap): void {
+  protected onDeleteMap(map: EditorMap): void {
     this.mapPendingDeletion = map;
     this.isDeleteDialogOpen = true;
   }
 
-  closeDeleteDialog(): void {
+  protected closeDeleteDialog(): void {
     if (this.isDeleting) return;
     this.resetDeleteDialog();
   }
 
-  confirmDeleteMap(): void {
+  protected confirmDeleteMap(): void {
     const map = this.mapPendingDeletion;
     if (!map || this.isDeleting) return;
 
@@ -108,7 +108,7 @@ export class AdminPageComponent implements OnInit {
    * Manages AdminPage response to Map HTTP PATCH by subscription
    * @param map
    */
-  onToggleVisibility(map: EditorMap): void {
+  protected onToggleVisibility(map: EditorMap): void {
     this.mapService.updateMapVisibility(map.id, !map.visibility).subscribe({
       next: (updated) => {
         this.maps = this.maps.map((item) => (item.id === updated.id ? updated : item));
@@ -124,11 +124,11 @@ export class AdminPageComponent implements OnInit {
    */
   private loadMaps(): void {
     this.isLoading = true;
-    this.errorMessage = '';
     this.mapService.getAllMaps().subscribe({
       next: (maps) => {
         this.maps = maps;
         this.isLoading = false;
+        this.errorMessage = '';
       },
       error: () => {
         this.errorMessage = 'Impossible de charger les cartes pour le moment.';
