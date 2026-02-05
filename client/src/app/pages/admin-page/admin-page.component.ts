@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 import { CreateMapDialogComponent } from '@app/components/create-map-dialog/create-map-dialog.component';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
@@ -11,8 +11,7 @@ import { take } from 'rxjs';
 
 @Component({
   selector: 'app-admin-page',
-  standalone: true,
-  imports: [AppButtonComponent, CreateMapDialogComponent, GameCardComponent],
+  imports: [AppButtonComponent, CreateMapDialogComponent, GameCardComponent, RouterLink],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
