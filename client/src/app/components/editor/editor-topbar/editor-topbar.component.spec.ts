@@ -1,6 +1,10 @@
+import { Overlay } from '@angular/cdk/overlay';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
 import { EditorTopbarComponent } from './editor-topbar.component';
+import { MapService } from 'src/app/services/map.service';
 
 describe('EditorTopbarComponent', () => {
   let component: EditorTopbarComponent;
@@ -9,6 +13,37 @@ describe('EditorTopbarComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EditorTopbarComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: MapService,
+          useValue: {
+            saveMap: () => of(),
+          },
+        },
+        {
+          provide: Overlay,
+          useValue: {
+            position: () => ({
+              global: () => ({
+                centerHorizontally: () => ({
+                  centerVertically: () => ({}),
+                }),
+              }),
+            }),
+            create: () => ({
+              attach: () => ({
+                instance: {
+                  closePopUp: of(),
+                  confirmPopUp: of(),
+                },
+              }),
+              backdropClick: () => of(),
+              dispose: () => undefined,
+            }),
+          },
+        },
+      ],
     })
       .compileComponents();
 

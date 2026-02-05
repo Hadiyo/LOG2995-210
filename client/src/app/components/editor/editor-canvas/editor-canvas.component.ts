@@ -1,8 +1,8 @@
 import { Component, HostListener } from '@angular/core';
 import { EditorTileComponent } from '@app/components/editor/editor-tile/editor-tile.component';
+import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { MouseButton, MouseEventType } from '@common/enum';
 import { TileEvent } from '@common/types';
-import { EditorStateService } from '@app/services/editor/editor-state.service';
 
 @Component({
   selector: 'app-editor-canvas',
@@ -17,27 +17,21 @@ export class EditorCanvasComponent {
   // Drag-paint state (true while mouse is held down and tile tool is active)
   private isPainting = false;
 
-  // Used to track SHIFT key state for right-click removal of objects
-  isShiftPressed = false;
-
-  // Used to track mouse button state globally
-  activeButton: MouseButton | null = null;
-
   // Track state of shift key
   @HostListener('document:keydown.shift')
   onShiftDown(): void {
-    this.isShiftPressed = true;
+    this.editorState.isShiftPressed.set(true);
   }
 
   @HostListener('document:keyup.shift')
   onShiftUp(): void {
-    this.isShiftPressed = false;
+    this.editorState.isShiftPressed.set(false);
   }
 
   // Assume all keys are released when window loses focus
   @HostListener('window:blur')
   onBlur() {
-    this.isShiftPressed = false;
+    this.editorState.isShiftPressed.set(false);
   }
 
   /* =========================================================
@@ -60,12 +54,16 @@ export class EditorCanvasComponent {
     // - Only active when isPainting = true (set on mousedown)
     // - We restrict drag painting to tiles (not objects)
     if (this.isPainting) {
-      switch (this.activeButton) {
+      switch (this.editorState.activeButton()) {
         case MouseButton.Left:
           this.editorState.applyAtIndex(index);
           break;
         case MouseButton.Right:
-          if (this.isShiftPressed) return; // Disables drag-erase for objects
+          if (this.editorState.isShiftPressed()) {
+            // SHIFT + Right-drag: remove object at index
+            this.editorState.eraseObjectAtIndex(index);
+            break;
+          }
           this.editorState.eraseTileAtIndex(index);
           break;
       }
@@ -105,10 +103,10 @@ export class EditorCanvasComponent {
     // Prevent text selection
     event.preventDefault();
 
-    this.activeButton = event.button;
+    this.editorState.activeButton.set(event.button);
 
     // Respond to left-click (0 = main button)
-    switch (this.activeButton) {
+    switch (this.editorState.activeButton()) {
       case MouseButton.Left:
         // Enable drag painting ONLY if we're applying tiles
         this.isPainting = this.canPaintTiles();
@@ -117,21 +115,20 @@ export class EditorCanvasComponent {
         // - supports normal click placement
         // - gives instant feedback even before dragging
         this.editorState.applyAtIndex(index);
-
         break;
 
       case MouseButton.Right:
+        // Enables drag-erase behavior
+        this.isPainting = true;
+
         // SHIFT + Right-click: remove object at index
-        if (this.isShiftPressed) {
+        if (this.editorState.isShiftPressed()) {
           this.editorState.eraseObjectAtIndex(index);
-          return;
+          break;
         }
 
         // Right-click: remove tile at index
-        // Enables drag-erase behavior for tiles
-        this.isPainting = true;
         this.editorState.eraseTileAtIndex(index);
-
         break;
 
       default:
@@ -144,7 +141,7 @@ export class EditorCanvasComponent {
     this.isPainting = false;
 
     // Reset active button
-    this.activeButton = null;
+    this.editorState.activeButton.set(null);
   }
 
   // Global mouseup listener to catch releases outside the grid

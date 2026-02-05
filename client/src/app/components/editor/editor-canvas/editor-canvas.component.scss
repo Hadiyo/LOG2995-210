@@ -15,8 +15,17 @@
 
     /* Inherit main text color from theme */
     color: var(--text-main);
+}
 
+/* =========================
+   Canvas cursor
+   ========================= */
+.tile-selected > * {
+    cursor: url("/assets/mouse-icons/paint-brush-cursor.png"), auto;
+}
 
+.object-selected > * {
+    cursor: url("/assets/mouse-icons/item-cursor.png"), auto;
 }
 
 /* =========================

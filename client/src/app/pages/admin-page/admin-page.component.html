@@ -2,16 +2,38 @@
   <h1 class="title">Administration</h1>
   <div class="actions">
     <app-button
-      label="Creer un nouveau jeu"
+      label="Creer une nouvelle carte"
       variant="primary"
-      (click)="openCreateGameDialog()"
+      (click)="toggleGameDialog()"
     ></app-button>
   </div>
 
+  <section class="maps">
+    <h2 class="section-title">Cartes sauvegardees</h2>
+    @if (isLoading) {
+      <p class="status">Chargement des cartes...</p>
+    } @else if (errorMessage) {
+      <p class="status status--error">{{ errorMessage }}</p>
+    } @else if (maps.length === 0) {
+      <p class="status">Aucune carte n'est disponible.</p>
+    } @else {
+      <div class="grid">
+        @for (map of maps; track map.id) {
+          <app-game-card
+            [map]="map"
+            (edit)="onEditExistingMap($event)"
+            (remove)="onDeleteMap($event)"
+            (toggleVisibility)="onToggleVisibility($event)"
+          ></app-game-card>
+        }
+      </div>
+    }
+  </section>
+
   @if (isCreateDialogOpen) {
-    <app-create-game-dialog
-      (cancel)="closeCreateGameDialog()"
+    <app-create-map-dialog
+      (cancel)="toggleGameDialog()"
       (confirm)="onCreateGameDialogConfirm($event)"
-    ></app-create-game-dialog>
+    ></app-create-map-dialog>
   }
 </main>

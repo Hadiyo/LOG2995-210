@@ -1,5 +1,9 @@
 <!-- Main canvas wrapper for the map editor -->
-<div class="canvas">
+<div 
+    class="canvas" 
+    [class.tile-selected]="this.editorState.selectedTileType() !== null"
+    [class.object-selected]="this.editorState.selectedObjectType() !== null"
+>
 
     <!-- Grid container
          - CSS variables (--cols, --rows) are bound dynamically
@@ -16,7 +20,8 @@
                     [tile]="cell"
                     [object]="editorState.getObjectAtIndex($index)"
                     (contextmenu)="onContextMenu($event)" 
-                    (tileEvent)="handleTileEvent($event)">
+                    (tileEvent)="handleTileEvent($event)"
+                    >
                 </app-editor-tile>
             }
         </div>

@@ -1,13 +1,13 @@
 import { MapSize } from '@common/enum';
 
-export type GameSizeOption = {
+export type MapSizeOption = {
   value: MapSize;
   label: string;
   minPlayers: number;
   maxPlayers: number;
 };
 
-export const GAME_SIZE_CONFIG: readonly GameSizeOption[] = [
+export const MAP_SIZE_CONFIG: readonly MapSizeOption[] = [
   {
     value: MapSize.S,
     label: 'Petite',
@@ -28,7 +28,7 @@ export const GAME_SIZE_CONFIG: readonly GameSizeOption[] = [
   },
 ];
 
-export const getPlayersLabel = (option: GameSizeOption): string => {
+export const getPlayersLabel = (option: MapSizeOption): string => {
   if (option.minPlayers === option.maxPlayers) {
     return `${option.minPlayers} joueurs`;
   }

@@ -14,30 +14,30 @@ export class MainPageComponent implements AfterViewInit {
 
   readonly title: string = 'LOG2995';
   readonly actions: readonly {
-    id: 'create-game' | 'join-game' | 'admin-game';
+    id: 'create-game' | 'join-game' | 'admin-map';
     label: string;
     variant: 'primary' | 'secondary' | 'tertiary' | 'ghost';
     link?: string;
   }[] = [
-      {
-        id: 'create-game',
-        label: 'CREER UNE PARTIE',
-        link: '/game',
-        variant: 'primary',
-      },
-      {
-        id: 'join-game',
-        label: 'JOINDRE UNE PARTIE',
-        link: '/material',
-        variant: 'secondary',
-      },
-      {
-        id: 'admin-game',
-        label: 'ADMINISTRER LES JEUX',
-        link: '/admin',
-        variant: 'tertiary',
-      },
-    ];
+    {
+      id: 'create-game',
+      label: 'CREER UNE PARTIE',
+      link: '/game',
+      variant: 'primary',
+    },
+    {
+      id: 'join-game',
+      label: 'JOINDRE UNE PARTIE',
+      link: '/material',
+      variant: 'secondary',
+    },
+    {
+      id: 'admin-map',
+      label: 'ADMINISTRER LES CARTES',
+      link: '/admin',
+      variant: 'tertiary',
+    },
+  ];
 
   readonly teamNames = [
     'Nadim',
@@ -45,7 +45,6 @@ export class MainPageComponent implements AfterViewInit {
     'Hadi',
     'Ariane',
     'Thong',
-    'fallou',
   ];
 
   ngAfterViewInit(): void {
