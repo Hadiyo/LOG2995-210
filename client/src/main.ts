@@ -14,7 +14,6 @@ import { WaitingRoomComponent } from '@app/pages/waiting-room/waiting-room.compo
 import { environment } from './environments/environment';
 
 
-
 if (environment.production) {
     enableProdMode();
 }

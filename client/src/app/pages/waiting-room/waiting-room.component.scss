@@ -1,21 +1,29 @@
 .waiting-room-container {
-  padding: 56px 6vw;
-  min-height: 100vh;
+  height: 100vh;
+  box-sizing: border-box; 
+  padding: 56px 6vw 40px; 
   background: var(--bg-main); 
   color: var(--text-main);
+  
+  display: flex;
+  flex-direction: column;
 }
 
 .title {
   text-align: center;
   color: var(--accent-primary);
-  margin-bottom: 40px;
+  margin-bottom: 20px; 
+  flex-shrink: 0;
 }
 
 .content-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30px;
-  margin-bottom: 40px;
+  
+  flex-grow: 1; 
+  min-height: 0;
+  margin-bottom: 20px;
 }
 
 .panel {
@@ -23,7 +31,11 @@
   border: 1px solid var(--accent-primary);
   border-radius: 8px;
   padding: 20px;
-  min-height: 400px;
+  
+
+  height: 100%; 
+  box-sizing: border-box;
+  overflow-y: auto; 
 }
 
 .organizer {
@@ -35,6 +47,7 @@
   display: flex;
   justify-content: center;
   gap: 20px;
+  flex-shrink: 0; 
 }
 
 button {

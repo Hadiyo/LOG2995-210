@@ -8,7 +8,7 @@ describe('WaitingRoomComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [WaitingRoomComponent]
+      imports: [WaitingRoomComponent],
     })
     .compileComponents();
 
