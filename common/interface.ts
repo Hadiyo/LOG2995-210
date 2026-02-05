@@ -18,6 +18,12 @@ export interface EditorCell {
     isOccupied: boolean;
 }
 
+// Possible formats for preview images
+export enum PreviewImageFormat {
+    WEBP = 'webp',
+    PNG = 'png',
+}
+
 export interface EditorMap {
     id: string;
     name: string;
@@ -28,6 +34,10 @@ export interface EditorMap {
     map: EditorCell[];
     objects: MapObject[];
     visibility: boolean;
+    // Optional base64-encoded preview image
+    previewImage?: string;
+    // Optional format of the preview image
+    previewImageFormat?: PreviewImageFormat;
 }
 
 export interface ObjectCountAndLimit {

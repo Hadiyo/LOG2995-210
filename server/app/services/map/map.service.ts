@@ -5,7 +5,10 @@ import type { Model } from 'mongoose';
 import { Map, MapDocument } from '@app/model/database/map';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
 import { ObjectSize, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapObject, Vec2 } from '@common/interface';
+import { EditorCell, EditorMap, MapObject, PreviewImageFormat, Vec2 } from '@common/interface';
+
+// Constants
+import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
 
 type PersistedCell = Omit<EditorCell, 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean };
 type PersistedMap = Omit<EditorMap, 'id' | 'map'> & { map: PersistedCell[] };
@@ -88,6 +91,12 @@ export class MapService {
 
     private buildMapPayload(map: EditorMap): PersistedMap {
         const now = new Date().toISOString();
+        // Validate and sanitize preview image and format
+        const { previewImage, previewImageFormat } = this.validateMapPreview(
+            map.previewImage,
+            map.previewImageFormat,
+        );
+
         return {
             name: map.name.trim(),
             description: map.description.trim(),
@@ -101,8 +110,33 @@ export class MapService {
             })),
             objects: map.objects,
             visibility: map.visibility,
+            // Validated preview image and format
+            previewImage,
+            previewImageFormat,
         };
     }
+
+    // Validate preview image and format before saving to DB
+    private validateMapPreview(
+        previewImage: EditorMap['previewImage'],
+        previewImageFormat: EditorMap['previewImageFormat'],
+    ): { previewImage?: string; previewImageFormat?: PreviewImageFormat } {
+        // Validate preview image and format
+        const isValidFormat =
+            previewImageFormat === PreviewImageFormat.WEBP ||
+            previewImageFormat === PreviewImageFormat.PNG;
+        // Validate preview image base64 string
+        const isValidPreview =
+            typeof previewImage === 'string' &&
+            previewImage.length <= MAX_PREVIEW_IMAGE_BASE64_LENGTH &&
+            /^[A-Za-z0-9+/=]+$/.test(previewImage);
+
+        return {
+            previewImage: isValidPreview ? previewImage : undefined,
+            previewImageFormat: isValidPreview && isValidFormat ? previewImageFormat : undefined,
+        };
+    }
+
 
     private toEditorMap(mapDocument: MapDocument): EditorMap {
         const mapObject = mapDocument.toObject({ versionKey: false }) as PersistedMapRecord;
@@ -125,6 +159,9 @@ export class MapService {
             map: hydratedMap,
             objects,
             id: idValue.toString(),
+            // Preview image and format
+            previewImage: mapObject.previewImage,
+            previewImageFormat: mapObject.previewImageFormat,
         };
     }
 
