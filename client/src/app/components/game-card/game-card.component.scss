@@ -5,7 +5,7 @@
 .card {
   position: relative;
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-columns: 96px minmax(0, 1fr) auto;
   align-items: start;
   gap: 10px;
   padding: 10px;
@@ -108,7 +108,9 @@
   display: flex;
   gap: 6px;
   align-items: center;
-  margin-left: auto;
+  margin-left: 0;
+  justify-self: end;
+  align-self: end;
 }
 
 .icon-button {
@@ -201,6 +203,8 @@
   }
 
   .actions {
+    grid-column: 2 / -1;
+    justify-self: start;
     margin-left: 0;
   }
 }
