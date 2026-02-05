@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { GameMode, MapSize, TileType } from '@common/enum';
-import type { EditorCell, EditorMap } from '@common/interface';
+import type { EditorCell, EditorMap, MapDimensions } from '@common/interface';
 import { MAP_DIMENSIONS_BY_SIZE } from './constants/editor.constants';
 
 @Injectable({ providedIn: 'root' })
@@ -13,7 +13,7 @@ export class EditorMapFactoryService {
     /**
      * MapSize -> numeric dimensions.
      */
-    getDimensions(size: MapSize): { cols: number; rows: number } {
+    getDimensions(size: MapSize): MapDimensions {
         return MAP_DIMENSIONS_BY_SIZE[size] ?? MAP_DIMENSIONS_BY_SIZE[MapSize.S];
     }
 
@@ -58,7 +58,7 @@ export class EditorMapFactoryService {
             date: now,
             map: cells,
             objects: [],
-            visibility: true,
+            visibility: false,
         };
     }
 
