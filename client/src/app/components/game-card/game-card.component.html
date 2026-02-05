@@ -1,7 +1,11 @@
 <article class="card" tabindex="0" [attr.title]="map.description">
   <div class="thumbnail">
     @if (thumbnailUrl) {
-      <img class="thumbnail-img" [src]="thumbnailUrl" [attr.alt]="'Apercu de ' + map.name" />
+      <img
+        class="thumbnail-img"
+        [src]="'data:image/' + (map.previewImageFormat ?? 'webp') + ';base64,' + thumbnailUrl"
+        [attr.alt]="'Apercu de ' + map.name"
+      />
     } @else {
       <div class="thumbnail-placeholder">
         <span>Apercu indisponible</span>

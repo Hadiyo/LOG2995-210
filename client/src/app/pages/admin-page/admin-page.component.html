@@ -21,6 +21,7 @@
         @for (map of maps; track map.id) {
           <app-game-card
             [map]="map"
+            [thumbnailUrl]="map.previewImage"
             (edit)="onEditExistingMap($event)"
             (remove)="onDeleteMap($event)"
             (toggleVisibility)="onToggleVisibility($event)"
