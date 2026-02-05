@@ -145,24 +145,6 @@ export class EditorTopbarComponent {
      Editor configuration
      ========================================================= */
 
-  /**
-   * Update game mode.
-   * Centralized in EditorStateService to enforce
-   * mode-specific constraints (ex. CTF rules).
-   */
-  setMode(mode: GameMode): void {
-    this.editorState.setMode(mode);
-  }
-
-  /**
-   * Update map size.
-   * EditorStateService is responsible for resizing
-   * the grid and handling data migration if needed.
-   */
-  setSize(size: MapSize): void {
-    this.editorState.setSize(size);
-  }
-
   private applySaveErrorFeedback(error: unknown): void {
     const validation = this.extractValidationResult(error);
     if (validation) {

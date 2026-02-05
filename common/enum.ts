@@ -4,9 +4,9 @@ export enum GameMode {
 }
 
 export enum MapSize {
-    S = '10x10',
-    M = '15x15',
-    L = '20x20'
+    S = 10,
+    M = 15,
+    L = 20
 }
 
 export enum TileType {

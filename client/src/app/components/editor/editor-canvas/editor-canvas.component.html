@@ -18,6 +18,7 @@
                 <app-editor-tile
                     [index]="$index"
                     [tile]="cell"
+                    [mapSize]="editorState.editorMap().size"
                     [object]="editorState.getObjectAtIndex($index)"
                     (contextmenu)="onContextMenu($event)" 
                     (tileEvent)="handleTileEvent($event)"

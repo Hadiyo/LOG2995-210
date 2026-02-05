@@ -1,8 +1,9 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MapConfig } from '@app/interfaces/create-map-dialog';
 import { MapService } from '@app/services/map.service';
-import { GameMode, MapSize, MouseButton, ObjectSize, ObjectType, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapObject } from '@common/interface';
+import { GameMode, MouseButton, ObjectSize, ObjectType, TileType } from '@common/enum';
+import type { EditorCell, EditorMap, MapObject, ObjectCountAndLimit } from '@common/interface';
+import { getCellPositionAtIndex } from '@common/map-utils';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { EditorMapFactoryService } from './editor-map-factory.service';
 import { EditorOccupancyService } from './editor-occupancy.service';
@@ -107,49 +108,6 @@ export class EditorStateService {
     }
 
     /**
-     * Change game mode.
-     */
-    setMode(mode: GameMode): void {
-        this.editorMap.update((m) => ({ ...m, mode }));
-
-        // If we switch away from CTF:
-        // - unselect FLAG if it was selected
-        // - remove placed flag from map
-        // - recompute occupancy
-        if (mode !== GameMode.CTF) {
-            this.selectedObjectType.update((t) => (t === ObjectType.FLAG ? null : t));
-            this.editorMap.update((m) => ({
-                ...m,
-                objects: m.objects.filter((o) => o.type !== ObjectType.FLAG),
-            }));
-            this.editorMap.update((m) => ({
-                ...m,
-                map: this.occupancy.refreshOccupied(m.map, m.objects),
-            }));
-        }
-    }
-
-    /**
-     * Change map size:
-     * - rebuilds a fresh empty map with same mode/name/description
-     * - clears UI selection
-     *
-     * (Note: currently does NOT attempt to migrate existing content.)
-     */
-    setSize(size: MapSize): void {
-        const current = this.editorMap();
-        this.editorMap.set(
-            this.mapFactory.createEmptyMap({
-                size,
-                mode: current.mode,
-                name: current.name,
-                description: current.description,
-            }),
-        );
-        this.clearSelection();
-    }
-
-    /**
      * Reset map content (cells + objects) from snapshot but keep size/mode/name/description.
      */
     resetMap(): void {
@@ -212,7 +170,7 @@ export class EditorStateService {
     /** 
     * Get count of object of a given type and its limit
     */
-    getObjectCountAndLimit(type: ObjectType): { count: number; limit: number } {
+    getObjectCountAndLimit(type: ObjectType): ObjectCountAndLimit {
         const m = this.editorMap();
         const count = m.objects.filter((o) => o.type === type).length;
         const limit = this.rules.getObjectLimit(type, m.size, m.mode);
@@ -246,7 +204,7 @@ export class EditorStateService {
         const cell = tempMap.map[index];
         if (!cell) return null;
 
-        return this.occupancy.findObjectCoveringPosition(tempMap.objects, cell.position);
+        return this.occupancy.findObjectCoveringPosition(tempMap.objects, getCellPositionAtIndex(index, tempMap.size));
     }
 
     /**
@@ -262,13 +220,13 @@ export class EditorStateService {
             // Keep only objects that DO NOT cover the clicked cell
             const remaining = this.occupancy.removeObjectByPosition(
                 m.objects,
-                cell.position,
+                getCellPositionAtIndex(index, m.size),
             );
 
             return {
                 ...m,
                 objects: remaining,
-                map: this.occupancy.refreshOccupied(m.map, remaining),
+                map: this.occupancy.refreshOccupied(m.map, remaining, m.size),
             };
         });
     }
@@ -315,7 +273,7 @@ export class EditorStateService {
             let existingObjects = m.objects;
 
             if (!nextWalkable) {
-                existingObjects = this.occupancy.removeObjectByPosition(m.objects, cell.position);
+                existingObjects = this.occupancy.removeObjectByPosition(m.objects, getCellPositionAtIndex(index, m.size));
             }
 
             const updated: EditorCell = {
@@ -329,7 +287,7 @@ export class EditorStateService {
             newMap[index] = updated;
 
             const next = { ...m, map: newMap, objects: existingObjects };
-            return { ...next, map: this.occupancy.refreshOccupied(next.map, next.objects) };
+            return { ...next, map: this.occupancy.refreshOccupied(next.map, next.objects, this.editorMap().size) };
         });
     }
 
@@ -353,7 +311,7 @@ export class EditorStateService {
             // Objects only on walkable tiles
             if (!cell.isWalkable) return m;
 
-            const anchor = cell.position;
+            const anchor = getCellPositionAtIndex(index, m.size);
 
             // Size rule: sanctuaries are 2x2, others are 1x1
             const size: ObjectSize =
@@ -387,7 +345,7 @@ export class EditorStateService {
             };
 
             const nextObjects = [...objectsFiltered, newObj];
-            return { ...m, objects: nextObjects, map: this.occupancy.refreshOccupied(m.map, nextObjects) };
+            return { ...m, objects: nextObjects, map: this.occupancy.refreshOccupied(m.map, nextObjects, m.size) };
         });
     }
 

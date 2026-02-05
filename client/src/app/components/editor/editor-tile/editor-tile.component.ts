@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MouseEventType, TileType } from '@common/enum';
 import { EditorCell, MapObject } from '@common/interface';
+import { getCellPositionAtIndex } from '@common/map-utils';
 import { TileEvent } from '@common/types';
 
 @Component({
@@ -14,6 +15,7 @@ export class EditorTileComponent {
   @Input() index!: number; // Index of the tile in the canva needed for communication
   @Input() tile!: EditorCell;
   @Input() object!: MapObject | null;
+  @Input() mapSize!: number; // Needed for position calculations
 
   @Output() tileEvent = new EventEmitter<TileEvent>();
 
@@ -21,6 +23,13 @@ export class EditorTileComponent {
   readonly mouseEvent = MouseEventType;
 
   protected isHovered = false;
+
+  // Compare tile position and object position
+  protected isObjectOnTile(): boolean {
+    if (!this.object) return false;
+    const tilePos = getCellPositionAtIndex(this.index, this.mapSize);
+    return tilePos.x === this.object.position.x && tilePos.y === this.object.position.y;
+  }
 
   /* =========================================================
     Tile Event Logic

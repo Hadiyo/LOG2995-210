@@ -13,7 +13,6 @@ export interface MapObject {
 }
 
 export interface EditorCell {
-    position: Vec2;
     tileType: TileType;
     isWalkable: boolean;
     isOccupied: boolean;
@@ -29,4 +28,14 @@ export interface EditorMap {
     map: EditorCell[];
     objects: MapObject[];
     visibility: boolean;
+}
+
+export interface ObjectCountAndLimit {
+    count: number;
+    limit: number
+};
+
+export interface MapDimensions {
+    cols: number;
+    rows: number;
 }
