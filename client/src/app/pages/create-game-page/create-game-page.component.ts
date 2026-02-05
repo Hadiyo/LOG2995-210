@@ -52,5 +52,4 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  protected onSelectMap(_map: EditorMap): void {}
 }
