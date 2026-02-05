@@ -109,7 +109,7 @@ export class MapService {
                 ...(cell.tileType === TileType.DOOR ? { doorOpen: cell.isWalkable === true } : {}),
             })),
             objects: map.objects,
-            visibility: false,
+            visibility: map.visibility,
             // Validated preview image and format
             previewImage,
             previewImageFormat,
