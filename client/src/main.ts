@@ -6,6 +6,7 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { Routes, provideRouter, withHashLocation } from '@angular/router';
 import { AdminPageComponent } from '@app/pages/admin-page/admin-page.component';
 import { AppComponent } from '@app/pages/app/app.component';
+import { CreateGamePageComponent } from '@app/pages/create-game-page/create-game-page.component';
 import { EditorPageComponent } from '@app/pages/editor-page/editor-page.component';
 import { GamePageComponent } from '@app/pages/game-page/game-page.component';
 import { MainPageComponent } from '@app/pages/main-page/main-page.component';
@@ -22,9 +23,9 @@ const routes: Routes = [
     { path: '', redirectTo: '/home', pathMatch: 'full' },
     { path: 'home', component: MainPageComponent },
     { path: 'editor', component: EditorPageComponent },
-    { path: 'game', component: GamePageComponent },
+    { path: 'game', component: CreateGamePageComponent },
+    { path: 'play', component: GamePageComponent },
     { path: 'material', component: MaterialPageComponent },
-    { path: 'editor', component: EditorPageComponent },
     { path: 'admin', component: AdminPageComponent },
     { path: '**', redirectTo: '/home' },
 ];
