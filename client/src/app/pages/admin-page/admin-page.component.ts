@@ -17,10 +17,13 @@ import { take } from 'rxjs';
   styleUrl: './admin-page.component.scss',
 })
 export class AdminPageComponent implements OnInit {
-  protected maps: EditorMap[] = [];
-  protected isLoading: boolean = false;
-  protected errorMessage: string = '';
-  protected isCreateDialogOpen: boolean = false;
+  isCreateDialogOpen = false;
+  isDeleteDialogOpen = false;
+  isDeleting = false;
+  mapPendingDeletion?: EditorMap;
+  maps: EditorMap[] = [];
+  isLoading = false;
+  errorMessage = '';
 
   constructor(
     private readonly mapService: MapService,
@@ -35,7 +38,7 @@ export class AdminPageComponent implements OnInit {
   /**
    * Opens or closes the dialog box to create a new map
    */
-  protected toggleGameDialog(): void {
+  toggleGameDialog(): void {
     this.isCreateDialogOpen = !this.isCreateDialogOpen;
   }
 
@@ -43,12 +46,14 @@ export class AdminPageComponent implements OnInit {
    * Sends a signal to editor view to create a new map and display it in editor view
    * @param result GameMode and MapSize
    */
-  protected onCreateGameDialogConfirm(result: MapConfig): void {
+  onCreateGameDialogConfirm(result: MapConfig): void {
     const ok = this.adminService.setMapProperties(result);
     if (ok) {
       this.toggleGameDialog();
       this.router.navigate(['/editor']);
-    } else this.errorMessage = "Impossible d'aller rechercher la carte.";
+    } else {
+      this.errorMessage = "Impossible d'aller rechercher la carte.";
+    }
   }
 
   /**
@@ -56,38 +61,55 @@ export class AdminPageComponent implements OnInit {
    * to retrieve the given map for edition
    * @param mapId id of the map to retrieve for the editor view
    */
-  protected onEditExistingMap(map: EditorMap): void {
-    this.adminService.fetchExistingMapForEditor(map.id)
+  onEditExistingMap(map: EditorMap): void {
+    this.adminService
+      .fetchExistingMapForEditor(map.id)
       .pipe(take(1))
-      .subscribe(ok => {
-        if (ok) this.router.navigate(['/editor']);
-        else this.errorMessage = "Impossible d'aller rechercher la carte.";
+      .subscribe((ok) => {
+        if (ok) {
+          this.router.navigate(['/editor']);
+        } else {
+          this.errorMessage = "Impossible d'aller rechercher la carte.";
+        }
       });
   }
 
-  /**
-   * Manages AdminPage response to Map HTTP DELETE by subscription
-   * @param map 
-   * @returns void
-   */
-  protected onDeleteMap(map: EditorMap): void {
-    if (!window.confirm(`Supprimer la carte "${map.name}" ?`)) return;
+  onDeleteMap(map: EditorMap): void {
+    this.mapPendingDeletion = map;
+    this.isDeleteDialogOpen = true;
+  }
+
+  closeDeleteDialog(): void {
+    if (this.isDeleting) return;
+    this.resetDeleteDialog();
+  }
+
+  confirmDeleteMap(): void {
+    const map = this.mapPendingDeletion;
+    if (!map || this.isDeleting) return;
+
+    this.isDeleting = true;
+    this.errorMessage = '';
 
     this.mapService.deleteMap(map.id).subscribe({
       next: () => {
         this.maps = this.maps.filter((item) => item.id !== map.id);
+        this.resetDeleteDialog();
       },
       error: () => {
         this.errorMessage = 'Impossible de supprimer la carte pour le moment.';
+        this.isDeleting = false;
+        this.isDeleteDialogOpen = false;
+        this.mapPendingDeletion = undefined;
       },
     });
   }
 
   /**
    * Manages AdminPage response to Map HTTP PATCH by subscription
-   * @param map 
+   * @param map
    */
-  protected onToggleVisibility(map: EditorMap): void {
+  onToggleVisibility(map: EditorMap): void {
     this.mapService.updateMapVisibility(map.id, !map.visibility).subscribe({
       next: (updated) => {
         this.maps = this.maps.map((item) => (item.id === updated.id ? updated : item));
@@ -114,5 +136,11 @@ export class AdminPageComponent implements OnInit {
         this.isLoading = false;
       },
     });
+  }
+
+  private resetDeleteDialog(): void {
+    this.isDeleteDialogOpen = false;
+    this.isDeleting = false;
+    this.mapPendingDeletion = undefined;
   }
 }
