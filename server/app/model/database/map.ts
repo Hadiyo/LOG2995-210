@@ -10,10 +10,6 @@ export type MapDocument = Map & Document;
 
 @Schema({ _id: false })
 class EditorCellDocument {
-    // @ApiProperty({ type: Vec2Document })
-    // @Prop({ required: true, type: vec2Schema })
-    // position: Vec2;
-
     @ApiProperty({ enum: TileType })
     @Prop({ required: true, enum: TileType })
     tileType: TileType;
