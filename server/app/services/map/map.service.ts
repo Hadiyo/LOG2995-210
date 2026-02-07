@@ -107,7 +107,7 @@ export class MapService {
             map: map.map.map((cell, index) => ({
                 tileType: cell.tileType,
                 ...(cell.tileType === TileType.DOOR ? { doorOpen: cell.isWalkable === true } : {}),
-                index: index
+                index,
             })),
             objects: map.objects,
             visibility: map.visibility,
@@ -146,7 +146,7 @@ export class MapService {
         const persistedMap = mapObject.map.map((cell, index) => {
             return {
                 ...cell,
-                index
+                index,
             };
         });
 
@@ -160,7 +160,7 @@ export class MapService {
             const position = getCellPositionAtIndex(cell.index, mapDocument.size);
             const key = `${position.x},${position.y}`;
             return {
-                position: position,
+                position,
                 tileType: cell.tileType,
                 isWalkable,
                 isOccupied: occupied.has(key),
