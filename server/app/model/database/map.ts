@@ -2,17 +2,17 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 import { Document } from 'mongoose';
 
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
-import { EditorCell, MapObject, Vec2, PreviewImageFormat } from '@common/interface';
 import { Vec2Document, vec2Schema } from '@app/model/database/vec2';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
+import { EditorCell, MapObject, PreviewImageFormat, Vec2 } from '@common/interface';
 
 export type MapDocument = Map & Document;
 
 @Schema({ _id: false })
 class EditorCellDocument {
-    @ApiProperty({ type: Vec2Document })
-    @Prop({ required: true, type: vec2Schema })
-    position: Vec2;
+    // @ApiProperty({ type: Vec2Document })
+    // @Prop({ required: true, type: vec2Schema })
+    // position: Vec2;
 
     @ApiProperty({ enum: TileType })
     @Prop({ required: true, enum: TileType })
