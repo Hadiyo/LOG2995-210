@@ -2,8 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
+import { MapService } from '@app/services/map/map.service';
 import { EditorPageComponent } from './editor-page.component';
-import { MapService } from 'src/app/services/map.service';
 
 describe('EditorPageComponent', () => {
   let component: EditorPageComponent;

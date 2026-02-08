@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MapConfig } from '@app/interfaces/create-map-dialog';
-import { MapService } from '@app/services/map.service';
+import { MapService } from '@app/services/map/map.service';
 import { GameMode, MapSize, MouseButton, ObjectSize, ObjectType, TileType } from '@common/enum';
 import type { EditorCell, EditorMap, MapObject } from '@common/interface';
 import { catchError, map, Observable, of, tap } from 'rxjs';
