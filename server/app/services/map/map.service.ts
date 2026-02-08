@@ -143,7 +143,7 @@ export class MapService {
         const mapObject = mapDocument.toObject({ versionKey: false });
 
         // Add index to persisted map cells for position calculation
-        const persistedMap = mapObject.map.map((cell, index) => {
+        const persistedMap: PersistedCell[] = mapObject.map.map((cell, index) => {
             return {
                 ...cell,
                 index,
@@ -160,7 +160,6 @@ export class MapService {
             const position = getCellPositionAtIndex(cell.index, mapDocument.size);
             const key = `${position.x},${position.y}`;
             return {
-                position,
                 tileType: cell.tileType,
                 isWalkable,
                 isOccupied: occupied.has(key),
