@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
 
@@ -9,15 +9,17 @@ import { UpdateCourseDto } from '@app/model/dto/course/update-course.dto';
 const MAXIMUM_NUMBER_OF_CREDITS = 6;
 
 @Injectable()
-export class CourseService {
+export class CourseService implements OnModuleInit {
     constructor(
         @InjectModel(Course.name) public courseModel: Model<CourseDocument>,
         private readonly logger: Logger,
-    ) {
-        this.start();
+    ) {}
+
+    async onModuleInit(): Promise<void> {
+        await this.start();
     }
 
-    async start() {
+    async start(): Promise<void> {
         if ((await this.courseModel.countDocuments()) === 0) {
             await this.populateDB();
         }
