@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
-import { MapService } from '@app/services/map/map.service';
+import { MapService } from '@app/services/map/map-api.service';
 import { EditorTopbarComponent } from './editor-topbar.component';
 
 describe('EditorTopbarComponent', () => {

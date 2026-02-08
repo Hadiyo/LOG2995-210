@@ -8,7 +8,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-import { MapService } from '@app/services/map/map.service';
+import { MapApiService } from '@app/services/map/map-api.service';
 import { GameMode, MapSize, MouseButton } from '@common/enum';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
 
@@ -44,7 +44,7 @@ export class EditorTopbarComponent {
   readonly editorState: EditorStateService;
   readonly router: Router;
   readonly overlay: Overlay;
-  readonly mapService: MapService;
+  readonly mapService: MapApiService;
   // Map preview generation service
   readonly mapThumbnail: MapThumbnailService;
 
@@ -52,7 +52,7 @@ export class EditorTopbarComponent {
     editorState: EditorStateService,
     router: Router,
     overlay: Overlay,
-    mapService: MapService,
+    mapService: MapApiService,
     // Map preview generation service
     mapThumbnail: MapThumbnailService,
   ) {

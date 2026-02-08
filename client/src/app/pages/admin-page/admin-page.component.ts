@@ -5,7 +5,7 @@ import { CreateMapDialogComponent } from '@app/components/create-map-dialog/crea
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
 import { MapConfig } from '@app/interfaces/create-map-dialog';
 import { AdminService } from '@app/services/admin.service';
-import { MapService } from '@app/services/map/map.service';
+import { MapApiService } from '@app/services/map/map-api.service';
 import type { EditorMap } from '@common/interface';
 import { take } from 'rxjs';
 
@@ -23,7 +23,7 @@ export class AdminPageComponent implements OnInit {
   protected isCreateDialogOpen: boolean = false;
 
   constructor(
-    private readonly mapService: MapService,
+    private readonly mapService: MapApiService,
     private readonly adminService: AdminService,
     private readonly router: Router,
   ) {}

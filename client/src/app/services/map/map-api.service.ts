@@ -8,7 +8,7 @@ import { environment } from 'src/environments/environment';
 @Injectable({
     providedIn: 'root',
 })
-export class MapService {
+export class MapApiService {
     // API root used by all map-related UI flows (admin list, editor save/load, join flow).
     private readonly baseUrl = `${environment.serverUrl}/maps`;
 
