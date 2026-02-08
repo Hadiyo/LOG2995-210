@@ -8,12 +8,10 @@ import { firstValueFrom } from 'rxjs';
 
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
+import { MapService } from '@app/services/map.service';
+import { MapThumbnailService } from '@app/services/map-thumbnail.service';
 import { GameMode, MapSize, MouseButton } from '@common/enum';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
-import { MapService } from 'src/app/services/map.service';
-
-// Service to generate map preview images
-import { MapThumbnailService } from '@app/services/map-thumbnail.service';
 
 
 @Component({
@@ -152,6 +150,7 @@ export class EditorTopbarComponent {
       // Save the map along with its preview image
       const mapWithPreview = {
         ...currentMap,
+        visibility: false,
         previewImage: preview?.data ?? undefined,
         previewImageFormat: preview?.format ?? undefined,
       };
