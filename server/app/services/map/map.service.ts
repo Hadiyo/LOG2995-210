@@ -142,15 +142,7 @@ export class MapService {
     private toEditorMap(mapDocument: MapDocument): EditorMap {
         const mapObject = mapDocument.toObject({ versionKey: false });
 
-        // Add index to persisted map cells for position calculation
-        const persistedMap: PersistedCell[] = mapObject.map.map((cell, index) => {
-            return {
-                ...cell,
-                index,
-            };
-        });
-
-        const { _id: idValue, objects, ...rest } = mapObject as PersistedMapRecord;
+        const { _id: idValue, map: persistedMap, objects, ...rest } = mapObject as PersistedMapRecord;
 
         delete (rest as { createdAt?: Date }).createdAt;
         delete (rest as { updatedAt?: Date }).updatedAt;
