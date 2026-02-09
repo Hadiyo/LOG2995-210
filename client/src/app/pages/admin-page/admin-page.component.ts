@@ -88,12 +88,8 @@ export class AdminPageComponent implements OnInit {
     this.mapStateService.deleteMap(map);
     if (this.mapStateService.state() === MapLoadState.Error) {
       this.errorMessage = 'Impossible de supprimer la carte pour le moment.';
-      this.isDeleting = false;
-      this.isDeleteDialogOpen = false;
-      this.mapPendingDeletion = undefined;
-    } else {
-      this.resetDeleteDialog();
     }
+    this.resetDeleteDialog();
   }
 
   protected closeDeleteDialog(): void {

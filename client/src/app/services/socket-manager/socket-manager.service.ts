@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BEFORE_UNLOAD } from '@common/constants';
+import { BEFORE_UNLOAD } from '@common/socket-events';
 import { io, Socket } from 'socket.io-client';
 import { environment } from 'src/environments/environment';
 
