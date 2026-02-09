@@ -1,6 +1,6 @@
 import { AsyncPipe } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 import { CreateMapDialogComponent } from '@app/components/create-map-dialog/create-map-dialog.component';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
@@ -13,8 +13,7 @@ import { Observable, take } from 'rxjs';
 
 @Component({
   selector: 'app-admin-page',
-  standalone: true,
-  imports: [AppButtonComponent, CreateMapDialogComponent, GameCardComponent, AsyncPipe],
+  imports: [AppButtonComponent, CreateMapDialogComponent, GameCardComponent, AsyncPipe, RouterLink],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
@@ -22,6 +21,9 @@ export class AdminPageComponent implements OnInit {
   protected maps$: Observable<EditorMap[]> = this.mapStateService.maps$;
   protected errorMessage: string = '';
   protected isCreateDialogOpen: boolean = false;
+  protected isDeleteDialogOpen = false; // Delete map popup state
+  protected isDeleting = false;  // Delete button state
+  protected mapPendingDeletion?: EditorMap;
 
   constructor(
     private readonly mapStateService: MapStateService,
@@ -50,7 +52,9 @@ export class AdminPageComponent implements OnInit {
     if (ok) {
       this.toggleGameDialog();
       this.router.navigate(['/editor']);
-    } else this.errorMessage = "Impossible d'aller rechercher la carte.";
+    } else {
+      this.errorMessage = "Impossible d'aller rechercher la carte.";
+    }
   }
 
   /**
@@ -59,7 +63,8 @@ export class AdminPageComponent implements OnInit {
    * @param mapId id of the map to retrieve for the editor view
    */
   protected onEditExistingMap(map: EditorMap): void {
-    this.adminService.fetchExistingMapForEditor(map.id)
+    this.adminService
+      .fetchExistingMapForEditor(map.id)
       .pipe(take(1))
       .subscribe(ok => {
         if (ok === true) this.router.navigate(['/editor']);
@@ -69,12 +74,32 @@ export class AdminPageComponent implements OnInit {
 
 
   protected onDeleteMap(map: EditorMap): void {
-    if (!window.confirm(`Supprimer la carte "${map.name}" ?`)) return;
-    this.mapStateService.deleteMap(map);
-    if (this.mapStateService.state() === MapLoadState.Error)
-      this.errorMessage = 'Impossible de supprimer la carte pour le moment.';
+    this.mapPendingDeletion = map;
+    this.isDeleteDialogOpen = true;
   }
 
+  protected confirmDeleteMap(): void {
+    const map = this.mapPendingDeletion;
+    if (!map || this.isDeleting) return;
+
+    this.isDeleting = true;
+    this.errorMessage = '';
+
+    this.mapStateService.deleteMap(map);
+    if (this.mapStateService.state() === MapLoadState.Error) {
+      this.errorMessage = 'Impossible de supprimer la carte pour le moment.';
+      this.isDeleting = false;
+      this.isDeleteDialogOpen = false;
+      this.mapPendingDeletion = undefined;
+    } else {
+      this.resetDeleteDialog();
+    }
+  }
+
+  protected closeDeleteDialog(): void {
+    if (this.isDeleting) return;
+    this.resetDeleteDialog();
+  }
 
   protected onToggleVisibility(map: EditorMap): void {
     this.mapStateService.toggleMapVisibility(map);
@@ -90,4 +115,9 @@ export class AdminPageComponent implements OnInit {
       this.errorMessage = 'Impossible de charger les cartes pour le moment.';
   }
 
+  private resetDeleteDialog(): void {
+    this.isDeleteDialogOpen = false;
+    this.isDeleting = false;
+    this.mapPendingDeletion = undefined;
+  }
 }

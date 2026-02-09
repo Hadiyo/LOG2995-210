@@ -9,6 +9,55 @@
   box-sizing: border-box;
   min-height: 100svh;
   padding: 56px 6vw 40px;
+  position: relative;
+}
+
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 6vw;
+}
+
+.create-button {
+  position: absolute;
+  top: 20px;
+  right: 6vw;
+}
+
+.small-button {
+  transform: none;
+}
+
+:host ::ng-deep .create-button .action {
+  width: auto;
+  padding: 10px 18px;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-main);
+  text-decoration: none;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.icon-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-secondary);
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
 }
 
 .title {
@@ -26,6 +75,8 @@
   display: flex;
   justify-content: center;
   margin-top: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .maps {
@@ -71,6 +122,82 @@
 
 .status--error {
   color: var(--accent-danger);
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 10, 18, 0.7);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.dialog {
+  width: min(520px, 92vw);
+  background: rgba(10, 16, 28, 0.95);
+  border: 1px solid rgba(126, 232, 255, 0.2);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  color: var(--text-main);
+}
+
+.dialog-header {
+  padding: 24px 28px 8px;
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 28px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 12px 28px 24px;
+}
+
+.dialog-message {
+  margin: 0;
+  line-height: 1.5;
+  color: rgba(247, 244, 239, 0.85);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-family: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+}
+
+.dialog-actions button[type='button'] {
+  background: linear-gradient(135deg, #7ee8ff, #1b7bff);
+  color: rgba(247, 244, 239, 0.95);
+}
+
+.dialog-actions button.ghost {
+  background: rgba(10, 10, 12, 0.5);
+  color: rgba(247, 244, 239, 0.7);
+  border: 1px solid rgba(126, 232, 255, 0.2);
+}
+
+.dialog-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 @media (max-height: 720px) {
