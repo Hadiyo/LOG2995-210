@@ -8,7 +8,9 @@ import { environment } from 'src/environments/environment';
   providedIn: 'root',
 })
 export class SocketManagerService {
-  constructor(private socket: Socket) {
+  private socket: Socket;
+
+  constructor() {
     this.connect();
 
     // Adds event listener to disconnects the client socket when the application is closed

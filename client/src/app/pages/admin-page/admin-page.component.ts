@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 import { CreateMapDialogComponent } from '@app/components/create-map-dialog/create-map-dialog.component';
@@ -17,7 +17,7 @@ import { Observable, take } from 'rxjs';
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
-export class AdminPageComponent implements OnInit {
+export class AdminPageComponent implements OnInit, OnDestroy {
   protected maps$: Observable<EditorMap[]> = this.mapStateService.maps$;
   protected errorMessage: string = '';
   protected isCreateDialogOpen: boolean = false;
@@ -33,6 +33,11 @@ export class AdminPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadMaps();
+    this.mapStateService.subscribeToMapEvents();
+  }
+
+  ngOnDestroy(): void {
+    this.mapStateService.unsubscribeFromMapEvents();
   }
 
   protected toggleGameDialog(): void {

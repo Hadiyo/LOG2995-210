@@ -7,7 +7,7 @@ export enum SocketEvents {
 }
 
 export enum SocketRoom {
-    MapManagementRoot = 'mapManagementRoom',
+    MapManagementRoom = 'mapManagementRoom',
 }
 
 /** BROWSER SOCKET EVENTS */

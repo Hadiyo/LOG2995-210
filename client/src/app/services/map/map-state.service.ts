@@ -13,15 +13,7 @@ import { BehaviorSubject } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class MapStateService {
-    constructor(private socket: SocketManagerService) {
-        // Connect user to the map management room to receive map updates only
-        this.socket.send<SocketRoom>(SocketEvents.JoinRoom, SocketRoom.MapManagementRoot);
-
-        // Subscribe immediately to socket events related to map events
-        this.createMapSocketEvent();
-        this.updateMapSocketEvent();
-        this.deleteMapSocketEvent();
-    }
+    constructor(private socket: SocketManagerService) {}
 
     private mapsSubject = new BehaviorSubject<EditorMap[]>([]);
     maps$ = this.mapsSubject.asObservable();
@@ -58,29 +50,37 @@ export class MapStateService {
     }
 
     /** SOCKET SERVICE FOR MAP */
-    private createMapSocketEvent(): void {
-        this.socket.on<EditorMap>(SocketEvents.MapCreated, (createdMap: EditorMap) => {
-            this.mapsSubject.next([...this.mapsSubject.value, createdMap]);
-        });
+    subscribeToMapEvents() {
+        this.socket.send(SocketEvents.JoinRoom, SocketRoom.MapManagementRoom);
+        this.socket.on<EditorMap>(SocketEvents.MapCreated, this.onMapCreated);
+        this.socket.on<EditorMap>(SocketEvents.MapUpdated, this.onMapUpdated);
+        this.socket.on<string>(SocketEvents.MapDeleted, this.onMapDeleted);
     }
 
-    private updateMapSocketEvent(): void {
-        this.socket.on<EditorMap>(SocketEvents.MapUpdated, (updatedMap: EditorMap) => {
-            this.mapsSubject.next(
-                this.mapsSubject.value.map(map =>
-                    map.id === updatedMap.id
-                        ? { ...updatedMap }
-                        : map,
-                ),
-            );
-        });
+    unsubscribeFromMapEvents() {
+        this.socket.send<SocketRoom>(SocketEvents.LeaveRoom, SocketRoom.MapManagementRoom);
+        this.socket.off(SocketEvents.MapCreated, this.onMapCreated);
+        this.socket.off(SocketEvents.MapUpdated, this.onMapUpdated);
+        this.socket.off(SocketEvents.MapDeleted, this.onMapDeleted);
     }
 
-    private deleteMapSocketEvent(): void {
-        this.socket.on<string>(SocketEvents.MapDeleted, (mapId: string) => {
-            this.deleteSubjectMap(mapId);
-        });
-    }
+    private onMapCreated = (map: EditorMap) => {
+        this.mapsSubject.next([...this.mapsSubject.value, map]);
+    };
+
+    private onMapUpdated = (updatedMap: EditorMap) => {
+        this.mapsSubject.next(
+            this.mapsSubject.value.map(map =>
+                map.id === updatedMap.id
+                    ? { ...updatedMap }
+                    : map,
+            ),
+        );
+    };
+
+    private onMapDeleted = (mapId: string) => {
+        this.deleteSubjectMap(mapId);
+    };
 
     /** UTILITY METHODS */
     private deleteSubjectMap(id: string): void {
