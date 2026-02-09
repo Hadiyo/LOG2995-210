@@ -8,13 +8,15 @@ describe('GameCardComponent', () => {
   let component: GameCardComponent;
   let fixture: ComponentFixture<GameCardComponent>;
 
+  const SAMPLE_DATE_ISO = '2026-02-08T12:00:00.000Z';
+
   const makeMap = (overrides: Partial<EditorMap> = {}): EditorMap => ({
     id: 'id-1',
     name: 'My map',
     description: 'My description',
     mode: GameMode.CLASSIC,
     size: MapSize.S,
-    date: '2026-02-08T12:00:00.000Z',
+    date: SAMPLE_DATE_ISO,
     map: [],
     objects: [{ id: 1, type: ObjectType.START, position: { x: 0, y: 0 }, size: ObjectSize.S }],
     visibility: true,
@@ -45,7 +47,7 @@ describe('GameCardComponent', () => {
     expect(el.textContent).toContain('CTF');
 
     const time = el.querySelector('time') as HTMLTimeElement;
-    expect(time.getAttribute('datetime')).toBe('2026-02-08T12:00:00.000Z');
+    expect(time.getAttribute('datetime')).toBe(SAMPLE_DATE_ISO);
     expect(time.textContent?.trim().length).toBeGreaterThan(0);
   });
 

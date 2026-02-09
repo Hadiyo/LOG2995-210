@@ -7,6 +7,8 @@ import { makeDoc, makeEditorMap, makeMapModelMock, makeObject, makeQuery } from 
 
 jest.mock('@app/validators/server-map-validation');
 
+const FIXED_NOW_ISO = '2026-02-08T12:00:00.000Z';
+
 describe('MapService (update)', () => {
     const createNameUniquenessCheckerMock = createNameUniquenessChecker as jest.Mock;
     const validateMapOnServerMock = validateMapOnServer as jest.Mock;
@@ -16,7 +18,7 @@ describe('MapService (update)', () => {
 
     beforeEach(() => {
         jest.useFakeTimers();
-        jest.setSystemTime(new Date('2026-02-08T12:00:00.000Z'));
+        jest.setSystemTime(new Date(FIXED_NOW_ISO));
 
         createNameUniquenessCheckerMock.mockReturnValue(async () => true);
         validateMapOnServerMock.mockResolvedValue({ isValid: true, issues: [] });
@@ -93,4 +95,3 @@ describe('MapService (update)', () => {
         expect(updated.id).toBe('id-vis');
     });
 });
-

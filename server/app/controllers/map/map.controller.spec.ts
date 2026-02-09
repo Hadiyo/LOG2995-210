@@ -6,6 +6,8 @@ import { MapService } from '@app/services/map/map.service';
 import { GameMode, MapSize } from '@common/enum';
 import type { EditorMap } from '@common/interface';
 
+const SAMPLE_DATE_ISO = '2026-02-08T12:00:00.000Z';
+
 describe('MapController', () => {
     let controller: MapController;
     let mapService: SinonStubbedInstance<MapService>;
@@ -16,7 +18,7 @@ describe('MapController', () => {
         description: 'desc',
         mode: GameMode.CLASSIC,
         size: MapSize.S,
-        date: '2026-02-08T12:00:00.000Z',
+        date: SAMPLE_DATE_ISO,
         map: [],
         objects: [],
         visibility: true,

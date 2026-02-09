@@ -16,6 +16,8 @@ describe('EditorTopbarComponent', () => {
   let component: EditorTopbarComponent;
   let fixture: ComponentFixture<EditorTopbarComponent>;
 
+  const SAMPLE_DATE_ISO = '2026-02-08T12:00:00.000Z';
+
   let editorStateMock: {
     activeButton: WritableSignal<MouseButton | null>;
     isShiftPressed: WritableSignal<boolean>;
@@ -42,7 +44,7 @@ describe('EditorTopbarComponent', () => {
     description: 'Valid description',
     mode: GameMode.CLASSIC,
     size: MapSize.S,
-    date: '2026-02-08T12:00:00.000Z',
+    date: SAMPLE_DATE_ISO,
     map: [],
     objects: [
       { id: 1, type: ObjectType.START, position: { x: 0, y: 0 }, size: ObjectSize.S },

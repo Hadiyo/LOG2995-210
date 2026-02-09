@@ -9,6 +9,8 @@ import { makeCell, makeDoc, makeEditorMap, makeMapModelMock, makeObject } from '
 
 jest.mock('@app/validators/server-map-validation');
 
+const FIXED_NOW_ISO = '2026-02-08T12:00:00.000Z';
+
 describe('MapService (create)', () => {
     const createNameUniquenessCheckerMock = createNameUniquenessChecker as jest.Mock;
     const validateMapOnServerMock = validateMapOnServer as jest.Mock;
@@ -18,7 +20,7 @@ describe('MapService (create)', () => {
 
     beforeEach(() => {
         jest.useFakeTimers();
-        jest.setSystemTime(new Date('2026-02-08T12:00:00.000Z'));
+        jest.setSystemTime(new Date(FIXED_NOW_ISO));
 
         createNameUniquenessCheckerMock.mockReturnValue(async () => true);
         validateMapOnServerMock.mockResolvedValue({ isValid: true, issues: [] });
@@ -66,7 +68,7 @@ describe('MapService (create)', () => {
         expect(createdPayload.name).toBe('My name');
         expect(createdPayload.description).toBe('My desc');
         expect(createdPayload.visibility).toBe(false);
-        expect(createdPayload.date).toBe('2026-02-08T12:00:00.000Z');
+        expect(createdPayload.date).toBe(FIXED_NOW_ISO);
         expect((createdPayload.map as Record<string, unknown>[])[0]).not.toHaveProperty('doorOpen');
         expect((createdPayload.map as Record<string, unknown>[])[1]).toEqual({
             position: { x: 1, y: 0 },
@@ -175,4 +177,3 @@ describe('MapService (create)', () => {
         expect(payload.previewImageFormat).toBeUndefined();
     });
 });
-

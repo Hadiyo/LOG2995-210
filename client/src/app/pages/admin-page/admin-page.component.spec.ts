@@ -23,13 +23,15 @@ describe('AdminPageComponent', () => {
   let adminServiceSpy: jasmine.SpyObj<AdminService>;
   let router: Router;
 
+  const SAMPLE_DATE_ISO = '2026-02-08T12:00:00.000Z';
+
   const makeMap = (overrides: Partial<EditorMap> = {}): EditorMap => ({
     id: 'id-1',
     name: 'Map 1',
     description: 'Desc',
     mode: GameMode.CLASSIC,
     size: MapSize.S,
-    date: '2026-02-08T12:00:00.000Z',
+    date: SAMPLE_DATE_ISO,
     map: [],
     objects: [],
     visibility: true,
