@@ -20,6 +20,8 @@ export class MapStateService {
         window.addEventListener(BEFORE_UNLOAD, () => {
             this.socket.disconnect();
         });
+
+        this.loadMaps();
     }
 
     private mapsSubject = new BehaviorSubject<EditorMap[]>([]);

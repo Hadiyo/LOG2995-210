@@ -32,7 +32,6 @@ export class AdminPageComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.loadMaps();
     this.mapStateService.subscribeToMapEvents();
   }
 
@@ -106,14 +105,6 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.mapStateService.toggleMapVisibility(map);
     if (this.mapStateService.state() === MapLoadState.Error)
       this.errorMessage = 'Impossible de modifier la visibilite pour le moment.';
-  }
-
-
-  private loadMaps(): void {
-    this.errorMessage = '';
-    this.mapStateService.loadMaps();
-    if (this.mapStateService.state() === MapLoadState.Error)
-      this.errorMessage = 'Impossible de charger les cartes pour le moment.';
   }
 
   private resetDeleteDialog(): void {
