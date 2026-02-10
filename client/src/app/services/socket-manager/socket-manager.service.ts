@@ -1,7 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BEFORE_UNLOAD } from '@common/socket-events';
 import { io, Socket } from 'socket.io-client';
-import { environment } from 'src/environments/environment';
 
 
 @Injectable({
@@ -9,16 +7,6 @@ import { environment } from 'src/environments/environment';
 })
 export class SocketManagerService {
   private socket: Socket;
-
-  constructor() {
-    this.connect();
-
-    // Adds event listener to disconnects the client socket when the application is closed
-    window.addEventListener(BEFORE_UNLOAD, () => {
-      this.disconnect();
-    });
-  }
-
   /**
    * Verifies if client is connected to a socket
    * @returns boolean
@@ -62,19 +50,18 @@ export class SocketManagerService {
  * Connects the client to the server environment through websockets (one per client)
  * @returns null
  */
-  private connect(): void {
+  connect(): void {
     if (this.socket?.connected) return;
-    this.socket = io(environment.serverUrl, {
+    this.socket = io('http://localhost:3000/', {
       transports: ['websocket'],
       upgrade: false, // Disables HTTP long-polling and 
-      reconnection: true, // Allow sockets to reconnect on page reload
     });
   }
 
   /**
    * Disconnects the client from the server environment
    */
-  private disconnect(): void {
+  disconnect(): void {
     if (this.socket)
       this.socket.disconnect();
   }

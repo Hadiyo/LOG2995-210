@@ -2,7 +2,7 @@ export enum SocketEvents {
     MapCreated = 'mapCreated',
     MapUpdated = 'mapUpdated',
     MapDeleted = 'mapDeleted',
-    JoinRoom = 'room-joined',
+    JoinRoom = 'roomJoined',
     LeaveRoom = 'leaveRoom',
 }
 

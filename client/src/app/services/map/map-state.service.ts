@@ -3,7 +3,7 @@ import { MapApiService } from '@app/services/map/map-api.service';
 import { MapLoadState } from '@app/services/map/map-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { EditorMap } from '@common/interface';
-import { SocketEvents, SocketRoom } from '@common/socket-events';
+import { BEFORE_UNLOAD, SocketEvents, SocketRoom } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
 
 /** Single source of truth for the available collection of maps
@@ -13,7 +13,14 @@ import { BehaviorSubject } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class MapStateService {
-    constructor(private socket: SocketManagerService) {}
+    constructor(private socket: SocketManagerService) {
+        this.socket.connect();
+
+        // Adds event listener to disconnects the client socket when the application is closed
+        window.addEventListener(BEFORE_UNLOAD, () => {
+            this.socket.disconnect();
+        });
+    }
 
     private mapsSubject = new BehaviorSubject<EditorMap[]>([]);
     maps$ = this.mapsSubject.asObservable();
@@ -51,7 +58,7 @@ export class MapStateService {
 
     /** SOCKET SERVICE FOR MAP */
     subscribeToMapEvents() {
-        this.socket.send(SocketEvents.JoinRoom, SocketRoom.MapManagementRoom);
+        this.socket.send(SocketEvents.JoinRoom, SocketRoom.MapManagementRoom );
         this.socket.on<EditorMap>(SocketEvents.MapCreated, this.onMapCreated);
         this.socket.on<EditorMap>(SocketEvents.MapUpdated, this.onMapUpdated);
         this.socket.on<string>(SocketEvents.MapDeleted, this.onMapDeleted);
