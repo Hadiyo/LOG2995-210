@@ -1,7 +1,7 @@
 import { Overlay } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -11,6 +11,10 @@ import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { GameMode, MapSize, MouseButton } from '@common/enum';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
 import { MapService } from 'src/app/services/map.service';
+
+// Service to generate map preview images
+import { MapThumbnailService } from '@app/services/map-thumbnail.service';
+
 
 @Component({
   selector: 'app-editor-topbar',
@@ -26,7 +30,6 @@ import { MapService } from 'src/app/services/map.service';
   styleUrls: ['./editor-topbar.component.scss'],
 })
 export class EditorTopbarComponent {
-  private readonly badRequestStatus = 400;
   /* =========================================================
      Template helpers
      ========================================================= */
@@ -42,12 +45,22 @@ export class EditorTopbarComponent {
   readonly router: Router;
   readonly overlay: Overlay;
   readonly mapService: MapService;
+  // Map preview generation service
+  readonly mapThumbnail: MapThumbnailService;
 
-  constructor(editorState: EditorStateService, router: Router, overlay: Overlay, mapService: MapService) {
+  constructor(
+    editorState: EditorStateService,
+    router: Router,
+    overlay: Overlay,
+    mapService: MapService,
+    // Map preview generation service
+    mapThumbnail: MapThumbnailService,
+  ) {
     this.editorState = editorState;
     this.router = router;
     this.overlay = overlay;
     this.mapService = mapService;
+    this.mapThumbnail = mapThumbnail;
   }
 
   /* =========================================================
@@ -133,7 +146,17 @@ export class EditorTopbarComponent {
     if (!localValidation.isValid) return;
 
     try {
-      const savedMap = await firstValueFrom(this.mapService.saveMap(this.editorState.editorMap()));
+      // Generate preview image for the current map state
+      const currentMap = this.editorState.editorMap();
+      const preview = await this.mapThumbnail.generatePreview(currentMap);
+      // Save the map along with its preview image
+      const mapWithPreview = {
+        ...currentMap,
+        previewImage: preview?.data ?? undefined,
+        previewImageFormat: preview?.format ?? undefined,
+      };
+
+      const savedMap = await firstValueFrom(this.mapService.saveMap(mapWithPreview));
       this.editorState.loadMap(savedMap);
       await this.router.navigate(['/admin']);
     } catch (error) {
@@ -175,7 +198,7 @@ export class EditorTopbarComponent {
 
   private extractValidationResult(error: unknown): MapValidationResult | null {
     if (!(error instanceof HttpErrorResponse)) return null;
-    if (error.status !== this.badRequestStatus) return null;
+    if (error.status !== HttpStatusCode.BadRequest) return null;
 
     const payload = error.error as MapValidationResult;
     if (!payload || !Array.isArray(payload.issues)) return null;
