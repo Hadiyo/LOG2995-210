@@ -43,7 +43,7 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$),
       )
       .subscribe((maps) => {
-        this.maps = maps.filter((map) => map.visibility);
+        this.maps = maps;
       });
   }
 

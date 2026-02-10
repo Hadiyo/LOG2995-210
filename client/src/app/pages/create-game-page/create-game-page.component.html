@@ -29,7 +29,11 @@
       <div class="grid">
         @for (map of maps; track map.id) {
           <div class="select-card">
-            <app-game-card [map]="map" [thumbnailUrl]="map.previewImage" [showActions]="false"></app-game-card>
+            <app-game-card
+              [map]="map"
+              [thumbnailUrl]="map.previewImage"
+              [showActions]="false"
+            ></app-game-card>
           </div>
         }
       </div>
