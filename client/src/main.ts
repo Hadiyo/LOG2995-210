@@ -10,6 +10,7 @@ import { EditorPageComponent } from '@app/pages/editor-page/editor-page.componen
 import { GamePageComponent } from '@app/pages/game-page/game-page.component';
 import { MainPageComponent } from '@app/pages/main-page/main-page.component';
 import { MaterialPageComponent } from '@app/pages/material-page/material-page.component';
+import { WaitingRoomComponent } from '@app/pages/waiting-room/waiting-room.component';
 import { environment } from './environments/environment';
 
 
@@ -26,7 +27,9 @@ const routes: Routes = [
     { path: 'material', component: MaterialPageComponent },
     { path: 'editor', component: EditorPageComponent },
     { path: 'admin', component: AdminPageComponent },
+    { path: 'waiting-room', component: WaitingRoomComponent },
     { path: '**', redirectTo: '/home' },
+
 ];
 
 enableProfiling();
