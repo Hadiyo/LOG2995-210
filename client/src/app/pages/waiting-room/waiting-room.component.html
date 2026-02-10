@@ -9,10 +9,11 @@
           <li [class.organizer]="player.isOrganizer">
             <img [src]="player.avatar" alt="Avatar" class="avatar-small">
             <span>{{ player.name }}</span>
-            <span *ngIf="player.isOrganizer" class="badge">Organisateur</span>
+            @if( player.isOrganizer) {
+              <span class="badge">Organisateur</span>
+            }
           </li>
         }
-        <li class="empty-slot">En attente de joueurs...</li>
       </ul>
     </div>
 
