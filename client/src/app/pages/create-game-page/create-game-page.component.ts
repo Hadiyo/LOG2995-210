@@ -28,21 +28,21 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     timer(0, this.refreshMs)
       .pipe(
-        switchMap(() =>
-          this.mapService.getVisibleMaps().pipe(
+        switchMap(() => {
+          this.errorMessage = '';
+          return this.mapService.getVisibleMaps().pipe(
             catchError(() => {
               this.errorMessage = 'Impossible de charger les parties pour le moment.';
               return of([] as EditorMap[]);
             }),
-          ),
-        ),
+          );
+        }),
         tap(() => {
           this.isLoading = false;
         }),
         takeUntil(this.destroy$),
       )
       .subscribe((maps) => {
-        this.errorMessage = '';
         this.maps = maps.filter((map) => map.visibility);
       });
   }

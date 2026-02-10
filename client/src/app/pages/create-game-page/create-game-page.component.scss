@@ -77,16 +77,8 @@
   justify-content: center;
 }
 
-.select-card {
-  cursor: pointer;
-}
-
-:host ::ng-deep app-game-card .actions {
-  display: none;
-}
-
 :host ::ng-deep app-game-card .card {
-  cursor: pointer;
+  cursor: default;
 }
 
 .status {

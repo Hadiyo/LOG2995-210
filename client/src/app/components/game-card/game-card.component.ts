@@ -14,6 +14,7 @@ import { GameMode } from '@common/enum';
 export class GameCardComponent {
   @Input({ required: true }) map!: EditorMap;
   @Input() thumbnailUrl?: string;
+  @Input() showActions = true;
   @Output() edit = new EventEmitter<EditorMap>();
   @Output() remove = new EventEmitter<EditorMap>();
   @Output() toggleVisibility = new EventEmitter<EditorMap>();
