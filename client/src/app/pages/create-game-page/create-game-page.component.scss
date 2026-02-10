@@ -1,0 +1,110 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  color: var(--text-main);
+  background: var(--bg-main);
+}
+
+.page {
+  box-sizing: border-box;
+  min-height: 100svh;
+  padding: 56px 6vw 40px;
+  position: relative;
+}
+
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 6vw;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-main);
+  text-decoration: none;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.icon-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-secondary);
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+}
+
+.title {
+  display: flex;
+  margin: 0;
+  font-size: clamp(28px, 4vw, 44px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+  align-items: center;
+  justify-content: center;
+}
+
+.maps {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: clamp(18px, 2.6vw, 24px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 560px));
+  justify-content: center;
+}
+
+:host ::ng-deep app-game-card .card {
+  cursor: default;
+}
+
+.status {
+  margin: 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.status--error {
+  color: var(--accent-danger);
+}
+
+@media (max-width: 1240px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 560px));
+  }
+}
+
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: minmax(0, 560px);
+  }
+}
+
+@media (max-height: 720px) {
+  .page {
+    padding: 24px 6vw 20px;
+  }
+}
