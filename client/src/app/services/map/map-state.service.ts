@@ -3,7 +3,7 @@ import { MapApiService } from '@app/services/map/map-api.service';
 import { MapLoadState } from '@app/services/map/map-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { EditorMap } from '@common/interface';
-import { BEFORE_UNLOAD, SocketEvents, SocketRoom } from '@common/socket-events';
+import { BEFORE_UNLOAD, MapVisibilityEventPayload, SocketEvents, SocketRoom } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
 
 /** Single source of truth for the available collection of maps
@@ -48,20 +48,19 @@ export class MapStateService {
     }
 
     toggleMapVisibility(map: EditorMap): void {
-        const newVisibility = !map.visibility;
-        this.mapApiService.updateMapVisibility(map.id, newVisibility).subscribe({
-            next: () => this.mapsSubject.next(this.mapsSubject.value.map((item) =>
-                (item.id === map.id ? { ...item, visibility: newVisibility } : item))),
+        this.mapApiService.updateMapVisibility(map.id, !map.visibility).subscribe({
+            next: () => this.toggleVisibility(map.id, !map.visibility),
             error: () => this.state.set(MapLoadState.Error),
         });
     }
 
     /** SOCKET SERVICE FOR MAP */
     subscribeToMapEvents() {
-        this.socket.send(SocketEvents.JoinRoom, SocketRoom.MapManagementRoom );
+        this.socket.send(SocketEvents.JoinRoom, SocketRoom.MapManagementRoom);
         this.socket.on<EditorMap>(SocketEvents.MapCreated, this.onMapCreated);
         this.socket.on<EditorMap>(SocketEvents.MapUpdated, this.onMapUpdated);
         this.socket.on<string>(SocketEvents.MapDeleted, this.onMapDeleted);
+        this.socket.on<MapVisibilityEventPayload>(SocketEvents.ToogleMapVisbibility, this.onToggleVisbility);
     }
 
     unsubscribeFromMapEvents() {
@@ -69,6 +68,7 @@ export class MapStateService {
         this.socket.off(SocketEvents.MapCreated, this.onMapCreated);
         this.socket.off(SocketEvents.MapUpdated, this.onMapUpdated);
         this.socket.off(SocketEvents.MapDeleted, this.onMapDeleted);
+        this.socket.off(SocketEvents.ToogleMapVisbibility, this.onToggleVisbility);
     }
 
     private onMapCreated = (map: EditorMap) => {
@@ -89,9 +89,18 @@ export class MapStateService {
         this.deleteSubjectMap(mapId);
     };
 
+    private onToggleVisbility = (payload: MapVisibilityEventPayload) => {
+        this.toggleVisibility(payload.id, payload.visibility);
+    };
+
     /** UTILITY METHODS */
     private deleteSubjectMap(id: string): void {
         this.mapsSubject.next(this.mapsSubject.value.filter(currentMap => currentMap.id !== id));
+    }
+
+    private toggleVisibility(id: string, newVisibility: boolean): void {
+        this.mapsSubject.next(this.mapsSubject.value.map((item) =>
+            (item.id === id ? { ...item, visibility: newVisibility } : item)));
     }
 
 

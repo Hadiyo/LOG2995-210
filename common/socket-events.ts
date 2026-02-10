@@ -4,6 +4,7 @@ export enum SocketEvents {
     MapDeleted = 'mapDeleted',
     JoinRoom = 'roomJoined',
     LeaveRoom = 'leaveRoom',
+    ToogleMapVisbibility = 'toggleMapVisbility',
 }
 
 export enum SocketRoom {
@@ -12,3 +13,8 @@ export enum SocketRoom {
 
 /** BROWSER SOCKET EVENTS */
 export const BEFORE_UNLOAD = 'beforeunload'
+
+export interface MapVisibilityEventPayload {
+    id: string,
+    visibility: boolean,
+}
