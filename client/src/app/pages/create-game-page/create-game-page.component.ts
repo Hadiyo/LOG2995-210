@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
 import { MapService } from '@app/services/map.service';
 import type { EditorMap } from '@common/interface';
@@ -22,6 +22,7 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly mapService: MapService,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -50,6 +51,11 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  onSelectMap(map: EditorMap): void {
+    void map;
+    this.router.navigate(['/character-creation']);
   }
 
 }
