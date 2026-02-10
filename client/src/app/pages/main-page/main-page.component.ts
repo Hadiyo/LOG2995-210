@@ -19,25 +19,25 @@ export class MainPageComponent implements AfterViewInit {
     variant: 'primary' | 'secondary' | 'tertiary' | 'ghost';
     link?: string;
   }[] = [
-    {
-      id: 'create-game',
-      label: 'CREER UNE PARTIE',
-      link: '/game',
-      variant: 'primary',
-    },
-    {
-      id: 'join-game',
-      label: 'JOINDRE UNE PARTIE',
-      link: '/material',
-      variant: 'secondary',
-    },
-    {
-      id: 'admin-map',
-      label: 'ADMINISTRER LES CARTES',
-      link: '/admin',
-      variant: 'tertiary',
-    },
-  ];
+      {
+        id: 'create-game',
+        label: 'CREER UNE PARTIE',
+        link: '/game',
+        variant: 'primary',
+      },
+      {
+        id: 'join-game',
+        label: 'JOINDRE UNE PARTIE',
+        link: '/material',
+        variant: 'secondary',
+      },
+      {
+        id: 'admin-map',
+        label: 'ADMINISTRER LES CARTES',
+        link: '/admin',
+        variant: 'tertiary',
+      },
+    ];
 
   readonly teamNames = [
     'Nadim',
