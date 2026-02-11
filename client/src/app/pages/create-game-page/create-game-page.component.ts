@@ -1,13 +1,14 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
 import { MapService } from '@app/services/map.service';
 import type { EditorMap } from '@common/interface';
 import { Subject, catchError, of, switchMap, takeUntil, tap, timer } from 'rxjs';
+import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-create-game-page',
-  imports: [GameCardComponent, RouterLink],
+  imports: [GameCardComponent, BackButtonComponent],
   templateUrl: './create-game-page.component.html',
   styleUrl: './create-game-page.component.scss',
 })

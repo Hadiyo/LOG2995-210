@@ -63,6 +63,11 @@
   gap: 16px;
 }
 
+.header-row--title {
+  justify-content: flex-start;
+  gap: 12px;
+}
+
 .actions {
   display: flex;
   gap: 8px;
@@ -357,36 +362,6 @@ h3 {
 
 .preview-avatar::before {
   background-size: 11px 11px;
-}
-
-.icon-btn {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-panel);
-  color: var(--text-main);
-  text-decoration: none;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.icon-btn:hover {
-  transform: translateY(-1px);
-  border-color: var(--accent-secondary);
-}
-
-.icon-btn svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-}
-
-.header-row--title {
-  justify-content: flex-start;
-  gap: 12px;
 }
 
 /* Responsive adjustments */

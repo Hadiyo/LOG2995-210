@@ -12,7 +12,7 @@ import { MapService } from '@app/services/map.service';
 import { MapThumbnailService } from '@app/services/map-thumbnail.service';
 import { GameMode, MapSize, MouseButton } from '@common/enum';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
-
+import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-editor-topbar',
@@ -21,7 +21,7 @@ import { validateMap, type MapValidationIssue, type MapValidationResult } from '
    * Standalone component imports:
    * - CommonModule: structural directives and common Angular features
    */
-  imports: [CommonModule],
+  imports: [CommonModule, BackButtonComponent],
 
   templateUrl: './editor-topbar.component.html',
   styleUrls: ['./editor-topbar.component.scss'],

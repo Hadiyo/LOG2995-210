@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
@@ -34,7 +35,7 @@ type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
 
 @Component({
   selector: 'app-character-creation-page',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent],
   templateUrl: './character-creation-page.component.html',
   styleUrls: ['./character-creation-page.component.scss'],
 })

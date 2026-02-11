@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 import { CreateMapDialogComponent } from '@app/components/create-map-dialog/create-map-dialog.component';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
@@ -11,7 +12,7 @@ import { take } from 'rxjs';
 
 @Component({
   selector: 'app-admin-page',
-  imports: [AppButtonComponent, CreateMapDialogComponent, GameCardComponent, RouterLink],
+  imports: [AppButtonComponent, CreateMapDialogComponent, GameCardComponent, BackButtonComponent],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
