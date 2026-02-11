@@ -10,7 +10,6 @@ import { CreateGamePageComponent } from '@app/pages/create-game-page/create-game
 import { EditorPageComponent } from '@app/pages/editor-page/editor-page.component';
 import { GamePageComponent } from '@app/pages/game-page/game-page.component';
 import { MainPageComponent } from '@app/pages/main-page/main-page.component';
-import { MaterialPageComponent } from '@app/pages/material-page/material-page.component';
 import { WaitingRoomComponent } from '@app/pages/waiting-room/waiting-room.component';
 import { environment } from './environments/environment';
 import { CharacterCreationPageComponent } from '@app/pages/character-creation/character-creation-page/character-creation-page.component';
@@ -27,7 +26,6 @@ const routes: Routes = [
     { path: 'editor', component: EditorPageComponent },
     { path: 'game', component: CreateGamePageComponent },
     { path: 'play', component: GamePageComponent },
-    { path: 'material', component: MaterialPageComponent },
     { path: 'admin', component: AdminPageComponent },
     { path: 'character-creation', component: CharacterCreationPageComponent },
     { path: 'waiting-room', component: WaitingRoomComponent },
