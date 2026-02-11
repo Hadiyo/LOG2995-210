@@ -16,10 +16,7 @@ export class MapStateService {
     constructor(private socket: SocketManagerService) {
         this.socket.connect();
 
-        // Adds event listener to disconnects the client socket when the application is closed
-        window.addEventListener(BEFORE_UNLOAD, () => {
-            this.socket.disconnect();
-        });
+        this.subscribeToWindowEvent();
 
         this.loadMaps();
     }
@@ -53,9 +50,7 @@ export class MapStateService {
     }
 
     toggleMapVisibility(map: EditorMap): void {
-        this.mapApiService.updateMapVisibility(map.id, !map.visibility).subscribe({
-            error: () => this.state.set(MapLoadState.Error),
-        });
+        this.mapApiService.updateMapVisibility(map.id, !map.visibility);
     }
 
     /** SOCKET SERVICE FOR MAP */
@@ -100,6 +95,13 @@ export class MapStateService {
     private setVisibility(id: string, newVisibility: boolean): void {
         this.mapsSubject.next(this.mapsSubject.value.map((item) =>
             (item.id === id ? { ...item, visibility: newVisibility } : item)));
+    }
+
+    private subscribeToWindowEvent(): void {
+        // Adds event listener to disconnects the client socket when the application is closed
+        window.addEventListener(BEFORE_UNLOAD, () => {
+            this.socket.disconnect();
+        });
     }
 
 

@@ -35,8 +35,8 @@ export class MapApiService {
     }
 
     // Admin UI: toggle map visibility without editing the full map.
-    updateMapVisibility(id: string, isVisible: boolean): Observable<EditorMap> {
-        return this.http.patch<EditorMap>(`${this.baseUrl}/${id}/visibility`, { visibility: isVisible });
+    updateMapVisibility(id: string, isVisible: boolean): Observable<void> {
+        return this.http.patch<void>(`${this.baseUrl}/${id}/visibility`, { visibility: isVisible });
     }
 
     // Admin UI: delete a map from the list.

@@ -294,9 +294,8 @@ describe('AdminPageComponent', () => {
   it('should toggle visibility and update the map in the list', () => {
     const initial = makeMap({ id: 'id-1', visibility: true });
     const untouched = makeMap({ id: 'id-2', name: 'Map 2', visibility: true });
-    const updated = makeMap({ id: 'id-1', visibility: false });
     mapServiceSpy.getAllMaps.and.returnValue(of([initial, untouched]));
-    mapServiceSpy.updateMapVisibility.and.returnValue(of(updated));
+    mapServiceSpy.updateMapVisibility.and.returnValue(of());
     create();
 
     clickFirstCardButton('Masquer');
