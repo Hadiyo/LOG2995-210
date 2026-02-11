@@ -73,9 +73,8 @@ describe('MapService (update)', () => {
         await expect(service.updateMapVisibility('missing', true)).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('updateMapVisibility() should update visibility when found', async () => {
-        const initialVisibility = false;
-        const nextVisibility = true;
+    it.each([true, false])('updateMapVisibility() should update visibility when found (%s)', async (nextVisibility) => {
+        const initialVisibility = !nextVisibility;
         const doc = makeDoc({
             _id: 'id-vis',
             name: 'Map',
@@ -101,4 +100,3 @@ describe('MapService (update)', () => {
         expect(updated.visibility).not.toBe(initialVisibility);
     });
 });
-
