@@ -5,8 +5,12 @@ import type { Connection, Model } from 'mongoose';
 
 import { MapService } from '@app/services/map/map.service';
 import { Map, type MapDocument, mapSchema } from '@app/model/database/map';
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapObject } from '@common/interface';
+import { GameMode, MapSize } from '@common/enum';
+import type { EditorMap } from '@common/interface';
+
+import { makeCell as makeEditorCell, makeEditorMap, makeObject as makeMapObject } from './map.service.spec-utils';
+
+process.env.MONGOMS_DISABLE_DOWNLOAD_PROGRESS = '1';
 
 type MapModule = {
     module: TestingModule;
@@ -41,30 +45,21 @@ const closeModule = async (mapModule: MapModule): Promise<void> => {
 describe('MapServiceEndToEnd (persistence + ordering)', () => {
     let mongoServer: MongoMemoryServer;
 
-    const makeCell = (x: number, y: number): EditorCell => ({
-        position: { x, y },
-        tileType: TileType.DIRT,
-        isWalkable: true,
-        isOccupied: false,
-    });
-
-    const makeStart = (id: number, x: number, y: number): MapObject => ({
-        id,
-        type: ObjectType.START,
-        position: { x, y },
-        size: ObjectSize.S,
-    });
-
     const makeValidMap = (overrides: Partial<EditorMap> = {}): EditorMap => ({
-        id: '',
-        name: 'Map',
-        description: 'Desc',
-        mode: GameMode.CLASSIC,
-        size: MapSize.S,
-        date: '',
-        visibility: false,
-        map: [makeCell(0, 0), makeCell(1, 0)],
-        objects: [makeStart(1, 0, 0), makeStart(2, 1, 0)],
+        ...makeEditorMap({
+            name: 'Map',
+            description: 'Desc',
+            mode: GameMode.CLASSIC,
+            size: MapSize.S,
+            // The end-to-end tests want the server to control these fields.
+            date: '',
+            visibility: false,
+            map: [makeEditorCell({ position: { x: 0, y: 0 } }), makeEditorCell({ position: { x: 1, y: 0 } })],
+            objects: [
+                makeMapObject({ id: 1, position: { x: 0, y: 0 } }),
+                makeMapObject({ id: 2, position: { x: 1, y: 0 } }),
+            ],
+        }),
         ...overrides,
     });
 
@@ -75,7 +70,9 @@ describe('MapServiceEndToEnd (persistence + ordering)', () => {
     });
 
     afterAll(async () => {
-        await mongoServer.stop({ doCleanup: true });
+        if (mongoServer) {
+            await mongoServer.stop({ doCleanup: true });
+        }
     });
 
     it('should persist a saved map after a full server restart (new module + new connection)', async () => {

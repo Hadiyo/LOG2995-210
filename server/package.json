@@ -86,6 +86,7 @@
             }
         },
         "coverageDirectory": "./coverage",
+        "testTimeout": 60000,
         "testEnvironment": "node",
         "moduleNameMapper": {
             "^@app(.*)$": "<rootDir>/app/$1",
