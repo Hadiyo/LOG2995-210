@@ -82,17 +82,12 @@ describe('MapService (update)', () => {
             mode: GameMode.CLASSIC,
             size: MapSize.S,
             date: '2026-02-08T10:00:00.000Z',
-            visibility: initialVisibility,
+            visibility: nextVisibility,
             map: [],
             objects: [],
         });
 
-        const updatedDoc = makeDoc({
-            ...doc.toObject(),
-            visibility: nextVisibility,
-        });
-
-        mapModel.findByIdAndUpdate.mockReturnValue(makeQuery(updatedDoc));
+        mapModel.findByIdAndUpdate.mockReturnValue(makeQuery(doc));
 
         const updated = await service.updateMapVisibility('id-vis', nextVisibility);
 
