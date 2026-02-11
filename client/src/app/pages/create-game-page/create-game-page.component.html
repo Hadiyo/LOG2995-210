@@ -28,6 +28,7 @@
     } @else {
       <div class="grid">
         @for (map of maps$ | async; track map.id) {
+          @if(!map.visibility){
           <div class="select-card">
             <app-game-card
               [map]="map"
@@ -36,6 +37,7 @@
               (select)="onSelectMap($event)"
             ></app-game-card>
           </div>
+          }
         }
       </div>
     }

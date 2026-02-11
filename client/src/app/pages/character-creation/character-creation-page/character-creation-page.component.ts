@@ -1,27 +1,28 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import {
+  generateCharacterFormValues,
+  normalizeCharacterName,
+  sanitizeCharacterName,
+} from '@app/services/character/character-generator';
 import { Character } from '@common/character/character.interface';
 import {
   AVATAR_IDS,
+  AVATAR_PROFILES,
+  AvatarId,
   CHARACTER_BASE_ATTRIBUTES,
   CHARACTER_NAME_MAX_LENGTH,
   CHARACTER_PLUS_TWO_VALUE,
-  PLUS_TWO_ATTRIBUTE_NAMES,
   DIE_TARGET_ATTRIBUTE_NAMES,
   Die,
-  AvatarId,
-  AVATAR_PROFILES,
-  PlusTwoAttributeName,
   DieTargetAttributeName,
+  PLUS_TWO_ATTRIBUTE_NAMES,
+  PlusTwoAttributeName,
 } from '@common/character/character.model';
-import {
-  generateCharacterFormValues,
-  sanitizeCharacterName,
-  normalizeCharacterName,
-} from '@app/services/character/character-generator';
+import { startWith } from 'rxjs';
 
 // Explicit type to widen the literal "attaque" to the full union ("attaque" | "defense"),
 // otherwise TS thinks comparisons to "defense" are impossible.
@@ -41,7 +42,7 @@ type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
 export class CharacterCreationPageComponent {
   readonly avatars = AVATAR_IDS;
   readonly nameMaxLength = CHARACTER_NAME_MAX_LENGTH;
-  constructor(private readonly fb: FormBuilder) { }
+  constructor(private readonly fb: FormBuilder, private readonly router: Router) {}
 
   // Form group for character creation, with validation rules
   readonly form = this.fb.group({
@@ -152,12 +153,15 @@ export class CharacterCreationPageComponent {
   // validates the form and builds the character object
   onSubmit(): void {
     if (this.form.invalid) {
+      // eslint-disable-next-line no-console
+      console.log('form is invalid');
       this.form.markAllAsTouched();
       return;
     }
-    const character = this.buildCharacterFromForm();
+    void this.buildCharacterFromForm();
     // TODO: send to service to save the character, need to implement character service and backend endpoint first
-    alert(`Character created successfully!\n\n${JSON.stringify(character, null, 2)}`);
+    //alert(`Character created successfully!\n\n${JSON.stringify(character, null, 2)}`);
+    this.router.navigate(['waiting-room']);
   }
 
 }
