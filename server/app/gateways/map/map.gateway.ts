@@ -79,7 +79,6 @@ export class MapGateway implements OnModuleDestroy {
 
   private subscribeMapEditHandler() {
     this.mapEditHandler = (map: EditorMap) => {
-      this.logger.log('map edit called');
       this.server.to(SocketRoom.MapManagementRoom).emit(SocketEvents.MapUpdated, map);
     };
     this.mapService.on(SocketEvents.MapUpdated, this.mapEditHandler);

@@ -46,7 +46,7 @@ export class SocketManagerService {
   // To prevent socket emission repetitive methods
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   send<T>(event: string, data?: T, callback?: Function): void {
-    this.socket.emit(event, ...([data, callback].filter(x => x)));
+    this.socket.emit(event, ...([data, callback].filter(x => x != null)));
   }
 
   /**
