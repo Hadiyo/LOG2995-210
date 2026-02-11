@@ -86,7 +86,13 @@ describe('MapService (update)', () => {
             map: [],
             objects: [],
         });
-        mapModel.findByIdAndUpdate.mockReturnValue(makeQuery(doc));
+
+        const updatedDoc = makeDoc({
+            ...doc.toObject(),
+            visibility: nextVisibility,
+        });
+
+        mapModel.findByIdAndUpdate.mockReturnValue(makeQuery(updatedDoc));
 
         const updated = await service.updateMapVisibility('id-vis', nextVisibility);
 
