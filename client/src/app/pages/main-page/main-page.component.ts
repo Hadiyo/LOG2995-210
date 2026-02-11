@@ -7,7 +7,6 @@ import { NameSliderComponent } from '@app/components/name-slider/name-slider.com
   templateUrl: './main-page.component.html',
   styleUrls: ['./main-page.component.scss'],
   imports: [AppButtonComponent, NameSliderComponent],
-  standalone: true,
 })
 export class MainPageComponent implements AfterViewInit {
   @ViewChild('backgroundVideo') backgroundVideo?: ElementRef<HTMLVideoElement>;
@@ -45,6 +44,7 @@ export class MainPageComponent implements AfterViewInit {
     'Hadi',
     'Ariane',
     'Thong',
+    'Fallou',
   ];
 
   ngAfterViewInit(): void {
