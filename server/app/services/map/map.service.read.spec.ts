@@ -68,6 +68,12 @@ describe('MapService (read)', () => {
         expect(map.id).toBe('id-1');
         expect(map.previewImage).toBe('AAA=');
         expect(map.previewImageFormat).toBe(PreviewImageFormat.WEBP);
+        const sampleCell = map.map.find((c) => c.position.x === 0 && c.position.y === 0);
+        expect(sampleCell).toBeDefined();
+        expect(sampleCell).toHaveProperty('position');
+        expect(sampleCell).toHaveProperty('tileType');
+        expect(sampleCell).toHaveProperty('isWalkable');
+        expect(sampleCell).toHaveProperty('isOccupied');
         expect(map.map.find((c) => c.position.x === 0 && c.position.y === 0)?.isOccupied).toBe(true);
         expect(map.map.find((c) => c.position.x === 1 && c.position.y === 0)?.isWalkable).toBe(false);
         expect(map.map.find((c) => c.position.x === 0 && c.position.y === 1)?.isWalkable).toBe(true);

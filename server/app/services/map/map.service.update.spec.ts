@@ -74,6 +74,8 @@ describe('MapService (update)', () => {
     });
 
     it('updateMapVisibility() should update visibility when found', async () => {
+        const initialVisibility = false;
+        const nextVisibility = true;
         const doc = makeDoc({
             _id: 'id-vis',
             name: 'Map',
@@ -81,16 +83,22 @@ describe('MapService (update)', () => {
             mode: GameMode.CLASSIC,
             size: MapSize.S,
             date: '2026-02-08T10:00:00.000Z',
-            visibility: false,
+            visibility: nextVisibility,
             map: [],
             objects: [],
         });
         mapModel.findByIdAndUpdate.mockReturnValue(makeQuery(doc));
 
-        const updated = await service.updateMapVisibility('id-vis', false);
+        const updated = await service.updateMapVisibility('id-vis', nextVisibility);
 
-        expect(mapModel.findByIdAndUpdate).toHaveBeenCalledWith('id-vis', { visibility: false }, { new: true });
+        expect(mapModel.findByIdAndUpdate).toHaveBeenCalledWith(
+            'id-vis',
+            { visibility: nextVisibility },
+            { new: true },
+        );
         expect(updated.id).toBe('id-vis');
+        expect(updated.visibility).toBe(nextVisibility);
+        expect(updated.visibility).not.toBe(initialVisibility);
     });
 });
 
