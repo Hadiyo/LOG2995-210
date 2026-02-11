@@ -8,7 +8,8 @@ import { Course, CourseDocument, courseSchema } from '@app/model/database/course
 import { getConnectionToken, getModelToken, MongooseModule } from '@nestjs/mongoose';
 
 process.env.MONGOMS_DISABLE_DOWNLOAD_PROGRESS = '1';
-jest.setTimeout(60_000);
+const JEST_TIMEOUT_MS = Number(process.env.JEST_TIMEOUT_MS ?? '60000');
+jest.setTimeout(JEST_TIMEOUT_MS);
 
 /**
  * There is two way to test the service :
