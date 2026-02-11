@@ -11,8 +11,6 @@ import type { EditorMap } from '@common/interface';
 import { makeCell as makeEditorCell, makeEditorMap, makeObject as makeMapObject } from './map.service.spec-utils';
 
 process.env.MONGOMS_DISABLE_DOWNLOAD_PROGRESS = '1';
-const JEST_TIMEOUT_MS = Number(process.env.JEST_TIMEOUT_MS ?? '60000');
-jest.setTimeout(JEST_TIMEOUT_MS);
 
 type MapModule = {
     module: TestingModule;
