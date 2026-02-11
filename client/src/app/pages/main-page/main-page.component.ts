@@ -44,6 +44,7 @@ export class MainPageComponent implements AfterViewInit {
     'Hadi',
     'Ariane',
     'Thong',
+    'Fallou',
   ];
 
   ngAfterViewInit(): void {
