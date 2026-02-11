@@ -2,12 +2,11 @@ import { Overlay } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-import { MapApiService } from '@app/services/map/map-api.service';
 import { GameMode, MapSize, MouseButton } from '@common/enum';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
 
@@ -40,29 +39,13 @@ export class EditorTopbarComponent {
      Dependencies
      ========================================================= */
   // Central editor state (single source of truth)
-  readonly editorState: EditorStateService;
-  readonly router: Router;
-  readonly overlay: Overlay;
-  readonly mapService: MapApiService;
-  // Map preview generation service
-  readonly mapThumbnail: MapThumbnailService;
-
   constructor(
-    editorState: EditorStateService,
-    router: Router,
-    overlay: Overlay,
-    mapService: MapApiService,
-    // Map preview generation service
-    mapThumbnail: MapThumbnailService,
-  ) {
-    this.editorState = editorState;
-    this.router = router;
-    this.overlay = overlay;
-    this.mapService = mapService;
-    this.mapThumbnail = mapThumbnail;
-  }
-
-  private mapStateService = inject(MapStateService);
+    private readonly editorState: EditorStateService,
+    private readonly router: Router,
+    private readonly overlay: Overlay,
+    private readonly mapThumbnail: MapThumbnailService, // Map preview generation
+    private readonly mapStateService: MapStateService,
+  ) {}
 
   /* =========================================================
      Hotkey UI
@@ -153,6 +136,7 @@ export class EditorTopbarComponent {
       // Save the map along with its preview image
       const mapWithPreview = {
         ...currentMap,
+        visibility: false,
         previewImage: preview?.data ?? undefined,
         previewImageFormat: preview?.format ?? undefined,
       };

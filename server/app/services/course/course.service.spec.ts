@@ -7,6 +7,8 @@ import { CourseService } from './course.service';
 import { Course, CourseDocument, courseSchema } from '@app/model/database/course';
 import { getConnectionToken, getModelToken, MongooseModule } from '@nestjs/mongoose';
 
+process.env.MONGOMS_DISABLE_DOWNLOAD_PROGRESS = '1';
+
 /**
  * There is two way to test the service :
  * - Mock the mongoose Model implementation and do what ever we want to do with it (see describe CourseService) or
@@ -95,12 +97,18 @@ describe('CourseServiceEndToEnd', () => {
     });
 
     afterEach(async () => {
-        await courseModel.deleteMany({});
+        if (courseModel) {
+            await courseModel.deleteMany({});
+        }
     });
 
     afterAll(async () => {
-        await connection.close();
-        await mongoServer.stop({ doCleanup: true });
+        if (connection) {
+            await connection.close();
+        }
+        if (mongoServer) {
+            await mongoServer.stop({ doCleanup: true });
+        }
     });
 
     it('should be defined', () => {
