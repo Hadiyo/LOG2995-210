@@ -82,7 +82,7 @@ describe('MapService (update)', () => {
             mode: GameMode.CLASSIC,
             size: MapSize.S,
             date: '2026-02-08T10:00:00.000Z',
-            visibility: nextVisibility,
+            visibility: initialVisibility,
             map: [],
             objects: [],
         });
