@@ -11,7 +11,6 @@ const MODE_OPTIONS = [
 
 @Component({
   selector: 'app-create-map-dialog',
-  standalone: true,
   imports: [FormsModule],
   templateUrl: './create-map-dialog.component.html',
   styleUrl: './create-map-dialog.component.scss',

@@ -5,7 +5,6 @@ import { TileEvent } from '@common/types';
 
 @Component({
   selector: 'app-editor-tile',
-  standalone: true,
   imports: [],
   templateUrl: './editor-tile.component.html',
   styleUrls: ['./editor-tile.component.scss'],
