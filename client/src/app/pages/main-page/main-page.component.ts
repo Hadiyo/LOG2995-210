@@ -27,7 +27,7 @@ export class MainPageComponent implements AfterViewInit {
       {
         id: 'join-game',
         label: 'JOINDRE UNE PARTIE',
-        link: '/material',
+        link: '/play',
         variant: 'secondary',
       },
       {

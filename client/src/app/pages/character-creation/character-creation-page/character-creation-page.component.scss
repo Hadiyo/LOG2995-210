@@ -54,9 +54,6 @@
     color: var(--text-main);
   }
 
-  small {
-    color: var(--text-muted);
-  }
 }
 
 .header-row {
@@ -297,10 +294,6 @@ h3 {
 
 .actions button.btn-generate {
   color: var(--accent-primary);
-
-  &:hover {
-    border-color: var(--accent-primary);
-  }
 }
 
 .actions button.btn-validate {
@@ -330,19 +323,16 @@ h3 {
 }
 
 /* Apply breathing animation to avatars with staggered delays for a natural effect */
-.avatar img {
+.avatar img,
+.preview-avatar img {
   transform-origin: bottom center;
   animation: breathe 3s ease-in-out infinite;
+  filter: drop-shadow(0 7px 13px rgba(0, 0, 0, 0.35));
 }
 
 .avatar:nth-child(3n) img {animation-delay: 0.2s;}
 .avatar:nth-child(4n) img {animation-delay: 0.5s;}
 .avatar:nth-child(5n) img {animation-delay: 0.8s;}
-
-.preview-avatar img {
-  transform-origin: bottom center;
-  animation: breathe 3s ease-in-out infinite;
-}
 
 /* Add a subtle grid overlay to avatar and preview sections for visual interest */
 .avatar,
@@ -367,12 +357,6 @@ h3 {
 
 .preview-avatar::before {
   background-size: 11px 11px;
-}
-
-/* Add a subtle drop shadow to avatars for depth */
-.avatar img,
-.preview-avatar img {
-  filter: drop-shadow(0 7px 13px rgba(0, 0, 0, 0.35));
 }
 
 /* Responsive adjustments */

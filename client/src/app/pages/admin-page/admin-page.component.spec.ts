@@ -308,12 +308,12 @@ describe('AdminPageComponent', () => {
     expect(cards.length).toBe(2);
 
     const firstToggle = cards[0].nativeElement.querySelector(
-      'button[aria-label="Visible"], button[aria-label="Masquer"]',
+      'button[aria-label="Rendre visible"], button[aria-label="Masquer"]',
     ) as HTMLButtonElement | null;
-    expect(firstToggle?.getAttribute('aria-label')).toBe('Visible');
+    expect(firstToggle?.getAttribute('aria-label')).toBe('Rendre visible');
 
     const secondToggle = cards[1].nativeElement.querySelector(
-      'button[aria-label="Visible"], button[aria-label="Masquer"]',
+      'button[aria-label="Rendre visible"], button[aria-label="Masquer"]',
     ) as HTMLButtonElement | null;
     expect(secondToggle?.getAttribute('aria-label')).toBe('Masquer');
   });
