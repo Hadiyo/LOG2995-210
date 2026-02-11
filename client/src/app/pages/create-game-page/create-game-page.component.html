@@ -29,7 +29,7 @@
       <div class="grid">
         @for (map of maps$ | async; track map.id) {
           @if (map.visibility) {
-            <div class="select-card">
+            <div class="select-card" (click)="onMapClick(map)">
               <app-game-card
                 [map]="map"
                 [thumbnailUrl]="map.previewImage"

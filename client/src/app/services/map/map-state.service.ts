@@ -4,7 +4,7 @@ import { MapLoadState } from '@app/services/map/map-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { EditorMap } from '@common/interface';
 import { BEFORE_UNLOAD, MapVisibilityEventPayload, SocketEvents, SocketRoom } from '@common/socket-events';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
 
 /** Single source of truth for the available collection of maps
  *  Needed to ensure AdminPage and GameCreation Page visualize the same
@@ -42,6 +42,10 @@ export class MapStateService {
         });
     }
 
+    async createMap(map: EditorMap): Promise<void> {
+        await firstValueFrom(this.mapApiService.saveMap(map));
+    }
+
     deleteMap(map: EditorMap): void {
         this.mapApiService.deleteMap(map.id).subscribe({
             next: () => this.deleteSubjectMap(map.id),
@@ -63,6 +67,7 @@ export class MapStateService {
         this.socket.on<EditorMap>(SocketEvents.MapUpdated, this.onMapUpdated);
         this.socket.on<string>(SocketEvents.MapDeleted, this.onMapDeleted);
         this.socket.on<MapVisibilityEventPayload>(SocketEvents.ToogleMapVisbibility, this.onToggleVisbility);
+        this.loadMaps();
     }
 
     unsubscribeFromMapEvents() {
@@ -78,13 +83,7 @@ export class MapStateService {
     };
 
     private onMapUpdated = (updatedMap: EditorMap) => {
-        this.mapsSubject.next(
-            this.mapsSubject.value.map(map =>
-                map.id === updatedMap.id
-                    ? { ...updatedMap }
-                    : map,
-            ),
-        );
+        this.mapsSubject.next(this.mapsSubject.value.map(map => map.id === updatedMap.id ? { ...updatedMap } : map));
     };
 
     private onMapDeleted = (mapId: string) => {

@@ -50,8 +50,9 @@ export class MapService {
     async createMap(map: EditorMap): Promise<EditorMap> {
         await this.ensureMapIsValid(map);
         const created = await this.insertMap(map);
-        this.mapEventEmitter.emit(SocketEvents.MapCreated, map);
-        return this.toEditorMap(created);
+        const editorMap = this.toEditorMap(created);
+        this.mapEventEmitter.emit(SocketEvents.MapCreated, editorMap);
+        return editorMap;
     }
 
     async updateMap(id: string, map: EditorMap): Promise<EditorMap> {
@@ -59,12 +60,15 @@ export class MapService {
 
         const updated = await this.mapModel.findByIdAndUpdate(id, this.buildMapPayload(map), { new: true }).exec();
         if (updated) {
-            return this.toEditorMap(updated);
+            const oldMap = this.toEditorMap(updated);
+            this.mapEventEmitter.emit(SocketEvents.MapUpdated, oldMap);
+            return oldMap;
         }
 
         const created = await this.insertMap(map);
-        this.mapEventEmitter.emit(SocketEvents.MapUpdated, map);
-        return this.toEditorMap(created);
+        const newMap = this.toEditorMap(created);
+        this.mapEventEmitter.emit(SocketEvents.MapCreated, newMap);
+        return newMap;
     }
 
     async updateMapVisibility(id: string, isVisible: boolean): Promise<EditorMap> {

@@ -67,11 +67,12 @@ export class AdminPageComponent implements OnInit, OnDestroy {
    * @param mapId id of the map to retrieve for the editor view
    */
   protected onEditExistingMap(map: EditorMap): void {
+
     this.adminService
       .fetchExistingMapForEditor(map.id)
       .pipe(take(1))
       .subscribe(ok => {
-        if (ok === true) this.router.navigate(['/editor']);
+        if (ok) this.router.navigate(['/editor']);
         else this.errorMessage = "Impossible d'aller rechercher la carte.";
       });
   }

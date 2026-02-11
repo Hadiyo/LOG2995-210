@@ -2,9 +2,8 @@ import { Overlay } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
@@ -13,6 +12,7 @@ import { GameMode, MapSize, MouseButton } from '@common/enum';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
 
 // Service to generate map preview images
+import { MapStateService } from '@app/services/map/map-state.service';
 import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
 
 
@@ -62,6 +62,8 @@ export class EditorTopbarComponent {
     this.mapService = mapService;
     this.mapThumbnail = mapThumbnail;
   }
+
+  private mapStateService = inject(MapStateService);
 
   /* =========================================================
      Hotkey UI
@@ -155,9 +157,7 @@ export class EditorTopbarComponent {
         previewImage: preview?.data ?? undefined,
         previewImageFormat: preview?.format ?? undefined,
       };
-
-      const savedMap = await firstValueFrom(this.mapService.saveMap(mapWithPreview));
-      this.editorState.loadMap(savedMap);
+      await this.mapStateService.createMap(mapWithPreview);
       await this.router.navigate(['/admin']);
     } catch (error) {
       this.applySaveErrorFeedback(error);

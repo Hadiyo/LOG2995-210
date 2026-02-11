@@ -3,4 +3,5 @@ export enum MapLoadState {
     Loading = 'LOADING',     // request in progress
     Loaded = 'LOADED',       // maps fetched successfully
     Error = 'ERROR',         // failed to fetch
+    Created = 'CREATED',
 }
