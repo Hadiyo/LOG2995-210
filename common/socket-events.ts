@@ -16,5 +16,5 @@ export const BEFORE_UNLOAD = 'beforeunload'
 
 export interface MapVisibilityEventPayload {
     id: string,
-    visibility: boolean,
+    isVisible: boolean,
 }

@@ -71,16 +71,17 @@ export class MapService {
         return newMap;
     }
 
-    async updateMapVisibility(id: string, isVisible: boolean): Promise<EditorMap> {
+    async updateMapVisibility(id: string, isVisible: boolean): Promise<void> {
         const updated = await this.mapModel.findByIdAndUpdate(id, { visibility: isVisible }, { new: true }).exec();
         if (!updated) {
             throw new NotFoundException('Map not found');
         }
-        this.mapEventEmitter.emit(SocketEvents.ToogleMapVisibility, {
-            id: updated.id,
-            isVisible: updated.visibility,
-        });
-        return this.toEditorMap(updated);
+        const updatedMap = this.toEditorMap(updated);
+        const payload = {
+            id: updatedMap.id,
+            isVisible: updatedMap.visibility,
+        };
+        this.mapEventEmitter.emit(SocketEvents.ToogleMapVisibility, payload);
     }
 
     async deleteMap(id: string): Promise<void> {

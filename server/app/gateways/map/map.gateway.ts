@@ -18,11 +18,7 @@ export class MapGateway implements OnModuleDestroy {
   private mapEditHandler: (map: EditorMap) => void;
 
   constructor(private readonly mapService: MapService) {
-    // Subscribes once to mapService event emitter by SocketEvent
-    this.subscribeMapDeleteHandler();
-    this.subscribeMapCreateHandler();
-    this.subscribeMapVisbilityHandler();
-    this.subscribeMapEditHandler();
+    this.subscribeToAllHandlers();
   }
 
   onModuleDestroy() {
@@ -71,7 +67,7 @@ export class MapGateway implements OnModuleDestroy {
     this.mapVisibilityHandler = (payload: MapVisibilityEventPayload) => {
       this.server.to(SocketRoom.MapManagementRoom).emit(SocketEvents.ToogleMapVisibility, {
         id: payload.id,
-        visibility: payload.visibility,
+        isVisible: payload.isVisible,
       });
     };
     this.mapService.on(SocketEvents.ToogleMapVisibility, this.mapVisibilityHandler);
@@ -82,6 +78,14 @@ export class MapGateway implements OnModuleDestroy {
       this.server.to(SocketRoom.MapManagementRoom).emit(SocketEvents.MapUpdated, map);
     };
     this.mapService.on(SocketEvents.MapUpdated, this.mapEditHandler);
+  }
+
+  private subscribeToAllHandlers() {
+    // Subscribes once to mapService event emitter by SocketEvent
+    this.subscribeMapDeleteHandler();
+    this.subscribeMapCreateHandler();
+    this.subscribeMapVisbilityHandler();
+    this.subscribeMapEditHandler();
   }
 
   private unsubscribeAllHandlers() {

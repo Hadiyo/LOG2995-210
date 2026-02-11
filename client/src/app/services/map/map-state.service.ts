@@ -48,14 +48,12 @@ export class MapStateService {
 
     deleteMap(map: EditorMap): void {
         this.mapApiService.deleteMap(map.id).subscribe({
-            next: () => this.deleteSubjectMap(map.id),
             error: () => this.state.set(MapLoadState.Error),
         });
     }
 
     toggleMapVisibility(map: EditorMap): void {
         this.mapApiService.updateMapVisibility(map.id, !map.visibility).subscribe({
-            next: () => this.toggleVisibility(map.id, !map.visibility),
             error: () => this.state.set(MapLoadState.Error),
         });
     }
@@ -91,7 +89,7 @@ export class MapStateService {
     };
 
     private onToggleVisibility = (payload: MapVisibilityEventPayload) => {
-        this.toggleVisibility(payload.id, payload.visibility);
+        this.setVisibility(payload.id, payload.isVisible);
     };
 
     /** UTILITY METHODS */
@@ -99,7 +97,7 @@ export class MapStateService {
         this.mapsSubject.next(this.mapsSubject.value.filter(currentMap => currentMap.id !== id));
     }
 
-    private toggleVisibility(id: string, newVisibility: boolean): void {
+    private setVisibility(id: string, newVisibility: boolean): void {
         this.mapsSubject.next(this.mapsSubject.value.map((item) =>
             (item.id === id ? { ...item, visibility: newVisibility } : item)));
     }
