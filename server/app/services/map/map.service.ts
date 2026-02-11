@@ -76,7 +76,7 @@ export class MapService {
         if (!updated) {
             throw new NotFoundException('Map not found');
         }
-        this.mapEventEmitter.emit(SocketEvents.ToogleMapVisbibility, {
+        this.mapEventEmitter.emit(SocketEvents.ToogleMapVisibility, {
             id: updated.id,
             isVisible: updated.visibility,
         });

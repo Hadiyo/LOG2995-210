@@ -4,7 +4,7 @@ export enum SocketEvents {
     MapDeleted = 'mapDeleted',
     JoinRoom = 'roomJoined',
     LeaveRoom = 'leaveRoom',
-    ToogleMapVisbibility = 'toggleMapVisbility',
+    ToogleMapVisibility = 'toggleMapVisibility',
 }
 
 export enum SocketRoom {

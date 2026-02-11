@@ -66,7 +66,7 @@ export class MapStateService {
         this.socket.on<EditorMap>(SocketEvents.MapCreated, this.onMapCreated);
         this.socket.on<EditorMap>(SocketEvents.MapUpdated, this.onMapUpdated);
         this.socket.on<string>(SocketEvents.MapDeleted, this.onMapDeleted);
-        this.socket.on<MapVisibilityEventPayload>(SocketEvents.ToogleMapVisbibility, this.onToggleVisbility);
+        this.socket.on<MapVisibilityEventPayload>(SocketEvents.ToogleMapVisibility, this.onToggleVisibility);
         this.loadMaps();
     }
 
@@ -75,7 +75,7 @@ export class MapStateService {
         this.socket.off(SocketEvents.MapCreated, this.onMapCreated);
         this.socket.off(SocketEvents.MapUpdated, this.onMapUpdated);
         this.socket.off(SocketEvents.MapDeleted, this.onMapDeleted);
-        this.socket.off(SocketEvents.ToogleMapVisbibility, this.onToggleVisbility);
+        this.socket.off(SocketEvents.ToogleMapVisibility, this.onToggleVisibility);
     }
 
     private onMapCreated = (map: EditorMap) => {
@@ -90,7 +90,7 @@ export class MapStateService {
         this.deleteSubjectMap(mapId);
     };
 
-    private onToggleVisbility = (payload: MapVisibilityEventPayload) => {
+    private onToggleVisibility = (payload: MapVisibilityEventPayload) => {
         this.toggleVisibility(payload.id, payload.visibility);
     };
 

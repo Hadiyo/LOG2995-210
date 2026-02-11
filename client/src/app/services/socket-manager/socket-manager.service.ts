@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
+import { environment } from 'src/environments/environment';
 
 
 @Injectable({
@@ -7,6 +8,8 @@ import { io, Socket } from 'socket.io-client';
 })
 export class SocketManagerService {
   private socket: Socket;
+  private readonly baseUrl = environment.serverUrl;
+
   /**
    * Verifies if client is connected to a socket
    * @returns boolean
@@ -52,7 +55,7 @@ export class SocketManagerService {
  */
   connect(): void {
     if (this.socket?.connected) return;
-    this.socket = io('http://localhost:3000/', {
+    this.socket = io(this.baseUrl, {
       transports: ['websocket'],
       upgrade: false, // Disables HTTP long-polling and 
     });

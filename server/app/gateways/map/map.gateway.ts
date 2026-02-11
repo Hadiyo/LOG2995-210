@@ -5,7 +5,9 @@ import { Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
-@WebSocketGateway()
+@WebSocketGateway({
+  namespace: '/api',
+})
 export class MapGateway implements OnModuleDestroy {
   @WebSocketServer() private server: Server;
 
@@ -67,12 +69,12 @@ export class MapGateway implements OnModuleDestroy {
 
   private subscribeMapVisbilityHandler() {
     this.mapVisibilityHandler = (payload: MapVisibilityEventPayload) => {
-      this.server.to(SocketRoom.MapManagementRoom).emit(SocketEvents.ToogleMapVisbibility, {
+      this.server.to(SocketRoom.MapManagementRoom).emit(SocketEvents.ToogleMapVisibility, {
         id: payload.id,
         visibility: payload.visibility,
       });
     };
-    this.mapService.on(SocketEvents.ToogleMapVisbibility, this.mapVisibilityHandler);
+    this.mapService.on(SocketEvents.ToogleMapVisibility, this.mapVisibilityHandler);
   }
 
   private subscribeMapEditHandler() {
@@ -91,7 +93,7 @@ export class MapGateway implements OnModuleDestroy {
       this.mapService.off(SocketEvents.MapCreated, this.mapCreateHandler);
     }
     if (this.mapVisibilityHandler) {
-      this.mapService.off(SocketEvents.ToogleMapVisbibility, this.mapVisibilityHandler);
+      this.mapService.off(SocketEvents.ToogleMapVisibility, this.mapVisibilityHandler);
     }
     if (this.mapEditHandler) {
       this.mapService.off(SocketEvents.MapUpdated, this.mapEditHandler);
