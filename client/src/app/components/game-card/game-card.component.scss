@@ -5,7 +5,7 @@
 .card {
   position: relative;
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-columns: 96px minmax(0, 1fr) auto;
   align-items: start;
   gap: 10px;
   padding: 10px;
@@ -82,6 +82,7 @@
 .meta-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   width: 100%;
 }
@@ -108,6 +109,8 @@
   gap: 6px;
   align-items: center;
   margin-left: auto;
+  justify-self: end;
+  align-self: end;
 }
 
 .icon-button {
@@ -190,12 +193,32 @@
 
 .card:hover .content,
 .card:focus-visible .content {
+  opacity: 1;
+}
+
+.card:hover .name,
+.card:focus-visible .name,
+.card:hover .meta > :not(.meta-row),
+.card:focus-visible .meta > :not(.meta-row),
+.card:hover .meta-row > :not(.actions),
+.card:focus-visible .meta-row > :not(.actions) {
   opacity: 0.12;
+}
+
+.actions {
+  position: relative;
+  z-index: 2;
 }
 
 @media (max-width: 640px) {
   .card {
     grid-template-columns: 64px minmax(0, 1fr);
     row-gap: 10px;
+  }
+
+  .actions {
+    grid-column: 2 / -1;
+    justify-self: start;
+    margin-left: 0;
   }
 }

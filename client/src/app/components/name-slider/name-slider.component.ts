@@ -2,7 +2,6 @@ import { AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild } fro
 
 @Component({
   selector: 'app-name-slider',
-  standalone: true,
   templateUrl: './name-slider.component.html',
   styleUrls: ['./name-slider.component.scss'],
 })

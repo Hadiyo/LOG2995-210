@@ -3,7 +3,6 @@ import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-button',
-  standalone: true,
   imports: [RouterLink],
   templateUrl: './app-button.component.html',
   styleUrl: './app-button.component.scss',

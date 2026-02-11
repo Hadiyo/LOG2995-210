@@ -7,7 +7,6 @@ import { NameSliderComponent } from '@app/components/name-slider/name-slider.com
   templateUrl: './main-page.component.html',
   styleUrls: ['./main-page.component.scss'],
   imports: [AppButtonComponent, NameSliderComponent],
-  standalone: true,
 })
 export class MainPageComponent implements AfterViewInit {
   @ViewChild('backgroundVideo') backgroundVideo?: ElementRef<HTMLVideoElement>;
@@ -19,25 +18,25 @@ export class MainPageComponent implements AfterViewInit {
     variant: 'primary' | 'secondary' | 'tertiary' | 'ghost';
     link?: string;
   }[] = [
-    {
-      id: 'create-game',
-      label: 'CREER UNE PARTIE',
-      link: '/game',
-      variant: 'primary',
-    },
-    {
-      id: 'join-game',
-      label: 'JOINDRE UNE PARTIE',
-      link: '/material',
-      variant: 'secondary',
-    },
-    {
-      id: 'admin-map',
-      label: 'ADMINISTRER LES CARTES',
-      link: '/admin',
-      variant: 'tertiary',
-    },
-  ];
+      {
+        id: 'create-game',
+        label: 'CREER UNE PARTIE',
+        link: '/game',
+        variant: 'primary',
+      },
+      {
+        id: 'join-game',
+        label: 'JOINDRE UNE PARTIE',
+        link: '/material',
+        variant: 'secondary',
+      },
+      {
+        id: 'admin-map',
+        label: 'ADMINISTRER LES CARTES',
+        link: '/admin',
+        variant: 'tertiary',
+      },
+    ];
 
   readonly teamNames = [
     'Nadim',
@@ -45,6 +44,7 @@ export class MainPageComponent implements AfterViewInit {
     'Hadi',
     'Ariane',
     'Thong',
+    'Fallou',
   ];
 
   ngAfterViewInit(): void {
