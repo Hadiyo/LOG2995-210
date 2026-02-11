@@ -35,10 +35,10 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
     this.mapStateService.unsubscribeFromMapEvents();
   }
 
-  onMapClick(map: EditorMap): EditorMap {
-    // TODO: Save game map in interface
+  onSelectMap(map: EditorMap): void {
+    void map;
     this.router.navigate(['/character-creation']);
-    return map;
   }
+
 
 }

@@ -6,7 +6,6 @@ import { GameMode } from '@common/enum';
 
 @Component({
   selector: 'app-game-card',
-  standalone: true,
   imports: [DatePipe],
   templateUrl: './game-card.component.html',
   styleUrl: './game-card.component.scss',
@@ -15,6 +14,7 @@ export class GameCardComponent {
   @Input({ required: true }) map!: EditorMap;
   @Input() thumbnailUrl?: string;
   @Input() showActions = true;
+  @Output() select = new EventEmitter<EditorMap>();
   @Output() edit = new EventEmitter<EditorMap>();
   @Output() remove = new EventEmitter<EditorMap>();
   @Output() toggleVisibility = new EventEmitter<EditorMap>();
@@ -30,6 +30,10 @@ export class GameCardComponent {
 
   onEdit(): void {
     this.edit.emit(this.map);
+  }
+
+  onSelect(): void {
+    this.select.emit(this.map);
   }
 
   onRemove(): void {
