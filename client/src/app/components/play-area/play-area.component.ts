@@ -16,7 +16,6 @@ export enum MouseButton {
 
 @Component({
     selector: 'app-play-area',
-    standalone: true,
     templateUrl: './play-area.component.html',
     styleUrls: ['./play-area.component.scss'],
 })

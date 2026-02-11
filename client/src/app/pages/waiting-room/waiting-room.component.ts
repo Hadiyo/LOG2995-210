@@ -10,7 +10,6 @@ interface WaitingPlayer {
 
 @Component({
   selector: 'app-waiting-room',
-  standalone: true,
   imports: [CommonModule], // pour le ngIf
   templateUrl: './waiting-room.component.html',
   styleUrls: ['./waiting-room.component.scss'],

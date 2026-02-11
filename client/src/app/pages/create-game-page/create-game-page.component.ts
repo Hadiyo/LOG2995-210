@@ -7,7 +7,6 @@ import { Subject, catchError, of, switchMap, takeUntil, tap, timer } from 'rxjs'
 
 @Component({
   selector: 'app-create-game-page',
-  standalone: true,
   imports: [GameCardComponent, RouterLink],
   templateUrl: './create-game-page.component.html',
   styleUrl: './create-game-page.component.scss',

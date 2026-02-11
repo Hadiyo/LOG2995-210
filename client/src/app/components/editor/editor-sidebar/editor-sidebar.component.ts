@@ -14,7 +14,6 @@ type ObjectPaletteItem = { id: ObjectType; label: string; description: string; c
 
 @Component({
   selector: 'app-editor-sidebar',
-  standalone: true,
 
   /**
    * Standalone component imports:

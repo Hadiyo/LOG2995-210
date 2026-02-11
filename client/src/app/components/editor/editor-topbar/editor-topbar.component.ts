@@ -18,7 +18,6 @@ import { MapThumbnailService } from '@app/services/map-thumbnail.service';
 
 @Component({
   selector: 'app-editor-topbar',
-  standalone: true,
 
   /**
    * Standalone component imports:
