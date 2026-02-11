@@ -113,4 +113,18 @@ describe('GameCardComponent', () => {
     deleteBtn.click();
     expect(removeSpy).toHaveBeenCalledOnceWith(map);
   });
+
+  it('should emit select when clicking the card', () => {
+    const map = makeMap();
+    component.map = map;
+    fixture.detectChanges();
+
+    const selectSpy = jasmine.createSpy('select');
+    component.select.subscribe(selectSpy);
+
+    const card = (fixture.nativeElement as HTMLElement).querySelector('article.card') as HTMLElement;
+    card.click();
+
+    expect(selectSpy).toHaveBeenCalledOnceWith(map);
+  });
 });
