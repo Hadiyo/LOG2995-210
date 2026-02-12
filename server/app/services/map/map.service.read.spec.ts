@@ -6,6 +6,18 @@ import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enu
 import { PreviewImageFormat } from '@common/interface';
 import { makeDoc, makeMapModelMock, makeObject, makeQuery } from './map.service.spec-utils';
 
+/**
+ * Testing Strategy:
+ * - Maps are properly queried and sorted.
+ * 
+ * - Returned documents are transformed (hydrated) into client-ready
+ *   objects with computed fields such as isWalkable and isOccupied.
+ * 
+ * - Visibility filters are correctly applied.
+ * 
+ * - NotFoundException is thrown when a map does not exist.
+ */
+
 jest.mock('@app/validators/server-map-validation');
 
 const FIXED_NOW_ISO = '2026-02-08T12:00:00.000Z';

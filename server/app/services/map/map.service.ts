@@ -5,10 +5,12 @@ import type { Model } from 'mongoose';
 import { Map, MapDocument } from '@app/model/database/map';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
 import { ObjectSize, TileType } from '@common/enum';
-import { EditorCell, EditorMap, MapObject, Vec2, PreviewImageFormat } from '@common/interface';
+import { EditorCell, EditorMap, MapObject, PreviewImageFormat, Vec2 } from '@common/interface';
 
 // Constants
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
+import { SocketEvents } from '@common/socket-events';
+import { EventEmitter } from 'events';
 
 type PersistedCell = Omit<EditorCell, 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean };
 type PersistedMap = Omit<EditorMap, 'id' | 'map'> & { map: PersistedCell[] };
@@ -23,7 +25,9 @@ type PersistedMapRecord = Omit<EditorMap, 'id' | 'map'> & {
 
 @Injectable()
 export class MapService {
-    constructor(@InjectModel(Map.name) private readonly mapModel: Model<MapDocument>) { }
+    private readonly mapEventEmitter = new EventEmitter();
+
+    constructor(@InjectModel(Map.name) private readonly mapModel: Model<MapDocument>) {}
 
     async getAllMaps(): Promise<EditorMap[]> {
         const maps = await this.mapModel.find().sort({ createdAt: 1 }).exec();
@@ -46,7 +50,9 @@ export class MapService {
     async createMap(map: EditorMap): Promise<EditorMap> {
         await this.ensureMapIsValid(map);
         const created = await this.insertMap(map);
-        return this.toEditorMap(created);
+        const editorMap = this.toEditorMap(created);
+        this.mapEventEmitter.emit(SocketEvents.MapCreated, editorMap);
+        return editorMap;
     }
 
     async updateMap(id: string, map: EditorMap): Promise<EditorMap> {
@@ -54,25 +60,36 @@ export class MapService {
 
         const updated = await this.mapModel.findByIdAndUpdate(id, this.buildMapPayload(map), { new: true }).exec();
         if (updated) {
-            return this.toEditorMap(updated);
+            const oldMap = this.toEditorMap(updated);
+            this.mapEventEmitter.emit(SocketEvents.MapUpdated, oldMap);
+            return oldMap;
         }
 
         const created = await this.insertMap(map);
-        return this.toEditorMap(created);
+        const newMap = this.toEditorMap(created);
+        this.mapEventEmitter.emit(SocketEvents.MapCreated, newMap);
+        return newMap;
     }
 
-    async updateMapVisibility(id: string, isVisible: boolean): Promise<EditorMap> {
+    async updateMapVisibility(id: string, isVisible: boolean): Promise<void> {
         const updated = await this.mapModel.findByIdAndUpdate(id, { visibility: isVisible }, { new: true }).exec();
         if (!updated) {
             throw new NotFoundException('Map not found');
         }
-        return this.toEditorMap(updated);
+        const updatedMap = this.toEditorMap(updated);
+        const payload = {
+            id: updatedMap.id,
+            isVisible: updatedMap.visibility,
+        };
+        this.mapEventEmitter.emit(SocketEvents.ToogleMapVisibility, payload);
     }
 
     async deleteMap(id: string): Promise<void> {
         const result = await this.mapModel.deleteOne({ _id: id }).exec();
         if (result.deletedCount === 0) {
             throw new NotFoundException('Map already deleted or missing');
+        } else {
+            this.mapEventEmitter.emit(SocketEvents.MapDeleted, id);
         }
     }
 
@@ -191,5 +208,14 @@ export class MapService {
             { x: position.x, y: position.y + 1 },
             { x: position.x + 1, y: position.y + 1 },
         ];
+    }
+
+    // Event emitter utility functions
+    on<T>(event: SocketEvents, callback: (payload: T) => void) {
+        this.mapEventEmitter.on(event, callback);
+    }
+
+    off<T>(event: SocketEvents, callback: (payload: T) => void) {
+        this.mapEventEmitter.off(event, callback);
     }
 }

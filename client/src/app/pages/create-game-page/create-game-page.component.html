@@ -8,21 +8,27 @@
 
   <section class="maps">
     <h2 class="section-title">Cartes disponibles</h2>
-    @if (isLoading) {
-    <p class="status">Chargement des cartes...</p>
+    @if (getMapState() === 'LOADING') {
+      <p class="status">Chargement des cartes...</p>
     } @else if (errorMessage) {
-    <p class="status status--error">{{ errorMessage }}</p>
-    } @else if (maps.length === 0) {
-    <p class="status">Aucune carte n'est disponible.</p>
+      <p class="status status--error">{{ errorMessage }}</p>
+    } @else if ((maps$ | async)?.length === 0) {
+      <p class="status">Aucune carte n'est disponible.</p>
     } @else {
-    <div class="grid">
-      @for (map of maps; track map.id) {
-      <div class="select-card">
-        <app-game-card [map]="map" [thumbnailUrl]="map.previewImage" [showActions]="false"
-          (select)="onSelectMap($event)"></app-game-card>
+      <div class="grid">
+        @for (map of maps$ | async; track map.id) {
+          @if(map.visibility){
+          <div class="select-card">
+            <app-game-card
+              [map]="map"
+              [thumbnailUrl]="map.previewImage"
+              [showActions]="false"
+              (select)="onSelectMap($event)"
+            ></app-game-card>
+          </div>
+          }
+        }
       </div>
-      }
-    </div>
     }
   </section>
 </main>

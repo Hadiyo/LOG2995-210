@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
@@ -6,40 +7,45 @@ import { CreateMapDialogComponent } from '@app/components/create-map-dialog/crea
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
 import { MapConfig } from '@app/interfaces/create-map-dialog';
 import { AdminService } from '@app/services/admin.service';
-import { MapService } from '@app/services/map.service';
+import { MapLoadState } from '@app/services/map/map-state.enum';
+import { MapStateService } from '@app/services/map/map-state.service';
 import type { EditorMap } from '@common/interface';
-import { take } from 'rxjs';
+import { Observable, take } from 'rxjs';
 
 @Component({
   selector: 'app-admin-page',
-  imports: [AppButtonComponent, CreateMapDialogComponent, GameCardComponent, BackButtonComponent],
+  imports: [AppButtonComponent, CreateMapDialogComponent, GameCardComponent, AsyncPipe, BackButtonComponent],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
-export class AdminPageComponent implements OnInit {
-  protected isCreateDialogOpen = false; // Create map popup state
+export class AdminPageComponent implements OnInit, OnDestroy {
+  protected maps$: Observable<EditorMap[]> = this.mapStateService.maps$;
+  protected errorMessage: string = '';
+  protected isCreateDialogOpen: boolean = false;
   protected isDeleteDialogOpen = false; // Delete map popup state
-  protected isLoading = false; // Map loading state
   protected isDeleting = false;  // Delete button state
   protected mapPendingDeletion?: EditorMap;
-  protected maps: EditorMap[] = [];
-  protected errorMessage = '';
 
   constructor(
-    private readonly mapService: MapService,
+    private readonly mapStateService: MapStateService,
     private readonly adminService: AdminService,
     private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
-    this.loadMaps();
+    this.mapStateService.subscribeToMapEvents();
   }
 
-  /**
-   * Opens or closes the dialog box to create a new map
-   */
+  ngOnDestroy(): void {
+    this.mapStateService.unsubscribeFromMapEvents();
+  }
+
   protected toggleGameDialog(): void {
     this.isCreateDialogOpen = !this.isCreateDialogOpen;
+  }
+
+  protected mapState(): MapLoadState {
+    return this.mapStateService.state();
   }
 
   /**
@@ -62,26 +68,20 @@ export class AdminPageComponent implements OnInit {
    * @param mapId id of the map to retrieve for the editor view
    */
   protected onEditExistingMap(map: EditorMap): void {
+
     this.adminService
       .fetchExistingMapForEditor(map.id)
       .pipe(take(1))
-      .subscribe((ok) => {
-        if (ok) {
-          this.router.navigate(['/editor']);
-        } else {
-          this.errorMessage = "Impossible d'aller rechercher la carte.";
-        }
+      .subscribe(ok => {
+        if (ok) this.router.navigate(['/editor']);
+        else this.errorMessage = "Impossible d'aller rechercher la carte.";
       });
   }
+
 
   protected onDeleteMap(map: EditorMap): void {
     this.mapPendingDeletion = map;
     this.isDeleteDialogOpen = true;
-  }
-
-  protected closeDeleteDialog(): void {
-    if (this.isDeleting) return;
-    this.resetDeleteDialog();
   }
 
   protected confirmDeleteMap(): void {
@@ -91,51 +91,23 @@ export class AdminPageComponent implements OnInit {
     this.isDeleting = true;
     this.errorMessage = '';
 
-    this.mapService.deleteMap(map.id).subscribe({
-      next: () => {
-        this.maps = this.maps.filter((item) => item.id !== map.id);
-        this.resetDeleteDialog();
-      },
+    this.mapStateService.deleteMap(map).subscribe({
+      next: () => this.resetDeleteDialog(),
       error: () => {
         this.errorMessage = 'Impossible de supprimer la carte pour le moment.';
-        this.isDeleting = false;
-        this.isDeleteDialogOpen = false;
-        this.mapPendingDeletion = undefined;
       },
     });
   }
 
-  /**
-   * Manages AdminPage response to Map HTTP PATCH by subscription
-   * @param map
-   */
+  protected closeDeleteDialog(): void {
+    if (this.isDeleting) return;
+    this.resetDeleteDialog();
+  }
+
   protected onToggleVisibility(map: EditorMap): void {
-    this.mapService.updateMapVisibility(map.id, !map.visibility).subscribe({
-      next: (updated) => {
-        this.maps = this.maps.map((item) => (item.id === updated.id ? updated : item));
-      },
-      error: () => {
-        this.errorMessage = 'Impossible de modifier la visibilite pour le moment.';
-      },
-    });
-  }
-
-  /**
-   * Manages AdminPage response to HTTP GET all database maps by subscription:
-   */
-  private loadMaps(): void {
-    this.isLoading = true;
-    this.mapService.getAllMaps().subscribe({
-      next: (maps) => {
-        this.maps = maps;
-        this.isLoading = false;
-        this.errorMessage = '';
-      },
-      error: () => {
-        this.errorMessage = 'Impossible de charger les cartes pour le moment.';
-        this.isLoading = false;
-      },
-    });
+    this.mapStateService.toggleMapVisibility(map);
+    if (this.mapStateService.state() === MapLoadState.Error)
+      this.errorMessage = 'Impossible de modifier la visibilite pour le moment.';
   }
 
   private resetDeleteDialog(): void {

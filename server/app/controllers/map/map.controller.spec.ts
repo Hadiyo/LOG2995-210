@@ -84,13 +84,15 @@ describe('MapController', () => {
         expect(updated).toEqual(sampleMap);
     });
 
-    it('updateMapVisibility() should forward visibility to service', async () => {
-        mapService.updateMapVisibility.resolves(sampleMap);
+    it('updateMapVisibility() should call service with correct arguments', async () => {
+        const mapId = sampleMap.id;
+        const payload = { visibility: false };
 
-        const updated = await controller.updateMapVisibility(sampleMap.id, { visibility: false });
+        mapService.updateMapVisibility.resolves(); // returns Promise<void>
 
-        expect(mapService.updateMapVisibility.calledOnceWithExactly(sampleMap.id, false)).toBe(true);
-        expect(updated).toEqual(sampleMap);
+        await controller.updateMapVisibility(mapId, payload);
+
+        expect(mapService.updateMapVisibility.calledOnceWithExactly(mapId, payload.visibility)).toBe(true);
     });
 
     it('deleteMap() should forward id to service', async () => {

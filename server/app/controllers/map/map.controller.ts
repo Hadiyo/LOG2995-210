@@ -65,7 +65,7 @@ export class MapController {
     @Patch('/:id/visibility')
     updateMapVisibility(@Param('id') id: string, @Body() payload: UpdateMapVisibilityDto) {
         const isVisible = payload.visibility;
-        return this.mapService.updateMapVisibility(id, isVisible);
+        this.mapService.updateMapVisibility(id, isVisible);
     }
 
     @ApiOkResponse({
@@ -73,6 +73,6 @@ export class MapController {
     })
     @Delete('/:id')
     deleteMap(@Param('id') id: string) {
-        return this.mapService.deleteMap(id);
+        this.mapService.deleteMap(id);
     }
 }

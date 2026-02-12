@@ -2,13 +2,13 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
-import { MapService } from '@app/services/map.service';
+import { MapApiService } from '@app/services/map/map-api.service';
 import { GameMode, MapSize } from '@common/enum';
 import type { EditorMap } from '@common/interface';
 
-describe('MapService', () => {
+describe('MapApiService', () => {
   let httpMock: HttpTestingController;
-  let service: MapService;
+  let service: MapApiService;
 
   const SAMPLE_DATE_ISO = '2026-02-08T12:00:00.000Z';
 
@@ -30,7 +30,7 @@ describe('MapService', () => {
       providers: [provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()],
     });
 
-    service = TestBed.inject(MapService);
+    service = TestBed.inject(MapApiService);
     httpMock = TestBed.inject(HttpTestingController);
   });
 
@@ -94,7 +94,7 @@ describe('MapService', () => {
   it('updateMapVisibility() should PATCH /maps/:id/visibility', () => {
     const updated = makeMap({ id: 'id-1', visibility: false });
 
-    service.updateMapVisibility('id-1', false).subscribe((map) => expect(map).toEqual(updated));
+    service.updateMapVisibility('id-1', false).subscribe();
 
     const req = httpMock.expectOne(
       (request) => request.method === 'PATCH' && request.url.endsWith('/maps/id-1/visibility'),

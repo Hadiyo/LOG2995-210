@@ -7,8 +7,8 @@ import { Subject, of, throwError } from 'rxjs';
 
 import { EditorTopbarComponent } from '@app/components/editor/editor-topbar/editor-topbar.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-import { MapThumbnailService } from '@app/services/map-thumbnail.service';
-import { MapService } from '@app/services/map.service';
+import { MapApiService } from '@app/services/map/map-api.service';
+import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
 import { GameMode, MapSize, MouseButton, ObjectSize, ObjectType } from '@common/enum';
 import { PreviewImageFormat, type EditorMap } from '@common/interface';
 
@@ -33,7 +33,7 @@ describe('EditorTopbarComponent', () => {
   let confirm$: Subject<void>;
   let backdrop$: Subject<void>;
   let overlayMock: Overlay;
-  let mapServiceSpy: jasmine.SpyObj<MapService>;
+  let mapApiServiceSpy: jasmine.SpyObj<MapApiService>;
   let thumbnailSpy: jasmine.SpyObj<MapThumbnailService>;
 
   const makeValidMap = (overrides: Partial<EditorMap> = {}): EditorMap => ({
@@ -94,7 +94,9 @@ describe('EditorTopbarComponent', () => {
       navigate: jasmine.createSpy('navigate').and.resolveTo(true),
     };
 
-    mapServiceSpy = jasmine.createSpyObj<MapService>('MapService', ['saveMap']);
+    mapApiServiceSpy = jasmine.createSpyObj<MapApiService>('MapApiService', ['saveMap', 'getAllMaps']);
+    mapApiServiceSpy.getAllMaps.and.returnValue(of([]));
+
     thumbnailSpy = jasmine.createSpyObj<MapThumbnailService>('MapThumbnailService', ['generatePreview']);
 
     await TestBed.configureTestingModule({
@@ -103,7 +105,7 @@ describe('EditorTopbarComponent', () => {
         { provide: EditorStateService, useValue: editorStateMock },
         { provide: Router, useValue: routerMock },
         { provide: Overlay, useValue: overlayMock },
-        { provide: MapService, useValue: mapServiceSpy },
+        { provide: MapApiService, useValue: mapApiServiceSpy },
         { provide: MapThumbnailService, useValue: thumbnailSpy },
       ],
     }).compileComponents();
@@ -153,20 +155,20 @@ describe('EditorTopbarComponent', () => {
     backButton?.click();
     confirm$.next();
 
-    expect(mapServiceSpy.saveMap).not.toHaveBeenCalled();
+    expect(mapApiServiceSpy.saveMap).not.toHaveBeenCalled();
     expect(thumbnailSpy.generatePreview).not.toHaveBeenCalled();
   });
 
   // REQ: Le systeme doit valider un jeu pour un enregistrement reussi.
   it('onSave() should not call server when local validation fails', async () => {
     editorStateMock.editorMap.set(makeInvalidMap());
-    mapServiceSpy.saveMap.and.returnValue(of(makeValidMap()));
+    mapApiServiceSpy.saveMap.and.returnValue(of(makeValidMap()));
 
     await component.onSave();
 
     expect(component.hasAttemptedSave()).toBeTrue();
     expect(thumbnailSpy.generatePreview).not.toHaveBeenCalled();
-    expect(mapServiceSpy.saveMap).not.toHaveBeenCalled();
+    expect(mapApiServiceSpy.saveMap).not.toHaveBeenCalled();
   });
 
   // REQ: Le systeme doit avertir l'utilisateur en cas de jeu invalide avec les raisons d'invalidite.
@@ -191,13 +193,13 @@ describe('EditorTopbarComponent', () => {
     editorStateMock.editorMap.set(current);
 
     thumbnailSpy.generatePreview.and.resolveTo({ data: 'PREVIEW', format: PreviewImageFormat.PNG });
-    mapServiceSpy.saveMap.and.returnValue(of(saved));
+    mapApiServiceSpy.saveMap.and.returnValue(of(saved));
 
     await component.onSave();
     fixture.detectChanges();
 
     expect(thumbnailSpy.generatePreview).toHaveBeenCalledWith(current);
-    expect(mapServiceSpy.saveMap).toHaveBeenCalledWith(
+    expect(mapApiServiceSpy.saveMap).toHaveBeenCalledWith(
       jasmine.objectContaining({
         id: current.id,
         name: current.name,
@@ -211,7 +213,7 @@ describe('EditorTopbarComponent', () => {
         previewImageFormat: PreviewImageFormat.PNG,
       }),
     );
-    expect(editorStateMock.loadMap).toHaveBeenCalledWith(saved);
+
     expect(routerMock.navigate).toHaveBeenCalledWith(['/admin']);
 
     const el: HTMLElement = fixture.nativeElement;
@@ -225,7 +227,7 @@ describe('EditorTopbarComponent', () => {
     fixture.detectChanges();
 
     thumbnailSpy.generatePreview.and.resolveTo({ data: 'PREVIEW', format: PreviewImageFormat.PNG });
-    mapServiceSpy.saveMap.and.returnValue(of(makeValidMap({ id: 'saved' })));
+    mapApiServiceSpy.saveMap.and.returnValue(of(makeValidMap({ id: 'saved' })));
 
     const saveButton = (fixture.nativeElement as HTMLElement).querySelector(
       'button[aria-label=\"Enregistrer\"]',
@@ -235,7 +237,7 @@ describe('EditorTopbarComponent', () => {
     saveButton?.click();
     await fixture.whenStable();
 
-    expect(mapServiceSpy.saveMap).toHaveBeenCalled();
+    expect(mapApiServiceSpy.saveMap).toHaveBeenCalled();
   });
 
   it('onSave() should show server validation issues on 400 responses', async () => {
@@ -246,7 +248,7 @@ describe('EditorTopbarComponent', () => {
       status: HttpStatusCode.BadRequest,
       error: { isValid: false, issues: [{ code: 'NAME_REQUIRED', message: 'Le nom de la carte est requis.' }] },
     });
-    mapServiceSpy.saveMap.and.returnValue(throwError(() => error));
+    mapApiServiceSpy.saveMap.and.returnValue(throwError(() => error));
 
     spyOn(window, 'alert');
     await component.onSave();
@@ -264,7 +266,7 @@ describe('EditorTopbarComponent', () => {
   it('onSave() should alert when save fails with a non-HTTP error', async () => {
     editorStateMock.editorMap.set(makeValidMap());
     thumbnailSpy.generatePreview.and.resolveTo(null);
-    mapServiceSpy.saveMap.and.returnValue(throwError(() => new Error('boom')));
+    mapApiServiceSpy.saveMap.and.returnValue(throwError(() => new Error('boom')));
 
     spyOn(window, 'alert');
     await component.onSave();
@@ -280,7 +282,7 @@ describe('EditorTopbarComponent', () => {
       status: HttpStatusCode.InternalServerError,
       error: { message: 'server down' },
     });
-    mapServiceSpy.saveMap.and.returnValue(throwError(() => error));
+    mapApiServiceSpy.saveMap.and.returnValue(throwError(() => error));
 
     spyOn(window, 'alert');
     await component.onSave();
@@ -293,7 +295,7 @@ describe('EditorTopbarComponent', () => {
     thumbnailSpy.generatePreview.and.resolveTo(null);
 
     const error = new HttpErrorResponse({ status: HttpStatusCode.BadRequest, error: { issues: 'not-an-array' } });
-    mapServiceSpy.saveMap.and.returnValue(throwError(() => error));
+    mapApiServiceSpy.saveMap.and.returnValue(throwError(() => error));
 
     spyOn(window, 'alert');
     await component.onSave();

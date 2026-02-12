@@ -4,6 +4,7 @@ import { MapService } from '@app/services/map/map.service';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { MapGateway } from './gateways/map/map.gateway';
 
 @Module({
     imports: [
@@ -20,6 +21,6 @@ import { MongooseModule } from '@nestjs/mongoose';
         ]),
     ],
     controllers: [MapController],
-    providers: [MapService, Logger],
+    providers: [MapService, Logger, MapGateway],
 })
 export class AppModule {}

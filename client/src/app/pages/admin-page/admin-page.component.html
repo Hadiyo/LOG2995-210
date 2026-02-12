@@ -15,15 +15,15 @@
 
   <section class="maps">
     <h2 class="section-title">Cartes sauvegardees</h2>
-    @if (isLoading) {
+    @if (mapState() === 'LOADING') {
       <p class="status">Chargement des cartes...</p>
     } @else if (errorMessage) {
       <p class="status status--error">{{ errorMessage }}</p>
-    } @else if (maps.length === 0) {
+    } @else if ((maps$ | async)?.length === 0) {
       <p class="status">Aucune carte n'est disponible.</p>
     } @else {
       <div class="grid">
-        @for (map of maps; track map.id) {
+        @for (map of maps$ | async; track map.id) {
           <app-game-card
             [map]="map"
             [thumbnailUrl]="map.previewImage"
