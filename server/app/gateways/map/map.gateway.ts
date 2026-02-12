@@ -11,13 +11,14 @@ import { Server, Socket } from 'socket.io';
 export class MapGateway implements OnModuleDestroy {
   @WebSocketServer() private server: Server;
 
-  private readonly logger = new Logger(MapGateway.name);
   private mapDeletedHandler: (id: string) => void;
   private mapCreateHandler: (newMap: EditorMap) => void;
   private mapVisibilityHandler: (payload: MapVisibilityEventPayload) => void;
   private mapEditHandler: (map: EditorMap) => void;
 
-  constructor(private readonly mapService: MapService) {
+  constructor(
+    private readonly mapService: MapService,
+    private readonly logger: Logger = new Logger(MapGateway.name)) {
     this.subscribeToAllHandlers();
   }
 
