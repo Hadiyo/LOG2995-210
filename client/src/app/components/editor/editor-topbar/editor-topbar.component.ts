@@ -8,8 +8,8 @@ import { firstValueFrom } from 'rxjs';
 
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-import { MapService } from '@app/services/map.service';
 import { MapThumbnailService } from '@app/services/map-thumbnail.service';
+import { MapService } from '@app/services/map.service';
 import { GameMode, MapSize, MouseButton } from '@common/enum';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
@@ -165,24 +165,6 @@ export class EditorTopbarComponent {
   /* =========================================================
      Editor configuration
      ========================================================= */
-
-  /**
-   * Update game mode.
-   * Centralized in EditorStateService to enforce
-   * mode-specific constraints (ex. CTF rules).
-   */
-  setMode(mode: GameMode): void {
-    this.editorState.setMode(mode);
-  }
-
-  /**
-   * Update map size.
-   * EditorStateService is responsible for resizing
-   * the grid and handling data migration if needed.
-   */
-  setSize(size: MapSize): void {
-    this.editorState.setSize(size);
-  }
 
   private applySaveErrorFeedback(error: unknown): void {
     const validation = this.extractValidationResult(error);
