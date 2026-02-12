@@ -6,6 +6,17 @@ import { MapApiService } from '@app/services/map/map-api.service';
 import { GameMode, MapSize } from '@common/enum';
 import type { EditorMap } from '@common/interface';
 
+/**
+ * Testing Strategy:
+ * We validate normal API behavior first by checking each public method
+ * sends the correct HTTP request (method, URL, and payload) and returns expected data.
+ *
+ * We then test the saveMap() branch logic using id-based conditions
+ * (blank id -> POST create, non-empty id -> PUT update).
+ *
+ * This ensures the map API contract remains stable and prevents regressions
+ * in CRUD routing and request formatting.
+ */
 describe('MapApiService', () => {
   let httpMock: HttpTestingController;
   let service: MapApiService;

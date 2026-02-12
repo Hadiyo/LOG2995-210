@@ -8,6 +8,18 @@ import { BEFORE_UNLOAD, SocketEvents, SocketRoom } from '@common/socket-events';
 import { of, throwError } from 'rxjs';
 import { MapStateService } from './map-state.service';
 
+/**
+ * Testing Strategy:
+ * We validate normal state-management behavior first by ensuring maps load correctly,
+ * state transitions are updated, and API actions (create/delete/toggle visibility)
+ * delegate to MapApiService as expected.
+ *
+ * We then test event-driven updates from sockets (map created/updated/deleted/visibility changed)
+ * and lifecycle wiring (join/leave room, event subscriptions, and beforeunload disconnect).
+ *
+ * We also cover failure paths (load/toggle errors) to confirm the service enters
+ * an error state and remains predictable under backend or network issues.
+ */
 describe('MapStateService', () => {
     let service: MapStateService;
     let mapApiMock: jasmine.SpyObj<MapApiService>;

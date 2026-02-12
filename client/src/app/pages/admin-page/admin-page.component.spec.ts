@@ -13,6 +13,20 @@ import { MapStateService } from '@app/services/map/map-state.service';
 import { GameMode, MapSize } from '@common/enum';
 import type { EditorMap } from '@common/interface';
 
+/**
+ * Testing Strategy:
+ * We validate normal admin workflows first: loading and rendering maps,
+ * opening/confirming create actions, editing an existing map, deleting a map,
+ * and toggling visibility through MapStateService.
+ *
+ * We then cover edge/error cases such as rejected create config,
+ * failed map fetch, delete failure, toggle failure, and guard conditions
+ * (no pending map, already deleting, dialog close while deleting).
+ *
+ * We verify both behavior and UI outcomes (navigation, dialogs, list updates,
+ * and displayed error messages) to ensure the admin page stays reliable under
+ * async state changes and invalid operation paths.
+ */
 type AdminPageInternals = {
   onToggleVisibility: (map: EditorMap) => void;
   closeDeleteDialog: () => void;

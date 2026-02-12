@@ -4,6 +4,18 @@ import { GameCardComponent } from '@app/components/game-card/game-card.component
 import { GameMode, MapSize, ObjectSize, ObjectType } from '@common/enum';
 import { PreviewImageFormat, type EditorMap } from '@common/interface';
 
+/**
+ * Testing Strategy:
+ * We validate normal rendering first by checking displayed map metadata
+ * (name, size, mode, date, and description tooltip) and thumbnail behavior.
+ *
+ * We then cover edge cases such as missing thumbnail, missing date,
+ * and unknown mode values to ensure safe fallbacks in the UI.
+ *
+ * Finally, we verify user interactions by asserting emitted events
+ * (select, edit, remove, toggle visibility) so parent flows receive
+ * the correct map payload and remain stable.
+ */
 describe('GameCardComponent', () => {
   let component: GameCardComponent;
   let fixture: ComponentFixture<GameCardComponent>;

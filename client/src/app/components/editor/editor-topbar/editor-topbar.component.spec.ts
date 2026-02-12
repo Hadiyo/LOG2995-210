@@ -12,6 +12,20 @@ import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
 import { GameMode, MapSize, MouseButton, ObjectSize, ObjectType } from '@common/enum';
 import { PreviewImageFormat, type EditorMap } from '@common/interface';
 
+/**
+ * Testing Strategy:
+ * We validate core topbar actions first (reset, cancel, back, save)
+ * by asserting interactions with EditorStateService, MapService,
+ * MapThumbnailService, Overlay, and Router.
+ *
+ * We then cover save-flow branches: local validation failure,
+ * successful save with preview generation and hidden visibility,
+ * and error handling for HTTP 400 validation errors vs generic failures.
+ *
+ * We also verify UI/state outcomes (validation panel visibility,
+ * server issues population, and alert behavior) to ensure the component
+ * remains stable across normal and invalid user flows.
+ */
 describe('EditorTopbarComponent', () => {
   let component: EditorTopbarComponent;
   let fixture: ComponentFixture<EditorTopbarComponent>;

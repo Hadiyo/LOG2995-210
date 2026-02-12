@@ -45,6 +45,10 @@
   box-shadow: 0 0 24px rgba(79, 217, 255, 0.3);
 }
 
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 @media (max-width: 1280px) {
   .action {
