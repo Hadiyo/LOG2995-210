@@ -1,8 +1,24 @@
 import type { Model } from 'mongoose';
 
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
-import type { EditorMap } from '@common/interface';
 import { GameMode, MapSize } from '@common/enum';
+import type { EditorMap } from '@common/interface';
+
+/**
+ * Testing Strategy:
+ * - Verify that createNameUniquenessChecker correctly handles
+ *   empty names, case sensitivity options, regex escaping,
+ *   exclusion of specific IDs, and existing duplicates.
+ *
+ * - Ensure database queries are constructed properly
+ *   depending on the provided options.
+ *
+ * - Validate that validateMapOnServer merges base validation
+ *   results with server-side name uniqueness checks.
+ *
+ * - Confirm that NAME_NOT_UNIQUE is added only when appropriate
+ *   and that the uniqueness checker is not called when the name is empty.
+ */
 
 jest.mock('@common/map-validation', () => ({
     validateMap: jest.fn(),

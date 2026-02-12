@@ -4,6 +4,15 @@ import { MapService } from '@app/services/map/map.service';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
 import { makeMapModelMock, makeQuery } from './map.service.spec-utils';
 
+/**
+ * Testing Strategy:
+ * - Verify the normal deletion flow by ensuring the service
+ * successfully resolves when a document is removed.
+ * 
+ * - Then we test the edge case where no document is deleted
+ * (deletedCount = 0) to confirm that a NotFoundException is thrown.
+ */
+
 jest.mock('@app/validators/server-map-validation');
 
 describe('MapService (delete)', () => {

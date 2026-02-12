@@ -7,6 +7,16 @@ import { TileType } from '@common/enum';
 import { PreviewImageFormat } from '@common/interface';
 import { makeCell, makeDoc, makeEditorMap, makeMapModelMock, makeObject } from './map.service.spec-utils';
 
+/**
+ * Testing Strategy:
+ * - Validate the expected behavior with valid inputs,
+ * ensuring proper validation, sanitization, and persistence.
+ * 
+ * - Then we cover edge cases and invalid data (e.g., malformed preview,
+ * oversized base64, invalid formats) to verify error handling
+ * and data cleaning before database insertion.
+ */
+
 jest.mock('@app/validators/server-map-validation');
 
 const FIXED_NOW_ISO = '2026-02-08T12:00:00.000Z';

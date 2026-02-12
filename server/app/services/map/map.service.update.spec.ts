@@ -6,6 +6,23 @@ import { GameMode, MapSize, TileType } from '@common/enum';
 import { SocketEvents } from '@common/socket-events';
 import { makeDoc, makeEditorMap, makeMapModelMock, makeObject, makeQuery } from './map.service.spec-utils';
 
+/**
+ * Testing Strategy:
+ * - Existing maps are properly updated with validation
+ *   and name uniqueness checks.
+ *
+ * - A new map is created when updating a non-existing record.
+ *
+ * - Visibility updates correctly modify the record
+ *   and emit the appropriate socket event.
+ *
+ * - NotFoundException is thrown when a visibility
+ *   update targets a missing map.
+ *
+ * - Event subscription methods (on/off) correctly
+ *   delegate to the internal event emitter.
+ */
+
 jest.mock('@app/validators/server-map-validation');
 
 const FIXED_NOW_ISO = '2026-02-08T12:00:00.000Z';
