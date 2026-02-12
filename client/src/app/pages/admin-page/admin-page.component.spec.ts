@@ -342,7 +342,7 @@ describe('AdminPageComponent', () => {
   });
 
   it('should show an error when visibility toggle fails', () => {
-    let map = makeMap({ visibility: true });
+    const map = makeMap({ visibility: true });
     mapStateServiceSpy.loadMaps.and.callFake(() => {
       mapsSubject.next([map]);
     });
