@@ -91,14 +91,19 @@ describe('GameCardComponent', () => {
     component.map = map;
     fixture.detectChanges();
 
+    const selectSpy = jasmine.createSpy('select');
     const editSpy = jasmine.createSpy('edit');
     const removeSpy = jasmine.createSpy('remove');
     const toggleSpy = jasmine.createSpy('toggleVisibility');
+    component.select.subscribe(selectSpy);
     component.edit.subscribe(editSpy);
     component.remove.subscribe(removeSpy);
     component.toggleVisibility.subscribe(toggleSpy);
 
     const el: HTMLElement = fixture.nativeElement;
+    const card = el.querySelector('article.card') as HTMLElement;
+    card.click();
+    expect(selectSpy).toHaveBeenCalledOnceWith(map);
 
     const editBtn = el.querySelector('button[aria-label=\"Modifier\"]') as HTMLButtonElement;
     editBtn.click();

@@ -94,7 +94,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
       next: () => this.resetDeleteDialog(),
       error: () => {
         this.errorMessage = 'Impossible de supprimer la carte pour le moment.';
-      }
+      },
     });
   }
 

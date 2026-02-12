@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, NEVER, of, throwError } from 'rxjs';
 
 import { WritableSignal, signal } from '@angular/core';
 import { CreateMapDialogComponent } from '@app/components/create-map-dialog/create-map-dialog.component';
@@ -64,8 +64,9 @@ describe('AdminPageComponent', () => {
 
     mapStateServiceSpy.maps$ = mapsSubject.asObservable();
 
-    mapStateServiceSpy.loadMaps.and.callFake(() => {
-      mapsSubject.next([]);
+    mapStateServiceSpy.loadMaps.and.stub();
+    mapStateServiceSpy.subscribeToMapEvents.and.callFake(() => {
+      mapStateServiceSpy.loadMaps();
     });
 
     mapStateServiceSpy.deleteMap.and.callFake((map: EditorMap) => {
@@ -240,7 +241,7 @@ describe('AdminPageComponent', () => {
     mapStateServiceSpy.loadMaps.and.callFake(() => {
       mapsSubject.next([makeMap()]);
     });
-    mapStateServiceSpy.deleteMap;
+    mapStateServiceSpy.deleteMap.and.returnValue(NEVER);
     create();
 
     clickFirstCardButton('Supprimer');
@@ -265,7 +266,7 @@ describe('AdminPageComponent', () => {
 
   it('confirmDeleteMap() should early-return when already deleting', () => {
     mapsSubject.next([makeMap()]);
-    mapStateServiceSpy.deleteMap;
+    mapStateServiceSpy.deleteMap.and.returnValue(NEVER);
     create();
 
     clickFirstCardButton('Supprimer');
@@ -296,10 +297,7 @@ describe('AdminPageComponent', () => {
     mapStateServiceSpy.loadMaps.and.callFake(() => {
       mapsSubject.next([makeMap()]);
     });
-    mapStateServiceSpy.deleteMap.and.callFake(() => {
-      stateSignal.set(MapLoadState.Error);
-      return of(void 0);
-    });
+    mapStateServiceSpy.deleteMap.and.returnValue(throwError(() => new Error('Delete failed')));
     create();
 
     clickFirstCardButton('Supprimer');
@@ -307,42 +305,44 @@ describe('AdminPageComponent', () => {
     clickDeleteDialogButton('Supprimer');
     fixture.detectChanges();
 
-    expect(getDeleteDialog()).toBeNull();
+    expect(getDeleteDialog()).not.toBeNull();
     expect(getText()).toContain('Impossible de supprimer la carte pour le moment.');
   });
 
   it('should toggle visibility and update the map in the list', () => {
     const initial = makeMap({ id: 'id-1', visibility: true });
     const untouched = makeMap({ id: 'id-2', name: 'Map 2', visibility: true });
-    const updated = makeMap({ id: 'id-1', visibility: false });
     mapStateServiceSpy.loadMaps.and.callFake(() => {
       mapsSubject.next([initial, untouched]);
     });
+    mapStateServiceSpy.toggleMapVisibility.and.callFake((map: EditorMap) => {
+      mapsSubject.next(mapsSubject.value.map(item => (
+        item.id === map.id ? { ...item, visibility: !item.visibility } : item
+      )));
+    });
     create();
-
-    (component as unknown as AdminPageInternals).onToggleVisibility(updated);
 
     clickFirstCardButton('Masquer');
     fixture.detectChanges();
 
-    expect(mapStateServiceSpy.toggleMapVisibility).toHaveBeenCalledWith(updated);
+    expect(mapStateServiceSpy.toggleMapVisibility).toHaveBeenCalledWith(initial);
 
     const cards = getGameCardDebugs();
     expect(cards.length).toBe(2);
 
     const firstToggle = cards[0].nativeElement.querySelector(
-      'button[aria-label="Visible"], button[aria-label="Masquer"]',
+      'button[aria-label="Rendre visible"], button[aria-label="Masquer"]',
     ) as HTMLButtonElement | null;
-    expect(firstToggle?.getAttribute('aria-label')).toBe('Visible');
+    expect(firstToggle?.getAttribute('aria-label')).toBe('Rendre visible');
 
     const secondToggle = cards[1].nativeElement.querySelector(
-      'button[aria-label="Visible"], button[aria-label="Masquer"]',
+      'button[aria-label="Rendre visible"], button[aria-label="Masquer"]',
     ) as HTMLButtonElement | null;
     expect(secondToggle?.getAttribute('aria-label')).toBe('Masquer');
   });
 
   it('should show an error when visibility toggle fails', () => {
-    let map = makeMap({ visibility: true });
+    const map = makeMap({ visibility: true });
     mapStateServiceSpy.loadMaps.and.callFake(() => {
       mapsSubject.next([map]);
     });
