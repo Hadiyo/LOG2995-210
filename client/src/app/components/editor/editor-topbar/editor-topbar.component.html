@@ -29,7 +29,7 @@
   <div class="group-label">
     <span 
       class="key" 
-      [class.pressed]="this.isRightClicking() && !this.editorState.isShiftPressed()"
+      [class.pressed]="this.isRightClicking() && !this.isShiftPressed()"
     >
       RMB
     </span> 
@@ -37,14 +37,14 @@
 
     <span 
       class="key" 
-      [class.pressed]="this.editorState.isShiftPressed()"
+      [class.pressed]="this.isShiftPressed()"
     >
       SHIFT
     </span> 
     + 
     <span 
       class="key" 
-      [class.pressed]="this.isRightClicking() && this.editorState.isShiftPressed()"
+      [class.pressed]="this.isRightClicking() && this.isShiftPressed()"
     >
       RMB
     </span> 

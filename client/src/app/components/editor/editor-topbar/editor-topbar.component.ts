@@ -13,6 +13,7 @@ import { validateMap, type MapValidationIssue, type MapValidationResult } from '
 // Service to generate map preview images
 import { MapStateService } from '@app/services/map/map-state.service';
 import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
+import { take } from 'rxjs';
 
 
 @Component({
@@ -51,6 +52,8 @@ export class EditorTopbarComponent {
      Hotkey UI
      ========================================================= */
   readonly isRightClicking = computed(() => this.editorState.activeButton() === MouseButton.Right);
+
+  readonly isShiftPressed = computed(() => this.editorState.isShiftPressed());
 
   /* =========================================================
      Mode & size options
@@ -95,9 +98,9 @@ export class EditorTopbarComponent {
     const portal = new ComponentPortal(PopUpComponent);
     const ref = overlayRef.attach(portal);
 
-    ref.instance.closePopUp.subscribe(() => overlayRef.dispose());
-    overlayRef.backdropClick().subscribe(() => overlayRef.dispose());
-    ref.instance.confirmPopUp.subscribe(() => {
+    ref.instance.closePopUp.pipe(take(1)).subscribe(() => overlayRef.dispose());
+    overlayRef.backdropClick().pipe(take(1)).subscribe(() => overlayRef.dispose());
+    ref.instance.confirmPopUp.pipe(take(1)).subscribe(() => {
       overlayRef.dispose();
       this.router.navigate(['/admin']);
     });

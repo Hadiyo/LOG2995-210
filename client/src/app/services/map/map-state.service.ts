@@ -4,7 +4,7 @@ import { MapLoadState } from '@app/services/map/map-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { EditorMap } from '@common/interface';
 import { BEFORE_UNLOAD, MapVisibilityEventPayload, SocketEvents, SocketRoom } from '@common/socket-events';
-import { BehaviorSubject, firstValueFrom } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
 
 /** Single source of truth for the available collection of maps
  *  Needed to ensure AdminPage and GameCreation Page visualize the same
@@ -43,10 +43,8 @@ export class MapStateService {
         await firstValueFrom(this.mapApiService.saveMap(map));
     }
 
-    deleteMap(map: EditorMap): void {
-        this.mapApiService.deleteMap(map.id).subscribe({
-            error: () => this.state.set(MapLoadState.Error),
-        });
+    deleteMap(map: EditorMap): Observable<void> {
+        return this.mapApiService.deleteMap(map.id);
     }
 
     toggleMapVisibility(map: EditorMap): void {

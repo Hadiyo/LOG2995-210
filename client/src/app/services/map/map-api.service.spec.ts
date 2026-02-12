@@ -94,7 +94,7 @@ describe('MapApiService', () => {
   it('updateMapVisibility() should PATCH /maps/:id/visibility', () => {
     const updated = makeMap({ id: 'id-1', visibility: false });
 
-    service.updateMapVisibility('id-1', false);
+    service.updateMapVisibility('id-1', false).subscribe();
 
     const req = httpMock.expectOne(
       (request) => request.method === 'PATCH' && request.url.endsWith('/maps/id-1/visibility'),

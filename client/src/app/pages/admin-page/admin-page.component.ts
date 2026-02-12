@@ -90,11 +90,12 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.isDeleting = true;
     this.errorMessage = '';
 
-    this.mapStateService.deleteMap(map);
-    if (this.mapStateService.state() === MapLoadState.Error) {
-      this.errorMessage = 'Impossible de supprimer la carte pour le moment.';
-    }
-    this.resetDeleteDialog();
+    this.mapStateService.deleteMap(map).subscribe({
+      next: () => this.resetDeleteDialog(),
+      error: () => {
+        this.errorMessage = 'Impossible de supprimer la carte pour le moment.';
+      }
+    });
   }
 
   protected closeDeleteDialog(): void {

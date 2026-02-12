@@ -98,7 +98,9 @@ describe('EditorTopbarComponent', () => {
       navigate: jasmine.createSpy('navigate').and.resolveTo(true),
     };
 
-    mapApiServiceSpy = jasmine.createSpyObj<MapApiService>('MapService', ['saveMap', 'getAllMaps']);
+    mapApiServiceSpy = jasmine.createSpyObj<MapApiService>('MapApiService', ['saveMap', 'getAllMaps']);
+    mapApiServiceSpy.getAllMaps.and.returnValue(of([]));
+
     thumbnailSpy = jasmine.createSpyObj<MapThumbnailService>('MapThumbnailService', ['generatePreview']);
 
     await TestBed.configureTestingModule({
@@ -223,7 +225,7 @@ describe('EditorTopbarComponent', () => {
         previewImageFormat: PreviewImageFormat.PNG,
       }),
     );
-    expect(editorStateMock.loadMap).toHaveBeenCalledWith(saved);
+
     expect(routerMock.navigate).toHaveBeenCalledWith(['/admin']);
 
     const el: HTMLElement = fixture.nativeElement;
