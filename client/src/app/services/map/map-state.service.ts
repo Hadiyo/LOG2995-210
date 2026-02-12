@@ -48,8 +48,11 @@ export class MapStateService {
     }
 
     toggleMapVisibility(map: EditorMap): void {
-        this.mapApiService.updateMapVisibility(map.id, !map.visibility);
+        this.mapApiService.updateMapVisibility(map.id, !map.visibility).subscribe({
+            error: () => this.state.set(MapLoadState.Error),
+        });
     }
+
 
     /** SOCKET SERVICE FOR MAP */
     subscribeToMapEvents() {
