@@ -8,24 +8,20 @@ import { AdminPageComponent } from '@app/pages/admin-page/admin-page.component';
 import { AppComponent } from '@app/pages/app/app.component';
 import { CreateGamePageComponent } from '@app/pages/create-game-page/create-game-page.component';
 import { EditorPageComponent } from '@app/pages/editor-page/editor-page.component';
-import { GamePageComponent } from '@app/pages/game-page/game-page.component';
 import { MainPageComponent } from '@app/pages/main-page/main-page.component';
 import { WaitingRoomComponent } from '@app/pages/waiting-room/waiting-room.component';
 import { environment } from './environments/environment';
 import { CharacterCreationPageComponent } from '@app/pages/character-creation/character-creation-page/character-creation-page.component';
 
-
 if (environment.production) {
     enableProdMode();
 }
-
 
 const routes: Routes = [
     { path: '', redirectTo: '/home', pathMatch: 'full' },
     { path: 'home', component: MainPageComponent },
     { path: 'editor', component: EditorPageComponent },
     { path: 'game', component: CreateGamePageComponent },
-    { path: 'play', component: GamePageComponent },
     { path: 'admin', component: AdminPageComponent },
     { path: 'character-creation', component: CharacterCreationPageComponent },
     { path: 'waiting-room', component: WaitingRoomComponent },
