@@ -32,18 +32,18 @@
     --object-fight: var(--accent-danger);
 
     /* Tiles - images */
-    --tile-wall-img: url('assets/tiles/wall.jpg');
-    --tile-water-img: url('assets/tiles/water.jpg');
-    --tile-ice-img: url('assets/tiles/ice.jpg');
-    --tile-dirt-img: url('assets/tiles/dirt.jpg');
-    --tile-door-open-img: url('assets/tiles/door_open.jpg');
-    --tile-door-closed-img: url('assets/tiles/door_closed.jpg');
+    --tile-wall-img: url('../assets/tiles/wall.jpg');
+    --tile-water-img: url('../assets/tiles/water.jpg');
+    --tile-ice-img: url('../assets/tiles/ice.jpg');
+    --tile-dirt-img: url('../assets/tiles/dirt.jpg');
+    --tile-door-open-img: url('../assets/tiles/door_open.jpg');
+    --tile-door-closed-img: url('../assets/tiles/door_closed.jpg');
 
     /* Objects – images */
-    --object-spawn-img: url('assets/objects/start.png');
-    --object-flag-img: url('assets/objects/flag.png');
-    --object-heal-img: url('assets/objects/regen.png');
-    --object-fight-img: url('assets/objects/arena.png');
+    --object-spawn-img: url('../assets/objects/start.png');
+    --object-flag-img: url('../assets/objects/flag.png');
+    --object-heal-img: url('../assets/objects/regen.png');
+    --object-fight-img: url('../assets/objects/arena.png');
 
     /* Avatar fallback colors */
     --avatar-0: #7A9EBF;
