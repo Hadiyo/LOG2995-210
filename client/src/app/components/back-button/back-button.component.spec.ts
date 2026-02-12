@@ -1,19 +1,19 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { CharacterCreationPageComponent } from './character-creation-page.component';
+import { BackButtonComponent } from './back-button.component';
 
-describe('CharacterCreationPageComponent', () => {
-  let component: CharacterCreationPageComponent;
-  let fixture: ComponentFixture<CharacterCreationPageComponent>;
+describe('BackButtonComponent', () => {
+  let component: BackButtonComponent;
+  let fixture: ComponentFixture<BackButtonComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CharacterCreationPageComponent],
+      imports: [BackButtonComponent],
       providers: [provideRouter([])],
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(CharacterCreationPageComponent);
+    fixture = TestBed.createComponent(BackButtonComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

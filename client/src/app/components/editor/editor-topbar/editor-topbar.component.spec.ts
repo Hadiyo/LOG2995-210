@@ -158,7 +158,7 @@ describe('EditorTopbarComponent', () => {
     fixture.detectChanges();
 
     const backButton = (fixture.nativeElement as HTMLElement).querySelector(
-      'button[aria-label=\"Retour\"]',
+      'button[aria-label=\"Retour à la page précédente\"]',
     ) as HTMLButtonElement | null;
     expect(backButton).not.toBeNull();
 
