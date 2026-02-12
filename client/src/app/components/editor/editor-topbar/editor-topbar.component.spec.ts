@@ -24,8 +24,6 @@ describe('EditorTopbarComponent', () => {
     editorMap: WritableSignal<EditorMap>;
     resetMap: jasmine.Spy;
     clearSelection: jasmine.Spy;
-    setMode: jasmine.Spy;
-    setSize: jasmine.Spy;
     loadMap: jasmine.Spy;
   };
 
@@ -89,8 +87,6 @@ describe('EditorTopbarComponent', () => {
       editorMap: signal<EditorMap>(makeInvalidMap()),
       resetMap: jasmine.createSpy('resetMap'),
       clearSelection: jasmine.createSpy('clearSelection'),
-      setMode: jasmine.createSpy('setMode'),
-      setSize: jasmine.createSpy('setSize'),
       loadMap: jasmine.createSpy('loadMap'),
     };
 
@@ -117,14 +113,6 @@ describe('EditorTopbarComponent', () => {
     fixture = TestBed.createComponent(EditorTopbarComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-  });
-
-  it('setMode() and setSize() should delegate to EditorStateService', () => {
-    component.setMode(GameMode.CTF);
-    component.setSize(MapSize.M);
-
-    expect(editorStateMock.setMode).toHaveBeenCalledOnceWith(GameMode.CTF);
-    expect(editorStateMock.setSize).toHaveBeenCalledOnceWith(MapSize.M);
   });
 
   it('onReset() should reset the map', () => {
@@ -160,7 +148,7 @@ describe('EditorTopbarComponent', () => {
     fixture.detectChanges();
 
     const backButton = (fixture.nativeElement as HTMLElement).querySelector(
-      'button[aria-label=\"Retour\"]',
+      'button[aria-label=\"Retour à la page précédente\"]',
     ) as HTMLButtonElement | null;
     expect(backButton).not.toBeNull();
 

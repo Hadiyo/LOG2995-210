@@ -3,6 +3,7 @@ import { Component, computed } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import {
   generateCharacterFormValues,
   normalizeCharacterName,
@@ -34,7 +35,7 @@ type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
 
 @Component({
   selector: 'app-character-creation-page',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent],
   templateUrl: './character-creation-page.component.html',
   styleUrls: ['./character-creation-page.component.scss'],
 })
@@ -157,10 +158,13 @@ export class CharacterCreationPageComponent {
       this.form.markAllAsTouched();
       return;
     }
-    void this.buildCharacterFromForm();
+
+    const character = this.buildCharacterFromForm();
     // TODO: send to service to save the character, need to implement character service and backend endpoint first
-    //alert(`Character created successfully!\n\n${JSON.stringify(character, null, 2)}`);
-    this.router.navigate(['waiting-room']);
+    // For now, just save the character in localStorage to be retrieved in the waiting room
+    localStorage.setItem('pendingCharacter', JSON.stringify(character));
+    // Navigate to the waiting room after character creation
+    this.router.navigate(['/waiting-room']);
   }
 
 }

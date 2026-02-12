@@ -2,7 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { MapConfig } from '@app/interfaces/create-map-dialog';
 import { MapApiService } from '@app/services/map/map-api.service';
 import { GameMode, MapSize, MouseButton, ObjectSize, ObjectType, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapObject } from '@common/interface';
+import type { EditorCell, EditorMap, MapObject, ObjectCountAndLimit } from '@common/interface';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { EditorMapFactoryService } from './editor-map-factory.service';
 import { EditorOccupancyService } from './editor-occupancy.service';
@@ -212,7 +212,7 @@ export class EditorStateService {
     /** 
     * Get count of object of a given type and its limit
     */
-    getObjectCountAndLimit(type: ObjectType): { count: number; limit: number } {
+    getObjectCountAndLimit(type: ObjectType): ObjectCountAndLimit {
         const m = this.editorMap();
         const count = m.objects.filter((o) => o.type === type).length;
         const limit = this.rules.getObjectLimit(type, m.size, m.mode);

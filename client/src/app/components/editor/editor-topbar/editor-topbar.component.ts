@@ -4,15 +4,15 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { MapStateService } from '@app/services/map/map-state.service';
 
+import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
+import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
 import { GameMode, MapSize, MouseButton } from '@common/enum';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
 
-// Service to generate map preview images
-import { MapStateService } from '@app/services/map/map-state.service';
-import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
 import { take } from 'rxjs';
 
 
@@ -23,7 +23,7 @@ import { take } from 'rxjs';
    * Standalone component imports:
    * - CommonModule: structural directives and common Angular features
    */
-  imports: [CommonModule],
+  imports: [CommonModule, BackButtonComponent],
 
   templateUrl: './editor-topbar.component.html',
   styleUrls: ['./editor-topbar.component.scss'],
@@ -153,24 +153,6 @@ export class EditorTopbarComponent {
   /* =========================================================
      Editor configuration
      ========================================================= */
-
-  /**
-   * Update game mode.
-   * Centralized in EditorStateService to enforce
-   * mode-specific constraints (ex. CTF rules).
-   */
-  setMode(mode: GameMode): void {
-    this.editorState.setMode(mode);
-  }
-
-  /**
-   * Update map size.
-   * EditorStateService is responsible for resizing
-   * the grid and handling data migration if needed.
-   */
-  setSize(size: MapSize): void {
-    this.editorState.setSize(size);
-  }
 
   private applySaveErrorFeedback(error: unknown): void {
     const validation = this.extractValidationResult(error);
