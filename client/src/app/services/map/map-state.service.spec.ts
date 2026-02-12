@@ -182,4 +182,10 @@ describe('MapStateService', () => {
 
         expect(socketMock.disconnect).toHaveBeenCalled();
     });
+
+    it('should set error state if updateVisibility fails', () => {
+        mapApiMock.updateMapVisibility.and.returnValue(throwError(() => new Error()));
+        service.toggleMapVisibility(mockMaps[0]);
+        expect(service.state()).toBe(MapLoadState.Error);
+    });
 });
