@@ -1,0 +1,69 @@
+<main class="page">
+  <div class="back-button">
+    <app-back-button link="/home" title="Retour à l'accueil"></app-back-button>
+  </div>
+  <div class="create-button small-button">
+    <app-button
+      label="Creer une nouvelle carte"
+      variant="primary"
+      (click)="toggleGameDialog()"
+    ></app-button>
+  </div>
+  <h1 class="title">Administration</h1>
+  <div class="actions">
+  </div>
+
+  <section class="maps">
+    <h2 class="section-title">Cartes sauvegardees</h2>
+    @if (mapState() === 'LOADING') {
+      <p class="status">Chargement des cartes...</p>
+    } @else if (errorMessage) {
+      <p class="status status--error">{{ errorMessage }}</p>
+    } @else if ((maps$ | async)?.length === 0) {
+      <p class="status">Aucune carte n'est disponible.</p>
+    } @else {
+      <div class="grid">
+        @for (map of maps$ | async; track map.id) {
+          <app-game-card
+            [map]="map"
+            [thumbnailUrl]="map.previewImage"
+            (edit)="onEditExistingMap($event)"
+            (remove)="onDeleteMap($event)"
+            (toggleVisibility)="onToggleVisibility($event)"
+          ></app-game-card>
+        }
+      </div>
+    }
+  </section>
+
+  @if (isCreateDialogOpen) {
+    <app-create-map-dialog
+      (cancel)="toggleGameDialog()"
+      (confirm)="onCreateGameDialogConfirm($event)"
+    ></app-create-map-dialog>
+  }
+
+  @if (isDeleteDialogOpen) {
+    <div class="dialog-backdrop">
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-map-title">
+        <header class="dialog-header">
+          <h2 id="delete-map-title" class="dialog-title">Supprimer la carte</h2>
+        </header>
+        <div class="dialog-content">
+          <p class="dialog-message">
+            Voulez-vous vraiment supprimer la carte
+            <strong>{{ mapPendingDeletion?.name }}</strong> ?
+          </p>
+          <div class="dialog-actions">
+            <button type="button" class="ghost" [disabled]="isDeleting" (click)="closeDeleteDialog()">
+              Annuler
+            </button>
+            <button type="button" [disabled]="isDeleting" (click)="confirmDeleteMap()">
+              {{ isDeleting ? 'Suppression...' : 'Supprimer' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</main>

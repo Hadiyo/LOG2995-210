@@ -1,0 +1,221 @@
+/* =========================
+   Top bar container
+   ========================= */
+.topbar-wrap {
+    /* Horizontal layout for editor controls */
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    /* Spacing inside the bar */
+    padding: 12px 16px;
+
+    /* Panel styling */
+    background: var(--bg-panel-soft);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+
+    color: var(--text-main);
+}
+
+
+/* =========================
+   Control groups (Tools / Mode / Size)
+   ========================= */
+.group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Small uppercase group label */
+.group-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+
+/* =========================
+   Segmented controls
+   ========================= */
+.segmented {
+    display: flex;
+    gap: 6px;
+}
+
+/* Individual segment button */
+.seg-btn {
+    padding: 8px 10px;
+    border-radius: 12px;
+
+    border: 1px solid var(--border-soft);
+    background: var(--bg-panel);
+    color: var(--text-main);
+
+    cursor: pointer;
+    font-size: 13px;
+}
+
+/* Active (selected) segment */
+.seg-btn.active {
+    border-color: var(--accent-primary);
+    background: var(--bg-panel-soft);
+}
+
+/* Hover feedback */
+.seg-btn:hover {
+    border-color: var(--accent-secondary);
+}
+
+
+/* =========================
+   Layout spacer
+   ========================= */
+.spacer {
+    /* Pushes action buttons to the far right */
+    flex: 1;
+}
+
+
+/* =========================
+   Generic button styles
+   ========================= */
+.btn {
+    padding: 10px 14px;
+    border-radius: 12px;
+
+    border: 1px solid var(--border-soft);
+    background: var(--bg-panel);
+    color: var(--text-main);
+
+    cursor: pointer;
+}
+
+/* Hover feedback */
+.btn:hover {
+    border-color: var(--accent-secondary);
+}
+
+/* Button variants */
+.btn.primary {
+    border-color: var(--accent-primary);
+}
+
+.btn.danger {
+    border-color: var(--accent-danger);
+}
+
+
+/* =========================
+   Icon buttons (Save / Reset / Cancel)
+   ========================= */
+.icon-btn {
+    width: 40px;
+    height: 40px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
+    background: var(--bg-panel);
+    color: var(--text-main);
+
+    cursor: pointer;
+    padding: 0;
+}
+
+/* Hover affordance */
+.icon-btn:hover {
+    border-color: var(--accent-secondary);
+}
+
+/* Variant borders */
+.icon-btn.primary {
+    border-color: var(--accent-primary);
+}
+
+.icon-btn.success {
+    border-color: var(--accent-success);
+    color: var(--accent-success);
+}
+
+.icon-btn.danger {
+    border-color: var(--accent-danger);
+}
+
+.icon-btn.invalid {
+    border-color: var(--accent-danger);
+    color: var(--accent-danger);
+}
+
+/* SVG icons inherit button color */
+.icon-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+
+/* =========================
+   Validation summary (save-time)
+   ========================= */
+.validation-panel {
+    margin: 8px 16px 0;
+    padding: 10px 12px;
+
+    border: 1px solid var(--accent-danger);
+    border-radius: 12px;
+    background: rgba(255, 107, 107, 0.08);
+}
+
+.validation-title {
+    font-size: 12px;
+    color: var(--accent-danger);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.validation-list {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-main);
+}
+
+/* =========================
+   Hotkey keys
+   ========================= */
+.key {
+    align-items: center;
+    justify-content: center;
+
+    display: inline-block;
+  
+    border-radius: 12px;
+    border: 8px solid var(--bg-panel);
+    color: var(--text-main);
+  
+    box-shadow:
+      0 4px 0 var(--bg-main),
+      0 6px 10px rgba(0, 0, 0, 0.2);
+  
+    transition:
+      transform 0.05s ease,
+      box-shadow 0.05s ease;
+  }
+  
+  /* Pressed state */
+  .key.pressed {
+    transform: translateY(4px);
+    box-shadow:
+      0 1px 0 var(--bg-main),
+      0 2px 5px rgba(0, 0, 0, 0.2);
+    
+    color: var(--accent-danger);
+  }

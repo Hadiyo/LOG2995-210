@@ -1,0 +1,372 @@
+%card {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--bg-panel);
+}
+
+%soft-card {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--bg-panel-soft);
+}
+
+%button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel-soft);
+  color: var(--text-main);
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover {
+    border-color: var(--accent-primary);
+  }
+}
+
+.page {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 24px;
+  padding: 24px;
+  min-height: 100vh;
+  box-sizing: border-box;
+  color: var(--text-main);
+  background: var(--bg-main);
+}
+
+.left,
+.right {
+  @extend %card;
+  padding: 16px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+
+  input {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-soft);
+    background: var(--bg-panel-soft);
+    color: var(--text-main);
+  }
+
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.header-row--title {
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+
+  button {
+    @extend %button;
+  }
+}
+
+.actions-top {
+  margin-top: 0;
+}
+
+.section-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.option-group {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.option {
+  @extend %button;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+  &.active {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-primary-25);
+    background: var(--accent-primary-12);
+  }
+}
+
+.option-hint {
+  color: var(--accent-success);
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.option-hint.hint-dim {
+  color: var(--text-dim);
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.avatar {
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  cursor: pointer;
+  aspect-ratio: 1 / 1;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+
+  &.selected {
+    outline: 2px solid var(--accent-primary);
+  }
+
+  /* Add a subtle hover effect to avatars for better interactivity */
+  &:hover {
+    transform: scale(1.07);
+    border-color: var(--accent-primary);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.preview-identity {
+  @extend %soft-card;
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 10px 12px;
+}
+
+.preview-avatar {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.preview-placeholder {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.preview-meta {
+  display: grid;
+  gap: 6px;
+}
+
+.preview-name {
+  font-size: 18px;
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+}
+
+.preview-description {
+  margin: 6px 0 0;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.stats {
+  display: grid;
+}
+
+.stat {
+  @extend %soft-card;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+  padding: 10px 12px;
+  margin: 20px 0 0;
+}
+
+.stat-label {
+  display: grid;
+  gap: 2px;
+
+  small {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+}
+
+.stat-values {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+
+  small {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .stat-hint {
+    color: var(--accent-success);
+  }
+
+  .stat-hint.hint-d4 {
+    color: var(--accent-secondary);
+  }
+}
+
+.input-with-actions {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  justify-content: start;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.input-with-actions input {
+  width: 20ch;
+}
+
+.mini-btn {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel-soft);
+  color: var(--text-main);
+  font-weight: 400;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--accent-primary);
+  }
+}
+
+.field small,
+h3 small {
+  color: var(--accent-danger);
+  margin-left: 8px;
+  font-weight: 500;
+  display: inline;
+}
+
+h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actions button.btn-generate {
+  color: var(--accent-primary);
+}
+
+.actions button.btn-validate {
+  color: var(--accent-success);
+
+  &:hover {
+    border-color: var(--accent-success);
+  }
+}
+
+.btn-generate-name {
+  color: var(--accent-primary);
+}
+
+.btn-clear-name {
+  color: var(--accent-danger);
+
+  &:hover {
+    border-color: var(--accent-danger);
+  }
+}
+
+/* Breathing animation for avatars */
+@keyframes breathe {
+  0%, 100% {transform: scaleY(1);}
+  50% {transform: scaleY(1.03);}
+}
+
+/* Apply breathing animation to avatars with staggered delays for a natural effect */
+.avatar img,
+.preview-avatar img {
+  transform-origin: bottom center;
+  animation: breathe 3s ease-in-out infinite;
+  filter: drop-shadow(0 7px 13px rgba(0, 0, 0, 0.35));
+}
+
+.avatar:nth-child(3n) img {animation-delay: 0.2s;}
+.avatar:nth-child(4n) img {animation-delay: 0.5s;}
+.avatar:nth-child(5n) img {animation-delay: 0.8s;}
+
+/* Add a subtle grid overlay to avatar and preview sections for visual interest */
+.avatar,
+.preview-avatar {
+  position: relative;
+  overflow: hidden;
+}
+
+.avatar::before,
+.preview-avatar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--bg-panel-soft) 1px, var(--bg-main) 1.5px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.avatar::before {
+  background-size: 11.5px 11.5px;
+}
+
+.preview-avatar::before {
+  background-size: 11px 11px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+}

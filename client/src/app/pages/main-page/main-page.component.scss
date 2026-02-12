@@ -1,44 +1,129 @@
-.container {
-    min-height: 100vh;
-    height: auto;
+:host {
+  --argent: #d4e7f3;
+
+  display: block;
+  color: var(--argent);
+  font-family: 'Cinzel', 'Times New Roman', serif;
+
+  min-height: 100vh;
+
+  overflow-x: clip;
 }
 
-.justified {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
+.background-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
 }
 
-.button {
-    margin-top: 10px;
-    text-align: center;
+.page {
+  box-sizing: border-box;
+  min-height: 100svh;
+
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+
+  padding: 56px 6vw 40px;
+  overflow-x: clip;
+  position: relative;
+  z-index: 1;
 }
 
-.team-name {
-    margin-top: 0.25em;
-    margin-bottom: 0.25em;
-    color: green;
+.hero {
+  display: grid;
+  gap: 12px;
+  text-align: center;
 }
 
-.header-item {
-    justify-content: center;
-    text-align: center;
+.hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 4vw, 40px);
 }
 
-.footer-item {
-    text-align: center;
+.hero-logo {
+  width: clamp(240px, 34vw, 520px);
+  height: auto;
+  display: block;
 }
 
-.footer-item p :nth-child(even) {
-    color: orange;
-}
-.footer-item p :nth-child(odd) {
-    color: blue;
+.main-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  align-items: center;
+  padding: 16px 0;
+  justify-self: center;
+  width: min(640px, 100%);
+  align-self: center;
 }
 
-.server-message {
-    justify-content: center;
-    width: 20%;
-    min-width: min-content;
+app-name-slider {
+  margin-top: auto;
+  width: 100%;
+  align-self: center;
+}
+
+@media (max-width: 1280px) {
+  .hero-logo { width: clamp(250px, 34vw, 400px); }
+}
+
+@media (max-width: 1024px) {
+  .hero-logo { width: clamp(240px, 38vw, 360px); }
+}
+
+@media (max-width: 768px) {
+  .hero-logo { width: clamp(220px, 48vw, 320px); }
+}
+
+@media (max-width: 480px) {
+  .hero-logo { width: clamp(180px, 62vw, 240px); }
+
+  .main-actions {
+    gap: 22px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .hero-logo { width: clamp(320px, 28vw, 520px); }
+}
+
+@media (max-height: 820px) {
+  .page {
+    padding: 28px 6vw 22px;
+    gap: 22px;
+  }
+
+  app-name-slider {
+    margin-top: 0;
+  }
+
+  .hero-logo {
+    width: clamp(200px, 30vw, 360px);
+  }
+
+  .main-actions {
+    padding: 8px 0;
+    gap: 22px;
+  }
+}
+
+@media (max-height: 720px) {
+  .page {
+    padding: 18px 6vw 18px;
+    gap: 16px;
+  }
+
+  .hero-logo {
+    width: clamp(180px, 28vw, 320px);
+  }
+
+  .main-actions {
+    gap: 16px;
+  }
 }

@@ -1,0 +1,82 @@
+/* =========================
+   Editor canvas container
+   ========================= */
+.canvas {
+    position: relative;
+    /* Take all available vertical space from parent */
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+
+    /* Layout: grid on top, hint panel below */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    /* Inherit main text color from theme */
+    color: var(--text-main);
+}
+
+/* =========================
+   Canvas cursor
+   ========================= */
+.tile-selected > * {
+    cursor: url("/assets/mouse-icons/paint-brush-cursor.png"), auto;
+}
+
+.object-selected > * {
+    cursor: url("/assets/mouse-icons/item-cursor.png"), auto;
+}
+
+/* =========================
+   Grid wrapper (centering)
+   ========================= */
+.grid-wrap {
+    /* Fill available space */
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+
+    /* Center the grid within this area */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =========================
+   Map grid container
+   ========================= */
+.grid {
+    /* Dynamic grid size (overridden from Angular bindings) */
+    --cols: 10;
+    --rows: 10;
+
+    /* Constrain grid size for large screens */
+    height: 100%;
+    max-height: 960px;
+
+    /* width adjusts to height to maintain square aspect ratio */
+    width: auto;
+    max-width: 960px;
+
+    /* Always keep the grid perfectly square */
+    aspect-ratio: 1 / 1;
+
+    /* Ensure padding and borders are included in size */
+    box-sizing: border-box;
+
+    /* CSS Grid layout driven by --cols / --rows */
+    display: grid;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    grid-template-rows: repeat(var(--rows), 1fr);
+
+    /* Visual styling */
+    background: var(--bg-panel);
+    border: 1px dashed var(--border-soft);
+    border-radius: 18px;
+    padding: 14px;
+    gap: 0;
+
+    /* Prevent text selection while dragging */
+    user-select: none;
+}

@@ -1,7 +1,7 @@
 // Custom Theming for Angular Material
 // For more information: https://material.angular.io/guide/theming
+@use './styles/theme';
 @use '@angular/material' as mat;
-@use './app/pages/material-page/material-page.component.theme' as material-page;
 // Plus imports for other components in your app.
 
 // Include the common styles for Angular Material. We include this here so that you only
@@ -9,6 +9,7 @@
 // Be sure that you only ever include this mixin once!
 @include mat.elevation-classes();
 @include mat.app-background();
+
 
 $indigo-pink-theme: mat.m2-define-light-theme(
     (
@@ -24,11 +25,6 @@ $indigo-pink-theme: mat.m2-define-light-theme(
 // Alternatively, you can import and @include the theme mixins for each component
 // that you are using.
 @include mat.all-component-themes($indigo-pink-theme);
-@include material-page.theme($indigo-pink-theme);
-
-.indigo-pink-theme {
-    // Nothing to do. This is the default theme
-}
 
 .deeppurple-amber-theme {
     $deeppurple-amber-theme: mat.m2-define-light-theme(
@@ -40,7 +36,6 @@ $indigo-pink-theme: mat.m2-define-light-theme(
         )
     );
     @include mat.all-component-colors($deeppurple-amber-theme);
-    @include material-page.theme($deeppurple-amber-theme);
 }
 
 .pink-bluegrey-theme {
@@ -53,7 +48,6 @@ $indigo-pink-theme: mat.m2-define-light-theme(
         )
     );
     @include mat.all-component-colors($pink-bluegrey-theme);
-    @include material-page.theme($pink-bluegrey-theme);
 }
 
 .purple-green-theme {
@@ -66,7 +60,6 @@ $indigo-pink-theme: mat.m2-define-light-theme(
         )
     );
     @include mat.all-component-colors($purple-green-theme);
-    @include material-page.theme($purple-green-theme);
 }
 
 /* You can add global styles to this file, and also import other style files */
@@ -78,4 +71,30 @@ body {
 body {
     margin: 0;
     font-family: Roboto, 'Helvetica Neue', sans-serif;
+    background: var(--bg-main);
+    color: var(--text-main);
+}
+
+/* Webkit browsers */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
 }

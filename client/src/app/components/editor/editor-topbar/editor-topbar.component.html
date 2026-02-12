@@ -1,0 +1,115 @@
+<!-- Top bar wrapper
+     - Global editor controls (tools, mode, size, actions)
+     - Stays visually compact and always accessible -->
+<div class="topbar-wrap">
+
+  <!-- =========================
+       Back action
+       ========================= -->
+  <app-back-button
+    title="Retour à l'administration"
+    (pressed)="onBack()"
+  ></app-back-button>
+
+  <!-- =========================
+       Hotkeys
+       ========================= -->
+  <div class="group-label">
+    <span 
+      class="key" 
+      [class.pressed]="this.isRightClicking() && !this.isShiftPressed()"
+    >
+      RMB
+    </span> 
+    pour effacer des tuiles,
+
+    <span 
+      class="key" 
+      [class.pressed]="this.isShiftPressed()"
+    >
+      SHIFT
+    </span> 
+    + 
+    <span 
+      class="key" 
+      [class.pressed]="this.isRightClicking() && this.isShiftPressed()"
+    >
+      RMB
+    </span> 
+    pour effacer des objets
+  </div>
+
+  <!-- Spacer pushes action buttons to the right -->
+  <div class="spacer"></div>
+  <!-- =========================
+       Cancel action
+       ========================= -->
+  <button
+    type="button"
+    class="icon-btn"
+    (click)="onCancel()"
+    title="Curseur"
+    aria-label="Curseur"
+  >
+    <!-- Cancel / close icon -->
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path xmlns="http://www.w3.org/2000/svg" fill="#FFF" stroke="#000" stroke-width="1" stroke-linejoin="round" 
+      d="M18 14.88 8.16 3.15c-.26-.31-.76-.12-.76.28v15.31c0 .36.42.56.7.33l3.1-2.6 1.55 4.25c.08.22.33.34.55.26l1.61-.59a.43.43 0 0 0 .26-.55l-1.55-4.25h4.05c.36 0 .56-.42.33-.7Z"/>
+    </svg>
+  </button>
+
+
+  <!-- =========================
+       Reset action
+       ========================= -->
+  <button
+    type="button"
+    class="icon-btn"
+    (click)="onReset()"
+    title="Réinitialiser"
+    aria-label="Réinitialiser"
+  >
+    <!-- Reset / refresh icon -->
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5a5 5 0 1 1-9.9-1h-2.02A7 7 0 1 0 12 6Z"
+      />
+    </svg>
+  </button>
+
+    <!-- =========================
+       Save action + validation status
+       ========================= -->
+  @if (localValidation(); as result) {
+    <button
+      type="button"
+      class="icon-btn"
+      [class.success]="result.isValid"
+      [class.invalid]="!result.isValid"
+      (click)="onSave()"
+      title="Enregistrer"
+      aria-label="Enregistrer"
+    >
+      <!-- Save icon -->
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Zm0 2.5L19.5 8H17V5.5Z
+             M7 5h8v5H7V5Zm12 14H5V5h1v7h10V5h.5L19 7.5V19Z"
+        />
+      </svg>
+    </button>
+  }
+
+</div>
+
+@if (shouldShowIssues()) {
+  <div class="validation-panel" role="alert" aria-live="polite">
+    <div class="validation-title">Problemes de validation</div>
+    <ul class="validation-list">
+      @for (issue of activeIssues(); track issue.code) {
+        <li>{{ issue.message }}</li>
+      }
+    </ul>
+  </div>
+}
+

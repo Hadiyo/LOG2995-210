@@ -1,0 +1,34 @@
+<main class="page">
+  <div class="back-button">
+    <app-back-button link="/home" title="Retour à l'accueil"></app-back-button>
+  </div>
+
+
+  <h1 class="title">Creer une partie</h1>
+
+  <section class="maps">
+    <h2 class="section-title">Cartes disponibles</h2>
+    @if (getMapState() === 'LOADING') {
+      <p class="status">Chargement des cartes...</p>
+    } @else if (errorMessage) {
+      <p class="status status--error">{{ errorMessage }}</p>
+    } @else if ((maps$ | async)?.length === 0) {
+      <p class="status">Aucune carte n'est disponible.</p>
+    } @else {
+      <div class="grid">
+        @for (map of maps$ | async; track map.id) {
+          @if(map.visibility){
+          <div class="select-card">
+            <app-game-card
+              [map]="map"
+              [thumbnailUrl]="map.previewImage"
+              [showActions]="false"
+              (select)="onSelectMap($event)"
+            ></app-game-card>
+          </div>
+          }
+        }
+      </div>
+    }
+  </section>
+</main>

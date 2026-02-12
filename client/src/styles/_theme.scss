@@ -1,0 +1,62 @@
+:root {
+    /* Backgrounds */
+    --bg-main: #0b1623;
+    --bg-panel: #101e2e;
+    --bg-panel-soft: #16283c;
+
+    /* Accents */
+    --accent-primary: #6ea8ff;
+    --accent-secondary: #5bd1ff;
+    --accent-danger: #ff6b6b;
+    --accent-success: #7cffa6;
+
+    /* Text */
+    --text-main: #e6f0ff;
+    --text-muted: #9bb3d3;
+    --text-dim: rgba(155, 179, 211, 0.175);
+
+    /* Borders */
+    --border-soft: rgba(255, 255, 255, 0.08);
+
+    /* Tiles - keeping colors as fallbacks */
+    --tile-wall: #4b5563;
+    --tile-door-open: var(--accent-primary);
+    --tile-door-closed: #2f4a7a;
+    --tile-water: #3bb3ff;
+    --tile-ice: #bfe8ff;
+
+    /* Objects - keeping colors as fallbacks */
+    --object-spawn: #7cffa6;
+    --object-flag: #ffd166;
+    --object-heal: #ff77aa;
+    --object-fight: var(--accent-danger);
+
+    /* Tiles - images */
+    --tile-wall-img: url('/assets/tiles/wall.jpg');
+    --tile-water-img: url('/assets/tiles/water.jpg');
+    --tile-ice-img: url('/assets/tiles/ice.jpg');
+    --tile-dirt-img: url('/assets/tiles/dirt.jpg');
+    --tile-door-open-img: url('/assets/tiles/door_open.jpg');
+    --tile-door-closed-img: url('/assets/tiles/door_closed.jpg');
+
+    /* Objects – images */
+    --object-spawn-img: url('/assets/objects/start.png');
+    --object-flag-img: url('/assets/objects/flag.png');
+    --object-heal-img: url('/assets/objects/regen.png');
+    --object-fight-img: url('/assets/objects/arena.png');
+
+    /* Avatar fallback colors */
+    --avatar-0: #7A9EBF;
+    --avatar-1: #8A9BAA;
+    --avatar-2: #B8A76E;
+    --avatar-3: #8C6B5C;
+    --avatar-4: #6B5A7F;
+    --avatar-5: #6A8F6A;
+    --avatar-6: #7A75A3;
+    --avatar-7: #A67C5A;
+    --avatar-8: #A68A5A;
+    --avatar-9: #7A6B8F;
+    --avatar-10: #6A8FA3;
+    --avatar-11: #6B5A6B;
+
+}

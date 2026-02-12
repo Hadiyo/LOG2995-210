@@ -1,0 +1,276 @@
+/* =========================
+   Sidebar container
+   ========================= */
+.sidebar {
+    /* Full-height vertical panel */
+    height: 100%;
+
+    /* Scroll only vertically when content overflows */
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    /* Inner spacing */
+    padding: 14px;
+    padding-bottom: 24px;
+    box-sizing: border-box;
+
+    /* Theme-based text color */
+    color: var(--text-main);
+}
+
+
+/* =========================
+   Sidebar title
+   ========================= */
+.title {
+    margin: 4px 0 14px;
+    font-size: 18px;
+
+    /* Slight spacing for a UI/editor feel */
+    letter-spacing: 0.04em;
+    color: var(--text-main);
+}
+
+
+/* =========================
+   Section containers
+   ========================= */
+.section {
+    margin-bottom: 10px;
+    padding: 12px;
+
+    /* Card-like appearance */
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    background: var(--bg-panel-soft);
+
+    /* Section header */
+    h3 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        color: var(--text-muted);
+
+        /* Editor-style labels */
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+}
+
+/* Remove margin on last section */
+.section:last-child {
+  margin-bottom: 0;
+}
+
+/* =========================
+   Form fields (name, description)
+   ========================= */
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+
+    /* Field label */
+    span {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    /* Inputs & textareas share the same style */
+    input,
+    textarea {
+        border-radius: 12px;
+        border: 1px solid var(--border-soft);
+        background: var(--bg-panel);
+        color: var(--text-main);
+        padding: 10px 12px;
+        outline: none;
+
+        &::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Focus feedback */
+        &:focus {
+            border-color: var(--accent-primary);
+        }
+    }
+
+    /* Character counter */
+    small {
+        align-self: flex-end;
+        color: var(--text-muted);
+        font-size: 11px;
+    }
+}
+
+/* Field header: label + counter */
+.field-header {
+    /* Horizontal layout */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+/* =========================
+   Tool selection grid
+   ========================= */
+.tool-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+
+/* =========================
+   Tool buttons
+   ========================= */
+.tool {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
+    background: var(--bg-panel);
+    color: var(--text-main);
+    cursor: pointer;
+
+    /* Hover affordance */
+    &:hover {
+        border-color: var(--accent-secondary);
+    }
+
+    /* Subtle press feedback */
+    &:active {
+        transform: translateY(1px);
+    }
+}
+
+/* Tool icon container */
+.tool-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--border-soft);
+    background: var(--bg-panel-soft);
+}
+
+.tool-label {
+    font-size: 13px;
+}
+
+
+/* =========================
+   Palette (tiles / objects)
+   ========================= */
+.palette {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+/* Tile palette: 2 columns */
+.palette--tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+
+/* Palette item button */
+.palette-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
+    background: var(--bg-panel);
+    color: var(--text-main);
+    cursor: pointer;
+
+    &:hover {
+        border-color: var(--accent-secondary);
+    }
+
+    &:active {
+        transform: translateY(1px);
+    }
+
+    /* Disabled state (rule-based, e.g. CTF flag) */
+    &.disabled,
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+}
+
+/* Color preview circle */
+.swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    border: 1px solid var(--border-soft);
+
+    /* Background image styling */
+    background-size: contain;
+}
+
+.label {
+    font-size: 13px;
+}
+
+/* Flexible spacer to push counter to the right */
+.spacer {
+    flex: 1;
+}
+
+
+/* =========================
+   Active selections
+   ========================= */
+.tool.active,
+.palette-item.active {
+    border-color: var(--accent-primary);
+    background: var(--bg-panel-soft);
+}
+
+
+/* =========================
+   Buttons & helper text
+   ========================= */
+.btn.full {
+    width: 100%;
+    justify-content: center;
+}
+
+.muted {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+/* Destructive action button */
+.btn.danger {
+    background: var(--accent-danger);
+    color: var(--bg-main);
+}
+
+/* =========================
+   Tooltip
+   ========================= */
+::ng-deep .tooltip .mdc-tooltip__surface {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--bg-panel-soft);
+    color: var(--text-main);
+}
+
+/* Disable hover on tooltip */
+::ng-deep .cdk-overlay-pane .tooltip {
+    pointer-events: none;
+}

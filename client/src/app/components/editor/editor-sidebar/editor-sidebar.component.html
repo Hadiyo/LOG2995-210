@@ -1,0 +1,106 @@
+<!-- Sidebar container: editor controls -->
+<div class="sidebar">
+
+  <!-- =========================
+       Map metadata section
+       ========================= -->
+  <section class="section">
+
+    <!-- Map name field -->
+    <label class="field">
+      <div class="field-header">
+        <span>Nom</span>
+        <small>
+          {{ editorState.editorMap().name.length }} / {{ nameMax }}
+        </small>
+      </div>
+      <!-- Two-way style binding (manual)
+           - Value comes from editor state
+           - Changes are propagated via service -->
+      <input type="text" [ngModel]="editorState.editorMap().name" (ngModelChange)="editorState.setName($event)"
+        [maxLength]="nameMax" placeholder="Nom de la carte" />
+
+      <!-- Live character counter -->
+      
+    </label>
+
+    <!-- Map description field -->
+    <label class="field">
+      <div class="field-header">
+        <span>Description</span>
+        <small>
+          {{ editorState.editorMap().description.length }} / {{ descMax }}
+        </small>
+      </div>
+      <textarea [ngModel]="editorState.editorMap().description" (ngModelChange)="editorState.setDescription($event)"
+        [maxLength]="descMax" placeholder="Description de la carte" rows="3"></textarea>
+
+      <!-- Live character counter -->
+      
+    </label>
+  </section>
+
+  <!-- =========================
+       Tile palette
+       ========================= -->
+  <section class="section">
+    <h3>Tuiles</h3>
+
+    <!-- Palette of selectable tile types -->
+    <div class="palette palette--tiles">
+      @for (tile of tiles; track tile.id) {
+
+      <!-- Tile selection button -->
+      <button class="palette-item" type="button" (click)="editorState.selectTile(tile.id)"
+        [class.active]="editorState.selectedTileType() === tile.id" matTooltip="{{ tile.description }}"
+        matTooltipClass="tooltip">
+        <!-- Visual swatch driven by CSS variables -->
+        <span class="swatch" [style.backgroundImage]="'var(' + tile.cssVar + ')'"></span>
+
+        <!-- Readable label -->
+        <span class="label">{{ tile.label }}</span>
+      </button>
+      }
+    </div>
+  </section>
+
+  <!-- =========================
+       Object palette
+       ========================= -->
+  <section class="section">
+    <h3>Objets</h3>
+
+    <div class="palette">
+      @for (obj of objects; track obj.id) {
+
+      <!-- Object selection button -->
+      <!-- CTF rule enforcement:
+            - Flag can only be placed in CTF mode -->
+      <button class="palette-item" type="button" (click)="editorState.selectObject(obj.id)"
+        [class.active]="editorState.selectedObjectType() === obj.id" [disabled]="
+          obj.id === objectType.FLAG &&
+          editorState.editorMap().mode !== gameMode.CTF
+        " [class.disabled]="
+          (obj.id === objectType.FLAG &&
+          editorState.editorMap().mode !== gameMode.CTF) ||
+          (this.editorState.getObjectCountAndLimit(obj.id).count 
+          === this.editorState.getObjectCountAndLimit(obj.id).limit)
+        " matTooltip="{{ obj.description }}" matTooltipClass="tooltip">
+        <!-- Object color swatch -->
+        <span class="swatch" [style.backgroundImage]="'var(' + obj.cssVar + ')'"></span>
+
+        <span class="label">{{ obj.label }}</span>
+
+        <span class="spacer"></span>
+
+        <!-- Object count / limit display -->
+        @if (editorState.getObjectCountAndLimit(obj.id).limit !== 0) {
+        <span class="counter">{{ editorState.getObjectCountAndLimit(obj.id).count }} / {{
+          editorState.getObjectCountAndLimit(obj.id).limit }}</span>
+        }
+      </button>
+
+      }
+    </div>
+  </section>
+</div>

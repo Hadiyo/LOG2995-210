@@ -58,7 +58,7 @@
         "typescript": "5.9.2"
     },
     "_moduleAliases": {
-        "@app": "out/server-nestjs/app",
+        "@app": "out/server/app",
         "@common": "out/common"
     },
     "jest": {
@@ -73,11 +73,21 @@
             "^.+\\.(t|j)s$": "ts-jest"
         },
         "collectCoverageFrom": [
-            "app/**/*.(t|j)s",
-            "!app/app.module.ts",
-            "!app/index.ts"
+            "app/controllers/map/map.controller.ts",
+            "app/services/map/map.service.ts",
+            "app/validators/server-map-validation.ts",
+            "app/gateways/map/map.gateway.ts"
         ],
+        "coverageThreshold": {
+            "global": {
+                "branches": 100,
+                "functions": 100,
+                "lines": 100,
+                "statements": 100
+            }
+        },
         "coverageDirectory": "./coverage",
+        "testTimeout": 60000,
         "testEnvironment": "node",
         "moduleNameMapper": {
             "^@app(.*)$": "<rootDir>/app/$1",

@@ -1,0 +1,51 @@
+<div class="dialog-backdrop">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="create-map-title">
+    <header class="dialog-header">
+      <h2 id="create-map-title" class="dialog-title">Creer une nouvelle carte</h2>
+    </header>
+
+    <form class="dialog-content" (ngSubmit)="onConfirm()">
+      <section class="section">
+        <h3 class="section-title">Taille de la grille</h3>
+        <div class="options">
+          @for (option of sizeOptions; track option.value) {
+            <label class="option">
+              <input
+                type="radio"
+                name="gridSize"
+                [value]="option.value"
+                [(ngModel)]="selectedSize"
+              />
+              <span class="option-text">
+                <span class="option-title">{{ option.label }}</span>
+                <span class="option-meta">{{ option.value }} - {{ getPlayersLabel(option) }}</span>
+              </span>
+            </label>
+          }
+        </div>
+      </section>
+
+      <section class="section">
+        <h3 class="section-title">Mode de jeu</h3>
+        <div class="options">
+          @for (option of modeOptions; track option.value) {
+            <label class="option">
+              <input
+                type="radio"
+                name="gameMode"
+                [value]="option.value"
+                [(ngModel)]="selectedMode"
+              />
+              <span class="option-title">{{ option.label }}</span>
+            </label>
+          }
+        </div>
+      </section>
+
+      <div class="actions">
+        <button type="button" class="ghost" (click)="onCancel()">Annuler</button>
+        <button type="submit" [disabled]="!selectedSize || !selectedMode">Creer</button>
+      </div>
+    </form>
+  </div>
+</div>

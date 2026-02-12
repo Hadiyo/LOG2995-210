@@ -1,22 +1,31 @@
-<div class="container justified">
-    <h1 class="header-item">Bienvenue au cours {{ title }}</h1>
-    <img src="https://bit.ly/3QofL1J" alt="Logo Projet" />
-    <section id="server-message" class="justified">
-        <p>Petit message du serveur : {{ message.getValue() }}</p>
-        <div class="justified">
-            <button class="button" (click)="getMessagesFromServer()">Récupérer un message du serveur</button>
-            <button class="button" (click)="sendTimeToServer()">Envoyer un message au serveur</button>
-            <button class="button" routerLink="/material">Voir la page démo Angular Material</button>
-        </div>
-    </section>
+<video
+  #backgroundVideo
+  class="background-video"
+  autoplay
+  loop
+  playsinline
+  preload="auto"
+  aria-hidden="true"
+>
+  <source src="/assets/videos/video.mp4" type="video/mp4" />
+</video>
 
-    <button class="button" routerLink="/game">Jouer!</button>
+<main class="page">
+  <header class="hero">
+    <div class="hero-row">
+      <img class="hero-logo" src="assets/images/logo.png" alt="Logo Equipe 210" />
+    </div>
+  </header>
 
-    <footer class="footer-item">
-        <h4 class="team-name">Équipe Poly</h4>
-        <p>
-            <span>Coéquipier #1</span>, <span>Coéquipier #2</span>, <span>Coéquipier #3</span>, 
-            <span>Coéquipier #4</span>, <span>Coéquipier #5</span>, <span>Coéquipier #6</span>
-        </p>
-    </footer>
-</div>
+  <div class="main-actions">
+    @for (action of actions; track action.id) {
+      <app-button
+        [label]="action.label"
+        [link]="action.link"
+        [variant]="action.variant"
+      ></app-button>
+    }
+  </div>
+
+  <app-name-slider [names]="teamNames"></app-name-slider>
+</main>

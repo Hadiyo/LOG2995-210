@@ -1,0 +1,131 @@
+.ticker {
+  position: relative;
+  width: 100%;
+  padding-top: 34px;
+
+  overflow-x: clip;
+}
+
+.team-tag {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.4em;
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.95);
+  padding: 0 14px;
+}
+
+.team-tag::before {
+  content: '';
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  width: 120px;
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, #7ee8ff, transparent);
+}
+
+.ticker_viewport {
+  overflow: hidden;
+  width: 100%;
+  padding: 14px 0;
+  background: rgba(11, 11, 13, 0.35);
+
+  border-top: 1px solid rgba(126, 232, 255, 0.25);
+  border-bottom: 1px solid rgba(126, 232, 255, 0.25);
+
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+}
+
+.ticker_track {
+  display: inline-flex;
+  width: max-content;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  animation: tickerMove 22s linear infinite;
+  align-items: center;
+}
+
+.ticker_group {
+  display: inline-flex;
+  align-items: center;
+  gap: 44px;
+  white-space: nowrap;
+  padding-right: 44px;
+  flex: 0 0 auto;
+}
+
+.ticker_item {
+  font-family: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  font-size: 16px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.95);
+
+  text-shadow: 0 0 10px rgba(60, 139, 217, 0.15);
+}
+
+@keyframes tickerMove {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-25%, 0, 0); }
+}
+
+
+@media (max-width: 1280px) {
+  .team-tag { font-size: 15px; }
+}
+
+@media (max-width: 1024px) {
+  .team-tag { font-size: 14px; }
+  .ticker_item { font-size: 15px; }
+}
+
+@media (max-width: 768px) {
+  .team-tag {
+    font-size: 13px;
+    letter-spacing: 0.35em;
+  }
+
+  .ticker_item { font-size: 14px; }
+
+  .ticker_group {
+    gap: 34px;
+    padding-right: 34px;
+  }
+}
+
+@media (max-width: 480px) {
+  .team-tag {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+  }
+
+  .ticker_item {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .ticker_group {
+    gap: 28px;
+    padding-right: 28px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .team-tag {
+    font-size: 18px;
+    letter-spacing: 0.45em;
+  }
+
+  .ticker_item {
+    font-size: 18px;
+    letter-spacing: 2.8px;
+  }
+}

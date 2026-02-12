@@ -1,50 +1,72 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { CommunicationService } from '@app/services/communication.service';
-import { Message } from '@common/message';
-import { BehaviorSubject } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
+import { AppButtonComponent } from '@app/components/app-button/app-button.component';
+import { NameSliderComponent } from '@app/components/name-slider/name-slider.component';
 
 @Component({
-    selector: 'app-main-page',
-    templateUrl: './main-page.component.html',
-    styleUrls: ['./main-page.component.scss'],
-    imports: [RouterLink],
+  selector: 'app-main-page',
+  templateUrl: './main-page.component.html',
+  styleUrls: ['./main-page.component.scss'],
+  imports: [AppButtonComponent, NameSliderComponent],
 })
-export class MainPageComponent {
-    readonly title: string = 'LOG2995';
-    message: BehaviorSubject<string> = new BehaviorSubject<string>('');
+export class MainPageComponent implements AfterViewInit {
+  @ViewChild('backgroundVideo') backgroundVideo?: ElementRef<HTMLVideoElement>;
 
-    constructor(private readonly communicationService: CommunicationService) {}
+  readonly title: string = 'LOG2995';
+  readonly actions: readonly {
+    id: 'create-game' | 'join-game' | 'admin-map';
+    label: string;
+    variant: 'primary' | 'secondary' | 'tertiary' | 'ghost';
+    link?: string;
+  }[] = [
+      {
+        id: 'create-game',
+        label: 'CREER UNE PARTIE',
+        link: '/game',
+        variant: 'primary',
+      },
+      {
+        id: 'join-game',
+        label: 'JOINDRE UNE PARTIE',
+        variant: 'secondary',
+      },
+      {
+        id: 'admin-map',
+        label: 'ADMINISTRER LES CARTES',
+        link: '/admin',
+        variant: 'tertiary',
+      },
+    ];
 
-    sendTimeToServer(): void {
-        const newTimeMessage: Message = {
-            title: 'Hello from the client',
-            body: 'Time is : ' + new Date().toString(),
-        };
-        // Important de ne pas oublier "subscribe" ou l'appel ne sera jamais lancé puisque personne l'observe
-        this.communicationService.basicPost(newTimeMessage).subscribe({
-            next: (response) => {
-                const responseString = `Le serveur a reçu la requête a retourné un code ${response.status} : ${response.statusText}`;
-                this.message.next(responseString);
-            },
-            error: (err: HttpErrorResponse) => {
-                const responseString = `Le serveur ne répond pas et a retourné : ${err.message}`;
-                this.message.next(responseString);
-            },
-        });
+  readonly teamNames = [
+    'Nadim',
+    'Wei',
+    'Hadi',
+    'Ariane',
+    'Thong',
+    'Fallou',
+  ];
+
+  ngAfterViewInit(): void {
+    this.tryPlayVideo();
+  }
+
+  private tryPlayVideo(): void {
+    const video = this.backgroundVideo?.nativeElement;
+    if (!video) {
+      return;
     }
 
-    getMessagesFromServer(): void {
-        this.communicationService
-            .basicGet()
-            // Cette étape transforme l'objet Message en un seul string
-            .pipe(
-                map((message: Message) => {
-                    return `${message.title} ${message.body}`;
-                }),
-            )
-            .subscribe(this.message);
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+
+    if (video.readyState < 2) {
+      video.load();
     }
+
+    const playPromise = video.play();
+    if (playPromise) {
+      playPromise.catch(() => undefined);
+    }
+  }
 }

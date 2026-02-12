@@ -1,0 +1,136 @@
+/* =========================
+   Individual grid cell
+   ========================= */
+:host {
+    display: contents;
+}
+
+.cell {
+    position: relative;
+    padding: 0;
+
+    /* Cell borders to show grid structure */
+    border: 1px solid var(--border-soft);
+    background: transparent;
+    cursor: inherit;
+
+    /* Prevent image dragging behaviors */
+    -webkit-user-drag: none;
+}
+
+/* Hover feedback for editor interactions */
+.cell.hovered {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    z-index: 2;
+}
+
+
+/* =========================
+   Tile layer (background)
+   ========================= */
+.tile {
+    /* Fill the entire cell */
+    position: absolute;
+    inset: 0;
+
+    border-radius: 0;
+    background: transparent;
+
+    /* Background image styling */
+    background-size: 100% 100%;
+}
+
+/* Terrain tile types */
+/* Using background-color as fallback if images fail to load */
+.tile[data-tile='WALL'] {
+    background-color: var(--tile-wall);
+    background-image: var(--tile-wall-img);
+}
+
+.tile[data-tile='WATER'] {
+    background-color: var(--tile-water);
+    background-image: var(--tile-water-img);
+}
+
+.tile[data-tile='ICE'] {
+    background-color: var(--tile-ice);
+    background-image: var(--tile-ice-img);
+}
+
+/* Base tile (default terrain) */
+.tile[data-tile='DIRT'] {
+    background-color: transparent;
+    background-image: var(--tile-dirt-img);
+}
+
+/* Door states based on walkability */
+.tile[data-tile='DOOR'][data-door-open='true'] {
+    background-color: var(--tile-door-open);
+    background-image: var(--tile-door-open-img);
+}
+
+.tile[data-tile='DOOR'][data-door-closed='true'] {
+    background-color: var(--tile-door-closed);
+    background-image: var(--tile-door-closed-img);
+}
+
+
+/* =========================
+   Object layer (foreground)
+   ========================= */
+.obj {
+    position: absolute;
+    inset: 0;
+
+    /* Objects should never block mouse interactions */
+    pointer-events: none;
+    z-index: 3;
+
+    /* Background image styling */
+    background-size: 100% 100%; 
+}
+
+
+/* Object type colors */
+.obj[data-obj='START'] {
+    background-image: var(--object-spawn-img);
+}
+
+.obj[data-obj='FLAG'] {
+    /* Make flag smaller and centered */
+    width: 70%;
+    height: 70%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background-image: var(--object-flag-img);
+}
+
+.obj[data-obj='REGEN'] {
+    background-image: var(--object-heal-img);
+}
+
+.obj[data-obj='ARENA'] {
+    background-image: var(--object-fight-img);
+}
+
+
+/* =========================
+   Large objects (2x2 tiles)
+   ========================= */
+.obj[data-size='2x2'] {
+    /* Span across 4 tiles visually */
+    width: 200%;
+    height: 200%;
+    left: 0;
+    top: 0;
+    transform: none;
+
+    /* Square shape fits grid better */
+    border-radius: 0;
+    box-shadow: none;
+
+    /* Slight transparency for readability */
+    opacity: 0.9;
+}

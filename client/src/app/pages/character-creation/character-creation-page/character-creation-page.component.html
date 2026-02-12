@@ -1,0 +1,183 @@
+<div class="page">
+    <div class="left">
+        <div class="header-row header-row--title">
+            <app-back-button link="/game" title="Retour à la création de partie"></app-back-button>
+            <h2>Créer votre personnage</h2>
+        </div>
+
+        <label class="field">
+            <span>Nom
+                @if (form.controls.name.touched && form.controls.name.invalid) {
+                <small>Nom requis (max {{ nameMaxLength }})</small>
+                }
+            </span>
+
+            <div class="input-with-actions">
+                <input type="text" [formControl]="form.controls.name" [maxlength]="nameMaxLength"
+                    placeholder="lettres, espace, - et ’" (input)="onNameInput($event)" />
+                <button type="button" class="mini-btn btn-generate-name" (click)="onRandomName()">Nom Aléatoire</button>
+                <button type="button" class="mini-btn btn-clear-name" (click)="form.controls.name.setValue('')">Effacer</button>
+            </div>
+        </label>
+
+        <div class="section-row">
+            <div class="section">
+                <h3>Bonus +2</h3>
+                <div class="option-group">
+                    <button type="button" class="option" [class.active]="form.controls.plusTwo.value === 'vie'"
+                        (click)="form.controls.plusTwo.setValue('vie')">
+                        <span>Vie</span>
+                        @if (form.controls.plusTwo.value === 'vie') {
+                        <span class="option-hint">Vie +2</span>
+                        }
+                    </button>
+
+                    <button type="button" class="option" [class.active]="form.controls.plusTwo.value === 'rapidite'"
+                        (click)="form.controls.plusTwo.setValue('rapidite')">
+                        <span>Rapidité</span>
+                        @if (form.controls.plusTwo.value === 'rapidite') {
+                        <span class="option-hint">Rapidité +2</span>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Dé D6 attribué à</h3>
+                <div class="option-group">
+                    <button type="button" class="option" [class.active]="form.controls.d6GoesTo.value === 'attaque'"
+                        (click)="form.controls.d6GoesTo.setValue('attaque')">
+                        <span>Attaque <small>(Défense reçoit D4)</small></span>
+                        <span class="option-hint" [class.hint-dim]="form.controls.d6GoesTo.value !== 'attaque'">
+                            {{ form.controls.d6GoesTo.value === 'attaque' ? 'Attaque + D6' : 'Attaque + D4' }}
+                        </span>
+                    </button>
+
+                    <button type="button" class="option" [class.active]="form.controls.d6GoesTo.value === 'defense'"
+                        (click)="form.controls.d6GoesTo.setValue('defense')">
+                        <span>Défense <small>(Attaque reçoit D4)</small></span>
+                        <span class="option-hint" [class.hint-dim]="form.controls.d6GoesTo.value !== 'defense'">
+                            {{ form.controls.d6GoesTo.value === 'defense' ? 'Défense + D6' : 'Défense + D4' }}
+                        </span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Avatar
+                @if (form.controls.avatarId.touched && form.controls.avatarId.invalid) {
+                <small>Choisis un avatar</small>
+                }
+            </h3>
+            <div class="avatar-grid">
+                @for (id of avatars; track id) {
+                <button type="button" class="avatar" [class.selected]="id === form.controls.avatarId.value"
+                    [style.background]="avatarFallbackColors[id]" (click)="onSelectAvatar(id)">
+                    <img [src]="'assets/avatars/thumbs/' + id + '.png'" [alt]="'Avatar ' + id" />
+                </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="right">
+        <div class="header-row">
+            <h3>Aperçu</h3>
+            <div class="actions actions-top">
+                <button type="button" class="btn-generate" (click)="onGenerate()">Générer
+                    personnage</button>
+                <button type="button" class="btn-validate" (click)="onSubmit()">Valider</button>
+            </div>
+        </div>
+
+        <div class="preview-identity">
+            <div class="preview-avatar"
+                [style.background]="form.controls.avatarId.value !== null ? avatarFallbackColors[form.controls.avatarId.value] : null">
+                @if (form.controls.avatarId.value !== null) {
+                <img [src]="'assets/avatars/thumbs/' + form.controls.avatarId.value + '.png'"
+                    [alt]="'Avatar ' + form.controls.avatarId.value" />
+                } @else {
+                <div class="preview-placeholder">Aucun avatar</div>
+                }
+            </div>
+
+            <div class="preview-meta">
+                <div class="preview-name">{{ form.controls.name.value || 'Sans nom' }}</div>
+                <div class="preview-subtitle">
+                    {{ selectedAvatarProfile()?.subtitle || 'Ordre inconnu' }}
+                </div>
+                <p class="preview-description">
+                    {{ selectedAvatarProfile()?.description || 'Serment non révélé.' }}
+                </p>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">
+                    <span>Vie</span>
+                    <small>Points de survie (base 6, peut recevoir +2).</small>
+                </div>
+                <div class="stat-values">
+                    <strong>{{ previewStats().vie }}</strong>
+                    <small class="stat-hint">
+                        {{ form.controls.plusTwo.value === 'vie' ? '+2' : ' ' }}
+                    </small>
+                </div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">
+                    <span>Rapidité</span>
+                    <small>Agilité et vitesse (base 6, peut recevoir +2).</small>
+                </div>
+                <div class="stat-values">
+                    <strong>{{ previewStats().rapidite }}</strong>
+                    <small class="stat-hint">
+                        {{ form.controls.plusTwo.value === 'rapidite' ? '+2' : ' ' }}
+                    </small>
+                </div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">
+                    <span>Attaque</span>
+                    <small>Puissance offensive (base 4, reçoit D4 ou D6).</small>
+                </div>
+                <div class="stat-values">
+                    <strong>
+                        {{ form.controls.d6GoesTo.value === 'attaque' ? '10 Max' : '8 Max' }}
+                    </strong>
+
+                    <small
+                        class="stat-hint"
+                        [class.hint-d6]="form.controls.d6GoesTo.value === 'attaque'"
+                        [class.hint-d4]="form.controls.d6GoesTo.value !== 'attaque'">
+                        {{ form.controls.d6GoesTo.value === 'attaque' ? '4 + D6' : '4 + D4' }}
+                    </small>
+                </div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">
+                    <span>Défense</span>
+                    <small>Résistance aux dégâts (base 4, reçoit D4 ou D6).</small>
+                </div>
+                <div class="stat-values">
+                    <strong>
+                        {{ form.controls.d6GoesTo.value === 'defense' ? '10 Max' : '8 Max' }}
+                    </strong>
+
+                    <small
+                        class="stat-hint"
+                        [class.hint-d6]="form.controls.d6GoesTo.value === 'defense'"
+                        [class.hint-d4]="form.controls.d6GoesTo.value !== 'defense'">
+                        {{ form.controls.d6GoesTo.value === 'defense' ? '4 + D6' : '4 + D4' }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
