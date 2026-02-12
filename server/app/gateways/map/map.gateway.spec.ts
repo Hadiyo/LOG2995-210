@@ -214,4 +214,54 @@ describe('MapGateway', () => {
       `Client socket1 left ${SocketRoom.MapManagementRoom} successfully`,
     );
   });
+
+  it('joinRoom should not log when room is still not present after join', () => {
+    const room = SocketRoom.MapManagementRoom;
+    const client = {
+      id: 'socket2',
+      rooms: new Set<string>(), // stays empty
+      join: jest.fn(), // does not add room
+    } as unknown as Socket;
+
+    gateway.joinRoom(room, client);
+
+    expect(client.join).toHaveBeenCalledWith(room);
+    expect(loggerMock.log).not.toHaveBeenCalledWith(
+      `Client socket2 joined ${SocketRoom.MapManagementRoom} successfully`,
+    );
+  });
+
+  it('leaveRoom should not log when room is still present after leave', () => {
+    const room = SocketRoom.MapManagementRoom;
+    const client = {
+      id: 'socket3',
+      rooms: new Set<string>([room]), // remains in room
+      leave: jest.fn(), // does not remove room
+    } as unknown as Socket;
+
+    gateway.leaveRoom(room, client);
+
+    expect(client.leave).toHaveBeenCalledWith(room);
+    expect(loggerMock.log).not.toHaveBeenCalledWith(
+      `Client socket3 left ${SocketRoom.MapManagementRoom} successfully`,
+    );
+  });
+
+  it('onModuleDestroy should not unsubscribe when handlers are undefined', () => {
+    (gateway as unknown as { mapDeletedHandler?: unknown }).mapDeletedHandler = undefined;
+    (gateway as unknown as { mapCreateHandler?: unknown }).mapCreateHandler = undefined;
+    (gateway as unknown as { mapVisibilityHandler?: unknown }).mapVisibilityHandler = undefined;
+    (gateway as unknown as { mapEditHandler?: unknown }).mapEditHandler = undefined;
+
+    gateway.onModuleDestroy();
+
+    expect(mapServiceMock.off).not.toHaveBeenCalled();
+  });
+
+  it('constructor should use default logger when none is injected', () => {
+    const serviceOnlyMock = { on: jest.fn(), off: jest.fn() } as unknown as MapService;
+    const gatewayNoLogger = new MapGateway(serviceOnlyMock);
+    expect(gatewayNoLogger).toBeDefined();
+  });
+
 });
