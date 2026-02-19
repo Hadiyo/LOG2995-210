@@ -65,7 +65,7 @@ describe('MapServiceEndToEnd (persistence + ordering)', () => {
             // The end-to-end tests want the server to control these fields.
             date: '',
             visibility: false,
-            map: [makeEditorCell({ position: { x: 0, y: 0 } }), makeEditorCell({ position: { x: 1, y: 0 } })],
+            map: [makeEditorCell(), makeEditorCell()],
             objects: [
                 makeMapObject({ id: 1, position: { x: 0, y: 0 } }),
                 makeMapObject({ id: 2, position: { x: 1, y: 0 } }),

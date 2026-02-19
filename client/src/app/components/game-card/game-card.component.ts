@@ -1,8 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-import type { EditorMap } from '@common/interface';
 import { GameMode } from '@common/enum';
+import type { EditorMap } from '@common/interface';
 
 @Component({
   selector: 'app-game-card',

@@ -47,7 +47,10 @@ const isDoorTile = (tileType: TileType): boolean => tileType === TileType.DOOR;
 
 const positionToKey = (position: Vec2): string => `${position.x},${position.y}`;
 
-const keyToPosition = (key: string): Vec2 => { return { x: parseInt(key.split(",")[0]), y: parseInt(key.split(",")[1]) } };
+const keyToPosition = (key: string): Vec2 => {
+    const pos: string[] = key.split(",");
+    return { x: parseInt(pos[0]), y: parseInt(pos[1]) };
+};
 
 const isNonEmpty = (value: string): boolean => value.trim().length > 0;
 

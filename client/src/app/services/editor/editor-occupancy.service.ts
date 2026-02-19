@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { MapSize } from '@common/enum';
 import { EditorCell, MapObject, Vec2 } from '@common/interface';
+import { getCellPositionAtIndex } from '@common/map-utils';
 import { getCoveredPositions } from './utils/editor-geometry.util';
 
 /**
@@ -25,10 +26,13 @@ export class EditorOccupancyService {
         }
 
         // Copy cells and update isOccupied
-        return cells.map((c, index) => ({
-            ...c,
-            isOccupied: occupiedKey.has(`${index % mapSize},${Math.floor(index / mapSize)}`),
-        }));
+        return cells.map((c, index) => {
+            const pos = getCellPositionAtIndex(index, mapSize);
+            return {
+                ...c,
+                isOccupied: occupiedKey.has(`${pos.x},${pos.y}`),
+            };
+        });
     }
 
     /**

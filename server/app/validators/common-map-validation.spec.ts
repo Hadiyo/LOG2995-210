@@ -19,8 +19,7 @@ import { validateMap } from '@common/map-validation';
  */
 
 describe('common map-validation (validateMap)', () => {
-    const makeCell = (x: number, y: number, tileType: TileType): EditorCell => ({
-        position: { x, y },
+    const makeCell = (tileType: TileType): EditorCell => ({
         tileType,
         isWalkable: true,
         isOccupied: false,
@@ -41,7 +40,7 @@ describe('common map-validation (validateMap)', () => {
         size: MapSize.S,
         date: '',
         visibility: true,
-        map: [makeCell(0, 0, TileType.DIRT)],
+        map: [makeCell(TileType.DIRT)],
         objects: [makeObject(ObjectType.START, 0, 0, 1), makeObject(ObjectType.START, 0, 0, 2)],
         ...overrides,
     });
@@ -68,7 +67,7 @@ describe('common map-validation (validateMap)', () => {
     it('should report TERRAIN_RATIO_TOO_LOW when terrain is 50% or less', () => {
         const result = validateMap(
             makeEditorMap({
-                map: [makeCell(0, 0, TileType.DIRT), makeCell(1, 0, TileType.WALL)],
+                map: [makeCell(TileType.DIRT), makeCell(TileType.WALL)],
             }),
         );
         expect(issueCodes(result)).toContain('TERRAIN_RATIO_TOO_LOW');
@@ -78,9 +77,9 @@ describe('common map-validation (validateMap)', () => {
         const result = validateMap(
             makeEditorMap({
                 map: [
-                    makeCell(0, 0, TileType.DIRT),
-                    makeCell(1, 0, TileType.DIRT),
-                    makeCell(2, 0, TileType.WALL),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.WALL),
                 ],
             }),
         );
@@ -88,12 +87,15 @@ describe('common map-validation (validateMap)', () => {
     });
 
     it('should report DOOR_INVALID_PLACEMENT when a door is on an edge (missing neighbors)', () => {
+        const CUSTOM_MAP_SIZE = 2 as MapSize; // 2x2 grid
         const result = validateMap(
             makeEditorMap({
+                size: CUSTOM_MAP_SIZE,
                 map: [
-                    makeCell(0, 0, TileType.DIRT),
-                    makeCell(0, 1, TileType.DOOR),
-                    makeCell(1, 0, TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DOOR),
+                    makeCell(TileType.DIRT),
                 ],
             }),
         );
@@ -101,18 +103,20 @@ describe('common map-validation (validateMap)', () => {
     });
 
     it('should report DOOR_INVALID_PLACEMENT when a door is surrounded by terrain', () => {
+        const CUSTOM_MAP_SIZE = 3 as MapSize;
         const result = validateMap(
             makeEditorMap({
+                size: CUSTOM_MAP_SIZE,
                 map: [
-                    makeCell(0, 0, TileType.DIRT),
-                    makeCell(1, 0, TileType.DIRT),
-                    makeCell(2, 0, TileType.DIRT),
-                    makeCell(0, 1, TileType.DIRT),
-                    makeCell(1, 1, TileType.DOOR),
-                    makeCell(2, 1, TileType.DIRT),
-                    makeCell(0, 2, TileType.DIRT),
-                    makeCell(1, 2, TileType.DIRT),
-                    makeCell(2, 2, TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DOOR),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
                 ],
             }),
         );
@@ -120,18 +124,20 @@ describe('common map-validation (validateMap)', () => {
     });
 
     it('should accept a door between horizontal walls and vertical terrain', () => {
+        const CUSTOM_MAP_SIZE = 3 as MapSize;
         const result = validateMap(
             makeEditorMap({
+                size: CUSTOM_MAP_SIZE,
                 map: [
-                    makeCell(0, 0, TileType.DIRT),
-                    makeCell(1, 0, TileType.DIRT),
-                    makeCell(2, 0, TileType.DIRT),
-                    makeCell(0, 1, TileType.WALL),
-                    makeCell(1, 1, TileType.DOOR),
-                    makeCell(2, 1, TileType.WALL),
-                    makeCell(0, 2, TileType.DIRT),
-                    makeCell(1, 2, TileType.DIRT),
-                    makeCell(2, 2, TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.WALL),
+                    makeCell(TileType.DOOR),
+                    makeCell(TileType.WALL),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
                 ],
             }),
         );
@@ -139,18 +145,20 @@ describe('common map-validation (validateMap)', () => {
     });
 
     it('should accept a door between vertical walls and horizontal terrain', () => {
+        const CUSTOM_MAP_SIZE = 3 as MapSize;
         const result = validateMap(
             makeEditorMap({
+                size: CUSTOM_MAP_SIZE,
                 map: [
-                    makeCell(0, 0, TileType.DIRT),
-                    makeCell(1, 0, TileType.WALL),
-                    makeCell(2, 0, TileType.DIRT),
-                    makeCell(0, 1, TileType.DIRT),
-                    makeCell(1, 1, TileType.DOOR),
-                    makeCell(2, 1, TileType.DIRT),
-                    makeCell(0, 2, TileType.DIRT),
-                    makeCell(1, 2, TileType.WALL),
-                    makeCell(2, 2, TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.WALL),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DOOR),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT),
+                    makeCell(TileType.WALL),
+                    makeCell(TileType.DIRT),
                 ],
             }),
         );
@@ -197,7 +205,7 @@ describe('common map-validation (validateMap)', () => {
     it('should not add UNREACHABLE_TILES when there are no traversable tiles', () => {
         const result = validateMap(
             makeEditorMap({
-                map: [makeCell(0, 0, TileType.WALL)],
+                map: [makeCell(TileType.WALL)],
             }),
         );
         expect(issueCodes(result)).not.toContain('UNREACHABLE_TILES');
@@ -206,7 +214,7 @@ describe('common map-validation (validateMap)', () => {
     it('should not add UNREACHABLE_TILES when there are no start points', () => {
         const result = validateMap(
             makeEditorMap({
-                map: [makeCell(0, 0, TileType.DIRT), makeCell(1, 0, TileType.DIRT)],
+                map: [makeCell(TileType.DIRT), makeCell(TileType.DIRT)],
                 objects: [],
             }),
         );
@@ -216,7 +224,7 @@ describe('common map-validation (validateMap)', () => {
     it('should report UNREACHABLE_TILES when traversable tiles are disconnected', () => {
         const result = validateMap(
             makeEditorMap({
-                map: [makeCell(0, 0, TileType.DIRT), makeCell(2, 0, TileType.DIRT)],
+                map: [makeCell(TileType.DIRT), makeCell(TileType.WALL), makeCell(TileType.DIRT)],
                 objects: [makeObject(ObjectType.START, 0, 0, 1), makeObject(ObjectType.START, 0, 0, 2)],
             }),
         );
@@ -231,7 +239,7 @@ describe('common map-validation (validateMap)', () => {
     it('should report UNREACHABLE_TILES when the first start is not on a traversable tile', () => {
         const result = validateMap(
             makeEditorMap({
-                map: [makeCell(0, 0, TileType.DIRT)],
+                map: [makeCell(TileType.DIRT)],
                 objects: [makeObject(ObjectType.START, 1, 0, 1), makeObject(ObjectType.START, 1, 0, 2)],
             }),
         );

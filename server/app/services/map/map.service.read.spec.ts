@@ -46,21 +46,22 @@ describe('MapService (read)', () => {
     });
 
     it('getAllMaps() should return hydrated maps (walkable + occupied)', async () => {
+        const CUSTOM_MAP_SIZE = 2 as MapSize; // 2x2 grid
         const doc = makeDoc({
             _id: 'id-1',
             name: 'Map',
             description: 'desc',
             mode: GameMode.CLASSIC,
-            size: MapSize.S,
+            size: CUSTOM_MAP_SIZE,
             date: '2026-02-08T10:00:00.000Z',
             visibility: true,
             previewImage: 'AAA=',
             previewImageFormat: PreviewImageFormat.WEBP,
             map: [
-                { position: { x: 0, y: 0 }, tileType: TileType.DIRT },
-                { position: { x: 1, y: 0 }, tileType: TileType.WALL },
-                { position: { x: 0, y: 1 }, tileType: TileType.DOOR, doorOpen: true },
-                { position: { x: 1, y: 1 }, tileType: TileType.DOOR, doorOpen: false },
+                { tileType: TileType.DIRT },
+                { tileType: TileType.WALL },
+                { tileType: TileType.DOOR, doorOpen: true },
+                { tileType: TileType.DOOR, doorOpen: false },
             ],
             objects: [
                 makeObject({ id: 1, type: ObjectType.START, position: { x: 0, y: 0 }, size: ObjectSize.S }),
@@ -82,16 +83,15 @@ describe('MapService (read)', () => {
         expect(map.id).toBe('id-1');
         expect(map.previewImage).toBe('AAA=');
         expect(map.previewImageFormat).toBe(PreviewImageFormat.WEBP);
-        const sampleCell = map.map.find((c) => c.position.x === 0 && c.position.y === 0);
+        const sampleCell = map.map[0];
         expect(sampleCell).toBeDefined();
-        expect(sampleCell).toHaveProperty('position');
         expect(sampleCell).toHaveProperty('tileType');
         expect(sampleCell).toHaveProperty('isWalkable');
         expect(sampleCell).toHaveProperty('isOccupied');
-        expect(map.map.find((c) => c.position.x === 0 && c.position.y === 0)?.isOccupied).toBe(true);
-        expect(map.map.find((c) => c.position.x === 1 && c.position.y === 0)?.isWalkable).toBe(false);
-        expect(map.map.find((c) => c.position.x === 0 && c.position.y === 1)?.isWalkable).toBe(true);
-        expect(map.map.find((c) => c.position.x === 1 && c.position.y === 1)?.isWalkable).toBe(false);
+        expect(map.map[0]).toBeTruthy();
+        expect(map.map[1].isWalkable).toBe(false);
+        expect(map.map[2].isWalkable).toBe(true);
+        expect(map.map[3].isWalkable).toBe(false);
         expect((map as unknown as { createdAt?: Date }).createdAt).toBeUndefined();
         expect((map as unknown as { updatedAt?: Date }).updatedAt).toBeUndefined();
     });
@@ -135,7 +135,7 @@ describe('MapService (read)', () => {
             size: MapSize.S,
             date: '2026-02-08T10:00:00.000Z',
             visibility: true,
-            map: [{ position: { x: 0, y: 0 }, tileType: TileType.DIRT }],
+            map: [{ tileType: TileType.DIRT }],
             objects: [makeObject({ position: { x: 0, y: 0 }, size: ObjectSize.S })],
         });
         mapModel.findById.mockReturnValue(makeQuery(doc));

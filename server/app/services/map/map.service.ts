@@ -13,7 +13,7 @@ import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
 import { SocketEvents } from '@common/socket-events';
 import { EventEmitter } from 'events';
 
-type PersistedCell = Omit<EditorCell, 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean, index: number };
+type PersistedCell = Omit<EditorCell, 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean };
 type PersistedMap = Omit<EditorMap, 'id' | 'map'> & { map: PersistedCell[] };
 
 type PersistedMapRecord = Omit<EditorMap, 'id' | 'map'> & {
@@ -121,10 +121,9 @@ export class MapService {
             mode: map.mode,
             size: map.size,
             date: now,
-            map: map.map.map((cell, index) => ({
+            map: map.map.map((cell) => ({
                 tileType: cell.tileType,
                 ...(cell.tileType === TileType.DOOR ? { doorOpen: cell.isWalkable === true } : {}),
-                index,
             })),
             objects: map.objects,
             visibility: map.visibility,
@@ -158,15 +157,14 @@ export class MapService {
 
     private toEditorMap(mapDocument: MapDocument): EditorMap {
         const mapObject = mapDocument.toObject({ versionKey: false });
-
         const { _id: idValue, map: persistedMap, objects, ...rest } = mapObject as PersistedMapRecord;
 
         delete (rest as { createdAt?: Date }).createdAt;
         delete (rest as { updatedAt?: Date }).updatedAt;
         const occupied = this.buildOccupiedKeySet(objects);
-        const hydratedMap: EditorCell[] = persistedMap.map((cell) => {
+        const hydratedMap: EditorCell[] = persistedMap.map((cell, index) => {
             const isWalkable = this.isTileWalkable(cell.tileType, cell.doorOpen);
-            const position = getCellPositionAtIndex(cell.index, mapDocument.size);
+            const position = getCellPositionAtIndex(index, mapDocument.size);
             const key = `${position.x},${position.y}`;
             return {
                 tileType: cell.tileType,
