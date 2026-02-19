@@ -42,8 +42,8 @@ export interface EditorMap {
 
 export interface ObjectCountAndLimit {
     count: number;
-    limit: number
-};
+    limit: number;
+}
 
 export interface MapDimensions {
     cols: number;

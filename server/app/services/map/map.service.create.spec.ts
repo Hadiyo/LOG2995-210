@@ -2,10 +2,20 @@ import { BadRequestException } from '@nestjs/common';
 
 import { MapService } from '@app/services/map/map.service';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
-import { PreviewImageFormat } from '@common/interface';
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
 import { TileType } from '@common/enum';
+import { PreviewImageFormat } from '@common/interface';
 import { makeCell, makeDoc, makeEditorMap, makeMapModelMock, makeObject } from './map.service.spec-utils';
+
+/**
+ * Testing Strategy:
+ * - Validate the expected behavior with valid inputs,
+ * ensuring proper validation, sanitization, and persistence.
+ * 
+ * - Then we cover edge cases and invalid data (e.g., malformed preview,
+ * oversized base64, invalid formats) to verify error handling
+ * and data cleaning before database insertion.
+ */
 
 jest.mock('@app/validators/server-map-validation');
 

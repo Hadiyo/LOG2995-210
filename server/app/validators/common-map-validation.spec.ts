@@ -2,6 +2,22 @@ import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enu
 import type { EditorCell, EditorMap, MapObject } from '@common/interface';
 import { validateMap } from '@common/map-validation';
 
+/**
+ * Testing Strategy:
+ * - Validate the expected behavior when all map rules are satisfied.
+ *
+ * - Cover invalid inputs and boundary conditions such as:
+ *   empty name/description, insufficient terrain ratio,
+ *   incorrect door placement, and invalid start point counts.
+ *
+ * - Verify game-mode-specific constraints (CTF flag required,
+ *   flag forbidden in CLASSIC mode).
+ *
+ * - Ensure connectivity rules are enforced by detecting
+ *   unreachable traversable tiles and validating detailed
+ *   error reporting.
+ */
+
 describe('common map-validation (validateMap)', () => {
     const makeCell = (x: number, y: number, tileType: TileType): EditorCell => ({
         position: { x, y },

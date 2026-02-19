@@ -3,7 +3,25 @@ import { NotFoundException } from '@nestjs/common';
 import { MapService } from '@app/services/map/map.service';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
 import { GameMode, MapSize, TileType } from '@common/enum';
+import { SocketEvents } from '@common/socket-events';
 import { makeDoc, makeEditorMap, makeMapModelMock, makeObject, makeQuery } from './map.service.spec-utils';
+
+/**
+ * Testing Strategy:
+ * - Existing maps are properly updated with validation
+ *   and name uniqueness checks.
+ *
+ * - A new map is created when updating a non-existing record.
+ *
+ * - Visibility updates correctly modify the record
+ *   and emit the appropriate socket event.
+ *
+ * - NotFoundException is thrown when a visibility
+ *   update targets a missing map.
+ *
+ * - Event subscription methods (on/off) correctly
+ *   delegate to the internal event emitter.
+ */
 
 jest.mock('@app/validators/server-map-validation');
 
@@ -75,8 +93,25 @@ describe('MapService (update)', () => {
         await expect(service.updateMapVisibility('missing', true)).rejects.toBeInstanceOf(NotFoundException);
     });
 
+    it('on() should register callback with mapEventEmitter', () => {
+        const callback = jest.fn();
+        const emitterSpy = jest.spyOn(service['mapEventEmitter'], 'on');
+
+        service.on(SocketEvents.MapCreated, callback);
+
+        expect(emitterSpy).toHaveBeenCalledWith(SocketEvents.MapCreated, callback);
+    });
+
+    it('off() should unregister callback from mapEventEmitter', () => {
+        const callback = jest.fn();
+        const emitterSpy = jest.spyOn(service['mapEventEmitter'], 'off');
+
+        service.off(SocketEvents.MapCreated, callback);
+
+        expect(emitterSpy).toHaveBeenCalledWith(SocketEvents.MapCreated, callback);
+    });
+
     it.each([true, false])('updateMapVisibility() should update visibility when found (%s)', async (nextVisibility) => {
-        const initialVisibility = !nextVisibility;
         const doc = makeDoc({
             _id: 'id-vis',
             name: 'Map',
@@ -90,16 +125,20 @@ describe('MapService (update)', () => {
         });
 
         mapModel.findByIdAndUpdate.mockReturnValue(makeQuery(doc));
+        const emitSpy = jest.spyOn(service['mapEventEmitter'], 'emit');
 
-        const updated = await service.updateMapVisibility('id-vis', nextVisibility);
+        await service.updateMapVisibility('id-vis', nextVisibility);
 
         expect(mapModel.findByIdAndUpdate).toHaveBeenCalledWith(
             'id-vis',
             { visibility: nextVisibility },
             { new: true },
         );
-        expect(updated.id).toBe('id-vis');
-        expect(updated.visibility).toBe(nextVisibility);
-        expect(updated.visibility).not.toBe(initialVisibility);
+
+        // Check that the event was emitted correctly
+        expect(emitSpy).toHaveBeenCalledWith(SocketEvents.ToogleMapVisibility, {
+            id: 'id-vis',
+            isVisible: nextVisibility,
+        });
     });
 });

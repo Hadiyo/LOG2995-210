@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MapConfig } from '@app/interfaces/create-map-dialog';
-import { MapService } from '@app/services/map.service';
+import { MapApiService } from '@app/services/map/map-api.service';
 import { GameMode, MouseButton, ObjectSize, ObjectType, TileType } from '@common/enum';
 import type { EditorCell, EditorMap, MapObject, ObjectCountAndLimit } from '@common/interface';
 import { getCellPositionAtIndex } from '@common/map-utils';
@@ -16,7 +16,7 @@ export class EditorStateService {
     private readonly occupancy = inject(EditorOccupancyService);
     private readonly mapFactory = inject(EditorMapFactoryService);
     private readonly rules = inject(EditorPlacementRulesService);
-    private readonly mapService = inject(MapService);
+    private readonly mapService = inject(MapApiService);
 
     /* =========================================================
        Editor UI selection state (signals)

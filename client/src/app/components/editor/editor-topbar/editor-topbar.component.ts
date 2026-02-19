@@ -4,14 +4,16 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { MapStateService } from '@app/services/map/map-state.service';
 
+import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-import { MapService } from '@app/services/map.service';
-import { MapThumbnailService } from '@app/services/map-thumbnail.service';
+import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
 import { GameMode, MapSize, MouseButton } from '@common/enum';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
+
+import { take } from 'rxjs';
 
 
 @Component({
@@ -21,7 +23,7 @@ import { validateMap, type MapValidationIssue, type MapValidationResult } from '
    * Standalone component imports:
    * - CommonModule: structural directives and common Angular features
    */
-  imports: [CommonModule],
+  imports: [CommonModule, BackButtonComponent],
 
   templateUrl: './editor-topbar.component.html',
   styleUrls: ['./editor-topbar.component.scss'],
@@ -38,32 +40,20 @@ export class EditorTopbarComponent {
      Dependencies
      ========================================================= */
   // Central editor state (single source of truth)
-  readonly editorState: EditorStateService;
-  readonly router: Router;
-  readonly overlay: Overlay;
-  readonly mapService: MapService;
-  // Map preview generation service
-  readonly mapThumbnail: MapThumbnailService;
-
   constructor(
-    editorState: EditorStateService,
-    router: Router,
-    overlay: Overlay,
-    mapService: MapService,
-    // Map preview generation service
-    mapThumbnail: MapThumbnailService,
-  ) {
-    this.editorState = editorState;
-    this.router = router;
-    this.overlay = overlay;
-    this.mapService = mapService;
-    this.mapThumbnail = mapThumbnail;
-  }
+    private readonly editorState: EditorStateService,
+    private readonly router: Router,
+    private readonly overlay: Overlay,
+    private readonly mapThumbnail: MapThumbnailService, // Map preview generation
+    private readonly mapStateService: MapStateService,
+  ) {}
 
   /* =========================================================
      Hotkey UI
      ========================================================= */
   readonly isRightClicking = computed(() => this.editorState.activeButton() === MouseButton.Right);
+
+  readonly isShiftPressed = computed(() => this.editorState.isShiftPressed());
 
   /* =========================================================
      Mode & size options
@@ -108,9 +98,9 @@ export class EditorTopbarComponent {
     const portal = new ComponentPortal(PopUpComponent);
     const ref = overlayRef.attach(portal);
 
-    ref.instance.closePopUp.subscribe(() => overlayRef.dispose());
-    overlayRef.backdropClick().subscribe(() => overlayRef.dispose());
-    ref.instance.confirmPopUp.subscribe(() => {
+    ref.instance.closePopUp.pipe(take(1)).subscribe(() => overlayRef.dispose());
+    overlayRef.backdropClick().pipe(take(1)).subscribe(() => overlayRef.dispose());
+    ref.instance.confirmPopUp.pipe(take(1)).subscribe(() => {
       overlayRef.dispose();
       this.router.navigate(['/admin']);
     });
@@ -153,9 +143,7 @@ export class EditorTopbarComponent {
         previewImage: preview?.data ?? undefined,
         previewImageFormat: preview?.format ?? undefined,
       };
-
-      const savedMap = await firstValueFrom(this.mapService.saveMap(mapWithPreview));
-      this.editorState.loadMap(savedMap);
+      await this.mapStateService.createMap(mapWithPreview);
       await this.router.navigate(['/admin']);
     } catch (error) {
       this.applySaveErrorFeedback(error);

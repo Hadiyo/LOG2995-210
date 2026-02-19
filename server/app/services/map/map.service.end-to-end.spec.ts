@@ -1,14 +1,25 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { getConnectionToken, getModelToken, MongooseModule } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import type { Connection, Model } from 'mongoose';
 
-import { MapService } from '@app/services/map/map.service';
 import { Map, type MapDocument, mapSchema } from '@app/model/database/map';
+import { MapService } from '@app/services/map/map.service';
 import { GameMode, MapSize } from '@common/enum';
 import type { EditorMap } from '@common/interface';
 
 import { makeCell as makeEditorCell, makeEditorMap, makeObject as makeMapObject } from './map.service.spec-utils';
+
+/**
+ * Testing Strategy:
+ * - Data is truly persisted across a full server restart
+ *   (new Nest module + new database connection).
+ * 
+ * - Map ordering is stable: updates do not affect order,
+ *   and newly created maps are appended correctly.
+ * 
+ * - Deletion properly removes maps from persisted and visible queries.
+ */
 
 process.env.MONGOMS_DISABLE_DOWNLOAD_PROGRESS = '1';
 

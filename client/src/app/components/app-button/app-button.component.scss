@@ -7,7 +7,7 @@
   text-transform: uppercase;
   letter-spacing: 2px;
 
-  border-radius: 999px;
+  border-radius: 10px;
   border: 1px solid transparent;
   color: rgba(247, 244, 239, 0.95);
 
@@ -15,6 +15,7 @@
   backdrop-filter: blur(8px);
 
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
 }
 
 .action.primary {
@@ -44,6 +45,10 @@
   box-shadow: 0 0 24px rgba(79, 217, 255, 0.3);
 }
 
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 @media (max-width: 1280px) {
   .action {

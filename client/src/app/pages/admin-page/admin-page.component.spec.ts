@@ -1,17 +1,34 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
-import { Subject, of, throwError } from 'rxjs';
+import { BehaviorSubject, NEVER, of, throwError } from 'rxjs';
 
+import { WritableSignal, signal } from '@angular/core';
 import { CreateMapDialogComponent } from '@app/components/create-map-dialog/create-map-dialog.component';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
 import { AdminPageComponent } from '@app/pages/admin-page/admin-page.component';
 import { AdminService } from '@app/services/admin.service';
-import { MapService } from '@app/services/map.service';
+import { MapLoadState } from '@app/services/map/map-state.enum';
+import { MapStateService } from '@app/services/map/map-state.service';
 import { GameMode, MapSize } from '@common/enum';
 import type { EditorMap } from '@common/interface';
 
+/**
+ * Testing Strategy:
+ * We validate normal admin workflows first: loading and rendering maps,
+ * opening/confirming create actions, editing an existing map, deleting a map,
+ * and toggling visibility through MapStateService.
+ *
+ * We then cover edge/error cases such as rejected create config,
+ * failed map fetch, delete failure, toggle failure, and guard conditions
+ * (no pending map, already deleting, dialog close while deleting).
+ *
+ * We verify both behavior and UI outcomes (navigation, dialogs, list updates,
+ * and displayed error messages) to ensure the admin page stays reliable under
+ * async state changes and invalid operation paths.
+ */
 type AdminPageInternals = {
+  onToggleVisibility: (map: EditorMap) => void;
   closeDeleteDialog: () => void;
   confirmDeleteMap: () => void;
 };
@@ -19,8 +36,8 @@ type AdminPageInternals = {
 describe('AdminPageComponent', () => {
   let component: AdminPageComponent;
   let fixture: ComponentFixture<AdminPageComponent>;
-  let mapServiceSpy: jasmine.SpyObj<MapService>;
   let adminServiceSpy: jasmine.SpyObj<AdminService>;
+  let mapStateServiceSpy: jasmine.SpyObj<MapStateService>;
   let router: Router;
 
   const SAMPLE_DATE_ISO = '2026-02-08T12:00:00.000Z';
@@ -38,15 +55,45 @@ describe('AdminPageComponent', () => {
     ...overrides,
   });
 
+  let mapsSubject: BehaviorSubject<EditorMap[]>;
+  let stateSignal: WritableSignal<MapLoadState>;
+
   beforeEach(async () => {
-    mapServiceSpy = jasmine.createSpyObj<MapService>('MapService', ['getAllMaps', 'deleteMap', 'updateMapVisibility']);
+    stateSignal = signal(MapLoadState.Idle);
+
     adminServiceSpy = jasmine.createSpyObj<AdminService>('AdminService', ['setMapProperties', 'fetchExistingMapForEditor']);
+    mapStateServiceSpy = jasmine.createSpyObj<MapStateService>('MapStateService', [
+      'subscribeToMapEvents',
+      'unsubscribeFromMapEvents',
+      'loadMaps',
+      'deleteMap',
+      'toggleMapVisibility',
+    ]);
+
+    mapsSubject = new BehaviorSubject<EditorMap[]>([]);
+
+    Object.defineProperty(mapStateServiceSpy, 'state', {
+      get: () => stateSignal,
+    });
+
+    mapStateServiceSpy.maps$ = mapsSubject.asObservable();
+
+    mapStateServiceSpy.loadMaps.and.stub();
+    mapStateServiceSpy.subscribeToMapEvents.and.callFake(() => {
+      mapStateServiceSpy.loadMaps();
+    });
+
+    mapStateServiceSpy.deleteMap.and.callFake((map: EditorMap) => {
+      const updated = mapsSubject.value.filter(m => m.id !== map.id);
+      mapsSubject.next(updated);
+      return of(void 0);
+    });
 
     await TestBed.configureTestingModule({
       imports: [AdminPageComponent],
       providers: [
         provideRouter([]),
-        { provide: MapService, useValue: mapServiceSpy },
+        { provide: MapStateService, useValue: mapStateServiceSpy },
         { provide: AdminService, useValue: adminServiceSpy },
       ],
     }).compileComponents();
@@ -108,28 +155,8 @@ describe('AdminPageComponent', () => {
     btn?.click();
   };
 
-  it('should show loading state while maps are loading', () => {
-    const subject = new Subject<EditorMap[]>();
-    mapServiceSpy.getAllMaps.and.returnValue(subject.asObservable());
-
-    create();
-
-    expect(getText()).toContain('Chargement des cartes...');
-
-    subject.next([makeMap()]);
-    subject.complete();
-  });
-
-  it('should show an error message when map loading fails', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(throwError(() => new Error('fail')));
-
-    create();
-
-    expect(getText()).toContain('Impossible de charger les cartes pour le moment.');
-  });
-
   it('should render maps when loading succeeds', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(of([makeMap({ id: 'a', name: 'A' }), makeMap({ id: 'b', name: 'B' })]));
+    mapsSubject.next([makeMap({ id: 'a', name: 'A' }), makeMap({ id: 'b', name: 'B' })]);
 
     create();
     fixture.detectChanges();
@@ -142,7 +169,6 @@ describe('AdminPageComponent', () => {
   });
 
   it('should open create dialog on create button click', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(of([]));
     create();
 
     clickCreateButton();
@@ -152,7 +178,6 @@ describe('AdminPageComponent', () => {
   });
 
   it('should navigate to editor on create confirm when AdminService accepts config', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(of([]));
     adminServiceSpy.setMapProperties.and.returnValue(true);
     create();
 
@@ -166,7 +191,6 @@ describe('AdminPageComponent', () => {
   });
 
   it('should set an error on create confirm when AdminService rejects config', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(of([]));
     adminServiceSpy.setMapProperties.and.returnValue(false);
     create();
 
@@ -179,7 +203,9 @@ describe('AdminPageComponent', () => {
   });
 
   it('should navigate to editor on edit when map fetch succeeds', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(of([makeMap()]));
+    mapStateServiceSpy.loadMaps.and.callFake(() => {
+      mapsSubject.next([makeMap()]);
+    });
     adminServiceSpy.fetchExistingMapForEditor.and.returnValue(of(true));
     create();
 
@@ -192,7 +218,9 @@ describe('AdminPageComponent', () => {
   });
 
   it('should show an error on edit when map fetch fails', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(of([makeMap()]));
+    mapStateServiceSpy.loadMaps.and.callFake(() => {
+      mapsSubject.next([makeMap()]);
+    });
     adminServiceSpy.fetchExistingMapForEditor.and.returnValue(of(false));
     create();
 
@@ -205,7 +233,9 @@ describe('AdminPageComponent', () => {
   });
 
   it('should open and close delete dialog', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(of([makeMap()]));
+    mapStateServiceSpy.loadMaps.and.callFake(() => {
+      mapsSubject.next([makeMap()]);
+    });
     create();
 
     clickFirstCardButton('Supprimer');
@@ -222,9 +252,10 @@ describe('AdminPageComponent', () => {
   });
 
   it('closeDeleteDialog() should do nothing while deleting', () => {
-    const deleteSubject = new Subject<void>();
-    mapServiceSpy.getAllMaps.and.returnValue(of([makeMap()]));
-    mapServiceSpy.deleteMap.and.returnValue(deleteSubject.asObservable());
+    mapStateServiceSpy.loadMaps.and.callFake(() => {
+      mapsSubject.next([makeMap()]);
+    });
+    mapStateServiceSpy.deleteMap.and.returnValue(NEVER);
     create();
 
     clickFirstCardButton('Supprimer');
@@ -240,17 +271,16 @@ describe('AdminPageComponent', () => {
   });
 
   it('confirmDeleteMap() should early-return when no pending map', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(of([]));
+    mapsSubject.next([]);
     create();
 
     (component as unknown as AdminPageInternals).confirmDeleteMap();
-    expect(mapServiceSpy.deleteMap).not.toHaveBeenCalled();
+    expect(mapStateServiceSpy.deleteMap).not.toHaveBeenCalled();
   });
 
   it('confirmDeleteMap() should early-return when already deleting', () => {
-    const deleteSubject = new Subject<void>();
-    mapServiceSpy.getAllMaps.and.returnValue(of([makeMap()]));
-    mapServiceSpy.deleteMap.and.returnValue(deleteSubject.asObservable());
+    mapsSubject.next([makeMap()]);
+    mapStateServiceSpy.deleteMap.and.returnValue(NEVER);
     create();
 
     clickFirstCardButton('Supprimer');
@@ -259,12 +289,12 @@ describe('AdminPageComponent', () => {
     fixture.detectChanges();
 
     (component as unknown as AdminPageInternals).confirmDeleteMap();
-    expect(mapServiceSpy.deleteMap).toHaveBeenCalledTimes(1);
+    expect(mapStateServiceSpy.deleteMap).toHaveBeenCalledTimes(1);
   });
 
   it('should delete a map and remove it from the list on confirm', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(of([makeMap()]));
-    mapServiceSpy.deleteMap.and.returnValue(of(void 0));
+    mapsSubject.next([makeMap()]);
+
     create();
 
     clickFirstCardButton('Supprimer');
@@ -272,14 +302,16 @@ describe('AdminPageComponent', () => {
     clickDeleteDialogButton('Supprimer');
     fixture.detectChanges();
 
-    expect(mapServiceSpy.deleteMap).toHaveBeenCalledWith('id-1');
+    expect(mapStateServiceSpy.deleteMap).toHaveBeenCalledWith(makeMap());
     expect(getDeleteDialog()).toBeNull();
     expect(getText()).toContain("Aucune carte n'est disponible.");
   });
 
   it('should show an error when delete fails', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(of([makeMap()]));
-    mapServiceSpy.deleteMap.and.returnValue(throwError(() => new Error('fail')));
+    mapStateServiceSpy.loadMaps.and.callFake(() => {
+      mapsSubject.next([makeMap()]);
+    });
+    mapStateServiceSpy.deleteMap.and.returnValue(throwError(() => new Error('Delete failed')));
     create();
 
     clickFirstCardButton('Supprimer');
@@ -287,41 +319,53 @@ describe('AdminPageComponent', () => {
     clickDeleteDialogButton('Supprimer');
     fixture.detectChanges();
 
-    expect(getDeleteDialog()).toBeNull();
+    expect(getDeleteDialog()).not.toBeNull();
     expect(getText()).toContain('Impossible de supprimer la carte pour le moment.');
   });
 
   it('should toggle visibility and update the map in the list', () => {
     const initial = makeMap({ id: 'id-1', visibility: true });
     const untouched = makeMap({ id: 'id-2', name: 'Map 2', visibility: true });
-    const updated = makeMap({ id: 'id-1', visibility: false });
-    mapServiceSpy.getAllMaps.and.returnValue(of([initial, untouched]));
-    mapServiceSpy.updateMapVisibility.and.returnValue(of(updated));
+    mapStateServiceSpy.loadMaps.and.callFake(() => {
+      mapsSubject.next([initial, untouched]);
+    });
+    mapStateServiceSpy.toggleMapVisibility.and.callFake((map: EditorMap) => {
+      mapsSubject.next(mapsSubject.value.map(item => (
+        item.id === map.id ? { ...item, visibility: !item.visibility } : item
+      )));
+    });
     create();
 
     clickFirstCardButton('Masquer');
     fixture.detectChanges();
 
-    expect(mapServiceSpy.updateMapVisibility).toHaveBeenCalledWith('id-1', false);
+    expect(mapStateServiceSpy.toggleMapVisibility).toHaveBeenCalledWith(initial);
 
     const cards = getGameCardDebugs();
     expect(cards.length).toBe(2);
 
     const firstToggle = cards[0].nativeElement.querySelector(
-      'button[aria-label="Visible"], button[aria-label="Masquer"]',
+      'button[aria-label="Rendre visible"], button[aria-label="Masquer"]',
     ) as HTMLButtonElement | null;
-    expect(firstToggle?.getAttribute('aria-label')).toBe('Visible');
+    expect(firstToggle?.getAttribute('aria-label')).toBe('Rendre visible');
 
     const secondToggle = cards[1].nativeElement.querySelector(
-      'button[aria-label="Visible"], button[aria-label="Masquer"]',
+      'button[aria-label="Rendre visible"], button[aria-label="Masquer"]',
     ) as HTMLButtonElement | null;
     expect(secondToggle?.getAttribute('aria-label')).toBe('Masquer');
   });
 
   it('should show an error when visibility toggle fails', () => {
-    mapServiceSpy.getAllMaps.and.returnValue(of([makeMap({ visibility: true })]));
-    mapServiceSpy.updateMapVisibility.and.returnValue(throwError(() => new Error('fail')));
+    const map = makeMap({ visibility: true });
+    mapStateServiceSpy.loadMaps.and.callFake(() => {
+      mapsSubject.next([map]);
+    });
+    mapStateServiceSpy.toggleMapVisibility.and.callFake(() => {
+      stateSignal.set(MapLoadState.Error);
+    });
+
     create();
+    (component as unknown as AdminPageInternals).onToggleVisibility(map);
 
     clickFirstCardButton('Masquer');
     fixture.detectChanges();

@@ -75,7 +75,8 @@
         "collectCoverageFrom": [
             "app/controllers/map/map.controller.ts",
             "app/services/map/map.service.ts",
-            "app/validators/server-map-validation.ts"
+            "app/validators/server-map-validation.ts",
+            "app/gateways/map/map.gateway.ts"
         ],
         "coverageThreshold": {
             "global": {

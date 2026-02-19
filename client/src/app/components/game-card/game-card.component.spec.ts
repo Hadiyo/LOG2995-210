@@ -4,6 +4,18 @@ import { GameCardComponent } from '@app/components/game-card/game-card.component
 import { GameMode, MapSize, ObjectSize, ObjectType } from '@common/enum';
 import { PreviewImageFormat, type EditorMap } from '@common/interface';
 
+/**
+ * Testing Strategy:
+ * We validate normal rendering first by checking displayed map metadata
+ * (name, size, mode, date, and description tooltip) and thumbnail behavior.
+ *
+ * We then cover edge cases such as missing thumbnail, missing date,
+ * and unknown mode values to ensure safe fallbacks in the UI.
+ *
+ * Finally, we verify user interactions by asserting emitted events
+ * (select, edit, remove, toggle visibility) so parent flows receive
+ * the correct map payload and remain stable.
+ */
 describe('GameCardComponent', () => {
   let component: GameCardComponent;
   let fixture: ComponentFixture<GameCardComponent>;
@@ -91,14 +103,19 @@ describe('GameCardComponent', () => {
     component.map = map;
     fixture.detectChanges();
 
+    const selectSpy = jasmine.createSpy('select');
     const editSpy = jasmine.createSpy('edit');
     const removeSpy = jasmine.createSpy('remove');
     const toggleSpy = jasmine.createSpy('toggleVisibility');
+    component.select.subscribe(selectSpy);
     component.edit.subscribe(editSpy);
     component.remove.subscribe(removeSpy);
     component.toggleVisibility.subscribe(toggleSpy);
 
     const el: HTMLElement = fixture.nativeElement;
+    const card = el.querySelector('article.card') as HTMLElement;
+    card.click();
+    expect(selectSpy).toHaveBeenCalledOnceWith(map);
 
     const editBtn = el.querySelector('button[aria-label=\"Modifier\"]') as HTMLButtonElement;
     editBtn.click();
@@ -112,5 +129,19 @@ describe('GameCardComponent', () => {
     const deleteBtn = el.querySelector('button[aria-label=\"Supprimer\"]') as HTMLButtonElement;
     deleteBtn.click();
     expect(removeSpy).toHaveBeenCalledOnceWith(map);
+  });
+
+  it('should emit select when clicking the card', () => {
+    const map = makeMap();
+    component.map = map;
+    fixture.detectChanges();
+
+    const selectSpy = jasmine.createSpy('select');
+    component.select.subscribe(selectSpy);
+
+    const card = (fixture.nativeElement as HTMLElement).querySelector('article.card') as HTMLElement;
+    card.click();
+
+    expect(selectSpy).toHaveBeenCalledOnceWith(map);
   });
 });
