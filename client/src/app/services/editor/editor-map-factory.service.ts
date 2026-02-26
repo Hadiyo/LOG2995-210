@@ -39,7 +39,6 @@ export class EditorMapFactoryService {
         for (let y = 0; y < rows; y++) {
             for (let x = 0; x < cols; x++) {
                 cells.push({
-                    position: { x, y },
                     tileType: TileType.DIRT,
                     isWalkable: true,
                     isOccupied: false,
@@ -58,7 +57,7 @@ export class EditorMapFactoryService {
             date: now,
             map: cells,
             objects: [],
-            visibility: true,
+            visibility: false,
         };
     }
 
@@ -70,11 +69,9 @@ export class EditorMapFactoryService {
             ...game,
             map: game.map.map((cell) => ({
                 ...cell,
-                position: { ...cell.position },
             })),
             objects: game.objects.map((object) => ({
                 ...object,
-                position: { ...object.position },
             })),
         };
     }

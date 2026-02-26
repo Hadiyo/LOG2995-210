@@ -18,7 +18,6 @@ describe('EditorTileComponent', () => {
 
     // mock a cell
     component.tile = {
-      position: { x: 0, y: 0 },
       tileType: TileType.DIRT,
       isWalkable: true,
       isOccupied: false,

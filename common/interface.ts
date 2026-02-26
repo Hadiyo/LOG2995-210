@@ -13,7 +13,6 @@ export interface MapObject {
 }
 
 export interface EditorCell {
-    position: Vec2;
     tileType: TileType;
     isWalkable: boolean;
     isOccupied: boolean;

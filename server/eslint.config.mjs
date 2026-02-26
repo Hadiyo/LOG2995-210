@@ -4,6 +4,7 @@ import baseConfig from '../eslint.config.basic.mjs';
 
 export default [
     ...baseConfig(tsParser, tsPlugin),
+
     {
         files: ['**/*.ts'],
         rules: {

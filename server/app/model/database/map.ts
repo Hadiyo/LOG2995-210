@@ -12,18 +12,14 @@ import {
 } from 'class-validator';
 import { Document } from 'mongoose';
 
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
-import { EditorCell, MapObject, Vec2, PreviewImageFormat } from '@common/interface';
 import { Vec2Document } from '@app/model/database/vec2';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
+import { EditorCell, MapObject, PreviewImageFormat, Vec2 } from '@common/interface';
 
 export type MapDocument = Map & Document;
 
 @Schema({ _id: false })
 class EditorCellSchema {
-    @ApiProperty({ type: Vec2Document })
-    @Prop({ required: true, type: Vec2Document })
-    position: Vec2;
-
     @ApiProperty({ enum: TileType })
     @Prop({ required: true, enum: TileType })
     @IsEnum(TileType)
