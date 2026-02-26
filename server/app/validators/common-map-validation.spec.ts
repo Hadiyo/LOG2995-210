@@ -103,6 +103,8 @@ describe('common map-validation (validateMap)', () => {
     });
 
     it('should report DOOR_INVALID_PLACEMENT when a door is surrounded by terrain', () => {
+        // To test create a smaller test map with only necessary tiles
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers
         const CUSTOM_MAP_SIZE = 3 as MapSize;
         const result = validateMap(
             makeEditorMap({
@@ -124,6 +126,8 @@ describe('common map-validation (validateMap)', () => {
     });
 
     it('should accept a door between horizontal walls and vertical terrain', () => {
+        // To test create a smaller test map with only necessary tiles
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers
         const CUSTOM_MAP_SIZE = 3 as MapSize;
         const result = validateMap(
             makeEditorMap({
@@ -145,6 +149,8 @@ describe('common map-validation (validateMap)', () => {
     });
 
     it('should accept a door between vertical walls and horizontal terrain', () => {
+        // To test create a smaller test map with only necessary tiles
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers
         const CUSTOM_MAP_SIZE = 3 as MapSize;
         const result = validateMap(
             makeEditorMap({
