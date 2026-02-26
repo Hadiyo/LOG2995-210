@@ -53,8 +53,8 @@ export class CharacterCreationPageComponent {
       Validators.pattern(/^[A-Za-zÀ-ÖØ-öø-ÿ'’ -]+$/),
     ]],
     avatarId: [null as AvatarId | null, Validators.required],
-    plusTwo: [DEFAULT_PLUS_TWO, Validators.required],
-    d6GoesTo: [DEFAULT_D6_TARGET, Validators.required],
+    plusTwo: [DEFAULT_PLUS_TWO as PlusTwoAttributeName, Validators.required],
+    d6GoesTo: [DEFAULT_D6_TARGET as DieTargetAttributeName, Validators.required],
   });
 
   // Precompute avatar fallback colors from CSS variables for use in the template
