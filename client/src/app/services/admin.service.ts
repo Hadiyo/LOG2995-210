@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { MapConfig } from '@app/interfaces/create-map-dialog';
 import { Observable } from 'rxjs';
 import { EditorStateService } from './editor/editor-state.service';
+import { MapConfig } from '@app/config/map.config';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {

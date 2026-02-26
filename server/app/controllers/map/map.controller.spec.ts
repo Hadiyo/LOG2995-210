@@ -1,10 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { SinonStubbedInstance, createStubInstance } from 'sinon';
-
 import { MapController } from '@app/controllers/map/map.controller';
 import { MapService } from '@app/services/map/map.service';
-import { GameMode, MapSize } from '@common/enum';
-import type { EditorMap } from '@common/interface';
+import { GameMode, MapSize } from '@common/maps/map.enums';
+import type { EditorMap } from '@common/maps/map.interface';
+import { Test, TestingModule } from '@nestjs/testing';
+import { SinonStubbedInstance, createStubInstance } from 'sinon';
 
 const SAMPLE_DATE_ISO = '2026-02-08T12:00:00.000Z';
 

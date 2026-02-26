@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TileType } from '@common/enum';
 import { EditorTileComponent } from './editor-tile.component';
+import { TileType } from '@common/maps/map.enums';
 
 describe('EditorTileComponent', () => {
   let component: EditorTileComponent;

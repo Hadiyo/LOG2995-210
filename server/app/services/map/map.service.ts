@@ -1,17 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import type { Model } from 'mongoose';
-
 import { Map, MapDocument } from '@app/model/database/map';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
-import { ObjectSize, TileType } from '@common/enum';
-import { EditorCell, EditorMap, MapObject, PreviewImageFormat, Vec2 } from '@common/interface';
-import { getCellPositionAtIndex } from '@common/map-utils';
-
-// Constants
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
+import { PreviewImageFormat } from '@common/enum';
+import { getCellPositionAtIndex } from '@common/maps/map-utils';
+import { ObjectSize, TileType } from '@common/maps/map.enums';
+import { EditorCell, EditorMap, MapObject, Vec2 } from '@common/maps/map.interface';
 import { SocketEvents } from '@common/socket-events';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { EventEmitter } from 'events';
+import type { Model } from 'mongoose';
 
 type PersistedCell = Omit<EditorCell, 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean };
 type PersistedMap = Omit<EditorMap, 'id' | 'map'> & { map: PersistedCell[] };

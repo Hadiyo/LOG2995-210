@@ -1,5 +1,5 @@
-import { GameMode, MapSize, ObjectType, TileType } from './enum';
-import type { EditorMap, Vec2 } from './interface';
+import { GameMode, MapSize, ObjectType, TileType } from '../maps/map.enums';
+import { EditorMap, Vec2 } from '../maps/map.interface';
 import { getCellPositionAtIndex } from './map-utils';
 
 export type MapValidationIssueCode =

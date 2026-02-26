@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { GameMode, MapSize, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapDimensions } from '@common/interface';
 import { MAP_DIMENSIONS_BY_SIZE } from './constants/editor.constants';
+import { EditorCell, EditorMap, MapDimensions } from '@common/maps/map.interface';
+import { GameMode, MapSize, TileType } from '@common/maps/map.enums';
 
 @Injectable({ providedIn: 'root' })
 export class EditorMapFactoryService {

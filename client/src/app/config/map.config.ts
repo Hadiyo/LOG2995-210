@@ -1,4 +1,4 @@
-import { MapSize } from '@common/enum';
+import { GameMode, MapSize } from '@common/maps/map.enums';
 
 export type MapSizeOption = {
   value: MapSize;
@@ -6,6 +6,11 @@ export type MapSizeOption = {
   minPlayers: number;
   maxPlayers: number;
 };
+
+export interface MapConfig {
+  size: MapSize;
+  mode: GameMode;
+}
 
 export const MAP_SIZE_CONFIG: readonly MapSizeOption[] = [
   {

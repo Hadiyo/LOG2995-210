@@ -1,8 +1,9 @@
+import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
+import { validateMap } from '@common/maps/map-validation';
+import { GameMode, MapSize } from '@common/maps/map.enums';
+import type { EditorMap } from '@common/maps/map.interface';
 import type { Model } from 'mongoose';
 
-import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
-import { GameMode, MapSize } from '@common/enum';
-import type { EditorMap } from '@common/interface';
 
 /**
  * Testing Strategy:
@@ -20,11 +21,9 @@ import type { EditorMap } from '@common/interface';
  *   and that the uniqueness checker is not called when the name is empty.
  */
 
-jest.mock('@common/map-validation', () => ({
+jest.mock('@common/maps/map-validation', () => ({
     validateMap: jest.fn(),
 }));
-
-import { validateMap } from '@common/map-validation';
 
 describe('server-map-validation', () => {
     const validateMapMock = validateMap as jest.Mock;

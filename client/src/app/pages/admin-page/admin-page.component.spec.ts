@@ -10,8 +10,8 @@ import { AdminPageComponent } from '@app/pages/admin-page/admin-page.component';
 import { AdminService } from '@app/services/admin.service';
 import { MapLoadState } from '@app/services/map/map-state.enum';
 import { MapStateService } from '@app/services/map/map-state.service';
-import { GameMode, MapSize } from '@common/enum';
-import type { EditorMap } from '@common/interface';
+import { GameMode, MapSize } from '@common/maps/map.enums';
+import type { EditorMap } from '@common/maps/map.interface';
 
 /**
  * Testing Strategy:

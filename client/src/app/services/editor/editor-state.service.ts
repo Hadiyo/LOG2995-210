@@ -1,9 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { MapConfig } from '@app/interfaces/create-map-dialog';
+import { MapConfig } from '@app/config/map.config';
 import { MapApiService } from '@app/services/map/map-api.service';
-import { GameMode, MouseButton, ObjectSize, ObjectType, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapObject, ObjectCountAndLimit } from '@common/interface';
-import { getCellPositionAtIndex } from '@common/map-utils';
+import { getCellPositionAtIndex } from '@common/maps/map-utils';
+import { GameMode, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import type { EditorCell, EditorMap, MapObject, ObjectCountAndLimit } from '@common/maps/map.interface';
+import { MouseButton } from '@common/mouse-events.enum';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { EditorMapFactoryService } from './editor-map-factory.service';
 import { EditorOccupancyService } from './editor-occupancy.service';

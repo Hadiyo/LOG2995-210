@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { GameMode, ObjectType, TileType } from '@common/enum';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
+import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 
 /**
  * Simple UI types for palette rendering

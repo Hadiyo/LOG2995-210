@@ -2,7 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { MapApiService } from '@app/services/map/map-api.service';
 import { MapLoadState } from '@app/services/map/map-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { EditorMap } from '@common/interface';
+import { EditorMap } from '@common/maps/map.interface';
 import { BEFORE_UNLOAD, MapVisibilityEventPayload, SocketEvents, SocketRoom } from '@common/socket-events';
 import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
 

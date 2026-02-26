@@ -3,8 +3,8 @@ import { BadRequestException } from '@nestjs/common';
 import { MapService } from '@app/services/map/map.service';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
-import { TileType } from '@common/enum';
-import { PreviewImageFormat } from '@common/interface';
+import { PreviewImageFormat } from '@common/enum';
+import { TileType } from '@common/maps/map.enums';
 import { makeCell, makeDoc, makeEditorMap, makeMapModelMock, makeObject } from './map.service.spec-utils';
 
 /**

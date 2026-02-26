@@ -1,5 +1,5 @@
-import { MapSize } from '@common/enum';
-import { MapDimensions } from '@common/interface';
+import { MapSize } from '@common/maps/map.enums';
+import { MapDimensions } from '@common/maps/map.interface';
 
 /* =========================================================
    Map dimensions by size
