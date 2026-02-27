@@ -9,8 +9,10 @@ import { EditorTopbarComponent } from '@app/components/editor/editor-topbar/edit
 import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { MapApiService } from '@app/services/map/map-api.service';
 import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
-import { GameMode, MapSize, MouseButton, ObjectSize, ObjectType } from '@common/enum';
-import { PreviewImageFormat, type EditorMap } from '@common/interface';
+import { MouseButton } from '@common/mouse-events.enum';
+import { type EditorMap } from '@common/maps/map.interface';
+import { GameMode, MapSize, ObjectSize, ObjectType } from '@common/maps/map.enums';
+import { PreviewImageFormat } from '@common/enum';
 
 /**
  * Testing Strategy:

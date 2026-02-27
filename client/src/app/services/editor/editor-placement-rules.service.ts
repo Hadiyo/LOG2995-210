@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { GameMode, MapSize, ObjectType, TileType } from '@common/enum';
-import type { EditorMap, MapObject, Vec2 } from '@common/interface';
+import { GameMode, MapSize, ObjectType, TileType } from '@common/maps/map.enums';
+import type { EditorMap, MapObject, Vec2 } from '@common/maps/map.interface';
 
 import {
     FLAG_LIMIT,

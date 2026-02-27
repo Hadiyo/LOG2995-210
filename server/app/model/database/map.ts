@@ -13,8 +13,9 @@ import {
 import { Document } from 'mongoose';
 
 import { Vec2Document } from '@app/model/database/vec2';
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
-import { EditorCell, MapObject, PreviewImageFormat, Vec2 } from '@common/interface';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { EditorCell, MapObject, Vec2 } from '@common/maps/map.interface';
+import { PreviewImageFormat } from '@common/enum';
 
 export type MapDocument = Map & Document;
 

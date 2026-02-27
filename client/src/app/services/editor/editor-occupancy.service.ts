@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { MapSize } from '@common/enum';
-import { EditorCell, MapObject, Vec2 } from '@common/interface';
-import { getCellPositionAtIndex } from '@common/map-utils';
+import { EditorCell, MapObject, Vec2 } from '@common/maps/map.interface';
 import { getCoveredPositions } from './utils/editor-geometry.util';
+import { MapSize } from '@common/maps/map.enums';
+import { getCellPositionAtIndex } from '@common/maps/map-utils';
 
 /**
  * Service to determine cell occupancy in the editor map.

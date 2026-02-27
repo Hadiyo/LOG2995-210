@@ -5,8 +5,8 @@ import type { Connection, Model } from 'mongoose';
 
 import { Map, type MapDocument, mapSchema } from '@app/model/database/map';
 import { MapService } from '@app/services/map/map.service';
-import { GameMode, MapSize } from '@common/enum';
-import type { EditorMap } from '@common/interface';
+import { GameMode, MapSize } from '@common/maps/map.enums';
+import type { EditorMap } from '@common/maps/map.interface';
 
 import { makeCell as makeEditorCell, makeEditorMap, makeObject as makeMapObject } from './map.service.spec-utils';
 

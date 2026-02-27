@@ -2,9 +2,9 @@ import { NotFoundException } from '@nestjs/common';
 
 import { MapService } from '@app/services/map/map.service';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
-import { PreviewImageFormat } from '@common/interface';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { makeDoc, makeMapModelMock, makeObject, makeQuery } from './map.service.spec-utils';
+import { PreviewImageFormat } from '@common/enum';
 
 /**
  * Testing Strategy:

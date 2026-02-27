@@ -1,7 +1,8 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { MouseEventType, TileType } from '@common/enum';
-import { EditorCell, MapObject } from '@common/interface';
-import { getCellPositionAtIndex } from '@common/map-utils';
+import { getCellPositionAtIndex } from '@common/maps/map-utils';
+import { TileType } from '@common/maps/map.enums';
+import { EditorCell, MapObject } from '@common/maps/map.interface';
+import { MouseEventType } from '@common/mouse-events.enum';
 import { TileEvent } from '@common/types';
 
 @Component({

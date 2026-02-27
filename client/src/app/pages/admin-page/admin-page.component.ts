@@ -1,15 +1,15 @@
 import { AsyncPipe } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
+import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { CreateMapDialogComponent } from '@app/components/create-map-dialog/create-map-dialog.component';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
-import { MapConfig } from '@app/interfaces/create-map-dialog';
+import { MapConfig } from '@app/config/map.config';
 import { AdminService } from '@app/services/admin.service';
 import { MapLoadState } from '@app/services/map/map-state.enum';
 import { MapStateService } from '@app/services/map/map-state.service';
-import type { EditorMap } from '@common/interface';
+import type { EditorMap } from '@common/maps/map.interface';
 import { Observable, take } from 'rxjs';
 
 @Component({

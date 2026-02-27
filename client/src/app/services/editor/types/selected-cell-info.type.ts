@@ -1,5 +1,5 @@
-import { ObjectType, TileType } from '@common/enum';
-import type { Vec2 } from '@common/interface';
+import { ObjectType, TileType } from '@common/maps/map.enums';
+import { Vec2 } from '@common/maps/map.interface';
 
 /**
  * Snapshot of what the user is currently inspecting (mouse tool)

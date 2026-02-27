@@ -1,6 +1,6 @@
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapObject } from '@common/interface';
-import { validateMap } from '@common/map-validation';
+import { validateMap } from '@common/maps/map-validation';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import type { EditorCell, EditorMap, MapObject } from '@common/maps/map.interface';
 
 /**
  * Testing Strategy:
