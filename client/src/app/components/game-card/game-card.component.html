@@ -18,6 +18,10 @@
         <span>Apercu indisponible</span>
       </div>
     }
+    <div class="description" aria-hidden="true">
+      <span class="description-label">Description</span>
+      <p>{{ map.description}}</p>
+    </div>
   </div>
 
   <div class="content">
@@ -26,7 +30,7 @@
       <span class="chip">Taille: {{ map.size }}</span>
       <span class="chip">Mode: {{ modeLabel }}</span>
       <div class="meta-row">
-        <span class="chip chip-muted">
+        <span class="chip">
           Modifiee:
           @if (map.date) {
             <time [attr.datetime]="map.date">{{ map.date | date: 'mediumDate' }}</time>
@@ -106,6 +110,6 @@
 
   <div class="description" aria-hidden="true">
     <span class="description-label">Description</span>
-    <p>{{ map.description || 'Aucune description.' }}</p>
+    <p>{{ map.description}}</p>
   </div>
 </article>
