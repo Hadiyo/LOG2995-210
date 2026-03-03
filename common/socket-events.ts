@@ -10,6 +10,13 @@ export enum RoomSocketEvents {
     JoinGameRoom = 'gameRoomJoined',
     LeaveSessionRoom = 'leaveSessionRoom',
     LeaveGameRoom = 'leaveGameRoom',
+    CreateGameSession = 'createGameSession',
+}
+
+export enum ErrorSocketEvents {
+    FailedSessionCreation = 'failedSessionCreation',
+    FailedJoinSession = 'failedJoinSession',
+    ServerError = 'serverError',
 }
 
 export enum SocketRoom {

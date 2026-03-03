@@ -36,12 +36,12 @@ export interface EditorMap extends BaseMap {
     previewImageFormat?: PreviewImageFormat; // Optional format of the preview image
 }
 
-export interface GameCell extends EditorCell {
-    position: Vec2;
-}
+// export interface GameCell extends EditorCell {
+//     position: Vec2;
+// }
 
 export interface GameMap extends BaseMap {
-    map: GameCell[]
+    map: EditorCell[]
 }
 
 export interface ObjectCountAndLimit {

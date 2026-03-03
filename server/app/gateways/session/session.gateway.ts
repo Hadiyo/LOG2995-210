@@ -1,6 +1,8 @@
-import { RoomSocketEvents, SocketRoom } from '@common/socket-events';
+import { SessionService } from '@app/services/session/session.service';
+import { GameSessionPayload } from '@common/game/game-session.interface';
+import { ErrorSocketEvents, RoomSocketEvents, SocketRoom } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
-import { ConnectedSocket, SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
+import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 
 @WebSocketGateway({
@@ -9,6 +11,7 @@ import { Socket } from 'socket.io';
 @WebSocketGateway()
 export class SessionGateway {
   private readonly mapSessionRoom: SocketRoom = SocketRoom.MapManagementRoom;
+  private readonly sessionService: SessionService;
 
   constructor(private readonly logger: Logger = new Logger(SessionGateway.name)) {}
 
@@ -28,9 +31,30 @@ export class SessionGateway {
     }
   }
 
-  // @SubscribeMessage(RoomSocketEvents.JoinGameRoom)
-  // joinGameRoom(@MessageBody() gameId: string, @ConnectedSocket() client: Socket) {
+  @SubscribeMessage(RoomSocketEvents.CreateGameSession)
+  async createGameSession(@MessageBody() payload: GameSessionPayload, @ConnectedSocket() client: Socket) {
+    try {
+      const gameSessionId = await this.sessionService.createGameSession(payload, client.id);
 
-  // }
+      if (!gameSessionId) {
+        this.logger.error(`Error during game session creation`);
+        client.emit(ErrorSocketEvents.FailedSessionCreation);
+        return;
+      }
 
+      client.join(gameSessionId);
+
+      if (!client.rooms.has(gameSessionId)) {
+        this.logger.error(`Player ${client.id} failed to join room ${gameSessionId}`);
+        client.emit(ErrorSocketEvents.FailedJoinSession);
+        return;
+      }
+    } catch (err) {
+      this.logger.error(
+        `Error creating session for player ${client.id}: ${err.message}`,
+        err.stack,
+      );
+      client.emit(ErrorSocketEvents.ServerError);
+    }
+  }
 }
