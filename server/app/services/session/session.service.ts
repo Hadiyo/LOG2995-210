@@ -1,6 +1,6 @@
 import { GameMapService } from '@app/services/game-map/game-map.service';
 import { PlayerService } from '@app/services/player/player.service';
-import { GameSession, GameSessionPayload } from '@common/game/game-session.interface';
+import { CreateSessionPayload, GameSession, GameSessionPayload } from '@common/game/game-session.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
@@ -8,8 +8,10 @@ import { randomUUID } from 'crypto';
 export class SessionService {
     /** HOLDS ALL GAME AND COMBAT SESSIONS WITH REFERENCES TO THE GAME-MAP TEMPLATES AND PLAYERS */
     private gameSessions = new Map<string, GameSession>();
+
     private playerService: PlayerService;
     private gameMapService: GameMapService;
+
     private readonly logger = new Logger(SessionService.name);
 
     getGameSessionById(id: string): GameSession {
@@ -24,7 +26,7 @@ export class SessionService {
      * 3. Stores the new gameSession object in gameSession
      * @returns gameSessionId (for the client socket to join the room)
      */
-    async createGameSession(payload: GameSessionPayload, socketId: string): Promise<string | null> {
+    async createGameSession(payload: CreateSessionPayload, socketId: string): Promise<string | null> {
         try {
             const playerId = this.playerService.savePlayer(payload.information, socketId);
             const mapId = await this.gameMapService.saveGameMap(payload.mapId);
@@ -48,5 +50,53 @@ export class SessionService {
         } catch (err) {
             this.logger.error(`Error while creating game session: ${err}`);
         }
+    }
+
+    /**
+     * @param gameSessionId 
+     * @param socketId 
+     * @returns the gameSessionId for the client to connect to in the gateway
+     */
+    joinGameSession(payload: GameSessionPayload, socketId: string): boolean {
+        try {
+            const playerId = this.playerService.savePlayer(payload.information, socketId);
+            const session = this.gameSessions.get(payload.sessionId);
+
+            if (session && playerId) {
+                session.players.push(playerId);
+                return true; // If player is successfully added to the list of players
+            } else return false;
+        } catch (err) {
+            this.logger.error(`Error while joining game session: ${err}`);
+            return false;
+        }
+    }
+
+    /**
+     * @param playerId 
+     * @returns the session in which the player is in
+     */
+    leaveGameSession(playerId: string): string | undefined {
+        try {
+            const sessionId = this.findPlayerInGameSession(playerId);
+            if (sessionId) {
+                this.playerService.removePlayer(playerId);
+                return sessionId;
+            } else return undefined;
+        } catch (err) {
+            this.logger.error(`Error while leaving game session: ${err}`);
+        }
+    }
+
+    /**
+     * @returns the session id of the game in which the player is in
+     */
+    private findPlayerInGameSession(playerId: string): string | undefined {
+        for (const session of this.gameSessions.values()) {
+            if (session.players.includes(playerId)) {
+                return session.id;
+            }
+        }
+        return undefined;
     }
 }

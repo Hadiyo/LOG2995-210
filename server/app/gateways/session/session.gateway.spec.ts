@@ -30,7 +30,7 @@ describe('SessionGateway', () => {
 
   it('should handle joinRoom', () => {
     const client = createMockSocket('socket1');
-    gateway.joinSession(client);
+    gateway.joinMapSession(client);
     expect(loggerMock.log).toHaveBeenCalledWith(
       `Client socket1 joined ${SocketRoom.MapManagementRoom} successfully`,
     );
@@ -39,7 +39,7 @@ describe('SessionGateway', () => {
   it('should handle leaveRoom', () => {
     const client = createMockSocket('socket1');
     client.rooms.add(SocketRoom.MapManagementRoom);
-    gateway.leaveSession(client);
+    gateway.leaveMapSession(client);
     expect(loggerMock.log).toHaveBeenCalledWith(
       `Client socket1 left ${SocketRoom.MapManagementRoom} successfully`,
     );
@@ -53,7 +53,7 @@ describe('SessionGateway', () => {
       join: jest.fn(), // does not add room
     } as unknown as Socket;
 
-    gateway.joinSession(client);
+    gateway.joinMapSession(client);
 
     expect(client.join).toHaveBeenCalledWith(room);
     expect(loggerMock.log).not.toHaveBeenCalledWith(
@@ -69,7 +69,7 @@ describe('SessionGateway', () => {
       leave: jest.fn(), // does not remove room
     } as unknown as Socket;
 
-    gateway.leaveSession(client);
+    gateway.leaveMapSession(client);
 
     expect(client.leave).toHaveBeenCalledWith(room);
     expect(loggerMock.log).not.toHaveBeenCalledWith(

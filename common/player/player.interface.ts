@@ -1,6 +1,13 @@
 import { Die } from '../character/character.model';
 import { Vec2 } from '../maps/map.interface';
 
+// Facing orientation used by the renderer.
+export type PlayerFacing = 'front' | 'right' | 'back' | 'left';
+
+// Pose/state used by the renderer.
+export type PlayerPose = 'idle' | 'walk' | 'attack' | 'dead';
+
+
 export interface PlayerAttributes {
     speed: number;
     attack: number;
@@ -29,9 +36,17 @@ export interface PlayerState {
     remainingMovements: number;
 }
 
+export interface PlayerRenderState {
+    facing?: PlayerFacing;
+    pose?: PlayerPose;
+    poseStartedAt?: string;
+    poseDurationMs?: number;
+}
+
 export interface Player {
     id: string;
     socketId: string;
     information: PlayerInformation;
     state: PlayerState;
+    render?: PlayerRenderState;
 }

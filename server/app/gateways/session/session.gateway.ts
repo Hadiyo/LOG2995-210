@@ -1,5 +1,5 @@
 import { SessionService } from '@app/services/session/session.service';
-import { GameSessionPayload } from '@common/game/game-session.interface';
+import { CreateSessionPayload, GameSessionPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents, SocketRoom } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
@@ -16,7 +16,7 @@ export class SessionGateway {
   constructor(private readonly logger: Logger = new Logger(SessionGateway.name)) {}
 
   @SubscribeMessage(RoomSocketEvents.JoinSessionRoom)
-  joinSession(@ConnectedSocket() client: Socket) {
+  joinMapSession(@ConnectedSocket() client: Socket) {
     client.join(this.mapSessionRoom);
     if (client.rooms.has(this.mapSessionRoom)) {
       this.logger.log(`Client ${client.id} joined ${this.mapSessionRoom} successfully`);
@@ -24,7 +24,7 @@ export class SessionGateway {
   }
 
   @SubscribeMessage(RoomSocketEvents.LeaveSessionRoom)
-  leaveSession(@ConnectedSocket() client: Socket) {
+  leaveMapSession(@ConnectedSocket() client: Socket) {
     client.leave(this.mapSessionRoom);
     if (!client.rooms.has(this.mapSessionRoom)) {
       this.logger.log(`Client ${client.id} left ${this.mapSessionRoom} successfully`);
@@ -32,7 +32,7 @@ export class SessionGateway {
   }
 
   @SubscribeMessage(RoomSocketEvents.CreateGameSession)
-  async createGameSession(@MessageBody() payload: GameSessionPayload, @ConnectedSocket() client: Socket) {
+  async createGameSession(@MessageBody() payload: CreateSessionPayload, @ConnectedSocket() client: Socket) {
     try {
       const gameSessionId = await this.sessionService.createGameSession(payload, client.id);
 
@@ -56,5 +56,27 @@ export class SessionGateway {
       );
       client.emit(ErrorSocketEvents.ServerError);
     }
+  }
+
+  @SubscribeMessage(RoomSocketEvents.JoinGameRoom)
+  joinGameSession(@MessageBody() payload: GameSessionPayload, @ConnectedSocket() client: Socket) {
+    const hasJoinedGame = this.sessionService.joinGameSession(payload, client.id);
+
+    if (!hasJoinedGame)
+      client.emit(ErrorSocketEvents.FailedJoinSession);
+
+    // TODO: NOTIFY OTHER PLAYERS IN THE SESSION THAT PLAYER WITH PLAYERID LEFT THE ROOM
+  }
+
+
+  @SubscribeMessage(RoomSocketEvents.LeaveGameRoom)
+  leaveGameSession(@MessageBody() playerId: string, @ConnectedSocket() client: Socket) {
+    const sessionId = this.sessionService.leaveGameSession(playerId);
+    if (!sessionId) {
+      this.logger.error('The player does not belong to any game session');
+      return;
+    }
+    client.leave(sessionId);
+    // TODO: NOTIFY OTHER PLAYERS IN THE SESSION THAT PLAYER WITH PLAYERID LEFT THE ROOM
   }
 }

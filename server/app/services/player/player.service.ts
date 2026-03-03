@@ -28,6 +28,11 @@ export class PlayerService {
         return newPlayer.id;
     }
 
+    /** Remove the player from the list of players */
+    removePlayer(playerId: string): void {
+        this.players.delete(playerId);
+    }
+
     /**
      * TODO: Sets the initiale player status according to its attributes
      * CURRENTLY HAVE DUMMY VALUES

@@ -8,7 +8,16 @@ export interface GameSession {
     debugMode?: boolean;
 }
 
-export interface GameSessionPayload {
+export interface CreateSessionPayload {
     information: PlayerInformation;
     mapId: string;
+}
+
+export interface GameSessionPayload {
+    information: PlayerInformation;
+    sessionId: string;
+}
+
+export interface LeaveSessionPayload {
+    playerId: string;
 }
