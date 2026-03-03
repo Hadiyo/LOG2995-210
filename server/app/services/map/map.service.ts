@@ -5,7 +5,7 @@ import { PreviewImageFormat } from '@common/enum';
 import { getCellPositionAtIndex } from '@common/maps/map-utils';
 import { ObjectSize, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMap, MapObject, Vec2 } from '@common/maps/map.interface';
-import { SocketEvents } from '@common/socket-events';
+import { MapSocketEvents } from '@common/socket-events';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { EventEmitter } from 'events';
@@ -50,7 +50,7 @@ export class MapService {
         await this.ensureMapIsValid(map);
         const created = await this.insertMap(map);
         const editorMap = this.toEditorMap(created);
-        this.mapEventEmitter.emit(SocketEvents.MapCreated, editorMap);
+        this.mapEventEmitter.emit(MapSocketEvents.MapCreated, editorMap);
         return editorMap;
     }
 
@@ -60,13 +60,13 @@ export class MapService {
         const updated = await this.mapModel.findByIdAndUpdate(id, this.buildMapPayload(map), { new: true }).exec();
         if (updated) {
             const oldMap = this.toEditorMap(updated);
-            this.mapEventEmitter.emit(SocketEvents.MapUpdated, oldMap);
+            this.mapEventEmitter.emit(MapSocketEvents.MapUpdated, oldMap);
             return oldMap;
         }
 
         const created = await this.insertMap(map);
         const newMap = this.toEditorMap(created);
-        this.mapEventEmitter.emit(SocketEvents.MapCreated, newMap);
+        this.mapEventEmitter.emit(MapSocketEvents.MapCreated, newMap);
         return newMap;
     }
 
@@ -80,7 +80,7 @@ export class MapService {
             id: updatedMap.id,
             isVisible: updatedMap.visibility,
         };
-        this.mapEventEmitter.emit(SocketEvents.ToogleMapVisibility, payload);
+        this.mapEventEmitter.emit(MapSocketEvents.ToogleMapVisibility, payload);
     }
 
     async deleteMap(id: string): Promise<void> {
@@ -88,7 +88,7 @@ export class MapService {
         if (result.deletedCount === 0) {
             throw new NotFoundException('Map already deleted or missing');
         } else {
-            this.mapEventEmitter.emit(SocketEvents.MapDeleted, id);
+            this.mapEventEmitter.emit(MapSocketEvents.MapDeleted, id);
         }
     }
 
@@ -210,11 +210,11 @@ export class MapService {
     }
 
     // Event emitter utility functions
-    on<T>(event: SocketEvents, callback: (payload: T) => void) {
+    on<T>(event: MapSocketEvents, callback: (payload: T) => void) {
         this.mapEventEmitter.on(event, callback);
     }
 
-    off<T>(event: SocketEvents, callback: (payload: T) => void) {
+    off<T>(event: MapSocketEvents, callback: (payload: T) => void) {
         this.mapEventEmitter.off(event, callback);
     }
 }

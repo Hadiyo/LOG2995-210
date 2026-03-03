@@ -5,6 +5,7 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MapGateway } from './gateways/map/map.gateway';
+import { RoomManagerGateway } from './gateways/room-manager/room-manager.gateway';
 
 @Module({
     imports: [
@@ -21,6 +22,6 @@ import { MapGateway } from './gateways/map/map.gateway';
         ]),
     ],
     controllers: [MapController],
-    providers: [MapService, Logger, MapGateway],
+    providers: [MapService, Logger, MapGateway, RoomManagerGateway],
 })
 export class AppModule {}

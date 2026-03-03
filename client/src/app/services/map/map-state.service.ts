@@ -3,7 +3,7 @@ import { MapApiService } from '@app/services/map/map-api.service';
 import { MapLoadState } from '@app/services/map/map-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { EditorMap } from '@common/maps/map.interface';
-import { BEFORE_UNLOAD, MapVisibilityEventPayload, SocketEvents, SocketRoom } from '@common/socket-events';
+import { BEFORE_UNLOAD, MapSocketEvents, MapVisibilityEventPayload, RoomSocketEvents, SocketRoom } from '@common/socket-events';
 import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
 
 /** Single source of truth for the available collection of maps
@@ -56,20 +56,20 @@ export class MapStateService {
 
     /** SOCKET SERVICE FOR MAP */
     subscribeToMapEvents() {
-        this.socket.send(SocketEvents.JoinRoom, SocketRoom.MapManagementRoom);
-        this.socket.on<EditorMap>(SocketEvents.MapCreated, this.onMapCreated);
-        this.socket.on<EditorMap>(SocketEvents.MapUpdated, this.onMapUpdated);
-        this.socket.on<string>(SocketEvents.MapDeleted, this.onMapDeleted);
-        this.socket.on<MapVisibilityEventPayload>(SocketEvents.ToogleMapVisibility, this.onToggleVisibility);
+        this.socket.send(RoomSocketEvents.JoinRoom, SocketRoom.MapManagementRoom);
+        this.socket.on<EditorMap>(MapSocketEvents.MapCreated, this.onMapCreated);
+        this.socket.on<EditorMap>(MapSocketEvents.MapUpdated, this.onMapUpdated);
+        this.socket.on<string>(MapSocketEvents.MapDeleted, this.onMapDeleted);
+        this.socket.on<MapVisibilityEventPayload>(MapSocketEvents.ToogleMapVisibility, this.onToggleVisibility);
         this.loadMaps();
     }
 
     unsubscribeFromMapEvents() {
-        this.socket.send<SocketRoom>(SocketEvents.LeaveRoom, SocketRoom.MapManagementRoom);
-        this.socket.off(SocketEvents.MapCreated, this.onMapCreated);
-        this.socket.off(SocketEvents.MapUpdated, this.onMapUpdated);
-        this.socket.off(SocketEvents.MapDeleted, this.onMapDeleted);
-        this.socket.off(SocketEvents.ToogleMapVisibility, this.onToggleVisibility);
+        this.socket.send<SocketRoom>(RoomSocketEvents.LeaveRoom, SocketRoom.MapManagementRoom);
+        this.socket.off(MapSocketEvents.MapCreated, this.onMapCreated);
+        this.socket.off(MapSocketEvents.MapUpdated, this.onMapUpdated);
+        this.socket.off(MapSocketEvents.MapDeleted, this.onMapDeleted);
+        this.socket.off(MapSocketEvents.ToogleMapVisibility, this.onToggleVisibility);
     }
 
     private onMapCreated = (map: EditorMap) => {

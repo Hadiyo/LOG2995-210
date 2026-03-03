@@ -1,10 +1,13 @@
-export enum SocketEvents {
+export enum MapSocketEvents {
     MapCreated = 'mapCreated',
     MapUpdated = 'mapUpdated',
     MapDeleted = 'mapDeleted',
+    ToogleMapVisibility = 'toggleMapVisibility',
+}
+
+export enum RoomSocketEvents {
     JoinRoom = 'roomJoined',
     LeaveRoom = 'leaveRoom',
-    ToogleMapVisibility = 'toggleMapVisibility',
 }
 
 export enum SocketRoom {
