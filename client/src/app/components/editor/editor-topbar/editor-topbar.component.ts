@@ -10,9 +10,10 @@ import { BackButtonComponent } from '@app/components/back-button/back-button.com
 import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
-import { GameMode, MapSize, MouseButton } from '@common/enum';
-import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/map-validation';
+import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/maps/map-validation';
+import { GameMode, MapSize } from '@common/maps/map.enums';
 
+import { MouseButton } from '@common/mouse-events.enum';
 import { take } from 'rxjs';
 
 

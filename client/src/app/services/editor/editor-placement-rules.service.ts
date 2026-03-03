@@ -1,15 +1,15 @@
 import { Injectable } from '@angular/core';
-import { GameMode, MapSize, ObjectType, TileType } from '@common/enum';
-import type { EditorMap, MapObject, Vec2 } from '@common/interface';
+import { GameMode, MapSize, ObjectType, TileType } from '@common/maps/map.enums';
+import type { EditorMap, MapObject, Vec2 } from '@common/maps/map.interface';
 
 import {
-  FLAG_LIMIT,
-  SANCTUARY_LIMITS_BY_SIZE,
-  START_LIMITS_BY_SIZE,
+    FLAG_LIMIT,
+    SANCTUARY_LIMITS_BY_SIZE,
+    START_LIMITS_BY_SIZE,
 } from './constants/editor.constants';
 
-import { getCoveredPositions, positionsIntersect } from './utils/editor-geometry.util';
 import { EditorMapFactoryService } from './editor-map-factory.service';
+import { getCoveredPositions, positionsIntersect } from './utils/editor-geometry.util';
 
 
 @Injectable({ providedIn: 'root' })
@@ -76,7 +76,7 @@ export class EditorPlacementRulesService {
      */
     canPlaceObject(covered: Vec2[], objects: MapObject[], m: EditorMap): boolean {
         // Map cell lookup by "x,y" for fast access
-        const cellByKey = new Map(m.map.map((c) => [`${c.position.x},${c.position.y}`, c] as const));
+        const cellByKey = new Map(m.map.map((c, index) => [`${index % m.size},${Math.floor(index / m.size)}`, c] as const));
 
         // Check walkable
         for (const p of covered) {

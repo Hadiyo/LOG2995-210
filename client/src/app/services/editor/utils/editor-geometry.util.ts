@@ -1,5 +1,5 @@
-import { ObjectSize } from '@common/enum';
-import type { Vec2 } from '@common/interface';
+import { ObjectSize } from '@common/maps/map.enums';
+import type { Vec2 } from '@common/maps/map.interface';
 
 /**
  * Converts an anchor + size into all grid positions covered by the object.

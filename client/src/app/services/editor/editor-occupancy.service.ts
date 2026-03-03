@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import type { EditorCell, MapObject, Vec2 } from '@common/interface';
+import { EditorCell, MapObject, Vec2 } from '@common/maps/map.interface';
 import { getCoveredPositions } from './utils/editor-geometry.util';
+import { MapSize } from '@common/maps/map.enums';
+import { getCellPositionAtIndex } from '@common/maps/map-utils';
 
 /**
  * Service to determine cell occupancy in the editor map.
@@ -13,7 +15,7 @@ export class EditorOccupancyService {
      * Recompute each cell's isOccupied flag based on current objects.
      * This is derived data, but stored for convenience (UI + rules).
      */
-    refreshOccupied(cells: EditorCell[], objects: MapObject[]): EditorCell[] {
+    refreshOccupied(cells: EditorCell[], objects: MapObject[], mapSize: MapSize): EditorCell[] {
         const occupiedKey = new Set<string>();
 
         // Mark all covered tiles of all objects as occupied
@@ -24,10 +26,13 @@ export class EditorOccupancyService {
         }
 
         // Copy cells and update isOccupied
-        return cells.map((c) => ({
-            ...c,
-            isOccupied: occupiedKey.has(`${c.position.x},${c.position.y}`),
-        }));
+        return cells.map((c, index) => {
+            const pos = getCellPositionAtIndex(index, mapSize);
+            return {
+                ...c,
+                isOccupied: occupiedKey.has(`${pos.x},${pos.y}`),
+            };
+        });
     }
 
     /**
@@ -49,5 +54,4 @@ export class EditorOccupancyService {
             return !covered.some((p) => p.x === position.x && p.y === position.y);
         });
     }
-
 }

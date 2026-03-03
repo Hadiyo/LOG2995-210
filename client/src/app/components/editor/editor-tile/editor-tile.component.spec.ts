@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TileType } from '@common/enum';
 import { EditorTileComponent } from './editor-tile.component';
+import { TileType } from '@common/maps/map.enums';
 
 describe('EditorTileComponent', () => {
   let component: EditorTileComponent;
@@ -18,7 +18,6 @@ describe('EditorTileComponent', () => {
 
     // mock a cell
     component.tile = {
-      position: { x: 0, y: 0 },
       tileType: TileType.DIRT,
       isWalkable: true,
       isOccupied: false,

@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
 import { MapLoadState } from '@app/services/map/map-state.enum';
 import { MapStateService } from '@app/services/map/map-state.service';
-import type { EditorMap } from '@common/interface';
+import type { EditorMap } from '@common/maps/map.interface';
 import { Observable } from 'rxjs';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 

@@ -1,8 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { getPlayersLabel, MAP_SIZE_CONFIG, MapSizeOption } from '@app/config/map-size.config';
-import { MapConfig } from '@app/interfaces/create-map-dialog';
-import { GameMode, MapSize } from '@common/enum';
+import { getPlayersLabel, MAP_SIZE_CONFIG, MapConfig, MapSizeOption } from '@app/config/map.config';
+import { GameMode, MapSize } from '@common/maps/map.enums';
 
 const MODE_OPTIONS = [
   { value: GameMode.CLASSIC, label: 'Classique' },

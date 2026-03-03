@@ -1,5 +1,6 @@
-import { GameMode, MapSize, ObjectType, TileType } from './enum';
-import type { EditorMap, Vec2 } from './interface';
+import { GameMode, MapSize, ObjectType, TileType } from '../maps/map.enums';
+import { EditorMap, Vec2 } from '../maps/map.interface';
+import { getCellPositionAtIndex } from './map-utils';
 
 export type MapValidationIssueCode =
     | 'NAME_REQUIRED'
@@ -44,39 +45,44 @@ const isWallTile = (tileType: TileType): boolean => tileType === TileType.WALL;
 
 const isDoorTile = (tileType: TileType): boolean => tileType === TileType.DOOR;
 
-const positionKey = (x: number, y: number): string => `${x},${y}`;
+const positionToKey = (position: Vec2): string => `${position.x},${position.y}`;
+
+const keyToPosition = (key: string): Vec2 => {
+    const pos: string[] = key.split(",");
+    return { x: parseInt(pos[0]), y: parseInt(pos[1]) };
+};
 
 const isNonEmpty = (value: string): boolean => value.trim().length > 0;
 
 type Cell = EditorMap['map'][number];
 
-const buildCellMap = (cells: Cell[]): Map<string, Cell> => {
+const buildCellMap = (cells: Cell[], mapSize: MapSize): Map<string, Cell> => {
     const map = new Map<string, Cell>();
-    for (const cell of cells) {
-        map.set(positionKey(cell.position.x, cell.position.y), cell);
+    for (const [index, cell] of cells.entries()) {
+        map.set(positionToKey(getCellPositionAtIndex(index, mapSize)), cell);
     }
     return map;
 };
 
 const getTileType = (cellsByKey: Map<string, Cell>, x: number, y: number): TileType | undefined =>
-    cellsByKey.get(positionKey(x, y))?.tileType;
+    cellsByKey.get(positionToKey({ x: x, y: y }))?.tileType;
 
 const getNeighborKeys = (pos: Vec2): string[] => [
-    positionKey(pos.x - 1, pos.y),
-    positionKey(pos.x + 1, pos.y),
-    positionKey(pos.x, pos.y - 1),
-    positionKey(pos.x, pos.y + 1),
+    positionToKey({ x: pos.x - 1, y: pos.y }),
+    positionToKey({ x: pos.x + 1, y: pos.y }),
+    positionToKey({ x: pos.x, y: pos.y - 1 }),
+    positionToKey({ x: pos.x, y: pos.y + 1 }),
 ];
 
 const getInvalidDoorPositions = (cellsByKey: Map<string, Cell>): Vec2[] => {
     const invalid: Vec2[] = [];
 
-    for (const cell of cellsByKey.values()) {
+    for (const [key, cell] of cellsByKey) {
         if (!isDoorTile(cell.tileType)) {
             continue;
         }
 
-        const { x, y } = cell.position;
+        const { x: x, y: y } = keyToPosition(key);
         const left = getTileType(cellsByKey, x - 1, y);
         const right = getTileType(cellsByKey, x + 1, y);
         const up = getTileType(cellsByKey, x, y - 1);
@@ -125,7 +131,7 @@ const traverseFrom = (startKey: string, traversable: Set<string>, cellsByKey: Ma
         const cell = cellsByKey.get(currentKey);
         if (!cell) continue;
 
-        for (const neighbor of getNeighborKeys(cell.position)) {
+        for (const neighbor of getNeighborKeys(keyToPosition(currentKey))) {
             if (!traversable.has(neighbor) || visited.has(neighbor)) continue;
             queue.push(neighbor);
         }
@@ -222,7 +228,7 @@ const collectUnreachablePositions = (
     for (const key of traversable) {
         if (reachable.has(key)) continue;
         const cell = cellsByKey.get(key);
-        if (cell) unreachable.push(cell.position);
+        if (cell) unreachable.push(keyToPosition(key));
     }
     return unreachable;
 };
@@ -233,7 +239,7 @@ const addReachabilityIssues = (map: EditorMap, cellsByKey: Map<string, Cell>, is
 
     const startPositions = map.objects
         .filter((object) => object.type === ObjectType.START)
-        .map((object) => positionKey(object.position.x, object.position.y));
+        .map((object) => positionToKey(object.position));
 
     if (startPositions.length === 0) return;
 
@@ -255,7 +261,7 @@ export const validateMap = (map: EditorMap): MapValidationResult => {
     addDescriptionIssues(map, issues);
     addTerrainRatioIssues(map, issues);
 
-    const cellsByKey = buildCellMap(map.map);
+    const cellsByKey = buildCellMap(map.map, map.size);
     addDoorPlacementIssues(cellsByKey, issues);
     addStartPointIssues(map, issues);
     addFlagIssues(map, issues);

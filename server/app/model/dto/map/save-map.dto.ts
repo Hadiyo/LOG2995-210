@@ -1,9 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsEnum, IsString, IsOptional, Matches, MaxLength } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
-import { GameMode, MapSize } from '@common/enum';
-import { EditorCell, MapObject, PreviewImageFormat } from '@common/interface';
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
+import { PreviewImageFormat } from '@common/enum';
+import { GameMode, MapSize } from '@common/maps/map.enums';
+import { EditorCell, MapObject } from '@common/maps/map.interface';
 
 export class SaveMapDto {
     @ApiProperty()

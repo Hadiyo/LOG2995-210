@@ -1,5 +1,5 @@
 import { MapService } from '@app/services/map/map.service';
-import { EditorMap } from '@common/interface';
+import { EditorMap } from '@common/maps/map.interface';
 import { MapVisibilityEventPayload, SocketEvents, SocketRoom } from '@common/socket-events';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';

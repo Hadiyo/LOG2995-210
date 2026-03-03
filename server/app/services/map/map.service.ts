@@ -1,16 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import type { Model } from 'mongoose';
-
 import { Map, MapDocument } from '@app/model/database/map';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
-import { ObjectSize, TileType } from '@common/enum';
-import { EditorCell, EditorMap, MapObject, PreviewImageFormat, Vec2 } from '@common/interface';
-
-// Constants
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
+import { PreviewImageFormat } from '@common/enum';
+import { getCellPositionAtIndex } from '@common/maps/map-utils';
+import { ObjectSize, TileType } from '@common/maps/map.enums';
+import { EditorCell, EditorMap, MapObject, Vec2 } from '@common/maps/map.interface';
 import { SocketEvents } from '@common/socket-events';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { EventEmitter } from 'events';
+import type { Model } from 'mongoose';
 
 type PersistedCell = Omit<EditorCell, 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean };
 type PersistedMap = Omit<EditorMap, 'id' | 'map'> & { map: PersistedCell[] };
@@ -121,7 +120,6 @@ export class MapService {
             size: map.size,
             date: now,
             map: map.map.map((cell) => ({
-                position: cell.position,
                 tileType: cell.tileType,
                 ...(cell.tileType === TileType.DOOR ? { doorOpen: cell.isWalkable === true } : {}),
             })),
@@ -156,16 +154,17 @@ export class MapService {
 
 
     private toEditorMap(mapDocument: MapDocument): EditorMap {
-        const mapObject = mapDocument.toObject({ versionKey: false }) as PersistedMapRecord;
-        const { _id: idValue, map: persistedMap, objects, ...rest } = mapObject;
+        const mapObject = mapDocument.toObject({ versionKey: false });
+        const { _id: idValue, map: persistedMap, objects, ...rest } = mapObject as PersistedMapRecord;
+
         delete (rest as { createdAt?: Date }).createdAt;
         delete (rest as { updatedAt?: Date }).updatedAt;
         const occupied = this.buildOccupiedKeySet(objects);
-        const hydratedMap: EditorCell[] = persistedMap.map((cell) => {
+        const hydratedMap: EditorCell[] = persistedMap.map((cell, index) => {
             const isWalkable = this.isTileWalkable(cell.tileType, cell.doorOpen);
-            const key = `${cell.position.x},${cell.position.y}`;
+            const position = getCellPositionAtIndex(index, mapDocument.size);
+            const key = `${position.x},${position.y}`;
             return {
-                position: cell.position,
                 tileType: cell.tileType,
                 isWalkable,
                 isOccupied: occupied.has(key),
