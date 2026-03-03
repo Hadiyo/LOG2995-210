@@ -1,5 +1,5 @@
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapObject } from '@common/interface';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import type { EditorCell, EditorMap, MapObject } from '@common/maps/map.interface';
 
 export type QueryLike<T> = { sort: jest.Mock; exec: jest.Mock<Promise<T>> };
 
@@ -44,7 +44,6 @@ export const makeEditorMap = (overrides: Partial<EditorMap> = {}): EditorMap => 
 });
 
 export const makeCell = (overrides: Partial<EditorCell> = {}): EditorCell => ({
-    position: { x: 0, y: 0 },
     tileType: TileType.DIRT,
     isWalkable: true,
     isOccupied: false,

@@ -1,7 +1,7 @@
 import { Component, HostListener } from '@angular/core';
 import { EditorTileComponent } from '@app/components/editor/editor-tile/editor-tile.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-import { MouseButton, MouseEventType } from '@common/enum';
+import { MouseButton, MouseEventType } from '@common/mouse-events.enum';
 import { TileEvent } from '@common/types';
 
 @Component({

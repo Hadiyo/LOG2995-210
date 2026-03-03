@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { MAP_DIMENSIONS_BY_SIZE } from '@app/services/editor/constants/editor.constants';
-import { EditorMap, MapObject, PreviewImageFormat } from '@common/interface';
-import { MapSize, TileType, ObjectSize, ObjectType } from '@common/enum';
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
+import { PreviewImageFormat } from '@common/enum';
+import { MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { EditorMap, MapObject } from '@common/maps/map.interface';
 
 type Dim = { cols: number; rows: number };
 // Shared canvas geometry used by all draw steps (cell size + canvas ref)
@@ -53,7 +54,7 @@ export class MapThumbnailService {
         [ObjectType.FLAG]: 0.15,
         [ObjectType.START]: 0.05,
     };
-    
+
     /* =========================================================
        Public API
        ========================================================= */

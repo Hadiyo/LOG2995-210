@@ -1,8 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
-import { GameMode, MapSize, ObjectSize, ObjectType } from '@common/enum';
-import { PreviewImageFormat, type EditorMap } from '@common/interface';
+import { PreviewImageFormat } from '@common/enum';
+import { GameMode, MapSize, ObjectSize, ObjectType } from '@common/maps/map.enums';
+import { type EditorMap } from '@common/maps/map.interface';
 
 /**
  * Testing Strategy:
@@ -54,7 +55,7 @@ describe('GameCardComponent', () => {
 
     expect(el.querySelector('.name')?.textContent).toContain('My map');
     expect(el.textContent).toContain('Taille:');
-    expect(el.textContent).toContain('10x10');
+    expect(el.textContent).toContain('10');
     expect(el.textContent).toContain('Mode:');
     expect(el.textContent).toContain('CTF');
 

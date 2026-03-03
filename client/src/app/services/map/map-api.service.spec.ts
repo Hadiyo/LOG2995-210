@@ -3,8 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 
 import { MapApiService } from '@app/services/map/map-api.service';
-import { GameMode, MapSize } from '@common/enum';
-import type { EditorMap } from '@common/interface';
+import { GameMode, MapSize } from '@common/maps/map.enums';
+import type { EditorMap } from '@common/maps/map.interface';
 
 /**
  * Testing Strategy:

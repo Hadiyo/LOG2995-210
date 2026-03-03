@@ -1,4 +1,4 @@
-import { MouseEventType } from "./enum";
+import { MouseEventType } from "./mouse-events.enum";
 
 export type TileEvent = {
     type: MouseEventType;

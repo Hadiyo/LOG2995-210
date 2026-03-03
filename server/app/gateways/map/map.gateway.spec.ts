@@ -1,7 +1,7 @@
 import { MapGateway } from '@app/gateways/map/map.gateway';
 import { MapService } from '@app/services/map/map.service';
-import { GameMode, MapSize } from '@common/enum';
-import { type EditorMap } from '@common/interface';
+import { GameMode, MapSize } from '@common/maps/map.enums';
+import { type EditorMap } from '@common/maps/map.interface';
 import { MapVisibilityEventPayload, SocketEvents, SocketRoom } from '@common/socket-events';
 import { Server, Socket } from 'socket.io';
 
