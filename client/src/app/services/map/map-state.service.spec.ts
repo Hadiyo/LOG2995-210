@@ -4,7 +4,7 @@ import { MapLoadState } from '@app/services/map/map-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import { EditorMap } from '@common/maps/map.interface';
-import { BEFORE_UNLOAD, RoomSocketEvents, SocketRoom } from '@common/socket-events';
+import { BEFORE_UNLOAD, RoomSocketEvents } from '@common/socket-events';
 import { of, throwError } from 'rxjs';
 import { MapStateService } from './map-state.service';
 
@@ -124,8 +124,7 @@ describe('MapStateService', () => {
         const spy = spyOn(service, 'loadMaps');
         service.subscribeToMapEvents();
         expect(socketMock.send).toHaveBeenCalledWith(
-            RoomSocketEvents.JoinRoom,
-            SocketRoom.MapManagementRoom,
+            RoomSocketEvents.JoinSessionRoom,
         );
         expect(socketMock.on).toHaveBeenCalled();
         expect(spy).toHaveBeenCalled();

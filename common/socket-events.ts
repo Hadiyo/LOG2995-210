@@ -6,8 +6,10 @@ export enum MapSocketEvents {
 }
 
 export enum RoomSocketEvents {
-    JoinRoom = 'roomJoined',
-    LeaveRoom = 'leaveRoom',
+    JoinSessionRoom = 'roomSessionJoined',
+    JoinGameRoom = 'gameRoomJoined',
+    LeaveSessionRoom = 'leaveSessionRoom',
+    LeaveGameRoom = 'leaveGameRoom',
 }
 
 export enum SocketRoom {

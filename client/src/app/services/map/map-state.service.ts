@@ -56,7 +56,7 @@ export class MapStateService {
 
     /** SOCKET SERVICE FOR MAP */
     subscribeToMapEvents() {
-        this.socket.send(RoomSocketEvents.JoinRoom, SocketRoom.MapManagementRoom);
+        this.socket.send(RoomSocketEvents.JoinSessionRoom);
         this.socket.on<EditorMap>(MapSocketEvents.MapCreated, this.onMapCreated);
         this.socket.on<EditorMap>(MapSocketEvents.MapUpdated, this.onMapUpdated);
         this.socket.on<string>(MapSocketEvents.MapDeleted, this.onMapDeleted);
@@ -65,7 +65,7 @@ export class MapStateService {
     }
 
     unsubscribeFromMapEvents() {
-        this.socket.send<SocketRoom>(RoomSocketEvents.LeaveRoom, SocketRoom.MapManagementRoom);
+        this.socket.send<SocketRoom>(RoomSocketEvents.LeaveSessionRoom);
         this.socket.off(MapSocketEvents.MapCreated, this.onMapCreated);
         this.socket.off(MapSocketEvents.MapUpdated, this.onMapUpdated);
         this.socket.off(MapSocketEvents.MapDeleted, this.onMapDeleted);

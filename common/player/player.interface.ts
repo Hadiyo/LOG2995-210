@@ -13,16 +13,25 @@ export interface PlayerDice {
     defense: Die;
 }
 
-export interface Player {
-    id: string;
+export interface PlayerInformation {
     name: string;
     avatarId: string;
-    wins: number;
     isOrganizer: boolean;
-    health: number;
     dices: PlayerDice;
     attributes: PlayerAttributes;
+}
+
+export interface PlayerState {
     position: Vec2;
-    remainingMovements: number;
+    health: number;
+    wins: number;
     remainingActions: number;
+    remainingMovements: number;
+}
+
+export interface Player {
+    id: string;
+    socketId: string;
+    information: PlayerInformation;
+    state: PlayerState;
 }
