@@ -1,14 +1,15 @@
+import { InternalPlayer } from '@app/interface/player.interface';
 import { Player, PlayerInformation, PlayerState } from '@common/player/player.interface';
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-
 @Injectable()
 export class PlayerService {
-    /** HOLD ALL PLAYERS AND THEIR REFERENCE TO THE GAME THEY ARE IN */
-    private players = new Map<string, Player>();
 
-    getPlayerById(id: string): Player {
+    /** HOLD ALL PLAYERS AND THEIR REFERENCE TO THE GAME THEY ARE IN */
+    private players = new Map<string, InternalPlayer>();
+
+    getPlayerById(id: string): InternalPlayer {
         return this.players.get(id);
     }
 
@@ -19,12 +20,16 @@ export class PlayerService {
     savePlayer(info: PlayerInformation, clientId: string): string {
         const newPlayer: Player = {
             id: randomUUID(),
-            socketId: clientId,
             information: info,
             state: this.setPlayerInitialState(),
         };
 
-        this.players.set(newPlayer.id, newPlayer);
+        const newInternalPlayer: InternalPlayer = {
+            socketId: clientId,
+            player: newPlayer,
+        };
+
+        this.players.set(newPlayer.id, newInternalPlayer);
         return newPlayer.id;
     }
 
@@ -46,8 +51,6 @@ export class PlayerService {
             remainingActions: 3,
             remainingMovements: 3,
         };
-
         return state;
     }
-
 }

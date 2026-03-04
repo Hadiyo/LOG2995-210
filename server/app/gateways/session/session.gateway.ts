@@ -2,14 +2,15 @@ import { SessionService } from '@app/services/session/session.service';
 import { CreateSessionPayload, GameSessionPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents, SocketRoom } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
-import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
-import { Socket } from 'socket.io';
+import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
   namespace: '/api',
 })
 @WebSocketGateway()
 export class SessionGateway {
+  @WebSocketServer() private server: Server;
   private readonly mapSessionRoom: SocketRoom = SocketRoom.MapManagementRoom;
   private readonly sessionService: SessionService;
 
@@ -60,12 +61,14 @@ export class SessionGateway {
 
   @SubscribeMessage(RoomSocketEvents.JoinGameRoom)
   joinGameSession(@MessageBody() payload: GameSessionPayload, @ConnectedSocket() client: Socket) {
-    const hasJoinedGame = this.sessionService.joinGameSession(payload, client.id);
+    const player = this.sessionService.joinGameSession(payload, client.id);
 
-    if (!hasJoinedGame)
+    if (!player)
       client.emit(ErrorSocketEvents.FailedJoinSession);
 
-    // TODO: NOTIFY OTHER PLAYERS IN THE SESSION THAT PLAYER WITH PLAYERID LEFT THE ROOM
+    // Notify other players that a newplayer has joined the session
+    client.to(payload.sessionId).emit(RoomSocketEvents.PlayerJoinedGame, player);
+
   }
 
 
@@ -77,6 +80,7 @@ export class SessionGateway {
       return;
     }
     client.leave(sessionId);
-    // TODO: NOTIFY OTHER PLAYERS IN THE SESSION THAT PLAYER WITH PLAYERID LEFT THE ROOM
+    //Notify other players that the player has left the game session
+    this.server.to(sessionId).emit(RoomSocketEvents.PlayerLeftGame, playerId);
   }
 }

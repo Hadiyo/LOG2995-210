@@ -45,8 +45,8 @@ export interface PlayerRenderState {
 
 export interface Player {
     id: string;
-    socketId: string;
     information: PlayerInformation;
     state: PlayerState;
     render?: PlayerRenderState;
 }
+
