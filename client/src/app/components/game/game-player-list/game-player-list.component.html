@@ -1,0 +1,33 @@
+<div class="players-scroll" [class.players-scroll--expanded]="expanded" [style.height.px]="viewportHeightPx">
+  <ul class="players" [style.transform]="'translateY(' + scrollOffsetPx + 'px)'">
+    <!-- Loop through displayed rows which include players and placeholders, using trackBy for performance. -->
+    @for (row of displayedRows; track row.key) {
+    <li class="player" [class.player--active]="isRowActive(row)" [class.player--placeholder]="!row.player">
+      <!-- If the row has a player, display their info; otherwise show placeholder text. -->
+      @if (row.player; as player) {
+      <span class="player__index">{{ row.listIndex }}</span>
+      <span class="player__name" [class.player__name--surrendered]="player.status === playerStatus.Surrendered">
+        {{ player.name }}
+      </span>
+      <span class="player__wins">{{ player.wins }} combats</span>
+      <span class="player__badges">
+        <!-- Display organizer badge if the player is an organizer. -->
+        @if (player.isOrganizer) {
+        <span class="player__badge" [attr.title]="player.id === activePlayerId ? 'Organisateur' : null">
+          {{ player.id === activePlayerId ? 'Org.' : 'Organisateur' }}
+        </span>
+        }
+        <!-- Display active badge if it's the active player's turn. -->
+        @if (player.id === activePlayerId) {
+        <span class="player__badge player__badge--active" [class.player__badge--active-self]="player.id === currentPlayerId">
+          Actif
+        </span>
+        }
+      </span>
+      } @else {
+      <span class="player__placeholder-text">En attente d'un joueur...</span>
+      }
+    </li>
+    }
+  </ul>
+</div>

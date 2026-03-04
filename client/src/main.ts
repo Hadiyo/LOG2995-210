@@ -6,12 +6,15 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { Routes, provideRouter, withHashLocation } from '@angular/router';
 import { AdminPageComponent } from '@app/pages/admin-page/admin-page.component';
 import { AppComponent } from '@app/pages/app/app.component';
+import { CharacterCreationPageComponent } from '@app/pages/character-creation/character-creation-page/character-creation-page.component';
 import { CreateGamePageComponent } from '@app/pages/create-game-page/create-game-page.component';
 import { EditorPageComponent } from '@app/pages/editor-page/editor-page.component';
+import { GameViewPageComponent } from '@app/pages/game-view-page/game-view-page.component';
 import { MainPageComponent } from '@app/pages/main-page/main-page.component';
 import { WaitingRoomComponent } from '@app/pages/waiting-room/waiting-room.component';
 import { environment } from './environments/environment';
-import { CharacterCreationPageComponent } from '@app/pages/character-creation/character-creation-page/character-creation-page.component';
+//dev component, to be removed before release
+import { DevGameLauncherComponent } from '@app/pages/dev-game-launcher/dev-game-launcher.component';
 
 if (environment.production) {
     enableProdMode();
@@ -25,6 +28,9 @@ const routes: Routes = [
     { path: 'admin', component: AdminPageComponent },
     { path: 'character-creation', component: CharacterCreationPageComponent },
     { path: 'waiting-room', component: WaitingRoomComponent },
+    { path: 'game-view', component: GameViewPageComponent },
+    //dev route, to be removed before release
+    { path: 'dev-game-launcher', component: DevGameLauncherComponent },
     { path: '**', redirectTo: '/home' },
 
 ];

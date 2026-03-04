@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+h3 {
+  margin: 0 0 10px;
+}
+
+.info-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.info-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.info-label {
+  min-width: 0;
+}
+
+.info-value {
+  text-align: right;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.timer-value {
+  font-weight: 800;
+  transition: color 200ms linear;
+}
+
+.timer-value--dim {
+  color: var(--text-muted);
+}
