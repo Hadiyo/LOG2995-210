@@ -41,7 +41,7 @@ export interface GameCell extends EditorCell {
 }
 
 export interface GameMap extends BaseMap {
-    map: EditorCell[]
+    map: GameCell[]
 }
 
 export interface ObjectCountAndLimit {

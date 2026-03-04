@@ -1,5 +1,7 @@
 import { MapService } from '@app/services/map/map.service';
-import { EditorMap, GameMap } from '@common/maps/map.interface';
+import { getCellPositionAtIndex } from '@common/maps/map-utils';
+import { MapSize } from '@common/maps/map.enums';
+import { EditorCell, EditorMap, GameCell, GameMap } from '@common/maps/map.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
@@ -45,15 +47,30 @@ export class GameMapService {
 
     /** UTILS */
     private generateGameMap(templateMap: EditorMap): GameMap {
+        const gameCells = this.translateEditorCellsToGameCells(templateMap.map, templateMap.size);
         const newMap: GameMap = {
             id: randomUUID(),
             name: templateMap.name,
             size: templateMap.size,
             mode: templateMap.mode,
             objects: templateMap.objects.map(obj => ({ ...obj })),
-            map: templateMap.map.map(cell => ({ ...cell })),
+            map: gameCells,
         };
-
         return newMap;
+    }
+
+    private translateEditorCellsToGameCells(map: EditorCell[], size: MapSize): GameCell[] {
+        const gameMap: GameCell[] = [];
+
+        for (const [index, cell] of map.entries()) {
+            const gameCell: GameCell = {
+                tileType: cell.tileType,
+                isWalkable: cell.isWalkable,
+                isOccupied: cell.isOccupied,
+                position: getCellPositionAtIndex(index, size),
+            };
+            gameMap.push(gameCell);
+        }
+        return gameMap;
     }
 }
