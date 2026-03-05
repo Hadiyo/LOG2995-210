@@ -1,5 +1,5 @@
 import { GameSessionService } from '@app/services/session/game-session.service';
-import { CreateSessionPayload, GameSessionPayload } from '@common/game/game-session.interface';
+import { ChatPayload, CreateSessionPayload, GameSessionPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents, SocketRoom } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
@@ -84,5 +84,10 @@ export class SessionGateway {
     client.leave(sessionId);
     //Notify other players that the player has left the game session
     this.server.to(sessionId).emit(RoomSocketEvents.PlayerLeftGame, playerId);
+  }
+
+  @SubscribeMessage(RoomSocketEvents.SendMessage)
+  sendMessage(@MessageBody() message: ChatPayload) {
+    this.sessionService.sendMessage(message);
   }
 }

@@ -14,6 +14,7 @@ export enum RoomSocketEvents {
     GameSessionCreated = 'gameSessionCreated',
     PlayerJoinedGame = 'playerJoinedGame',
     PlayerLeftGame = 'playerLeftGame',
+    SendMessage = 'sendMessage',
 }
 
 export enum ErrorSocketEvents {

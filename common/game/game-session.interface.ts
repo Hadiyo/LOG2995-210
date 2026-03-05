@@ -31,3 +31,16 @@ export interface GameSessionPreview {
     nbOfPlayers: number;
     previewImage?: string;
 }
+
+export interface ChatPayload {
+    message: string;
+    playerName: string;
+    sessionId: string;
+    timestamp: string;
+}
+
+export interface ChatMessage {
+    senderName: string;
+    message: string;
+    timestamp: string;
+}
