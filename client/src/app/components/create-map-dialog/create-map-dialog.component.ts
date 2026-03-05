@@ -18,8 +18,8 @@ export class CreateMapDialogComponent {
   readonly sizeOptions = MAP_SIZE_CONFIG;
   readonly modeOptions = MODE_OPTIONS;
 
-  selectedSize?: MapSize;
-  selectedMode?: GameMode;
+  selectedSize: MapSize = MAP_SIZE_CONFIG[0].value; //Default Value
+  selectedMode: GameMode = MODE_OPTIONS[0].value; //Default Value
 
   @Output() cancel = new EventEmitter<void>();
   @Output() confirm = new EventEmitter<MapConfig>();
@@ -33,10 +33,6 @@ export class CreateMapDialogComponent {
   }
 
   onConfirm(): void {
-    if (!this.selectedSize || !this.selectedMode) {
-      return;
-    }
-
     this.confirm.emit({
       size: this.selectedSize,
       mode: this.selectedMode,
