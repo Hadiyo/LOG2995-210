@@ -4,7 +4,7 @@ import { MapLoadState } from '@app/services/map/map-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import { EditorMap } from '@common/maps/map.interface';
-import { BEFORE_UNLOAD, RoomSocketEvents } from '@common/socket-events';
+import { RoomSocketEvents } from '@common/socket-events';
 import { of, throwError } from 'rxjs';
 import { MapStateService } from './map-state.service';
 
@@ -69,6 +69,7 @@ describe('MapStateService', () => {
             'send',
             'on',
             'off',
+            'subscribeToWindowEvent',
         ]);
 
         mapApiMock.getAllMaps.and.returnValue(of(mockMaps));
@@ -172,26 +173,6 @@ describe('MapStateService', () => {
             expect(maps.find(m => m.id === '2')?.visibility).toBeTrue();
             done();
         });
-    });
-
-    it('should set up a window event listener', () => {
-        spyOn(window, 'addEventListener');
-
-        service['subscribeToWindowEvent']();
-
-        expect(window.addEventListener).toHaveBeenCalledWith('beforeunload', jasmine.any(Function));
-    });
-
-    it('should call socket.disconnect when BEFORE_UNLOAD fires', () => {
-        const addListenerSpy = spyOn(window, 'addEventListener').and.callThrough();
-
-        service['subscribeToWindowEvent']();
-
-        const callback = addListenerSpy.calls.mostRecent().args[1] as EventListener;
-
-        callback(new Event(BEFORE_UNLOAD));
-
-        expect(socketMock.disconnect).toHaveBeenCalled();
     });
 
     it('should set error state if updateVisibility fails', () => {

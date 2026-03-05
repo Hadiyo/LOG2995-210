@@ -1,4 +1,4 @@
-import { SessionService } from '@app/services/session/session.service';
+import { GameSessionService } from '@app/services/session/game-session.service';
 import { CreateSessionPayload, GameSessionPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents, SocketRoom } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
@@ -12,7 +12,7 @@ import { Server, Socket } from 'socket.io';
 export class SessionGateway {
   @WebSocketServer() private server: Server;
   private readonly mapSessionRoom: SocketRoom = SocketRoom.MapManagementRoom;
-  private readonly sessionService: SessionService;
+  private readonly sessionService: GameSessionService;
 
   constructor(private readonly logger: Logger = new Logger(SessionGateway.name)) {}
 

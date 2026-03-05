@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { BEFORE_UNLOAD } from '@common/socket-events';
 import { io, Socket } from 'socket.io-client';
 import { environment } from 'src/environments/environment';
 
@@ -67,6 +68,13 @@ export class SocketManagerService {
   disconnect(): void {
     if (this.socket)
       this.socket.disconnect();
+  }
+
+  subscribeToWindowEvent(): void {
+    // Adds event listener to disconnects the client socket when the application is closed
+    window.addEventListener(BEFORE_UNLOAD, () => {
+      this.socket.disconnect();
+    });
   }
 
 

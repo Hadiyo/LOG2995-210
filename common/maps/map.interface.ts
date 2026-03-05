@@ -1,5 +1,5 @@
+import { PreviewImageFormat } from "../enum";
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from "./map.enums";
-import { PreviewImageFormat } from "../enum"
 
 export interface Vec2 {
     x: number;
@@ -41,7 +41,7 @@ export interface GameCell extends EditorCell {
 }
 
 export interface GameMap extends BaseMap {
-    map: GameCell[]
+    map: GameCell[];
 }
 
 export interface ObjectCountAndLimit {

@@ -7,14 +7,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 @Injectable()
-export class SessionService {
+export class GameSessionService {
     /** HOLDS ALL GAME AND COMBAT SESSIONS WITH REFERENCES TO THE GAME-MAP TEMPLATES AND PLAYERS */
     private gameSessions = new Map<string, GameSession>();
 
     private playerService: PlayerService;
     private gameMapService: GameMapService;
 
-    private readonly logger = new Logger(SessionService.name);
+    private readonly logger = new Logger(GameSessionService.name);
 
     getGameSessionById(id: string): GameSession {
         return this.gameSessions.get(id);

@@ -1,12 +1,12 @@
 import { AsyncPipe } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
 import { MapLoadState } from '@app/services/map/map-state.enum';
 import { MapStateService } from '@app/services/map/map-state.service';
 import type { EditorMap } from '@common/maps/map.interface';
 import { Observable } from 'rxjs';
-import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-create-game-page',
@@ -37,6 +37,7 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
   }
 
   onSelectMap(map: EditorMap): void {
+    // SEND MAP TO CHARACTER GAME PAGE SOMEHOW
     void map;
     this.router.navigate(['/character-creation']);
   }

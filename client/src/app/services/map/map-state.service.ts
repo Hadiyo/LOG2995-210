@@ -3,7 +3,7 @@ import { MapApiService } from '@app/services/map/map-api.service';
 import { MapLoadState } from '@app/services/map/map-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { EditorMap } from '@common/maps/map.interface';
-import { BEFORE_UNLOAD, MapSocketEvents, MapVisibilityEventPayload, RoomSocketEvents, SocketRoom } from '@common/socket-events';
+import { MapSocketEvents, MapVisibilityEventPayload, RoomSocketEvents, SocketRoom } from '@common/socket-events';
 import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
 
 /** Single source of truth for the available collection of maps
@@ -15,9 +15,7 @@ import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
 export class MapStateService {
     constructor(private socket: SocketManagerService) {
         this.socket.connect();
-
-        this.subscribeToWindowEvent();
-
+        this.socket.subscribeToWindowEvent();
         this.loadMaps();
     }
 
@@ -97,13 +95,5 @@ export class MapStateService {
         this.mapsSubject.next(this.mapsSubject.value.map((item) =>
             (item.id === id ? { ...item, visibility: newVisibility } : item)));
     }
-
-    private subscribeToWindowEvent(): void {
-        // Adds event listener to disconnects the client socket when the application is closed
-        window.addEventListener(BEFORE_UNLOAD, () => {
-            this.socket.disconnect();
-        });
-    }
-
 
 }
