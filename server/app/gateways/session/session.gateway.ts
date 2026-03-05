@@ -1,6 +1,6 @@
 import { GameSessionService } from '@app/services/session/game-session.service';
 import { CreateSessionPayload, GameSessionPayload } from '@common/game/game-session.interface';
-import { ErrorSocketEvents, RoomSocketEvents, SocketRoom } from '@common/socket-events';
+import { ErrorSocketEvents, RoomSocketEvents } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
@@ -8,29 +8,12 @@ import { Server, Socket } from 'socket.io';
 @WebSocketGateway({
   namespace: '/api',
 })
-@WebSocketGateway()
 export class SessionGateway {
   @WebSocketServer() private server: Server;
-  private readonly mapSessionRoom: SocketRoom = SocketRoom.MapManagementRoom;
+
   private readonly sessionService: GameSessionService;
 
   constructor(private readonly logger: Logger = new Logger(SessionGateway.name)) {}
-
-  @SubscribeMessage(RoomSocketEvents.JoinSessionRoom)
-  joinMapSession(@ConnectedSocket() client: Socket) {
-    client.join(this.mapSessionRoom);
-    if (client.rooms.has(this.mapSessionRoom)) {
-      this.logger.log(`Client ${client.id} joined ${this.mapSessionRoom} successfully`);
-    }
-  }
-
-  @SubscribeMessage(RoomSocketEvents.LeaveSessionRoom)
-  leaveMapSession(@ConnectedSocket() client: Socket) {
-    client.leave(this.mapSessionRoom);
-    if (!client.rooms.has(this.mapSessionRoom)) {
-      this.logger.log(`Client ${client.id} left ${this.mapSessionRoom} successfully`);
-    }
-  }
 
   @SubscribeMessage(RoomSocketEvents.CreateGameSession)
   async createGameSession(@MessageBody() payload: CreateSessionPayload, @ConnectedSocket() client: Socket) {
@@ -70,7 +53,7 @@ export class SessionGateway {
 
     // Notify other players that a newplayer has joined the session
     client.to(payload.sessionId).emit(RoomSocketEvents.PlayerJoinedGame, player);
-
+    // this.server.to();
   }
 
 

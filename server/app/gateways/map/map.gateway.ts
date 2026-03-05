@@ -1,6 +1,7 @@
+import { PageRoom } from '@app/gateways/rooms.record';
 import { MapService } from '@app/services/map/map.service';
 import { EditorMap } from '@common/maps/map.interface';
-import { MapSocketEvents, MapVisibilityEventPayload, SocketRoom } from '@common/socket-events';
+import { MapSocketEvents, MapVisibilityEventPayload } from '@common/socket-events';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
@@ -36,21 +37,21 @@ export class MapGateway implements OnModuleDestroy {
 
   private subscribeMapDeleteHandler() {
     this.mapDeletedHandler = (id: string) => {
-      this.server.to(SocketRoom.MapManagementRoom).emit(MapSocketEvents.MapDeleted, id);
+      this.server.to(PageRoom.MapManagementRoom).emit(MapSocketEvents.MapDeleted, id);
     };
     this.mapService.on(MapSocketEvents.MapDeleted, this.mapDeletedHandler);
   }
 
   private subscribeMapCreateHandler() {
     this.mapCreateHandler = (newMap: EditorMap) => {
-      this.server.to(SocketRoom.MapManagementRoom).emit(MapSocketEvents.MapCreated, newMap);
+      this.server.to(PageRoom.MapManagementRoom).emit(MapSocketEvents.MapCreated, newMap);
     };
     this.mapService.on(MapSocketEvents.MapCreated, this.mapCreateHandler);
   }
 
   private subscribeMapVisbilityHandler() {
     this.mapVisibilityHandler = (payload: MapVisibilityEventPayload) => {
-      this.server.to(SocketRoom.MapManagementRoom).emit(MapSocketEvents.ToogleMapVisibility, {
+      this.server.to(PageRoom.MapManagementRoom).emit(MapSocketEvents.ToogleMapVisibility, {
         id: payload.id,
         isVisible: payload.isVisible,
       });
@@ -60,7 +61,7 @@ export class MapGateway implements OnModuleDestroy {
 
   private subscribeMapEditHandler() {
     this.mapEditHandler = (map: EditorMap) => {
-      this.server.to(SocketRoom.MapManagementRoom).emit(MapSocketEvents.MapUpdated, map);
+      this.server.to(PageRoom.MapManagementRoom).emit(MapSocketEvents.MapUpdated, map);
     };
     this.mapService.on(MapSocketEvents.MapUpdated, this.mapEditHandler);
   }
