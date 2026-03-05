@@ -11,6 +11,7 @@ export enum RoomSocketEvents {
     LeaveSessionRoom = 'leaveSessionRoom',
     LeaveGameRoom = 'leaveGameRoom',
     CreateGameSession = 'createGameSession',
+    GameSessionCreated = 'gameSessionCreated',
     PlayerJoinedGame = 'playerJoinedGame',
     PlayerLeftGame = 'playerLeftGame',
 }

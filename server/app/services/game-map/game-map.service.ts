@@ -52,7 +52,7 @@ export class GameMapService {
     }
 
     /**
-     * Generates the map used during gameplay 
+     * Generates the map used during gameplay from the initial EditorMap
      * @param templateMap 
      * @returns GameMap
      */
@@ -69,7 +69,7 @@ export class GameMapService {
     }
 
     /**
-     * Generates the required GameMap payload for JOIN GAME PAGE
+     * Generates the required GameMap payload for JOIN GAME PAGE from the initial EditorMap
      * @param templateMap 
      * @returns GameMapPreview
      */

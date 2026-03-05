@@ -7,12 +7,13 @@ import { environment } from 'src/environments/environment';
 @Injectable({
   providedIn: 'root',
 })
-export class JoinGameApiService {
+export class SessionApiService {
   private readonly joinGameUrl = `${environment.serverUrl}/game-map`;
 
   constructor(private readonly http: HttpClient) {}
 
-  fetchGameSessionCards(): Observable<GameSessionPreview[]> {
+  fetchGameSessions(): Observable<GameSessionPreview[]> {
     return this.http.get<GameSessionPreview[]>(`${this.joinGameUrl}/`);
   }
+
 }

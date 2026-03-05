@@ -42,9 +42,10 @@ export class GameSessionService {
                 id: randomUUID(),
                 players: [playerId],
                 mapTemplateId: mapId,
-                chatSessionId: '', // TODO: add fetch chatSession id
                 debugMode: false,
             };
+
+            // TODO: CALL THE CHAT INIT METHOD WITH THE SESSION ID
 
             this.gameSessions.set(gameSession.id, gameSession);
 

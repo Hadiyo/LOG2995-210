@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { MapApiService } from '@app/services/map/map-api.service';
-import { MapLoadState } from '@app/services/map/map-state.enum';
+import { ServiceState } from '@app/services/service-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { EditorMap } from '@common/maps/map.interface';
 import { MapSocketEvents, MapVisibilityEventPayload, RoomSocketEvents, SocketRoom } from '@common/socket-events';
@@ -22,18 +22,18 @@ export class MapStateService {
     private mapsSubject = new BehaviorSubject<EditorMap[]>([]);
     maps$ = this.mapsSubject.asObservable();
 
-    readonly state = signal<MapLoadState>(MapLoadState.Idle);
+    readonly state = signal<ServiceState>(ServiceState.Idle);
     private readonly mapApiService = inject(MapApiService);
 
     /** MAPS API METHODS */
     loadMaps(): void {
-        this.state.set(MapLoadState.Loading);
+        this.state.set(ServiceState.Loading);
         this.mapApiService.getAllMaps().subscribe({
             next: maps => {
                 this.mapsSubject.next(maps);
-                this.state.set(MapLoadState.Loaded);
+                this.state.set(ServiceState.Loaded);
             },
-            error: () => this.state.set(MapLoadState.Error),
+            error: () => this.state.set(ServiceState.Error),
         });
     }
 
@@ -47,7 +47,7 @@ export class MapStateService {
 
     toggleMapVisibility(map: EditorMap): void {
         this.mapApiService.updateMapVisibility(map.id, !map.visibility).subscribe({
-            error: () => this.state.set(MapLoadState.Error),
+            error: () => this.state.set(ServiceState.Error),
         });
     }
 

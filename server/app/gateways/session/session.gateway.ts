@@ -50,6 +50,8 @@ export class SessionGateway {
         client.emit(ErrorSocketEvents.FailedJoinSession);
         return;
       }
+
+      client.emit(RoomSocketEvents.GameSessionCreated, gameSessionId);
     } catch (err) {
       this.logger.error(
         `Error creating session for player ${client.id}: ${err.message}`,

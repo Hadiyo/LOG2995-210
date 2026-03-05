@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { MapApiService } from '@app/services/map/map-api.service';
-import { MapLoadState } from '@app/services/map/map-state.enum';
+import { ServiceState } from '@app/services/service-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import { EditorMap } from '@common/maps/map.interface';
@@ -92,7 +92,7 @@ describe('MapStateService', () => {
     it('should load maps on init', (done) => {
         service.maps$.subscribe(maps => {
             expect(maps.length).toBe(2);
-            expect(service.state()).toBe(MapLoadState.Loaded);
+            expect(service.state()).toBe(ServiceState.Loaded);
             done();
         });
     });
@@ -100,7 +100,7 @@ describe('MapStateService', () => {
     it('should set error state if loadMaps fails', () => {
         mapApiMock.getAllMaps.and.returnValue(throwError(() => new Error()));
         service.loadMaps();
-        expect(service.state()).toBe(MapLoadState.Error);
+        expect(service.state()).toBe(ServiceState.Error);
     });
 
     it('should call saveMap on createMap', async () => {
@@ -178,6 +178,6 @@ describe('MapStateService', () => {
     it('should set error state if updateVisibility fails', () => {
         mapApiMock.updateMapVisibility.and.returnValue(throwError(() => new Error()));
         service.toggleMapVisibility(mockMaps[0]);
-        expect(service.state()).toBe(MapLoadState.Error);
+        expect(service.state()).toBe(ServiceState.Error);
     });
 });

@@ -3,8 +3,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
-import { MapLoadState } from '@app/services/map/map-state.enum';
 import { MapStateService } from '@app/services/map/map-state.service';
+import { ServiceState } from '@app/services/service-state.enum';
 import type { EditorMap } from '@common/maps/map.interface';
 import { Observable } from 'rxjs';
 
@@ -24,7 +24,7 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
     private readonly router: Router,
   ) {}
 
-  protected getMapState(): MapLoadState {
+  protected getMapState(): ServiceState {
     return this.mapStateService.state();
   }
 
