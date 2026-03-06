@@ -10,3 +10,4 @@ coverage/
 
 #Node Modules
 /node_modules
+client/.npm/

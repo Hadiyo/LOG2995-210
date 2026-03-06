@@ -1,4 +1,4 @@
-import { MapSize } from "@common/maps/map.enums";
+import { GameMode, MapSize } from "@common/maps/map.enums";
 import { PlayerInformation } from "@common/player/player.interface";
 
 export interface GameSession {
@@ -26,10 +26,11 @@ export interface GameSessionPreview {
     id: string;
     name: string;
     description: string;
-    mode: string;
+    mode: GameMode;
     size: MapSize;
     nbOfPlayers: number;
     previewImage?: string;
+    previewImageFormat?: string;
 }
 
 export interface ChatPayload {

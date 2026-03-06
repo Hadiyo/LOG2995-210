@@ -3,7 +3,7 @@ import { MapApiService } from '@app/services/map/map-api.service';
 import { ServiceState } from '@app/services/service-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { EditorMap } from '@common/maps/map.interface';
-import { MapSocketEvents, MapVisibilityEventPayload, RoomSocketEvents, SocketRoom } from '@common/socket-events';
+import { MapSocketEvents, MapVisibilityEventPayload, PageContext, PageSocketEvents } from '@common/socket-events';
 import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
 
 /** Single source of truth for the available collection of maps
@@ -54,7 +54,7 @@ export class MapStateService {
 
     /** SOCKET SERVICE FOR MAP */
     subscribeToMapEvents() {
-        this.socket.send(RoomSocketEvents.JoinSessionRoom);
+        this.socket.send(PageSocketEvents.JoinPage, { page: PageContext.MapManagement });
         this.socket.on<EditorMap>(MapSocketEvents.MapCreated, this.onMapCreated);
         this.socket.on<EditorMap>(MapSocketEvents.MapUpdated, this.onMapUpdated);
         this.socket.on<string>(MapSocketEvents.MapDeleted, this.onMapDeleted);
@@ -63,7 +63,7 @@ export class MapStateService {
     }
 
     unsubscribeFromMapEvents() {
-        this.socket.send<SocketRoom>(RoomSocketEvents.LeaveSessionRoom);
+        this.socket.send(PageSocketEvents.LeavePage, { page: PageContext.MapManagement });
         this.socket.off(MapSocketEvents.MapCreated, this.onMapCreated);
         this.socket.off(MapSocketEvents.MapUpdated, this.onMapUpdated);
         this.socket.off(MapSocketEvents.MapDeleted, this.onMapDeleted);

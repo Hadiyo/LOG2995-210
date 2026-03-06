@@ -1,5 +1,5 @@
 export enum GameMode {
-    CLASSIC = 'CLASSIC',
+    CLASSIC = 'Classique',
     CTF = 'CTF'
 }
 

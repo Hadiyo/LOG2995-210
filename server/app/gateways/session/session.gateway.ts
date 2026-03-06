@@ -1,36 +1,18 @@
+import { pageRoomMap } from '@app/gateways/rooms.record';
 import { GameSessionService } from '@app/services/session/game-session.service';
 import { ChatPayload, CreateSessionPayload, GameSessionPayload } from '@common/game/game-session.interface';
-import { ErrorSocketEvents, RoomSocketEvents, SocketRoom } from '@common/socket-events';
+import { ErrorSocketEvents, RoomSocketEvents } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-
-@WebSocketGateway({
-  namespace: '/api',
+namespace: '/api',
 })
-@WebSocketGateway()
 export class SessionGateway {
   @WebSocketServer() private server: Server;
-  private readonly mapSessionRoom: SocketRoom = SocketRoom.MapManagementRoom;
+
   private readonly sessionService: GameSessionService;
 
   constructor(private readonly logger: Logger = new Logger(SessionGateway.name)) {}
-
-  @SubscribeMessage(RoomSocketEvents.JoinSessionRoom)
-  joinMapSession(@ConnectedSocket() client: Socket) {
-    client.join(this.mapSessionRoom);
-    if (client.rooms.has(this.mapSessionRoom)) {
-      this.logger.log(`Client ${client.id} joined ${this.mapSessionRoom} successfully`);
-    }
-  }
-
-  @SubscribeMessage(RoomSocketEvents.LeaveSessionRoom)
-  leaveMapSession(@ConnectedSocket() client: Socket) {
-    client.leave(this.mapSessionRoom);
-    if (!client.rooms.has(this.mapSessionRoom)) {
-      this.logger.log(`Client ${client.id} left ${this.mapSessionRoom} successfully`);
-    }
-  }
 
   @SubscribeMessage(RoomSocketEvents.CreateGameSession)
   async createGameSession(@MessageBody() payload: CreateSessionPayload, @ConnectedSocket() client: Socket) {
@@ -61,6 +43,17 @@ export class SessionGateway {
     }
   }
 
+  @SubscribeMessage(RoomSocketEvents.DeleteGameSession)
+  deleteGameSession(@MessageBody() payload: { sessionId: string }, @ConnectedSocket() client: Socket) {
+    try {
+      this.sessionService.deleteGameSession(payload.sessionId);
+      this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.GameSessionDeleted, payload.sessionId);
+    } catch (err) {
+      client.emit(ErrorSocketEvents.FailedSessionDeletion);
+      this.logger.error(`Error deleting the game session: ${err}`);
+    }
+  }
+
   @SubscribeMessage(RoomSocketEvents.JoinGameRoom)
   joinGameSession(@MessageBody() payload: GameSessionPayload, @ConnectedSocket() client: Socket) {
     const player = this.sessionService.joinGameSession(payload, client.id);
@@ -70,7 +63,8 @@ export class SessionGateway {
 
     // Notify other players that a newplayer has joined the session
     client.to(payload.sessionId).emit(RoomSocketEvents.PlayerJoinedGame, player);
-
+    // Notify joinsession page to increase the number of players in this sessionId
+    this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, payload.sessionId);
   }
 
 

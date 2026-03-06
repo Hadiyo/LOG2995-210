@@ -5,26 +5,34 @@ export enum MapSocketEvents {
     ToogleMapVisibility = 'toggleMapVisibility',
 }
 
+export enum PageSocketEvents {
+    JoinPage = 'joinPage',
+    LeavePage = 'leavePage',
+}
+
+export enum PageContext {
+    MapManagement = 'mapManagement',
+    JoinGame = 'joinGame',
+}
+
 export enum RoomSocketEvents {
-    JoinSessionRoom = 'roomSessionJoined',
     JoinGameRoom = 'gameRoomJoined',
-    LeaveSessionRoom = 'leaveSessionRoom',
     LeaveGameRoom = 'leaveGameRoom',
     CreateGameSession = 'createGameSession',
     GameSessionCreated = 'gameSessionCreated',
+    DeleteGameSession = 'deleteGameSession',
+    GameSessionDeleted = 'gameSessionDeleted',
     PlayerJoinedGame = 'playerJoinedGame',
     PlayerLeftGame = 'playerLeftGame',
-    SendMessage = 'sendMessage',
+    IncrementPlayerCount = 'incrementPlayerCount',
+    DecrementPlayerCount = 'decrementPlayerCount'
 }
 
 export enum ErrorSocketEvents {
     FailedSessionCreation = 'failedSessionCreation',
     FailedJoinSession = 'failedJoinSession',
+    FailedSessionDeletion = 'failedSessionDeletion',
     ServerError = 'serverError',
-}
-
-export enum SocketRoom {
-    MapManagementRoom = 'mapManagementRoom',
 }
 
 /** BROWSER SOCKET EVENTS */

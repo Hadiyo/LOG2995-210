@@ -1,12 +1,12 @@
 import { MapGateway } from '@app/gateways/map/map.gateway';
+import { PageRoom } from '@app/gateways/rooms.record';
 import { MapService } from '@app/services/map/map.service';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import { type EditorMap } from '@common/maps/map.interface';
-import { MapSocketEvents, MapVisibilityEventPayload, SocketRoom } from '@common/socket-events';
-import { Server, Socket } from 'socket.io';
-
+import { MapSocketEvents, MapVisibilityEventPayload } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Server, Socket } from 'socket.io';
 
 describe('MapGateway', () => {
   let gateway: MapGateway;
@@ -105,7 +105,7 @@ describe('MapGateway', () => {
     // Simulate a map deletion event by calling the captured handler
     mapDeletedHandler?.('id-123');
     // Verify that the gateway emits the MapDeleted event to the MapManagementRoom with the correct payload
-    expect(to).toHaveBeenCalledWith(SocketRoom.MapManagementRoom);
+    expect(to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
     expect(emit).toHaveBeenCalledWith(MapSocketEvents.MapDeleted, 'id-123');
   });
 
@@ -127,7 +127,7 @@ describe('MapGateway', () => {
     expect(mapCreatedHandler).toBeDefined();
     mapCreatedHandler?.(createdMap);
 
-    expect(to).toHaveBeenCalledWith(SocketRoom.MapManagementRoom);
+    expect(to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
     expect(emit).toHaveBeenCalledWith(MapSocketEvents.MapCreated, createdMap);
   });
 
@@ -138,7 +138,7 @@ describe('MapGateway', () => {
     };
     expect(mapVisibilityHandler).toBeDefined();
     mapVisibilityHandler?.(payload);
-    expect(to).toHaveBeenCalledWith(SocketRoom.MapManagementRoom);
+    expect(to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
     expect(emit).toHaveBeenCalledWith(MapSocketEvents.ToogleMapVisibility, payload);
   });
 
@@ -158,7 +158,7 @@ describe('MapGateway', () => {
     expect(mapEditHandler).toBeDefined();
     mapEditHandler?.(updatedMap);
 
-    expect(to).toHaveBeenCalledWith(SocketRoom.MapManagementRoom);
+    expect(to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
     expect(emit).toHaveBeenCalledWith(MapSocketEvents.MapUpdated, updatedMap);
   });
 
