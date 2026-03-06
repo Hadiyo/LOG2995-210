@@ -52,6 +52,25 @@ export class GameMapService {
     }
 
     /**
+     * Delete gameMap by its Id
+     * @param sessionId 
+     */
+    deleteGameMap(sessionId: string): void {
+        this.gameMaps.delete(sessionId);
+    }
+
+    /**
+     * Deletes a game preview by its id
+     * @param sessionId 
+     */
+    deleteGameMapPreview(sessionId: string): void {
+        this.gameMapPreviews = this.gameMapPreviews.filter(
+            preview => preview.id !== sessionId,
+        );
+    }
+
+
+    /**
      * Generates the map used during gameplay from the initial EditorMap
      * @param templateMap 
      * @returns GameMap

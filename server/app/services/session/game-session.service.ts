@@ -93,6 +93,16 @@ export class GameSessionService {
     }
 
     /**
+     * Requests deletion of gameMap, map preview and deletes game session reference
+     * @param sessionId 
+     */
+    deleteGameSession(sessionId: string): void {
+        this.gameMapService.deleteGameMap(sessionId);
+        this.gameMapService.deleteGameMapPreview(sessionId);
+        this.gameSessions.delete(sessionId);
+    }
+
+    /**
      * Retreives the game sessionId win which the player is into
      * @returns the session id of the game in which the player is in
      */

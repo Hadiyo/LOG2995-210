@@ -1,3 +1,4 @@
+import { pageRoomMap } from '@app/gateways/rooms.record';
 import { GameSessionService } from '@app/services/session/game-session.service';
 import { CreateSessionPayload, GameSessionPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents } from '@common/socket-events';
@@ -44,6 +45,17 @@ export class SessionGateway {
     }
   }
 
+  @SubscribeMessage(RoomSocketEvents.DeleteGameSession)
+  deleteGameSession(@MessageBody() payload: { sessionId: string }, @ConnectedSocket() client: Socket) {
+    try {
+      this.sessionService.deleteGameSession(payload.sessionId);
+      this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.GameSessionDeleted, payload.sessionId);
+    } catch (err) {
+      client.emit(ErrorSocketEvents.FailedSessionDeletion);
+      this.logger.error(`Error deleting the game session: ${err}`);
+    }
+  }
+
   @SubscribeMessage(RoomSocketEvents.JoinGameRoom)
   joinGameSession(@MessageBody() payload: GameSessionPayload, @ConnectedSocket() client: Socket) {
     const player = this.sessionService.joinGameSession(payload, client.id);
@@ -53,7 +65,8 @@ export class SessionGateway {
 
     // Notify other players that a newplayer has joined the session
     client.to(payload.sessionId).emit(RoomSocketEvents.PlayerJoinedGame, player);
-    // this.server.to();
+    // Notify joinsession page to increase the number of players in this sessionId
+    this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, payload.sessionId);
   }
 
 

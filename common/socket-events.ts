@@ -20,14 +20,18 @@ export enum RoomSocketEvents {
     LeaveGameRoom = 'leaveGameRoom',
     CreateGameSession = 'createGameSession',
     GameSessionCreated = 'gameSessionCreated',
+    DeleteGameSession = 'deleteGameSession',
+    GameSessionDeleted = 'gameSessionDeleted',
     PlayerJoinedGame = 'playerJoinedGame',
     PlayerLeftGame = 'playerLeftGame',
-    UpdatePlayerCount = 'updatePlaterCount',
+    IncrementPlayerCount = 'incrementPlayerCount',
+    DecrementPlayerCount = 'decrementPlayerCount'
 }
 
 export enum ErrorSocketEvents {
     FailedSessionCreation = 'failedSessionCreation',
     FailedJoinSession = 'failedJoinSession',
+    FailedSessionDeletion = 'failedSessionDeletion',
     ServerError = 'serverError',
 }
 
