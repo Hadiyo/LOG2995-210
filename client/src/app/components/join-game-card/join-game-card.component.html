@@ -1,0 +1,36 @@
+<article
+  class="card"
+  tabindex="0"
+  [attr.title]="session.description"
+  (click)="onSelect()"
+  (keydown.enter)="onSelect()"
+  (keydown.space)="onSelect(); $event.preventDefault()"
+>
+  <div class="thumbnail">
+    @if (session.previewImage) {
+      <img
+        class="thumbnail-img"
+        [src]="'data:image/' + (session.previewImageFormat ?? 'webp') + ';base64,' + session.previewImage"
+        [attr.alt]="'Apercu de ' + session.name"
+      />
+    } @else {
+      <div class="thumbnail-placeholder">
+        <span>Apercu indisponible</span>
+      </div>
+    }
+    <div class="description" aria-hidden="true">
+      <span class="description-label">Description</span>
+      <p>{{ session.description}}</p>
+    </div>
+  </div>
+
+  <div class="content">
+    <h3 class="name">{{ session.name }}</h3>
+    <div class="meta">
+      <span class="chip">Taille: {{ session.size }}</span>
+      <span class="chip">Mode: {{ session.mode }}</span>
+      <span class="chip">Nombre de joueur: {{ session.nbOfPlayers }}</span>
+    </div>
+  </div>
+
+</article>

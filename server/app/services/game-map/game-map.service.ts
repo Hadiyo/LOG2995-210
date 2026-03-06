@@ -101,6 +101,7 @@ export class GameMapService {
             size: templateMap.size,
             nbOfPlayers: DEFAULT_PLAYER_NUMBER,
             previewImage: templateMap.previewImage,
+            previewImageFormat: templateMap.previewImageFormat,
         };
     }
 

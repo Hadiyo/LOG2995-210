@@ -1,5 +1,4 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { Router } from '@angular/router';
 import { ServiceState } from '@app/services/service-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { CreateSessionPayload, GameSessionPreview } from '@common/game/game-session.interface';
@@ -18,7 +17,7 @@ export class SessionService {
 
   private api = inject(SessionApiService);
 
-  constructor(private socket: SocketManagerService, private router: Router) {}
+  constructor(private socket: SocketManagerService) {}
 
   initGameSessionService(): void {
     if (!this.socket.isSocketAlive())
@@ -32,6 +31,7 @@ export class SessionService {
    * in join game page
    */
   loadGameSessions(): void {
+    this.state.set(ServiceState.Loading);
     this.api.fetchGameSessions().subscribe({
       next: sessions => {
         this.sessionPreviewSubjects.next(sessions);
@@ -104,7 +104,7 @@ export class SessionService {
    */
   private onSessionCreated = (sessionId: string) => {
     // CALL CHAT INIT METHOD HERE
-    this.router.navigate(['waiting-room', sessionId]);
+    void sessionId;
   };
 
   /**
