@@ -19,6 +19,9 @@
   color: var(--text-main);
   padding: var(--action-padding-y) var(--action-padding-x);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-btn:disabled {

@@ -2,6 +2,7 @@ import {
     AfterViewInit,
     Component,
     ElementRef,
+    ErrorHandler,
     Input,
     OnChanges,
     OnDestroy,
@@ -10,16 +11,18 @@ import {
 } from '@angular/core';
 import { getFrameIndex } from '@app/shared/character/character-frame-map';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
-
-// Canvas/Sprite constants.
-const CANVAS_CLEAR_X = 0;
-const CANVAS_CLEAR_Y = 0;
-const MIN_CANVAS_SIZE = 1;
-const SPRITE_GRID_COLS = 4;
-const SPRITE_GRID_ROWS = 4;
-const DEFAULT_AVATAR_ID = 0;
-const DEFAULT_SPRITE_SIZE = 96;
-const DEFAULT_SCALE = 1;
+import {
+    CANVAS_CLEAR_X,
+    CANVAS_CLEAR_Y,
+    DEFAULT_AVATAR_ID,
+    DEFAULT_SCALE,
+    DEFAULT_SPRITE_SIZE,
+    FALLBACK_AVATAR_ID,
+    getSpriteSheetPath,
+    MIN_CANVAS_SIZE,
+    SPRITE_GRID_COLS,
+    SPRITE_GRID_ROWS,
+} from './character-sprite.constants';
 
 @Component({
     selector: 'app-character-sprite',
@@ -40,11 +43,14 @@ export class CharacterSpriteComponent implements AfterViewInit, OnChanges, OnDes
     @Input() height = DEFAULT_SPRITE_SIZE;
     // Pixel scaling multiplier for canvas resolution.
     @Input() scale = DEFAULT_SCALE;
-     // Canvas image smoothing toggle.
+    
+    // Canvas image smoothing toggle.
     @Input() smoothingEnabled = true;
     // If true, sprite fills host box and resizes with it.
     @Input() fitToHost = false;
 
+    // Optional aria-label for accessibility.
+    @Input() ariaLabel: string | null = null;
 
     private context: CanvasRenderingContext2D | null = null;
     private isDestroyed = false;
@@ -53,7 +59,11 @@ export class CharacterSpriteComponent implements AfterViewInit, OnChanges, OnDes
     private currentImagePath = '';
 
     // hostRef is used for fitToHost canvas size.
-    constructor(private readonly hostRef: ElementRef<HTMLElement>) { }
+    constructor(
+        private readonly hostRef: ElementRef<HTMLElement>,
+        // Injected to capture image loading errors without breaking Lint about no direct console calls.
+        private readonly errorHandler: ErrorHandler,
+    ) {}
 
     ngAfterViewInit(): void {
         // Acquire 2D context once canvas exists.
@@ -123,7 +133,7 @@ export class CharacterSpriteComponent implements AfterViewInit, OnChanges, OnDes
 
     // Build sheet path from avatar id.
     private getImagePath(): string {
-        return `assets/avatars/sheets/sprite-${this.avatarId}.png`;
+        return getSpriteSheetPath(this.avatarId);
     }
 
     // Lazy-load current avatar image and render once ready.
@@ -146,11 +156,16 @@ export class CharacterSpriteComponent implements AfterViewInit, OnChanges, OnDes
             const image = new Image();
             image.onload = () => resolve(image);
             image.onerror = () => {
-                const fallbackPath = 'assets/avatars/sheets/sprite-0.png';
-                if (path.endsWith('sprite-0.png')) {
+                const fallbackPath = getSpriteSheetPath(FALLBACK_AVATAR_ID);
+                if (path === fallbackPath) {
+                    // Fallback also failed, resolve with empty image and log error.
+                    this.errorHandler.handleError(new Error(`[CharacterSprite] Fallback sprite failed: ${path}`));
                     resolve(image);
                     return;
                 }
+
+                // Failed to load requested avatar sheet, fallback to default avatar 0 sheet.
+                this.errorHandler.handleError(new Error(`[CharacterSprite] Sprite failed: ${path}. Fallback: ${fallbackPath}`));
                 void this.loadImage(fallbackPath).then(resolve);
             };
             image.src = path;
@@ -163,18 +178,18 @@ export class CharacterSpriteComponent implements AfterViewInit, OnChanges, OnDes
 
         const canvas = this.canvasRef.nativeElement;
         const frameIndex = getFrameIndex(this.state, this.direction);
-        
+
         // Each frame cell size in source sheet.
         const frameWidth = this.image.width / SPRITE_GRID_COLS;
         const frameHeight = this.image.height / SPRITE_GRID_ROWS;
-        
+
         // Convert linear index into (col,row).
         const column = frameIndex % SPRITE_GRID_COLS;
         const row = Math.floor(frameIndex / SPRITE_GRID_COLS);
 
         this.context.imageSmoothingEnabled = this.smoothingEnabled;
         this.context.clearRect(CANVAS_CLEAR_X, CANVAS_CLEAR_Y, canvas.width, canvas.height);
-        
+
         // Crop selected frame and stretch it to canvas size.
         this.context.drawImage(
             this.image,

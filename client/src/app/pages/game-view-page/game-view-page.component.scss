@@ -81,12 +81,6 @@
   margin: 0;
 }
 
-.panel__count {
-  color: var(--text-muted);
-  font-size: 0.86rem;
-  font-weight: 500;
-}
-
 .panel--players {
   flex: 0 0 auto;
 }
@@ -139,18 +133,14 @@
 
 @media (max-width: 1600px) {
   :host {
-    --side-panel-left-width: 250px;
-    --side-panel-right-width: 340px;
+    --side-panel-left-width: 235px;
+    --side-panel-right-width: 275px;
   }
 }
 
 @media (max-width: 1220px) {
   .game-view {
-    grid-template-columns: minmax(0, 1fr) var(--side-panel-right-width);
-  }
-
-  .side-panel--left {
-    display: none;
+    grid-template-columns: var(--side-panel-left-width) minmax(0, 1fr) var(--side-panel-right-width);
   }
 }
 

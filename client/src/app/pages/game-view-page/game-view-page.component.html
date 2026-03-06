@@ -57,7 +57,7 @@
       <!-- Player list panel shows the list of players, their status, and allows toggling expansion for more details. -->
       <section class="panel panel--players">
         <div class="panel__header">
-          <h3>Liste des joueurs <span class="panel__count">({{ players().length }} total)</span></h3>
+          <h3>Liste des joueurs</h3>
           @if (players().length > 2) {
             <button
               type="button"
@@ -65,7 +65,7 @@
               [attr.aria-expanded]="isPlayerListExpanded()"
               (click)="onTogglePlayerListExpanded()"
             >
-              {{ isPlayerListExpanded() ? 'Réduire' : 'Voir plus' }}
+              {{ isPlayerListExpanded() ? 'Réduire' : players().length + ' Total' }}
             </button>
           }
         </div>
