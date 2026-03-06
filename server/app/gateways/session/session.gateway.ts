@@ -1,11 +1,13 @@
 import { pageRoomMap } from '@app/gateways/rooms.record';
 import { GameSessionService } from '@app/services/session/game-session.service';
 import { ChatPayload, CreateSessionPayload, GameSessionPayload } from '@common/game/game-session.interface';
-import { ErrorSocketEvents, RoomSocketEvents } from '@common/socket-events';
+import { ChatSocketEvents, ErrorSocketEvents, RoomSocketEvents } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-namespace: '/api',
+
+@WebSocketGateway({
+  namespace: '/api',
 })
 export class SessionGateway {
   @WebSocketServer() private server: Server;
@@ -57,14 +59,19 @@ export class SessionGateway {
   @SubscribeMessage(RoomSocketEvents.JoinGameRoom)
   joinGameSession(@MessageBody() payload: GameSessionPayload, @ConnectedSocket() client: Socket) {
     const player = this.sessionService.joinGameSession(payload, client.id);
+    const chatHistory = this.sessionService.getChatHistory(payload.sessionId);
 
     if (!player)
       client.emit(ErrorSocketEvents.FailedJoinSession);
+
+    if (!chatHistory)
+      client.emit(ErrorSocketEvents.ServerError);
 
     // Notify other players that a newplayer has joined the session
     client.to(payload.sessionId).emit(RoomSocketEvents.PlayerJoinedGame, player);
     // Notify joinsession page to increase the number of players in this sessionId
     this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, payload.sessionId);
+    client.emit(ChatSocketEvents.LoadChatMessages, chatHistory);
   }
 
 
@@ -80,8 +87,10 @@ export class SessionGateway {
     this.server.to(sessionId).emit(RoomSocketEvents.PlayerLeftGame, playerId);
   }
 
-  @SubscribeMessage(RoomSocketEvents.SendMessage)
-  sendMessage(@MessageBody() message: ChatPayload) {
-    this.sessionService.sendMessage(message);
+  @SubscribeMessage(ChatSocketEvents.SendMessage)
+  sendMessage(@MessageBody() payload: ChatPayload) {
+    if (this.sessionService.sendMessage(payload)) {
+      this.server.to(payload.sessionId).emit(ChatSocketEvents.RecieveMessage, payload);
+    }
   }
 }

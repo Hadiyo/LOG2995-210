@@ -1,10 +1,11 @@
 import { InternalPlayer } from '@app/interface/player.interface';
 import { GameMapService } from '@app/services/game-map/game-map.service';
 import { PlayerService } from '@app/services/player/player.service';
-import { CreateSessionPayload, GameSession, GameSessionPayload } from '@common/game/game-session.interface';
+import { ChatMessage, ChatPayload, CreateSessionPayload, GameSession, GameSessionPayload } from '@common/game/game-session.interface';
 import { Player } from '@common/player/player.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { GameChatService } from '../game-chat/game-chat';
 
 @Injectable()
 export class GameSessionService {
@@ -13,6 +14,7 @@ export class GameSessionService {
 
     private playerService: PlayerService;
     private gameMapService: GameMapService;
+    private gameChatService: GameChatService;
 
     private readonly logger = new Logger(GameSessionService.name);
 
@@ -45,8 +47,7 @@ export class GameSessionService {
                 debugMode: false,
             };
 
-            // TODO: CALL THE CHAT INIT METHOD WITH THE SESSION ID
-
+            this.gameChatService.saveChat(gameSession.id);
             this.gameSessions.set(gameSession.id, gameSession);
 
             return gameSession.id;
@@ -127,5 +128,21 @@ export class GameSessionService {
             }
         }
         return undefined;
+    }
+
+    /**
+     * Saves sent message in the corresponding chat room
+     * @param ChatPayload 
+     * @returns InternalPlayer if in a game session otherwise undefined
+     */
+    sendMessage(payload: ChatPayload): boolean {
+        return this.gameChatService.sendMessage(
+            payload.message,
+            this.gameSessions.get(payload.sessionId).id,
+        );
+    }
+
+    getChatHistory(sessionId: string): ChatMessage[] {
+        return this.gameChatService.getChatHistory(sessionId);
     }
 }

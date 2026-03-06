@@ -16,12 +16,16 @@ export class GameChatService {
         return gameSessionId;
     }
 
-    sendMessage(message: string, playerName: string, chatSessionId: string, timestamp: string): boolean {
-        this.chatRooms.get(chatSessionId)?.push({
-            senderName: playerName,
-            message: message,
-            timestamp: timestamp,
-        });
+    getChatHistory(sessionId: string): ChatMessage[] {
+        return this.chatRooms.get(sessionId);
+    }
+
+    sendMessage(message: ChatMessage, gameSessionId: string): boolean {
+        if (!this.chatRooms.has(gameSessionId)) {
+            return false;
+        }
+
+        this.chatRooms.get(gameSessionId)?.push(message);
 
         return true;
     }

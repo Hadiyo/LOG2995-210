@@ -28,6 +28,12 @@ export enum RoomSocketEvents {
     DecrementPlayerCount = 'decrementPlayerCount'
 }
 
+export enum ChatSocketEvents {
+    SendMessage = 'sendMessage',
+    RecieveMessage = 'recieveMessage',
+    LoadChatMessages = 'loadChatMessages',
+}
+
 export enum ErrorSocketEvents {
     FailedSessionCreation = 'failedSessionCreation',
     FailedJoinSession = 'failedJoinSession',
