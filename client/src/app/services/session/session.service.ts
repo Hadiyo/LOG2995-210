@@ -1,7 +1,8 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { ServiceState } from '@app/services/service-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { CreateSessionPayload, GameSessionPreview } from '@common/game/game-session.interface';
+import { GameSessionPayload, GameSessionPreview } from '@common/game/game-session.interface';
+import { PlayerInformation } from '@common/player/player.interface';
 import { PageContext, PageSocketEvents, RoomSocketEvents } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
 import { SessionApiService } from './session-api.service';
@@ -13,17 +14,24 @@ export class SessionService {
   private sessionPreviewSubjects = new BehaviorSubject<GameSessionPreview[]>([]);
   sessionsPreview$ = this.sessionPreviewSubjects.asObservable();
 
+  private currentSessionId = signal<string>(''); // To keep track of the sessionId when switching to character creation
+  sessionId = this.currentSessionId.asReadonly();
+
   readonly state = signal<ServiceState>(ServiceState.Idle);
 
   private api = inject(SessionApiService);
 
   constructor(private socket: SocketManagerService) {}
 
+  /**
+   * Initialises the session service by setting socket connection and the GameSessionPreview list 
+   */
   initGameSessionService(): void {
     if (!this.socket.isSocketAlive())
       this.socket.connect();
     this.loadGameSessions();
     this.subscribeToSessionEvents();
+    this.clearCurrentSession();
   }
 
   /**
@@ -46,8 +54,8 @@ export class SessionService {
    * corresponding to its sessionId. Requires the client socket id
    * @param payload 
    */
-  createGameSession(payload: CreateSessionPayload): void {
-    this.socket.send(RoomSocketEvents.CreateGameSession, payload);
+  createGameSession(mapId: string): void {
+    this.socket.send(RoomSocketEvents.CreateGameSession, mapId);
   }
 
   /**
@@ -72,6 +80,17 @@ export class SessionService {
    */
   leaveGameSession(sessionId: string): void {
     this.socket.send(RoomSocketEvents.LeaveGameRoom, sessionId);
+  }
+
+  /**
+   * Allows the client to add the PlayerInformation to the gameSession it is connected to
+   */
+  addCharacterToPlayerSession(player: PlayerInformation): void {
+    const payload: GameSessionPayload = {
+      information: player,
+      sessionId: this.sessionId(),
+    };
+    this.socket.send(RoomSocketEvents.AddCharacterToPlayer, payload);
   }
 
   /**
@@ -104,7 +123,7 @@ export class SessionService {
    */
   private onSessionCreated = (sessionId: string) => {
     // CALL CHAT INIT METHOD HERE
-    void sessionId;
+    this.setCurrentSessionId(sessionId);
   };
 
   /**
@@ -144,4 +163,16 @@ export class SessionService {
     );
     this.sessionPreviewSubjects.next(updated);
   };
+
+  /**
+   * Allows components to keep track of a session id upon creating or joining a session
+   * to allow the client to send the character payload
+   */
+  private setCurrentSessionId(id: string): void {
+    this.currentSessionId.set(id);
+  }
+
+  private clearCurrentSession(): void {
+    this.currentSessionId.set('');
+  }
 }

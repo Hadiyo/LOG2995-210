@@ -79,6 +79,14 @@
   gap: 6px;
 }
 
+.meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

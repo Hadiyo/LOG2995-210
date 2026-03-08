@@ -116,7 +116,7 @@ describe('GameCardComponent', () => {
     const el: HTMLElement = fixture.nativeElement;
     const card = el.querySelector('article.card') as HTMLElement;
     card.click();
-    expect(selectSpy).toHaveBeenCalledOnceWith(map);
+    expect(selectSpy).toHaveBeenCalledOnceWith(map.id);
 
     const editBtn = el.querySelector('button[aria-label=\"Modifier\"]') as HTMLButtonElement;
     editBtn.click();
@@ -143,6 +143,6 @@ describe('GameCardComponent', () => {
     const card = (fixture.nativeElement as HTMLElement).querySelector('article.card') as HTMLElement;
     card.click();
 
-    expect(selectSpy).toHaveBeenCalledOnceWith(map);
+    expect(selectSpy).toHaveBeenCalledOnceWith(map.id);
   });
 });

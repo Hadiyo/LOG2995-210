@@ -1,11 +1,11 @@
 <article
   class="card"
   tabindex="0"
-  [attr.title]="session.description"
   (click)="onSelect()"
   (keydown.enter)="onSelect()"
   (keydown.space)="onSelect(); $event.preventDefault()"
 >
+  @if(session){
   <div class="thumbnail">
     @if (session.previewImage) {
       <img
@@ -18,9 +18,9 @@
         <span>Apercu indisponible</span>
       </div>
     }
-    <div class="description" aria-hidden="true">
+    <div class="description">
       <span class="description-label">Description</span>
-      <p>{{ session.description}}</p>
+      <span>{{ session.description }}</span>
     </div>
   </div>
 
@@ -32,5 +32,5 @@
       <span class="chip">Nombre de joueur: {{ session.nbOfPlayers }}</span>
     </div>
   </div>
-
+  }
 </article>

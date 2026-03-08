@@ -1,4 +1,6 @@
+import { PageRoom } from '@app/gateways/rooms.record';
 import { PageContext } from '@common/socket-events';
+import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Socket } from 'socket.io';
 import { PageRoomGateway } from './page-room.gateway';
@@ -21,7 +23,7 @@ describe('PageRoomGateway', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PageRoomGateway],
+      providers: [PageRoomGateway, { provide: Logger, useValue: loggerMock }],
     }).compile();
 
     gateway = module.get<PageRoomGateway>(PageRoomGateway);
@@ -33,22 +35,22 @@ describe('PageRoomGateway', () => {
     const payload = { page: PageContext.MapManagement };
     gateway.joinPage(client, payload);
     expect(loggerMock.log).toHaveBeenCalledWith(
-      `Client socket1 joined ${PageContext.MapManagement} successfully`,
+      `Client socket1 joined ${PageRoom.MapManagementRoom} successfully`,
     );
   });
 
   it('should handle leavePage', () => {
     const client = createMockSocket('socket1');
     const payload = { page: PageContext.MapManagement };
-    client.rooms.add(PageContext.MapManagement);
+    client.rooms.add(PageRoom.MapManagementRoom);
     gateway.leavePage(client, payload);
     expect(loggerMock.log).toHaveBeenCalledWith(
-      `Client socket1 left ${PageContext.MapManagement} successfully`,
+      `Client socket1 left ${PageRoom.MapManagementRoom} successfully`,
     );
   });
 
   it('joinPage should not log when room is still not present after join', () => {
-    const room = PageContext.MapManagement;
+    const room = PageRoom.MapManagementRoom;
     const payload = { page: PageContext.MapManagement };
     const client = {
       id: 'socket2',
@@ -60,12 +62,12 @@ describe('PageRoomGateway', () => {
 
     expect(client.join).toHaveBeenCalledWith(room);
     expect(loggerMock.log).not.toHaveBeenCalledWith(
-      `Client socket2 joined ${PageContext.MapManagement} successfully`,
+      `Client socket2 joined ${PageRoom.MapManagementRoom} successfully`,
     );
   });
 
   it('leavePage should not log when room is still present after leave', () => {
-    const room = PageContext.MapManagement;
+    const room = PageRoom.MapManagementRoom;
     const payload = { page: PageContext.MapManagement };
     const client = {
       id: 'socket3',
@@ -77,7 +79,7 @@ describe('PageRoomGateway', () => {
 
     expect(client.leave).toHaveBeenCalledWith(room);
     expect(loggerMock.log).not.toHaveBeenCalledWith(
-      `Client socket3 left ${PageContext.MapManagement} successfully`,
+      `Client socket3 left ${PageRoom.MapManagementRoom} successfully`,
     );
   });
 });

@@ -6,9 +6,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GameMapController } from './controllers/game-map/game-map.controller';
 import { MapGateway } from './gateways/map/map.gateway';
+import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
 import { SessionGateway } from './gateways/session/session.gateway';
 import { GameMapService } from './services/game-map/game-map.service';
 import { PlayerService } from './services/player/player.service';
+import { GameSessionService } from './services/session/game-session.service';
 
 @Module({
     imports: [
@@ -25,6 +27,14 @@ import { PlayerService } from './services/player/player.service';
         ]),
     ],
     controllers: [MapController, GameMapController],
-    providers: [MapService, Logger, MapGateway, SessionGateway, GameMapService, PlayerService],
+    providers: [
+        Logger,
+        MapGateway,
+        SessionGateway,
+        PageRoomGateway,
+        MapService,
+        GameSessionService,
+        PlayerService,
+        GameMapService],
 })
 export class AppModule {}

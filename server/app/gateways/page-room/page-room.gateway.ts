@@ -10,6 +10,9 @@ import { Server, Socket } from 'socket.io';
 * and does not know the underlying room details.
  */
 
+@WebSocketGateway({
+  namespace: '/api',
+})
 @WebSocketGateway()
 export class PageRoomGateway {
   @WebSocketServer() server: Server;
@@ -27,7 +30,7 @@ export class PageRoomGateway {
   }
 
   @SubscribeMessage(PageSocketEvents.LeavePage)
-  leavePage(@ConnectedSocket() client: Socket, @MessageBody() payload: { page: string }) {
+  leavePage(@ConnectedSocket() client: Socket, @MessageBody() payload: { page: PageContext }) {
     const room = pageRoomMap[payload.page];
     if (!room) return;
     client.leave(room);

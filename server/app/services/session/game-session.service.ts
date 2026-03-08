@@ -1,7 +1,7 @@
 import { InternalPlayer } from '@app/interface/player.interface';
 import { GameMapService } from '@app/services/game-map/game-map.service';
 import { PlayerService } from '@app/services/player/player.service';
-import { ChatMessage, ChatPayload, CreateSessionPayload, GameSession, GameSessionPayload } from '@common/game/game-session.interface';
+import { ChatMessage, ChatPayload, GameSession, GameSessionPayload } from '@common/game/game-session.interface';
 import { Player } from '@common/player/player.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
@@ -22,6 +22,10 @@ export class GameSessionService {
         return this.gameSessions.get(id);
     }
 
+    doesGameSessionExist(id: string): boolean {
+        return this.gameSessions.has(id);
+    }
+
     /**
      * 1. Calls GameMapService to create a gameMap from the mapId and retrieves mapTemplateId
      * to store it in the current GameSession
@@ -30,19 +34,13 @@ export class GameSessionService {
      * 3. Stores the new gameSession object in gameSession
      * @returns gameSessionId (for the client socket to join the room)
      */
-    async createGameSession(payload: CreateSessionPayload, socketId: string): Promise<string | null> {
+    async createGameSession(mapId: string): Promise<string | null> {
         try {
-            const playerId = this.playerService.savePlayer(payload.information, socketId);
-            const mapId = await this.gameMapService.saveGameMap(payload.mapId);
-
-            if (!playerId || !mapId) {
-                this.logger.error('Invalid player ID or map ID');
-                return;
-            }
+            this.gameMapService.saveGameMap(mapId);
 
             const gameSession: GameSession = {
                 id: randomUUID(),
-                players: [playerId],
+                players: [],
                 mapTemplateId: mapId,
                 debugMode: false,
             };
@@ -62,13 +60,13 @@ export class GameSessionService {
      * @param socketId 
      * @returns the gameSessionId for the client to connect to in the gateway
      */
-    joinGameSession(payload: GameSessionPayload, socketId: string): Player | undefined {
+    addPlayerToSession(payload: GameSessionPayload, socketId: string): Player | undefined {
         try {
             const playerId = this.playerService.savePlayer(payload.information, socketId);
             const session = this.gameSessions.get(payload.sessionId);
             if (session && playerId) {
                 session.players.push(playerId);
-                const internalPlayer = this.getPlayerFromGameSession(playerId);
+                const internalPlayer = this.getPlayerFromGameSession(playerId); // Verification
                 return internalPlayer.player;
             } else return undefined;
         } catch (err) {

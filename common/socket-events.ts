@@ -25,7 +25,8 @@ export enum RoomSocketEvents {
     PlayerJoinedGame = 'playerJoinedGame',
     PlayerLeftGame = 'playerLeftGame',
     IncrementPlayerCount = 'incrementPlayerCount',
-    DecrementPlayerCount = 'decrementPlayerCount'
+    DecrementPlayerCount = 'decrementPlayerCount',
+    AddCharacterToPlayer = 'addCharacterToPlayer',
 }
 
 export enum ChatSocketEvents {
