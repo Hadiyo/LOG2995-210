@@ -8,7 +8,7 @@ import { GameSessionPreview } from '@common/game/game-session.interface';
   styleUrl: './join-game-card.component.scss',
 })
 export class JoinGameCardComponent {
-  @Input() session: GameSessionPreview;
+  @Input() session!: GameSessionPreview;
   @Output() select = new EventEmitter<string>();
 
   onSelect(): void {

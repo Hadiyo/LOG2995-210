@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import {
   generateCharacterFormValues,
@@ -41,15 +41,19 @@ type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
   styleUrls: ['./character-creation-page.component.scss'],
 })
 export class CharacterCreationPageComponent implements OnInit {
-  private context: 'create' | 'join';
+  private context: 'create' | 'join' = 'join';
   readonly avatars = AVATAR_IDS;
   readonly nameMaxLength = CHARACTER_NAME_MAX_LENGTH;
   constructor(private readonly fb: FormBuilder,
     private readonly router: Router,
-    private sessionService: SessionService) {}
+    private sessionService: SessionService, private route: ActivatedRoute) {}
 
   ngOnInit() {
-    this.context = history.state.context ?? 'join';
+    // Optionally override from query params
+    const queryContext = this.route.snapshot.queryParamMap.get('context');
+    if (queryContext === 'create' || queryContext === 'join') {
+      this.context = queryContext;
+    }
   }
 
   // Form group for character creation, with validation rules

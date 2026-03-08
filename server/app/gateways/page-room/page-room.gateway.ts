@@ -30,7 +30,7 @@ export class PageRoomGateway {
   }
 
   @SubscribeMessage(PageSocketEvents.LeavePage)
-  leavePage(@ConnectedSocket() client: Socket, @MessageBody() payload: { page: string }) {
+  leavePage(@ConnectedSocket() client: Socket, @MessageBody() payload: { page: PageContext }) {
     const room = pageRoomMap[payload.page];
     if (!room) return;
     client.leave(room);

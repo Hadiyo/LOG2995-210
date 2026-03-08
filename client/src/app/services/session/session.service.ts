@@ -14,7 +14,7 @@ export class SessionService {
   private sessionPreviewSubjects = new BehaviorSubject<GameSessionPreview[]>([]);
   sessionsPreview$ = this.sessionPreviewSubjects.asObservable();
 
-  private currentSessionId = signal<string>(''); // To send the character payload after character creation
+  private currentSessionId = signal<string>(''); // To keep track of the sessionId when switching to character creation
   sessionId = this.currentSessionId.asReadonly();
 
   readonly state = signal<ServiceState>(ServiceState.Idle);
