@@ -10,6 +10,9 @@ import { Server, Socket } from 'socket.io';
 * and does not know the underlying room details.
  */
 
+@WebSocketGateway({
+  namespace: '/api',
+})
 @WebSocketGateway()
 export class PageRoomGateway {
   @WebSocketServer() server: Server;

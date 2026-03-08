@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed } from '@angular/core';
+import { Component, computed, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -9,7 +9,7 @@ import {
   normalizeCharacterName,
   sanitizeCharacterName,
 } from '@app/services/character/character-generator';
-import { Character } from '@common/character/character.interface';
+import { SessionService } from '@app/services/session/session.service';
 import {
   AVATAR_IDS,
   AVATAR_PROFILES,
@@ -17,12 +17,13 @@ import {
   CHARACTER_BASE_ATTRIBUTES,
   CHARACTER_NAME_MAX_LENGTH,
   CHARACTER_PLUS_TWO_VALUE,
-  DIE_TARGET_ATTRIBUTE_NAMES,
   Die,
+  DIE_TARGET_ATTRIBUTE_NAMES,
   DieTargetAttributeName,
   PLUS_TWO_ATTRIBUTE_NAMES,
   PlusTwoAttributeName,
 } from '@common/character/character.model';
+import { Bonus, PlayerInformation } from '@common/player/player.interface';
 import { startWith } from 'rxjs';
 
 // Explicit type to widen the literal "attaque" to the full union ("attaque" | "defense"),
@@ -39,10 +40,17 @@ type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
   templateUrl: './character-creation-page.component.html',
   styleUrls: ['./character-creation-page.component.scss'],
 })
-export class CharacterCreationPageComponent {
+export class CharacterCreationPageComponent implements OnInit {
+  private context: 'create' | 'join';
   readonly avatars = AVATAR_IDS;
   readonly nameMaxLength = CHARACTER_NAME_MAX_LENGTH;
-  constructor(private readonly fb: FormBuilder, private readonly router: Router) {}
+  constructor(private readonly fb: FormBuilder,
+    private readonly router: Router,
+    private sessionService: SessionService) {}
+
+  ngOnInit() {
+    this.context = history.state.context ?? 'join';
+  }
 
   // Form group for character creation, with validation rules
   readonly form = this.fb.group({
@@ -117,7 +125,11 @@ export class CharacterCreationPageComponent {
   }
 
   // Build a Character object from the current form values, applying necessary transformations
-  private buildCharacterFromForm(): Character {
+  private buildCharacterFromForm(isAnOrganizer: boolean): PlayerInformation {
+    const PLUS_TWO_TO_BONUS: Record<PlusTwoAttributeName, Bonus> = {
+      vie: 'life',
+      rapidite: 'speed',
+    };
     const { name, avatarId, plusTwo, d6GoesTo } = this.form.getRawValue();
 
     if (!name || avatarId === null || !plusTwo || !d6GoesTo) {
@@ -129,11 +141,12 @@ export class CharacterCreationPageComponent {
     return {
       name: normalizeCharacterName(name),
       avatarId,
-      bonuses: {
-        plusTwo,
-        attaqueDie,
-        defenseDie,
+      isOrganizer: isAnOrganizer,
+      dices: {
+        attack: attaqueDie,
+        defense: defenseDie,
       },
+      bonus: PLUS_TWO_TO_BONUS[plusTwo],
     };
   }
 
@@ -153,18 +166,20 @@ export class CharacterCreationPageComponent {
   // validates the form and builds the character object
   onSubmit(): void {
     if (this.form.invalid) {
-      // eslint-disable-next-line no-console
-      console.log('form is invalid');
       this.form.markAllAsTouched();
       return;
     }
 
-    const character = this.buildCharacterFromForm();
-    // TODO: send to service to save the character, need to implement character service and backend endpoint first
-    // For now, just save the character in localStorage to be retrieved in the waiting room
-    localStorage.setItem('pendingCharacter', JSON.stringify(character));
-    // Navigate to the waiting room after character creation
-    this.router.navigate(['/waiting-room']);
+    let character: PlayerInformation;
+
+    if (this.context === 'create') {
+      character = this.buildCharacterFromForm(true);
+      this.sessionService.addCharacterToPlayerSession(character);
+    } else {
+      character = this.buildCharacterFromForm(false);
+      this.sessionService.addCharacterToPlayerSession(character);
+    }
+    this.router.navigate(['/waiting-room', this.sessionService.sessionId()]);
   }
 
 }

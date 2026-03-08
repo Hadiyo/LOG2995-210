@@ -5,6 +5,7 @@ import { BackButtonComponent } from '@app/components/back-button/back-button.com
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
 import { MapStateService } from '@app/services/map/map-state.service';
 import { ServiceState } from '@app/services/service-state.enum';
+import { SessionService } from '@app/services/session/session.service';
 import type { EditorMap } from '@common/maps/map.interface';
 import { Observable } from 'rxjs';
 
@@ -21,6 +22,7 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly mapStateService: MapStateService,
+    private readonly sessionService: SessionService,
     private readonly router: Router,
   ) {}
 
@@ -30,16 +32,24 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.mapStateService.subscribeToMapEvents();
+    this.sessionService.initGameSessionService();
   }
 
   ngOnDestroy(): void {
     this.mapStateService.unsubscribeFromMapEvents();
+    this.sessionService.unsubscribeToSessionEvents();
   }
 
-  onSelectMap(map: EditorMap): void {
-    // SEND MAP TO CHARACTER GAME PAGE SOMEHOW
-    void map;
-    this.router.navigate(['/character-creation']);
+  /**
+   * Sends a request to the server to create the game session and 
+   * redirects to the character creation page
+   * @param map 
+   */
+  onSelectMap(mapId: string): void {
+    this.sessionService.createGameSession(mapId);
+    this.router.navigate(['/character-creation'], {
+      state: { context: 'create' },
+    });
   }
 
 

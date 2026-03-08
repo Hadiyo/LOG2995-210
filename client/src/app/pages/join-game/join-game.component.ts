@@ -32,6 +32,8 @@ export class JoinGameComponent implements OnInit, OnDestroy {
     // ADD PLAYER TO SESSION RIGHT AWAY TO SAVE THE SPOT
     this.sessionService.joinGameSession(sessionId);
     // REDIRECTION TO CREATE CHARACTER PAGE
-    this.router.navigate(['character-creation']);
+    this.router.navigate(['/character-creation'], {
+      state: { context: 'create' },
+    });
   }
 }
