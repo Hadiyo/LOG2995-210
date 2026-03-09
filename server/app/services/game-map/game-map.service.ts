@@ -13,9 +13,11 @@ export class GameMapService {
     /** Single source of truth of gameplay maps and game session previews */
     private gameMaps = new Map<string, GameMap>();
     private gameMapPreviews: GameSessionPreview[] = [];
+    private readonly logger: Logger;
 
-    private mapService: MapService;
-    private readonly logger = new Logger(GameMapService.name);
+    constructor(private readonly mapService: MapService) {
+        this.logger = new Logger(GameMapService.name);
+    }
 
     getGameMapById(id: string): GameMap {
         return this.gameMaps.get(id);
@@ -26,26 +28,37 @@ export class GameMapService {
     }
 
     /**
+     * Increase or decrease the number of players in the game map preview
+     * @param previewId 
+     * @param delta 
+     */
+    updateNumberOfPlayers(previewId: string, delta: number): void {
+        this.gameMapPreviews = this.gameMapPreviews.map(session =>
+            session.id === previewId
+                ? { ...session, nbOfPlayers: session.nbOfPlayers + delta }
+                : session,
+        );
+    }
+
+    /**
      * Creates the gameMap from the mapId. It fetches the template from the map service.
      * The gameMap is saved in gameMaps
      * @returns gameMapId
      */
-    async saveGameMap(id: string): Promise<string | null> {
+    async saveGameMap(id: string): Promise<GameSessionPreview> {
         try {
             const templateMap = await this.mapService.getMapById(id);
             if (!templateMap) {
                 this.logger.log('Error while fetching map from the database');
-                return;
             }
             const gameMap = this.generateGameMap(templateMap);
             const mapPreview = this.generateGameMapPreview(templateMap, gameMap.id);
             if (!gameMap || !mapPreview) {
                 this.logger.log('Error while generating maps');
-                return;
             }
             this.gameMaps.set(gameMap.id, gameMap);
             this.gameMapPreviews.push(mapPreview);
-            return gameMap.id;
+            return mapPreview;
         } catch (err) {
             this.logger.error(`Error while creating GameMap: ${err}`);
         }
@@ -92,9 +105,9 @@ export class GameMapService {
      * @param templateMap 
      * @returns GameMapPreview
      */
-    private generateGameMapPreview(templateMap: EditorMap, sessionId: string): GameSessionPreview {
+    private generateGameMapPreview(templateMap: EditorMap, gameMapId: string): GameSessionPreview {
         return {
-            id: sessionId,
+            id: gameMapId,
             name: templateMap.name,
             description: templateMap.description,
             mode: templateMap.mode,

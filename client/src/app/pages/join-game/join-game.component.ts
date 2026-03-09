@@ -15,7 +15,7 @@ import { Observable } from 'rxjs';
   styleUrl: './join-game.component.scss',
 })
 export class JoinGameComponent implements OnInit, OnDestroy {
-  constructor(private readonly sessionService: SessionService, private router: Router) {}
+  constructor(private readonly sessionService: SessionService, private readonly router: Router) {}
 
   protected sessions$: Observable<GameSessionPreview[]> = this.sessionService.sessionsPreview$;
   protected isLoading = computed(() => this.sessionService.state() === ServiceState.Loading);
@@ -28,12 +28,9 @@ export class JoinGameComponent implements OnInit, OnDestroy {
     this.sessionService.unsubscribeToSessionEvents();
   }
 
-  onSelectedSession(sessionId: string): void {
-    // ADD PLAYER TO SESSION RIGHT AWAY TO SAVE THE SPOT
-    this.sessionService.joinGameSession(sessionId);
-    // REDIRECTION TO CREATE CHARACTER PAGE
-    this.router.navigate(['/character-creation'], {
-      state: { context: 'create' },
-    });
+  onSelectedSession(previewId: string): void {
+    this.sessionService.joinGameSession(previewId);
+    this.sessionService.setContext('join');
+    this.router.navigate(['/character-creation']);
   }
 }
