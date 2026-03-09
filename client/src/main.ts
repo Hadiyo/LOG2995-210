@@ -28,7 +28,7 @@ const routes: Routes = [
     { path: 'game', component: CreateGamePageComponent },
     { path: 'admin', component: AdminPageComponent },
     { path: 'character-creation', component: CharacterCreationPageComponent },
-    { path: 'waiting-room', component: WaitingRoomComponent },
+    { path: 'waiting-room/:sessionId', component: WaitingRoomComponent },
     { path: 'join-room', component: JoinGameComponent },
     { path: 'game-view', component: GameViewPageComponent },
     //dev route, to be removed before release

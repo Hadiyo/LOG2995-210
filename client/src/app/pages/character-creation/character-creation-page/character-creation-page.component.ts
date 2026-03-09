@@ -1,8 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, OnInit } from '@angular/core';
+import { Component, computed, OnDestroy, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import {
   generateCharacterFormValues,
@@ -24,7 +23,7 @@ import {
   PlusTwoAttributeName,
 } from '@common/character/character.model';
 import { Bonus, PlayerInformation } from '@common/player/player.interface';
-import { startWith } from 'rxjs';
+import { startWith, Subscription } from 'rxjs';
 
 // Explicit type to widen the literal "attaque" to the full union ("attaque" | "defense"),
 // otherwise TS thinks comparisons to "defense" are impossible.
@@ -40,20 +39,25 @@ type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
   templateUrl: './character-creation-page.component.html',
   styleUrls: ['./character-creation-page.component.scss'],
 })
-export class CharacterCreationPageComponent implements OnInit {
-  private context: 'create' | 'join' = 'join';
+export class CharacterCreationPageComponent implements OnInit, OnDestroy {
+  private contextSub!: Subscription;
+  private context: 'create' | 'join';
   readonly avatars = AVATAR_IDS;
   readonly nameMaxLength = CHARACTER_NAME_MAX_LENGTH;
   constructor(private readonly fb: FormBuilder,
-    private readonly router: Router,
-    private sessionService: SessionService, private route: ActivatedRoute) {}
+    private sessionService: SessionService) {}
 
   ngOnInit() {
+    this.sessionService.initGameSessionService();
     // Optionally override from query params
-    const queryContext = this.route.snapshot.queryParamMap.get('context');
-    if (queryContext === 'create' || queryContext === 'join') {
-      this.context = queryContext;
-    }
+    this.contextSub = this.sessionService.context$.subscribe(ctx => {
+      if (ctx) this.context = ctx;
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.contextSub.unsubscribe();
+    this.sessionService.unsubscribeToSessionEvents();
   }
 
   // Form group for character creation, with validation rules
@@ -175,7 +179,6 @@ export class CharacterCreationPageComponent implements OnInit {
     }
 
     let character: PlayerInformation;
-
     if (this.context === 'create') {
       character = this.buildCharacterFromForm(true);
       this.sessionService.addCharacterToPlayerSession(character);
@@ -183,7 +186,6 @@ export class CharacterCreationPageComponent implements OnInit {
       character = this.buildCharacterFromForm(false);
       this.sessionService.addCharacterToPlayerSession(character);
     }
-    this.router.navigate(['/waiting-room', this.sessionService.sessionId()]);
   }
 
 }

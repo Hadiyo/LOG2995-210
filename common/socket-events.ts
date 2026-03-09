@@ -20,6 +20,7 @@ export enum RoomSocketEvents {
     LeaveGameRoom = 'leaveGameRoom',
     CreateGameSession = 'createGameSession',
     GameSessionCreated = 'gameSessionCreated',
+    NewAvailableSession = 'newSessionAvailable',
     DeleteGameSession = 'deleteGameSession',
     GameSessionDeleted = 'gameSessionDeleted',
     PlayerJoinedGame = 'playerJoinedGame',
@@ -27,6 +28,7 @@ export enum RoomSocketEvents {
     IncrementPlayerCount = 'incrementPlayerCount',
     DecrementPlayerCount = 'decrementPlayerCount',
     AddCharacterToPlayer = 'addCharacterToPlayer',
+    AddClientToSession = 'addClientToSession',
 }
 
 export enum ChatSocketEvents {
