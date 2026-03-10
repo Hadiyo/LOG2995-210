@@ -1,0 +1,40 @@
+:host {
+  --action-gap: 8px;
+  --action-radius: 8px;
+  --action-padding-y: 10px;
+  --action-padding-x: 12px;
+  display: block;
+}
+
+.action-bar {
+  display: grid;
+  gap: var(--action-gap);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.action-btn {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--action-radius);
+  background: var(--bg-panel);
+  color: var(--text-main);
+  padding: var(--action-padding-y) var(--action-padding-x);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.action-btn--active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary) inset;
+}
+
+.action-btn--danger {
+  border-color: color-mix(in srgb, var(--accent-danger) 55%, transparent);
+  color: var(--accent-danger);
+}

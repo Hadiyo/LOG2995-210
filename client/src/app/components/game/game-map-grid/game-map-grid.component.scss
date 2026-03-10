@@ -1,0 +1,117 @@
+:host {
+  /* Sizing + visual constants for this component */
+  --grid-max-size: 920px;
+  --grid-viewport-offset: 72px;
+  --grid-border-radius: 12px;
+  --cell-border-color: rgba(255, 255, 255, 0.08);
+  display: block;
+  width: 100%;
+}
+
+.grid {
+  /* Defaults (overridden by inline CSS vars from template) */
+  --cols: 10;
+  --rows: 10;
+
+  /* Keep full map visible: constrained by container, max size, and viewport height */
+  width: min(100%, var(--grid-max-size), calc(100dvh - var(--grid-viewport-offset)));
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+
+  /* CSS grid with dynamic cols/rows */
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  grid-template-rows: repeat(var(--rows), 1fr);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--grid-border-radius);
+  overflow: hidden;
+}
+
+/* Crosshair in action mode */
+.grid--action-mode .cell {
+  cursor: crosshair;
+}
+
+.cell {
+  position: relative;
+  border: 1px solid var(--cell-border-color);
+  padding: 0;
+  background: transparent;
+}
+
+/* Base tile image layer */
+.tile {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+}
+
+/* Object image layer above tile */
+.obj {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-size: 100% 100%;
+}
+
+/* Player sprite layer above objects */
+.player-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Sprite fills tile */
+.player-layer app-character-sprite {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Idle breathing animation */
+@keyframes game-avatar-breathe {
+  0% { transform: scaleY(1); }
+  50% { transform: scaleY(1.01); }
+  100% { transform: scaleY(1); }
+}
+
+.player-layer app-character-sprite.is-idle {
+  transform-origin: bottom center;
+  animation: game-avatar-breathe 3s ease-in-out infinite;
+}
+
+/* Tile image bindings by tile type */
+.tile[data-tile='DIRT'] { background-image: var(--tile-dirt-img); }
+.tile[data-tile='WALL'] { background-image: var(--tile-wall-img); }
+.tile[data-tile='WATER'] { background-image: var(--tile-water-img); }
+.tile[data-tile='ICE'] { background-image: var(--tile-ice-img); }
+.tile[data-tile='DOOR'][data-door-open='true'] { background-image: var(--tile-door-open-img); }
+.tile[data-tile='DOOR'][data-door-closed='true'] { background-image: var(--tile-door-closed-img); }
+
+/* Object image bindings */
+.obj[data-obj='START'] { background-image: var(--object-spawn-img); }
+
+.obj[data-obj='FLAG'] {
+  /* Flag is rendered smaller and centered */
+  width: 70%;
+  height: 70%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background-image: var(--object-flag-img);
+}
+
+.obj[data-obj='REGEN'] { background-image: var(--object-heal-img); }
+.obj[data-obj='ARENA'] { background-image: var(--object-fight-img); }
+
+/* 2x2 objects span 4 tiles visually from top-left anchor */
+.obj[data-size='2x2'] {
+  width: 200%;
+  height: 200%;
+  left: 0;
+  top: 0;
+  transform: none;
+}

@@ -1,0 +1,126 @@
+:host {
+  --player-gap: 6px;
+  --player-row-height: 46px;
+  --player-badge-padding-y: 1px;
+  --player-badge-padding-x: 6px;
+  display: block;
+  min-height: 0;
+}
+
+.players-scroll {
+  height: calc(var(--player-row-height) * 2 + var(--player-gap));
+  overflow: hidden;
+  padding-right: 0;
+  pointer-events: none;
+  transition: height 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.players-scroll--expanded {
+  padding-right: 0;
+  pointer-events: auto;
+}
+
+.players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--player-gap);
+  transform: translateY(0);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.player {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 6px 8px;
+  height: var(--player-row-height);
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.player--active {
+  border-color: var(--accent-primary);
+}
+
+.player--placeholder {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--border-soft) 70%, transparent);
+  color: var(--text-muted);
+  opacity: 0.9;
+}
+
+.player__name {
+  font-weight: 600;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player__index {
+  width: 1.4rem;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 6px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-main);
+  background: color-mix(in srgb, var(--accent-primary) 28%, var(--bg-main));
+}
+
+.player__name--surrendered {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+.player__wins {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.player__wins-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+}
+
+.player__badges {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.player__badge {
+  border-radius: 999px;
+  padding: var(--player-badge-padding-y) var(--player-badge-padding-x);
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.player__badge--active {
+  color: var(--accent-secondary);
+  background: color-mix(in srgb, var(--accent-secondary) 22%, transparent);
+}
+
+.player__badge--active.player__badge--active-self {
+  color: var(--accent-success);
+  background: color-mix(in srgb, var(--accent-success) 22%, transparent);
+}
+
+.player__placeholder-text {
+  font-style: italic;
+}

@@ -1,0 +1,13 @@
+@if (notification) {
+  <article
+    class="notification-popup"
+    [class.notification-popup--warning]="isWarning(notification)"
+    [class.notification-popup--critical]="isCritical(notification)"
+  >
+    <header class="notification-popup__header">
+      <strong class="notification-popup__title">{{ systemTitle }}</strong>
+      <span class="notification-popup__time">{{ notification.createdAt | date:'HH:mm:ss' }}</span>
+    </header>
+    <p class="notification-popup__content">{{ notification.content }}</p>
+  </article>
+}
