@@ -29,7 +29,7 @@ export class JoinGameComponent implements OnInit, OnDestroy {
   }
 
   onSelectedSession(previewId: string): void {
-    this.sessionService.joinGameSession(previewId);
+    this.sessionService.setPreviewId(previewId);
     this.sessionService.setContext('join');
     this.router.navigate(['/character-creation']);
   }
