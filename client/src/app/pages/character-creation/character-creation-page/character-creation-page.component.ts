@@ -181,10 +181,10 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
     let character: PlayerInformation;
     if (this.context === 'create') {
       character = this.buildCharacterFromForm(true);
-      this.sessionService.addCharacterToPlayerSession(character);
+      this.sessionService.createGameSession(character);
     } else {
       character = this.buildCharacterFromForm(false);
-      this.sessionService.addCharacterToPlayerSession(character);
+      this.sessionService.joinGameSession(character);
     }
   }
 

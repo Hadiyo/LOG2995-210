@@ -1,6 +1,6 @@
 import { pageRoomMap } from '@app/gateways/rooms.record';
 import { GameSessionService } from '@app/services/session/game-session.service';
-import { GameSessionPayload } from '@common/game/game-session.interface';
+import { JoinSessionPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
@@ -19,24 +19,24 @@ export class SessionGateway {
   }
 
   @SubscribeMessage(RoomSocketEvents.CreateGameSession)
-  async createGameSession(@MessageBody() mapId: string, @ConnectedSocket() client: Socket) {
+  async createGameSession(@MessageBody() payload: JoinSessionPayload, @ConnectedSocket() client: Socket) {
     try {
-      const payload = await this.sessionService.createGameSession(mapId);
-      if (!payload) {
+      const gameInformation = await this.sessionService.createGameSession(payload, client.id);
+      if (!gameInformation) {
         this.logger.error(`Error during game session creation`);
         client.emit(ErrorSocketEvents.FailedSessionCreation);
         return;
       }
 
-      client.join(payload.sessionId);
+      client.join(gameInformation.sessionId);
 
-      if (!client.rooms.has(payload.sessionId)) {
-        this.logger.error(`Player ${client.id} failed to join room ${payload.sessionId}`);
+      if (!client.rooms.has(gameInformation.sessionId)) {
+        this.logger.error(`Player ${client.id} failed to join room ${gameInformation.sessionId}`);
         client.emit(ErrorSocketEvents.FailedJoinSession);
         return;
       }
-      client.to(pageRoomMap.joinGame).emit(RoomSocketEvents.NewAvailableSession, payload.mapPreview);
-      client.emit(RoomSocketEvents.GameSessionCreated, payload);
+      client.to(pageRoomMap.joinGame).emit(RoomSocketEvents.NewAvailableSession, gameInformation.mapPreview);
+      client.emit(RoomSocketEvents.GameSessionCreated, gameInformation);
     } catch (err) {
       this.logger.error(
         `Error creating session for client ${client.id}: ${err.message}`,
@@ -58,14 +58,12 @@ export class SessionGateway {
   }
 
   @SubscribeMessage(RoomSocketEvents.JoinGameRoom)
-  joinGameSession(@MessageBody() sessionPreviewId: string, @ConnectedSocket() client: Socket) {
-    const INCREMENT_PLAYER_COUNT = 1;
-    const sessionId = this.sessionService.updateGameSession(sessionPreviewId, INCREMENT_PLAYER_COUNT);
-    this.logger.log(sessionId);
-    if (sessionId) {
-      client.join(sessionId);
-      client.emit(RoomSocketEvents.AddClientToSession, sessionId);
-      this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, sessionId);
+  joinGameSession(@MessageBody() payload: JoinSessionPayload, @ConnectedSocket() client: Socket) {
+    const playerPayload = this.sessionService.joinGameSession(payload, client.id);
+    if (playerPayload) {
+      client.join(playerPayload.sessionId);
+      client.emit(RoomSocketEvents.PlayerJoinedGame, playerPayload);
+      this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, playerPayload.mapPreviewId);
     }
   }
 
@@ -82,13 +80,4 @@ export class SessionGateway {
     this.server.to(sessionId).emit(RoomSocketEvents.PlayerLeftGame, playerId);
   }
 
-  @SubscribeMessage(RoomSocketEvents.AddCharacterToPlayer)
-  addPlayerCharacterToSession(@MessageBody() payload: GameSessionPayload, @ConnectedSocket() client: Socket) {
-    client.emit(RoomSocketEvents.AddClientToSession, payload.sessionId); // This does not work for some reason
-    const player = this.sessionService.addPlayerToSession(payload, client.id);
-    if (player) {
-      //TODO: Notify other players that a newplayer has joined the session (payload used in waiting room)
-      void player;
-    }
-  }
 }

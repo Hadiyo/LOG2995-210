@@ -16,11 +16,18 @@ export interface GameSessionPayload {
 export interface PlayerPayload {
     player: Player,
     sessionId: string,
+    mapPreviewId: string,
 }
 
 export interface CreateSessionPayload {
     mapPreview: GameSessionPreview,
     sessionId: string,
+    player: Player,
+}
+
+export interface JoinSessionPayload {
+    id: string | undefined,
+    character: PlayerInformation,
 }
 
 export interface GameSessionPreview {

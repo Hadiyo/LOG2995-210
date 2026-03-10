@@ -17,7 +17,7 @@ export class PlayerService {
      * Saves player input to the list of players and create a unique reference id
      * @returns the player unique id
      */
-    savePlayer(info: PlayerInformation, clientId: string): string {
+    savePlayer(info: PlayerInformation, clientId: string): Player {
         const newPlayer: Player = {
             id: randomUUID(),
             information: info,
@@ -30,7 +30,7 @@ export class PlayerService {
         };
 
         this.players.set(newPlayer.id, newInternalPlayer);
-        return newPlayer.id;
+        return newPlayer;
     }
 
     /** Remove the player from the list of players */

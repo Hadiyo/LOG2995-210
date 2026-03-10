@@ -1,7 +1,7 @@
 import { InternalPlayer } from '@app/interface/player.interface';
 import { GameMapService } from '@app/services/game-map/game-map.service';
 import { PlayerService } from '@app/services/player/player.service';
-import { CreateSessionPayload, GameSession, GameSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
+import { CreateSessionPayload, GameSession, JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
@@ -30,17 +30,25 @@ export class GameSessionService {
      * 3. Stores the new gameSession object in gameSession
      * @returns gameSessionId (for the client socket to join the room)
      */
-    async createGameSession(mapId: string): Promise<CreateSessionPayload> {
+    async createGameSession(payload: JoinSessionPayload, socketId: string): Promise<CreateSessionPayload> {
         try {
-            const mapPreview = await this.gameMapService.saveGameMap(mapId);
+            const mapPreviewSession = await this.gameMapService.saveGameMap(payload.id);
+            const newPlayer = this.playerService.savePlayer(payload.character, socketId);
+
             const gameSession: GameSession = {
                 id: randomUUID(),
-                players: [],
-                mapTemplateId: mapPreview.id,
+                players: [newPlayer.id],
+                mapTemplateId: mapPreviewSession.id,
                 debugMode: false,
             };
             this.gameSessions.set(gameSession.id, gameSession);
-            return { mapPreview, sessionId: gameSession.id };
+
+            const newPayload: CreateSessionPayload = {
+                mapPreview: mapPreviewSession,
+                sessionId: gameSession.id,
+                player: newPlayer,
+            };
+            return newPayload;
         } catch (err) {
             this.logger.error(`Error while creating game session: ${err}`);
         }
@@ -52,16 +60,17 @@ export class GameSessionService {
      * @param socketId 
      * @returns the gameSessionId for the client to connect to in the gateway
      */
-    addPlayerToSession(payload: GameSessionPayload, socketId: string): PlayerPayload | undefined {
+    joinGameSession(payload: JoinSessionPayload, socketId: string): PlayerPayload | undefined {
         try {
-            const playerId = this.playerService.savePlayer(payload.information, socketId);
-            const session = this.gameSessions.get(payload.sessionId);
-            if (session && playerId) {
-                session.players.push(playerId);
-                const internalPlayer = this.getPlayerFromGameSession(playerId); // Verification
+            const player = this.playerService.savePlayer(payload.character, socketId);
+            const session = this.findSessionByPreview(payload.id);
+            if (session && player) {
+                session.players.push(player.id);
+                const internalPlayer = this.getPlayerFromGameSession(player.id); // Verification
                 const playerPayload: PlayerPayload = {
                     player: internalPlayer.player,
                     sessionId: session.id,
+                    mapPreviewId: session.mapTemplateId,
                 };
                 return playerPayload;
             } else return undefined;
@@ -91,33 +100,21 @@ export class GameSessionService {
      * @param sessionId 
      */
     deleteGameSession(sessionPreviewId: string): void {
-        const sessionId = this.findSessionByPreview(sessionPreviewId);
-        this.gameMapService.deleteGameMap(sessionId);
-        this.gameMapService.deleteGameMapPreview(sessionId);
-        this.gameSessions.delete(sessionId);
-    }
-
-    /**
-     * Retrieves session id 
-     * @param sessionPreviewId 
-     * @param delta 
-     * @returns 
-     */
-    updateGameSession(sessionPreviewId: string, delta: number): string {
-        const sessionId = this.findSessionByPreview(sessionPreviewId);
-        this.gameMapService.updateNumberOfPlayers(sessionPreviewId, delta);
-        return sessionId;
+        const session = this.findSessionByPreview(sessionPreviewId);
+        this.gameMapService.deleteGameMap(session.id);
+        this.gameMapService.deleteGameMapPreview(session.id);
+        this.gameSessions.delete(session.id);
     }
 
     /**
      * Finds a session id by the preview template
      * @param previewId 
      */
-    private findSessionByPreview(previewId: string): string | undefined {
+    private findSessionByPreview(previewId: string): GameSession | undefined {
         this.logger.log(this.gameSessions);
         for (const session of this.gameSessions.values()) {
             if (session.mapTemplateId.includes(previewId)) {
-                return session.id;
+                return session;
             }
         }
         return undefined;

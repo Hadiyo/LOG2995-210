@@ -46,7 +46,7 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
    * @param map 
    */
   onSelectMap(mapId: string): void {
-    this.sessionService.createGameSession(mapId);
+    this.sessionService.setMapId(mapId);
     this.sessionService.setContext('create');
     this.router.navigate(['/character-creation']);
   }
