@@ -1,0 +1,110 @@
+<main class="game-view">
+  @if (errorMessage()) {
+    <section class="panel panel--error">
+      <p>{{ errorMessage() }}</p>
+    </section>
+  } @else if (session()) {
+    <aside class="side-panel side-panel--left">
+      <section class="panel panel--game-title">
+        <h2 class="game-title">{{ session()!.map.name }}</h2>
+      </section>
+
+      <section class="panel">
+        <!-- Session info panel shows map name, player counts, and turn timer. -->
+        <app-game-session-info-panel
+          [cols]="cols()"
+          [rows]="rows()"
+          [currentPlayers]="activePlayersCount()"
+          [maxPlayers]="maxPlayers()"
+          [activePlayerName]="activePlayer()?.name ?? null"
+          [remainingSeconds]="session()!.turn.remainingSeconds"
+          [totalSeconds]="session()!.turn.totalSeconds"
+          [highlightTimer]="isCurrentPlayersTurn()"
+          [defaultPanelTitle]="constants.defaultPanelTitle"
+        />
+      </section>
+
+      <section class="panel panel--player-info">
+        <!-- Current player panel shows detailed info about the current player, including avatar and stats. -->
+        <app-game-current-player-panel
+          [player]="currentPlayer()"
+          [avatarId]="panelAvatarId()"
+          [avatarState]="panelAvatarState()"
+          [avatarDirection]="panelAvatarDirection()"
+          [avatarSpriteSize]="constants.avatarSpriteSize"
+          [defaultPanelTitle]="constants.defaultPanelTitle"
+        />
+      </section>
+    </aside>
+
+    <section class="map-panel panel">
+      <!-- Map grid shows the game map, including cells, objects, and player positions. -->
+      <app-game-map-grid
+        [cols]="cols()"
+        [rows]="rows()"
+        [cells]="mapCells()"
+        [objects]="mapObjects()"
+        [players]="players()"
+        [nowMs]="nowMs()"
+        [playerDirections]="playerDirections()"
+        [playerStates]="playerStates()"
+        [actionModeEnabled]="actionModeEnabled()"
+        (cellClick)="onCellClick($event)"
+      />
+    </section>
+
+    <aside class="side-panel side-panel--right">
+      <!-- Player list panel shows the list of players, their status, and allows toggling expansion for more details. -->
+      <section class="panel panel--players">
+        <div class="panel__header">
+          <h3>Liste des joueurs</h3>
+          @if (players().length > 2) {
+            <button
+              type="button"
+              class="panel__toggle-btn"
+              [attr.aria-expanded]="isPlayerListExpanded()"
+              (click)="onTogglePlayerListExpanded()"
+            >
+              {{ isPlayerListExpanded() ? 'Réduire' : players().length + ' Total' }}
+            </button>
+          }
+        </div>
+        <app-game-player-list
+          [players]="players()"
+          [turnOrder]="turnOrder()"
+          [activePlayerId]="activePlayerId()"
+          [currentPlayerId]="currentPlayerId() ?? ''"
+          [maxPlayers]="maxPlayers()"
+          [expanded]="isPlayerListExpanded()"
+        />
+      </section>
+
+      <section class="panel messages">
+        <!-- Chat panel shows messages, notifications, and allows the current player to send messages. -->
+        <app-game-chat-panel
+          [messages]="session()!.messages"
+          [notification]="activeNotification()"
+          [currentPlayerName]="currentPlayer()?.name ?? null"
+          [messageMaxLength]="constants.messageMaxLength"
+          (messageSubmit)="onChatMessageSubmit($event)"
+        />
+      </section>
+
+      <section class="panel panel--action-bar">
+        <!-- Action bar shows buttons for ending turn, toggling action mode, and surrendering, with appropriate enabling/disabling. -->
+        <app-game-action-bar
+          [actionModeEnabled]="actionModeEnabled()"
+          [canAct]="isCurrentPlayersTurn()"
+          [canUseActionMode]="canUseActionMode()"
+          (endTurn)="onEndTurn()"
+          (toggleActionMode)="onToggleActionMode()"
+          (surrender)="onSurrender()"
+        />
+      </section>
+    </aside>
+  } @else {
+    <section class="panel">
+      <p>Chargement de la session de jeu...</p>
+    </section>
+  }
+</main>

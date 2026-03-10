@@ -1,0 +1,13 @@
+/* Host is inline-block so parent can control size cleanly; 
+line-height zero removes extra inline spacing */
+:host {
+  display: inline-block;
+  line-height: 0;
+}
+
+/* Canvas fills host box */
+.character-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
