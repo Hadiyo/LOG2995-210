@@ -14,6 +14,7 @@ export class JoinGameComponent implements OnInit, OnDestroy {
   protected readonly previews = this.waitingRoomDirectory.previews;
   protected readonly errorMessage = this.waitingRoomDirectory.errorMessage;
   protected readonly isLoading = computed(() => this.waitingRoomDirectory.state() === 'loading');
+
   constructor(
     private readonly waitingRoomDirectory: WaitingRoomDirectoryService,
     private readonly router: Router,
