@@ -66,6 +66,7 @@ export class GameSessionService {
             const session = this.findSessionByPreview(payload.id);
             if (session && player) {
                 session.players.push(player.id);
+                this.gameMapService.updateNumberOfPlayers(payload.id, 1);
                 const internalPlayer = this.getPlayerFromGameSession(player.id); // Verification
                 const playerPayload: PlayerPayload = {
                     player: internalPlayer.player,
