@@ -14,7 +14,7 @@ export class GameCardComponent {
   @Input({ required: true }) map!: EditorMap;
   @Input() thumbnailUrl?: string;
   @Input() showActions = true;
-  @Output() select = new EventEmitter<EditorMap>();
+  @Output() select = new EventEmitter<string>();
   @Output() edit = new EventEmitter<EditorMap>();
   @Output() remove = new EventEmitter<EditorMap>();
   @Output() toggleVisibility = new EventEmitter<EditorMap>();
@@ -33,7 +33,7 @@ export class GameCardComponent {
   }
 
   onSelect(): void {
-    this.select.emit(this.map);
+    this.select.emit(this.map.id);
   }
 
   onRemove(): void {

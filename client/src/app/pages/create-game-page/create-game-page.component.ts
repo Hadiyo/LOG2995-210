@@ -1,12 +1,13 @@
 import { AsyncPipe } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
-import { MapLoadState } from '@app/services/map/map-state.enum';
 import { MapStateService } from '@app/services/map/map-state.service';
+import { ServiceState } from '@app/services/service-state.enum';
+import { SessionService } from '@app/services/session/session.service';
 import type { EditorMap } from '@common/maps/map.interface';
 import { Observable } from 'rxjs';
-import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 
 @Component({
   selector: 'app-create-game-page',
@@ -21,23 +22,32 @@ export class CreateGamePageComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly mapStateService: MapStateService,
+    private readonly sessionService: SessionService,
     private readonly router: Router,
   ) {}
 
-  protected getMapState(): MapLoadState {
+  protected getMapState(): ServiceState {
     return this.mapStateService.state();
   }
 
   ngOnInit(): void {
     this.mapStateService.subscribeToMapEvents();
+    this.sessionService.initGameSessionService();
   }
 
   ngOnDestroy(): void {
     this.mapStateService.unsubscribeFromMapEvents();
+    this.sessionService.unsubscribeToSessionEvents();
   }
 
-  onSelectMap(map: EditorMap): void {
-    void map;
+  /**
+   * Sends a request to the server to create the game session and 
+   * redirects to the character creation page
+   * @param map 
+   */
+  onSelectMap(mapId: string): void {
+    this.sessionService.setMapId(mapId);
+    this.sessionService.setContext('create');
     this.router.navigate(['/character-creation']);
   }
 

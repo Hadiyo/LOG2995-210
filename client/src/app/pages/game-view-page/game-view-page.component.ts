@@ -14,10 +14,9 @@ import { GameVisualFeedbackService } from '@app/services/game/game-visual-feedba
 // LocalGameStateService is a temporary static-mode implementation.
 import { GAME_STORAGE_KEYS, LocalGameStateService } from '@app/services/game/local-game-state.service';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
-import { GameActionType } from '@common/game-socket-events';
 import { MapSize } from '@common/maps/map.enums';
 import { GameCell, MapObject } from '@common/maps/map.interface';
-import { GamePlayerState, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerStatus } from '@common/player/player.interface';
 import { take } from 'rxjs';
 import {
   getDirectionToTarget,
@@ -33,6 +32,7 @@ import {
   LOCAL_POSE_REFRESH_MS,
   WALK_VISUAL_MS,
 } from './game-view.constants';
+import { GameActionType } from '@common/game/game-session.interface';
 
 @Component({
   selector: 'app-game-view-page',
@@ -68,9 +68,9 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
   });
 
   // Player-related computeds
-  readonly players = computed<readonly GamePlayerState[]>(() => this.session()?.players ?? []);
+  readonly players = computed<readonly Player[]>(() => this.session()?.players ?? []);
   readonly activePlayersCount = computed<number>(() =>
-    this.players().filter((player) => player.status === PlayerStatus.Active).length,
+    this.players().filter((player) => player.state.status === PlayerStatus.Active).length,
   );
   readonly maxPlayers = computed<number>(() => {
     const size = this.session()?.map.size;
@@ -91,10 +91,10 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
   readonly currentPlayerId = this.gameStateService.currentPlayerId;
 
   // Current and active player references
-  readonly activePlayer = computed<GamePlayerState | null>(() =>
+  readonly activePlayer = computed<Player | null>(() =>
     this.players().find((player) => player.id === this.activePlayerId()) ?? null,
   );
-  readonly currentPlayer = computed<GamePlayerState | null>(() =>
+  readonly currentPlayer = computed<Player | null>(() =>
     this.players().find((player) => player.id === this.currentPlayerId()) ?? null,
   );
 
@@ -102,12 +102,12 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
   readonly isCurrentPlayersTurn = computed<boolean>(() => {
     const currentPlayer = this.currentPlayer();
     if (!currentPlayer) return false;
-    if (currentPlayer.status !== PlayerStatus.Active) return false;
+    if (currentPlayer.state.status !== PlayerStatus.Active) return false;
     return this.activePlayerId() === currentPlayer.id;
   });
   readonly canUseActionMode = computed<boolean>(() => {
     if (!this.isCurrentPlayersTurn()) return false;
-    return (this.currentPlayer()?.remainingActions ?? 0) > 0;
+    return (this.currentPlayer()?.state.remainingActions ?? 0) > 0;
   });
 
   // Local visual override signals (used for responsive click feedback).
@@ -130,24 +130,24 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
   private hasHandledGameEndNavigation = false;
 
   // Computed panel avatar state and direction based on character pose
-  readonly panelAvatarId = computed<number>(() => this.currentPlayer()?.avatarId ?? 0);
+  readonly panelAvatarId = computed<number>(() => this.currentPlayer()?.information.avatarId ?? 0);
   readonly panelAvatarState = computed<CharacterState>(() => {
     this.nowMs();
     const player = this.currentPlayer();
     if (!player) return this.avatarState;
-    if (player.status === PlayerStatus.Eliminated) return 'dead';
+    if (player.state.status === PlayerStatus.Eliminated) return 'dead';
 
     const localOverride = this.playerStates()[player.id];
     if (localOverride) return localOverride;
 
-    const pose = player.pose ?? this.avatarState;
+    const pose = player?.render?.pose ?? this.avatarState;
     if (this.isTransientPoseExpired(player, pose)) return this.avatarState;
     return pose;
   });
   readonly panelAvatarDirection = computed<CharacterDirection>(() => {
     const player = this.currentPlayer();
     if (!player) return this.avatarDirection;
-    return this.playerDirections()[player.id] ?? player.facing ?? this.avatarDirection;
+    return this.playerDirections()[player.id] ?? player.render?.facing ?? this.avatarDirection;
   });
 
   constructor(
@@ -270,12 +270,12 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
   private applyClickVisualFeedback(cellIndex: number, actionType: GameActionType): void {
     const currentPlayer = this.currentPlayer();
     const targetCell = this.mapCells()[cellIndex];
-    if (!currentPlayer?.position || !targetCell) return;
+    if (!currentPlayer?.state.position || !targetCell) return;
 
     // Set player facing direction
     const direction = getDirectionToTarget(
-      currentPlayer.position.x,
-      currentPlayer.position.y,
+      currentPlayer.state.position.x,
+      currentPlayer.state.position.y,
       targetCell.position.x,
       targetCell.position.y,
     );
@@ -285,8 +285,8 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
 
     // Set transient pose (walk/attack animation) only for adjacent tiles
     const distance = getManhattanDistance(
-      currentPlayer.position.x,
-      currentPlayer.position.y,
+      currentPlayer.state.position.x,
+      currentPlayer.state.position.y,
       targetCell.position.x,
       targetCell.position.y,
     );
@@ -316,12 +316,12 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
   }
 
   // Check if transient pose (walk/attack) has expired based on elapsed time
-  private isTransientPoseExpired(player: GamePlayerState, pose: CharacterState): boolean {
+  private isTransientPoseExpired(player: Player, pose: CharacterState): boolean {
     if (pose !== 'walk' && pose !== 'attack') return false;
-    if (!player.poseStartedAt || !player.poseDurationMs) return false;
+    if (!player.render?.poseStartedAt || !player.render?.poseDurationMs) return false;
 
-    const startedAtMs = Date.parse(player.poseStartedAt);
+    const startedAtMs = Date.parse(player.render?.poseStartedAt);
     if (Number.isNaN(startedAtMs)) return false;
-    return this.nowMs() >= startedAtMs + player.poseDurationMs;
+    return this.nowMs() >= startedAtMs + player.render?.poseDurationMs;
   }
 }

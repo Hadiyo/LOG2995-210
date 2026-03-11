@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
-import { GamePlayerState, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerStatus } from '@common/player/player.interface';
 
 const COLLAPSED_VISIBLE_ROWS = 2;
 const PLAYER_ROW_HEIGHT_PX = 46;
@@ -9,7 +9,7 @@ const PLAYER_ROW_STEP_PX = PLAYER_ROW_HEIGHT_PX + PLAYER_ROW_GAP_PX;
 
 interface PlayerRowView {
   key: string;
-  player: GamePlayerState | null;
+  player: Player | null;
   listIndex: number | null;
 }
 
@@ -21,7 +21,7 @@ interface PlayerRowView {
   styleUrl: './game-player-list.component.scss',
 })
 export class GamePlayerListComponent {
-  @Input({ required: true }) players: readonly GamePlayerState[] = [];
+  @Input({ required: true }) players: readonly Player[] = [];
   @Input({ required: true }) turnOrder: readonly string[] = [];
   @Input() activePlayerId = '';
   @Input() currentPlayerId = '';
@@ -71,7 +71,7 @@ export class GamePlayerListComponent {
   }
 
   // Helper to identify if a row corresponds to the current player for styling.
-  private get orderedPlayers(): readonly GamePlayerState[] {
+  private get orderedPlayers(): readonly Player[] {
     if (this.turnOrder.length === 0) {
       return [...this.players];
     }
@@ -79,7 +79,7 @@ export class GamePlayerListComponent {
     const playerById = new Map(this.players.map((player) => [player.id, player]));
     return this.turnOrder
       .map((id) => playerById.get(id))
-      .filter((player): player is GamePlayerState => Boolean(player));
+      .filter((player): player is Player => Boolean(player));
   }
 
   // Build the list of rows to display based on ordered players and expansion state, filling placeholders as needed.

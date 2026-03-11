@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { CharacterSpriteComponent } from '@app/components/game/character-sprite/character-sprite.component';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
-import { GamePlayerState } from '@common/player/player.interface';
+import { Player } from '@common/player/player.interface';
 
 @Component({
   selector: 'app-game-current-player-panel',
@@ -12,7 +12,7 @@ import { GamePlayerState } from '@common/player/player.interface';
   styleUrl: './game-current-player-panel.component.scss',
 })
 export class GameCurrentPlayerPanelComponent {
-  @Input() player: GamePlayerState | null = null;
+  @Input() player: Player | null = null;
   @Input() avatarId = 0;
   @Input() avatarState: CharacterState = 'idle';
   @Input() avatarDirection: CharacterDirection = 'front';

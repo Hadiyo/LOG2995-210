@@ -1,14 +1,41 @@
-export enum SocketEvents {
+export enum MapSocketEvents {
     MapCreated = 'mapCreated',
     MapUpdated = 'mapUpdated',
     MapDeleted = 'mapDeleted',
-    JoinRoom = 'roomJoined',
-    LeaveRoom = 'leaveRoom',
     ToogleMapVisibility = 'toggleMapVisibility',
 }
 
-export enum SocketRoom {
-    MapManagementRoom = 'mapManagementRoom',
+export enum PageSocketEvents {
+    JoinPage = 'joinPage',
+    LeavePage = 'leavePage',
+}
+
+export enum PageContext {
+    MapManagement = 'mapManagement',
+    JoinGame = 'joinGame',
+}
+
+export enum RoomSocketEvents {
+    JoinGameRoom = 'gameRoomJoined',
+    LeaveGameRoom = 'leaveGameRoom',
+    CreateGameSession = 'createGameSession',
+    GameSessionCreated = 'gameSessionCreated',
+    NewAvailableSession = 'newSessionAvailable',
+    DeleteGameSession = 'deleteGameSession',
+    GameSessionDeleted = 'gameSessionDeleted',
+    PlayerJoinedGame = 'playerJoinedGame',
+    PlayerLeftGame = 'playerLeftGame',
+    IncrementPlayerCount = 'incrementPlayerCount',
+    DecrementPlayerCount = 'decrementPlayerCount',
+    AddCharacterToPlayer = 'addCharacterToPlayer',
+    AddClientToSession = 'addClientToSession',
+}
+
+export enum ErrorSocketEvents {
+    FailedSessionCreation = 'failedSessionCreation',
+    FailedJoinSession = 'failedJoinSession',
+    FailedSessionDeletion = 'failedSessionDeletion',
+    ServerError = 'serverError',
 }
 
 /** BROWSER SOCKET EVENTS */

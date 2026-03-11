@@ -6,10 +6,10 @@
       <!-- If the row has a player, display their info; otherwise show placeholder text. -->
       @if (row.player; as player) {
       <span class="player__index">{{ row.listIndex }}</span>
-      <span class="player__name" [class.player__name--surrendered]="player.status === playerStatus.Surrendered">
-        {{ player.name }}
+      <span class="player__name" [class.player__name--surrendered]="player.state.status === playerStatus.Surrendered">
+        {{ player.information.name }}
       </span>
-      <span class="player__wins" [attr.title]="player.wins + ' combats'">
+      <span class="player__wins" [attr.title]="player.state.wins + ' combats'">
         <svg class="player__wins-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
           aria-hidden="true">
           <g fill="currentColor" fill-rule="evenodd" clip-rule="evenodd">
@@ -23,11 +23,11 @@
               d="M5.71 13.646L2.889 16.48l.708.706l2.823-2.834l1.417 1.412l-2.823 2.833a2 2 0 0 1-2.829.006l-.708-.706a2 2 0 0 1-.005-2.829l2.823-2.833l1.417 1.411Z" />
           </g>
         </svg>
-        <span>{{ player.wins }}</span>
+        <span>{{ player.state.wins }}</span>
       </span>
       <span class="player__badges">
         <!-- Display organizer badge if the player is an organizer. -->
-        @if (player.isOrganizer) {
+        @if (player.information.isOrganizer) {
         <span class="player__badge" [attr.title]="player.id === activePlayerId ? 'Organisateur' : null">
           {{ player.id === activePlayerId ? 'Org.' : 'Organisateur' }}
         </span>

@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { MapApiService } from '@app/services/map/map-api.service';
-import { MapLoadState } from '@app/services/map/map-state.enum';
+import { ServiceState } from '@app/services/service-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import { EditorMap } from '@common/maps/map.interface';
-import { BEFORE_UNLOAD, SocketEvents, SocketRoom } from '@common/socket-events';
+import { PageContext, PageSocketEvents } from '@common/socket-events';
 import { of, throwError } from 'rxjs';
 import { MapStateService } from './map-state.service';
 
@@ -69,6 +69,7 @@ describe('MapStateService', () => {
             'send',
             'on',
             'off',
+            'subscribeToWindowEvent',
         ]);
 
         mapApiMock.getAllMaps.and.returnValue(of(mockMaps));
@@ -91,7 +92,7 @@ describe('MapStateService', () => {
     it('should load maps on init', (done) => {
         service.maps$.subscribe(maps => {
             expect(maps.length).toBe(2);
-            expect(service.state()).toBe(MapLoadState.Loaded);
+            expect(service.state()).toBe(ServiceState.Loaded);
             done();
         });
     });
@@ -99,7 +100,7 @@ describe('MapStateService', () => {
     it('should set error state if loadMaps fails', () => {
         mapApiMock.getAllMaps.and.returnValue(throwError(() => new Error()));
         service.loadMaps();
-        expect(service.state()).toBe(MapLoadState.Error);
+        expect(service.state()).toBe(ServiceState.Error);
     });
 
     it('should call saveMap on createMap', async () => {
@@ -121,11 +122,12 @@ describe('MapStateService', () => {
     });
 
     it('should subscribe to socket events', () => {
-        const spy = spyOn(service, 'loadMaps');
+
+        const spy = spyOn(service, 'loadMaps').and.stub();
         service.subscribeToMapEvents();
         expect(socketMock.send).toHaveBeenCalledWith(
-            SocketEvents.JoinRoom,
-            SocketRoom.MapManagementRoom,
+            PageSocketEvents.JoinPage,
+            { page: PageContext.MapManagement },
         );
         expect(socketMock.on).toHaveBeenCalled();
         expect(spy).toHaveBeenCalled();
@@ -175,29 +177,9 @@ describe('MapStateService', () => {
         });
     });
 
-    it('should set up a window event listener', () => {
-        spyOn(window, 'addEventListener');
-
-        service['subscribeToWindowEvent']();
-
-        expect(window.addEventListener).toHaveBeenCalledWith('beforeunload', jasmine.any(Function));
-    });
-
-    it('should call socket.disconnect when BEFORE_UNLOAD fires', () => {
-        const addListenerSpy = spyOn(window, 'addEventListener').and.callThrough();
-
-        service['subscribeToWindowEvent']();
-
-        const callback = addListenerSpy.calls.mostRecent().args[1] as EventListener;
-
-        callback(new Event(BEFORE_UNLOAD));
-
-        expect(socketMock.disconnect).toHaveBeenCalled();
-    });
-
     it('should set error state if updateVisibility fails', () => {
         mapApiMock.updateMapVisibility.and.returnValue(throwError(() => new Error()));
         service.toggleMapVisibility(mockMaps[0]);
-        expect(service.state()).toBe(MapLoadState.Error);
+        expect(service.state()).toBe(ServiceState.Error);
     });
 });

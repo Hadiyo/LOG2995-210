@@ -1,0 +1,25 @@
+<main class="page">
+  <div class="back-button">
+    <app-back-button link="/home" title="Retour à l'accueil"></app-back-button>
+  </div>
+  <h1 class="title">Joindre une partie</h1>
+  <section class="maps">
+    <h2 class="section-title">Parties disponibles</h2>
+    @if (isLoading()) {
+      <p class="status">Chargement des parties...</p>
+    } @else if ((sessions$ | async)?.length === 0) {
+      <p class="status">Aucune partie n'est disponible.</p>
+    } @else {
+      <div class="grid">
+        @for (session of sessions$ | async; track session.id) {
+          <div class="select-card">
+            <app-join-game-card                
+                [session]="session"
+                (select)="onSelectedSession($event)">
+            </app-join-game-card>
+          </div>
+        }
+      </div>
+    }
+  </section>
+</main>

@@ -7,8 +7,8 @@ import { CreateMapDialogComponent } from '@app/components/create-map-dialog/crea
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
 import { MapConfig } from '@app/config/map.config';
 import { AdminService } from '@app/services/admin.service';
-import { MapLoadState } from '@app/services/map/map-state.enum';
 import { MapStateService } from '@app/services/map/map-state.service';
+import { ServiceState } from '@app/services/service-state.enum';
 import type { EditorMap } from '@common/maps/map.interface';
 import { Observable, take } from 'rxjs';
 
@@ -44,7 +44,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.isCreateDialogOpen = !this.isCreateDialogOpen;
   }
 
-  protected mapState(): MapLoadState {
+  protected mapState(): ServiceState {
     return this.mapStateService.state();
   }
 
@@ -106,7 +106,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
 
   protected onToggleVisibility(map: EditorMap): void {
     this.mapStateService.toggleMapVisibility(map);
-    if (this.mapStateService.state() === MapLoadState.Error)
+    if (this.mapStateService.state() === ServiceState.Error)
       this.errorMessage = 'Impossible de modifier la visibilite pour le moment.';
   }
 

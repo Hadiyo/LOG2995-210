@@ -1,7 +1,6 @@
 import { ChatMessage } from './chat-message';
-import { MapSize } from './maps/map.enums';
 import { GameMap } from './maps/map.interface';
-import { GamePlayerState } from './player/player.interface';
+import { Player } from './player/player.interface';
 
 // Represents the current phase of a turn in the game session
 export enum TurnPhase {
@@ -22,7 +21,7 @@ export interface TurnState {
 // Base runtime game aggregate (map + players)
 export interface Game {
     id: string;
-    players: GamePlayerState[];
+    players: Player[];
     map: GameMap;
 }
 
@@ -32,13 +31,4 @@ export interface GameSessionSnapshot extends Game {
     messages: ChatMessage[];
     debugMode: boolean;
     createdAt: string;
-}
-
-// Request payload to create a new game session
-export interface CreateGameSessionRequest {
-    mapId: string; // ID of the map to use for the session
-    players: GamePlayerState[]; // Initial player states
-    debugMode?: boolean;
-    turnDurationSeconds?: number; // Optional custom turn duration
-    devFallbackMapSize?: MapSize; // Optional debug-only fallback when map loading fails
 }

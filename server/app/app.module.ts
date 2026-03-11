@@ -4,7 +4,13 @@ import { MapService } from '@app/services/map/map.service';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { GameMapController } from './controllers/game-map/game-map.controller';
 import { MapGateway } from './gateways/map/map.gateway';
+import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
+import { SessionGateway } from './gateways/session/session.gateway';
+import { GameMapService } from './services/game-map/game-map.service';
+import { PlayerService } from './services/player/player.service';
+import { GameSessionService } from './services/session/game-session.service';
 
 @Module({
     imports: [
@@ -20,7 +26,15 @@ import { MapGateway } from './gateways/map/map.gateway';
             { name: Map.name, schema: mapSchema },
         ]),
     ],
-    controllers: [MapController],
-    providers: [MapService, Logger, MapGateway],
+    controllers: [MapController, GameMapController],
+    providers: [
+        Logger,
+        MapGateway,
+        SessionGateway,
+        PageRoomGateway,
+        MapService,
+        GameSessionService,
+        PlayerService,
+        GameMapService],
 })
 export class AppModule {}

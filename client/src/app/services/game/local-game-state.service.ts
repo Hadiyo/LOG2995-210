@@ -2,10 +2,10 @@ import { Injectable, computed, signal } from '@angular/core';
 import { ChatMessage } from '@common/chat-message';
 import { GameNotificationKind } from '@common/game-notification';
 import { GameSessionSnapshot, TurnPhase } from '@common/game-session';
-import { GameActionType } from '@common/game-socket-events';
+import { GameActionType } from '@common/game/game-session.interface';
 import { TileType } from '@common/maps/map.enums';
 import { GameCell } from '@common/maps/map.interface';
-import { GamePlayerState, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerStatus } from '@common/player/player.interface';
 import { Observable, of, throwError } from 'rxjs';
 import { GameNotificationStateService } from './game-notification-state.service';
 import { applyRuntimePlayerDefaults, assignInitialPositions, toGameMapState } from './local/local-game-map.utils';
@@ -51,7 +51,7 @@ export class LocalGameStateService {
         const totalSeconds = params.turnDurationSeconds ?? localGameConstants.DEFAULT_TURN_DURATION_SECONDS;
         const gameMap = toGameMapState(params.map);
         const players = assignInitialPositions(applyRuntimePlayerDefaults(params.players), gameMap);
-        const activePlayerId = players.find((player) => player.status === PlayerStatus.Active)?.id ?? '';
+        const activePlayerId = players.find((player) => player.state.status === PlayerStatus.Active)?.id ?? '';
 
         const snapshot: GameSessionSnapshot = {
             id: sessionId,
@@ -139,7 +139,7 @@ export class LocalGameStateService {
         if (session.turn.activePlayerId !== currentPlayerId) return;
 
         const actor = session.players.find((player) => player.id === currentPlayerId);
-        if (!actor || actor.status !== PlayerStatus.Active || !actor.position) return;
+        if (!actor || actor.state.status !== PlayerStatus.Active || !actor.state.position) return;
 
         const targetCell = session.map.map[targetIndex];
         if (!targetCell) return;
@@ -177,7 +177,7 @@ export class LocalGameStateService {
         const normalized = content.trim().slice(0, localGameConstants.CHAT_MESSAGE_MAX_LENGTH);
         if (!normalized) return;
 
-        const author = session.players.find((player) => player.id === currentPlayerId)?.name ?? 'Player';
+        const author = session.players.find((player) => player.id === currentPlayerId)?.information.name ?? 'Player';
         session.messages.push(this.createChatMessage(author, normalized));
         this.publishSession(session);
     }
@@ -229,69 +229,69 @@ export class LocalGameStateService {
         return this.sessions.get(currentSessionId) ?? null;
     }
 
-    private executeMove(session: GameSessionSnapshot, actor: GamePlayerState, targetCell: GameCell): void {
-        if (actor.remainingMovement <= 0) return;
+    private executeMove(session: GameSessionSnapshot, actor: Player, targetCell: GameCell): void {
+        if (actor.state.remainingMovements <= 0) return;
         if (!targetCell.isWalkable) return;
-        if (!actor.position) return;
-        if (localGameRuntimeUtils.getManhattanDistance(actor.position, targetCell.position) !== localGameConstants.SINGLE_STEP_DISTANCE) return;
+        if (!actor.state.position) return;
+        if (localGameRuntimeUtils.getManhattanDistance(actor.state.position, targetCell.position) !== localGameConstants.SINGLE_STEP_DISTANCE) return;
         if (localGameRuntimeUtils.isPositionOccupiedByAnotherActivePlayer(session, targetCell.position, actor.id)) return;
 
-        actor.facing = localGameRuntimeUtils.getFacingToTarget(actor.position, targetCell.position);
+        actor.render.facing = localGameRuntimeUtils.getFacingToTarget(actor.state.position, targetCell.position);
         localGameRuntimeUtils.setTransientPose(actor, 'walk', localGameConstants.WALK_POSE_DURATION_MS);
-        actor.position = { ...targetCell.position };
-        actor.remainingMovement -= 1;
+        actor.state.position = { ...targetCell.position };
+        actor.state.remainingMovements -= 1;
     }
 
-    private executeAttack(session: GameSessionSnapshot, actor: GamePlayerState, targetCell: GameCell): void {
-        if (actor.remainingActions <= 0) return;
-        if (!actor.position) return;
-        if (localGameRuntimeUtils.getManhattanDistance(actor.position, targetCell.position) !== localGameConstants.SINGLE_STEP_DISTANCE) return;
+    private executeAttack(session: GameSessionSnapshot, actor: Player, targetCell: GameCell): void {
+        if (actor.state.remainingActions <= 0) return;
+        if (!actor.state.position) return;
+        if (localGameRuntimeUtils.getManhattanDistance(actor.state.position, targetCell.position) !== localGameConstants.SINGLE_STEP_DISTANCE) return;
 
         const target = session.players.find(
             (player) =>
                 player.id !== actor.id &&
-                player.status === PlayerStatus.Active &&
-                player.position?.x === targetCell.position.x &&
-                player.position?.y === targetCell.position.y,
+                player.state.status === PlayerStatus.Active &&
+                player.state.position?.x === targetCell.position.x &&
+                player.state.position?.y === targetCell.position.y,
         );
         if (!target) return;
 
-        actor.facing = localGameRuntimeUtils.getFacingToTarget(actor.position, targetCell.position);
+        actor.render.facing = localGameRuntimeUtils.getFacingToTarget(actor.state.position, targetCell.position);
         localGameRuntimeUtils.setTransientPose(actor, 'attack', localGameConstants.ATTACK_POSE_DURATION_MS);
 
-        const attackRoll = localGameRuntimeUtils.rollCombatDie(actor.dice.attack);
-        const defenseRoll = localGameRuntimeUtils.rollCombatDie(target.dice.defense);
-        const attackTotal = actor.attributes.attack + attackRoll;
-        const defenseTotal = target.attributes.defense + defenseRoll;
+        const attackRoll = localGameRuntimeUtils.rollCombatDie(actor.information.dices.attack);
+        const defenseRoll = localGameRuntimeUtils.rollCombatDie(target.information.dices.defense);
+        const attackTotal = actor.state.attributes.attack + attackRoll;
+        const defenseTotal = target.state.attributes.defense + defenseRoll;
         const damage = Math.max(0, attackTotal - defenseTotal);
 
-        target.health.current = Math.max(0, target.health.current - damage);
-        actor.remainingActions -= 1;
+        target.state.attributes.health = Math.max(0, target.state.attributes.health - damage);
+        actor.state.remainingActions -= 1;
 
-        if (target.health.current > 0) return;
+        if (target.state.attributes.health > 0) return;
 
-        target.status = PlayerStatus.Eliminated;
-        target.pose = 'dead';
-        target.poseStartedAt = undefined;
-        target.poseDurationMs = undefined;
-        this.emitNotification(session.id, GameNotificationKind.PlayerEliminated, `${target.name} a ete elimine.`);
+        target.state.status = PlayerStatus.Eliminated;
+        target.render.pose = 'dead';
+        target.render.poseStartedAt = undefined;
+        target.render.poseDurationMs = undefined;
+        this.emitNotification(session.id, GameNotificationKind.PlayerEliminated, `${target.information.name} a ete elimine.`);
         this.endSessionIfSingleActivePlayerRemaining(session);
     }
 
-    private executeInteract(session: GameSessionSnapshot, actor: GamePlayerState, targetCell: GameCell): void {
-        if (actor.remainingActions <= 0) return;
-        if (!actor.position) return;
-        if (localGameRuntimeUtils.getManhattanDistance(actor.position, targetCell.position) !== localGameConstants.SINGLE_STEP_DISTANCE) return;
+    private executeInteract(session: GameSessionSnapshot, actor: Player, targetCell: GameCell): void {
+        if (actor.state.remainingActions <= 0) return;
+        if (!actor.state.position) return;
+        if (localGameRuntimeUtils.getManhattanDistance(actor.state.position, targetCell.position) !== localGameConstants.SINGLE_STEP_DISTANCE) return;
         if (targetCell.tileType !== TileType.DOOR) return;
 
-        actor.facing = localGameRuntimeUtils.getFacingToTarget(actor.position, targetCell.position);
+        actor.render.facing = localGameRuntimeUtils.getFacingToTarget(actor.state.position, targetCell.position);
         localGameRuntimeUtils.setTransientPose(actor, 'attack', localGameConstants.ATTACK_POSE_DURATION_MS);
         targetCell.isWalkable = !targetCell.isWalkable;
-        actor.remainingActions -= 1;
+        actor.state.remainingActions -= 1;
     }
 
     private advanceTurn(session: GameSessionSnapshot, reason: 'EARLY' | 'TIMEOUT' | 'SURRENDER'): void {
-        const activePlayers = session.players.filter((player) => player.status === PlayerStatus.Active);
+        const activePlayers = session.players.filter((player) => player.state.status === PlayerStatus.Active);
         if (activePlayers.length <= 1) {
             this.endSessionIfSingleActivePlayerRemaining(session);
             return;
@@ -305,7 +305,7 @@ export class LocalGameStateService {
         for (let offset = 1; offset <= order.length; offset++) {
             const candidateId = order[(startIndex + offset) % order.length];
             const candidate = session.players.find((player) => player.id === candidateId);
-            if (candidate && candidate.status === PlayerStatus.Active) {
+            if (candidate && candidate.state.status === PlayerStatus.Active) {
                 nextActivePlayerId = candidate.id;
                 break;
             }
@@ -328,10 +328,10 @@ export class LocalGameStateService {
     }
 
     private endSessionIfSingleActivePlayerRemaining(session: GameSessionSnapshot): boolean {
-        const activePlayers = session.players.filter((player) => player.status === PlayerStatus.Active);
+        const activePlayers = session.players.filter((player) => player.state.status === PlayerStatus.Active);
         if (activePlayers.length > 1) return false;
 
-        const winnerName = activePlayers[0]?.name;
+        const winnerName = activePlayers[0]?.information.name;
         session.turn.activePlayerId = '';
         session.turn.phase = TurnPhase.Transition;
         session.turn.remainingSeconds = 0;
@@ -345,8 +345,8 @@ export class LocalGameStateService {
     private resetActivePlayerTurnResources(session: GameSessionSnapshot, activePlayerId: string): void {
         const activePlayer = session.players.find((player) => player.id === activePlayerId);
         if (!activePlayer) return;
-        activePlayer.remainingMovement = activePlayer.attributes.speed;
-        activePlayer.remainingActions = localGameConstants.DEFAULT_ACTIONS_PER_TURN;
+        activePlayer.state.remainingMovements = activePlayer.state.attributes.speed;
+        activePlayer.state.remainingActions = localGameConstants.DEFAULT_ACTIONS_PER_TURN;
     }
 
     private emitNotification(sessionId: string, kind: GameNotificationKind, content: string): void {
@@ -381,6 +381,6 @@ export class LocalGameStateService {
     }
 
     private getPlayerNameById(session: GameSessionSnapshot, playerId: string): string | undefined {
-        return session.players.find((player) => player.id === playerId)?.name;
+        return session.players.find((player) => player.id === playerId)?.information.name;
     }
 }
