@@ -1,0 +1,59 @@
+<h3>Informations du joueur</h3>
+<div class="player-info-content">
+  <div class="player-avatar">
+    <app-character-sprite
+      [avatarId]="avatarId"
+      [state]="avatarState"
+      [direction]="avatarDirection"
+      [width]="avatarSpriteSize"
+      [height]="avatarSpriteSize"
+      [scale]="1"
+      [fitToHost]="true"
+      [ariaLabel]="player ? 'Avatar de ' + player.information.name : 'Avatar du joueur courant'"
+    />
+  </div>
+  <div class="player-stats-grid">
+    <div class="player-stat-row">
+      <span class="player-stat-label">Nom</span>
+      <span class="player-stat-value">{{ player?.information ?? defaultPanelTitle }}</span>
+    </div>
+    <div class="player-stat-row">
+      <span class="player-stat-label">Vie</span>
+      <span class="player-stat-value">
+        {{ player?.state?.attributes?.health ?? 0 }}/{{ player?.state?.attributes?.maxHealth ?? 0 }}
+      </span>
+    </div>
+    <div class="player-stat-row">
+      <span class="player-stat-label">Rapidité</span>
+      <span class="player-stat-value">
+        {{ player?.state?.attributes?.speed ?? 0 }}
+      </span>
+    </div>
+    <div class="player-stat-row">
+      <span class="player-stat-label">Attaque</span>
+      <span class="player-stat-value">
+        {{ player?.information?.dices?.attack ?? 0 }} +
+        <span class="stat-hint" [class.hint-d6]="player?.information?.dices?.attack  === 'D6'" [class.hint-d4]="player?.information?.dices?.attack === 'D4'">
+          {{ player?.information?.dices?.attack ?? defaultPanelTitle }}
+        </span>
+      </span>
+    </div>
+    <div class="player-stat-row">
+      <span class="player-stat-label">Défense</span>
+      <span class="player-stat-value">
+        {{ player?.information?.dices?.defense  ?? 0 }} +
+        <span class="stat-hint" [class.hint-d6]="player?.information?.dices?.defense === 'D6'" [class.hint-d4]="player?.information?.dices?.defense === 'D4'">
+          {{ player?.information?.dices?.defense ?? defaultPanelTitle }}
+        </span>
+      </span>
+    </div>
+    <div class="player-stat-row">
+      <span class="player-stat-label">Mouvement restant</span>
+      <span class="player-stat-value player-stat-value--strong">{{ player?.state?.remainingMovements ?? 0 }}</span>
+    </div>
+    <div class="player-stat-row">
+      <span class="player-stat-label">Actions restantes</span>
+      <span class="player-stat-value player-stat-value--strong">{{ player?.state?.remainingActions ?? 0 }}</span>
+    </div>
+  </div>
+</div>

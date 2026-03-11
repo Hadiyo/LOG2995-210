@@ -1,0 +1,116 @@
+:host {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  min-height: 0;
+  height: 100%;
+  flex: 1 1 0;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+h3 {
+  margin: 0 0 10px;
+}
+
+.messages__feed {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.messages__feed-wrap {
+  position: relative;
+  min-height: 0;
+  overflow: visible;
+}
+
+.messages__notification {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 2px;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.message {
+  width: fit-content;
+  max-width: 86%;
+  align-self: flex-start;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 7px 9px;
+  background: color-mix(in srgb, var(--bg-main) 75%, transparent);
+}
+
+.message--mine {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--accent-primary) 16%, var(--bg-main));
+}
+
+.message--system {
+  border-color: color-mix(in srgb, var(--border-soft) 60%, transparent);
+  background: color-mix(in srgb, var(--bg-main) 88%, transparent);
+  opacity: 0.78;
+}
+
+.message--system .message__author {
+  color: var(--text-muted);
+}
+
+.message__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.message__author {
+  font-size: 0.83rem;
+}
+
+.message__time {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.message__content {
+  margin: 0;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.messages__input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.messages__input,
+.messages__send-btn {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--bg-main);
+  color: var(--text-main);
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+
+.messages__send-btn {
+  cursor: pointer;
+}
+
+.messages__input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--text-main);
+}
