@@ -26,7 +26,7 @@ export interface MapValidationResult {
 
 const TERRAIN_TILES = new Set<TileType>([TileType.DIRT, TileType.WATER, TileType.ICE]);
 
-const STARTS_REQUIRED_BY_SIZE: Record<MapSize, number> = {
+export const STARTS_REQUIRED_BY_SIZE: Record<MapSize, number> = {
     [MapSize.S]: 2,
     [MapSize.M]: 4,
     [MapSize.L]: 6,

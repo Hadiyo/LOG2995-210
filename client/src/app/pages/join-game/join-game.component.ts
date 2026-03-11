@@ -6,7 +6,8 @@ import { JoinGameCardComponent } from '@app/components/join-game-card/join-game-
 import { ServiceState } from '@app/services/service-state.enum';
 import { SessionService } from '@app/services/session/session.service';
 import { GameSessionPreview } from '@common/game/game-session.interface';
-import { Observable } from 'rxjs';
+import { STARTS_REQUIRED_BY_SIZE } from '@common/maps/map-validation';
+import { map, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-join-game',
@@ -17,11 +18,19 @@ import { Observable } from 'rxjs';
 export class JoinGameComponent implements OnInit, OnDestroy {
   constructor(private readonly sessionService: SessionService, private readonly router: Router) {}
 
-  protected sessions$: Observable<GameSessionPreview[]> = this.sessionService.sessionsPreview$;
+  protected availableSessions$: Observable<GameSessionPreview[]>;;
   protected isLoading = computed(() => this.sessionService.state() === ServiceState.Loading);
 
   ngOnInit(): void {
     this.sessionService.initGameSessionService();
+
+    this.availableSessions$ = this.sessionService.sessionsPreview$.pipe(
+      map(sessions =>
+        sessions.filter(session =>
+          session.nbOfPlayers < STARTS_REQUIRED_BY_SIZE[session.size],
+        ),
+      ),
+    );
   }
 
   ngOnDestroy(): void {
