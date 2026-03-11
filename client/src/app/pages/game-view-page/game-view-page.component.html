@@ -16,7 +16,7 @@
           [rows]="rows()"
           [currentPlayers]="activePlayersCount()"
           [maxPlayers]="maxPlayers()"
-          [activePlayerName]="activePlayer()?.name ?? null"
+          [activePlayerName]="activePlayer()?.information?.name ?? null"
           [remainingSeconds]="session()!.turn.remainingSeconds"
           [totalSeconds]="session()!.turn.totalSeconds"
           [highlightTimer]="isCurrentPlayersTurn()"
@@ -84,7 +84,7 @@
         <app-game-chat-panel
           [messages]="session()!.messages"
           [notification]="activeNotification()"
-          [currentPlayerName]="currentPlayer()?.name ?? null"
+          [currentPlayerName]="currentPlayer()?.information?.name ?? null"
           [messageMaxLength]="constants.messageMaxLength"
           (messageSubmit)="onChatMessageSubmit($event)"
         />

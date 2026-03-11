@@ -1,9 +1,9 @@
 import { EditorMap } from '@common/maps/map.interface';
-import { GamePlayerState } from '@common/player/player.interface';
+import { Player } from '@common/player/player.interface';
 
 export interface CreateLocalSessionParams {
     map: EditorMap;
-    players: GamePlayerState[];
+    players: Player[];
     turnDurationSeconds?: number;
     debugMode?: boolean;
 }

@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, signal } from '@angular/core';
 import { GameNotificationsPanelComponent } from '@app/components/game/game-notifications-panel/game-notifications-panel.component';
+import { ChatMessage } from '@common/chat-message';
 import { GameNotification } from '@common/game-notification';
-import { ChatMessage } from '@common/game/game-session.interface';
 
 @Component({
   selector: 'app-game-chat-panel',
@@ -58,7 +58,7 @@ export class GameChatPanelComponent implements OnChanges, AfterViewInit {
   // Helper to identify if a message was sent by the current player for styling.
   isOwnMessage(message: ChatMessage): boolean {
     if (!this.currentPlayerName) return false;
-    return message.senderName === this.currentPlayerName;
+    return message.author === this.currentPlayerName;
   }
 
   // Scrolls the messages feed to the bottom.

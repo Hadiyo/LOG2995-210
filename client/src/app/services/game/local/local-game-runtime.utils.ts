@@ -1,6 +1,6 @@
 import { GameSessionSnapshot } from '@common/game-session';
 import { Vec2 } from '@common/maps/map.interface';
-import { GamePlayerState, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerStatus } from '@common/player/player.interface';
 import { D4_MAX, D6_MAX } from './local-game.constants';
 
 export const isPositionOccupiedByAnotherActivePlayer = (
@@ -9,9 +9,9 @@ export const isPositionOccupiedByAnotherActivePlayer = (
     playerId: string,
 ): boolean => {
     return session.players.some((player) => {
-        if (player.id === playerId || !player.position) return false;
-        if (player.status !== PlayerStatus.Active) return false;
-        return player.position.x === position.x && player.position.y === position.y;
+        if (player.id === playerId || !player.state.position) return false;
+        if (player.state.status !== PlayerStatus.Active) return false;
+        return player.state.position.x === position.x && player.state.position.y === position.y;
     });
 };
 
@@ -29,13 +29,13 @@ export const getFacingToTarget = (from: Vec2, to: Vec2): 'front' | 'right' | 'ba
     return deltaY >= 0 ? 'front' : 'back';
 };
 
-export const setTransientPose = (player: GamePlayerState, pose: 'walk' | 'attack', durationMs: number): void => {
-    player.pose = pose;
-    player.poseStartedAt = new Date().toISOString();
-    player.poseDurationMs = durationMs;
+export const setTransientPose = (player: Player, pose: 'walk' | 'attack', durationMs: number): void => {
+    player.render.pose = pose;
+    player.render.poseStartedAt = new Date().toISOString();
+    player.render.poseDurationMs = durationMs;
 };
 
-export const rollCombatDie = (die: GamePlayerState['dice']['attack']): number => {
+export const rollCombatDie = (die: Player['information']['dices']['attack']): number => {
     const maxValue = die === 'D6' ? D6_MAX : D4_MAX;
     return Math.floor(Math.random() * maxValue) + 1;
 };

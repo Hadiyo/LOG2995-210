@@ -4,7 +4,7 @@ import { CharacterSpriteComponent } from '@app/components/game/character-sprite/
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
 import { TileType } from '@common/maps/map.enums';
 import { GameCell, MapObject } from '@common/maps/map.interface';
-import { GamePlayerState, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerStatus } from '@common/player/player.interface';
 
 // Used to vary breathing animation delay across players (avoid sync look).
 const BREATHING_DELAY_VARIANTS = 5;
@@ -28,7 +28,7 @@ export class GameMapGridComponent {
   // Optional map objects placed on tiles.
   @Input() objects: readonly MapObject[] = [];
   // Current players list.
-  @Input() players: readonly GamePlayerState[] = [];
+  @Input() players: readonly Player[] = [];
   // Optional per-player direction overrides (dev/runtime).
   @Input() playerDirections: Readonly<Record<string, CharacterDirection>> = {};
   // Optional per-player state overrides (dev/runtime).
@@ -52,9 +52,9 @@ export class GameMapGridComponent {
   }
 
   // Find player occupying this exact cell.
-  getPlayerAtCell(cell: GameCell): GamePlayerState | null {
+  getPlayerAtCell(cell: GameCell): Player | null {
     return this.players.find((player) =>
-      player.position?.x === cell.position.x && player.position?.y === cell.position.y) ?? null;
+      player.state.position?.x === cell.position.x && player.state.position?.y === cell.position.y) ?? null;
   }
 
   // Find map object on this exact cell.
@@ -64,25 +64,25 @@ export class GameMapGridComponent {
   }
 
   // Fallback avatar id if missing.
-  getAvatarId(player: GamePlayerState): number {
-    return player.avatarId ?? 0;
+  getAvatarId(player: Player): number {
+    return player.information.avatarId ?? 0;
   }
 
   // Dead players force dead pose; otherwise use override or idle.
-  getPlayerState(player: GamePlayerState): CharacterState {
-    if (player.status === PlayerStatus.Eliminated) return this.deadPlayerState;
+  getPlayerState(player: Player): CharacterState {
+    if (player.state.status === PlayerStatus.Eliminated) return this.deadPlayerState;
     const localOverride = this.playerStates[player.id];
     if (localOverride) return localOverride;
 
-    const pose = player.pose ?? this.defaultPlayerState;
+    const pose = player.render?.pose ?? this.defaultPlayerState;
     if (this.isTransientPoseExpired(player, pose)) return this.defaultPlayerState;
 
     return pose;
   }
 
   // Direction override or front by default.
-  getPlayerDirection(player: GamePlayerState): CharacterDirection {
-    return this.playerDirections[player.id] ?? player.facing ?? this.defaultPlayerDirection;
+  getPlayerDirection(player: Player): CharacterDirection {
+    return this.playerDirections[player.id] ?? player.render?.facing ?? this.defaultPlayerDirection;
   }
 
   // Deterministic pseudo-random delay from playerId for desynced idle breathing.
@@ -93,12 +93,12 @@ export class GameMapGridComponent {
   }
 
   // Helper to identify if a pose is expired based on server timestamp and duration.
-  private isTransientPoseExpired(player: GamePlayerState, pose: CharacterState): boolean {
+  private isTransientPoseExpired(player: Player, pose: CharacterState): boolean {
     if (pose !== 'walk' && pose !== 'attack') return false;
-    if (!player.poseStartedAt || !player.poseDurationMs) return false;
+    if (!player.render?.poseStartedAt || !player.render?.poseDurationMs) return false;
 
-    const startedAtMs = Date.parse(player.poseStartedAt);
+    const startedAtMs = Date.parse(player.render?.poseStartedAt);
     if (Number.isNaN(startedAtMs)) return false;
-    return this.nowMs >= startedAtMs + player.poseDurationMs;
+    return this.nowMs >= startedAtMs + player.render?.poseDurationMs;
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { GameNotification } from '@common/game-notification';
-import { GameNotificationPayload } from '@common/game-socket-events';
+import { GameNotificationPayload } from '@common/game/game-session.interface';
 
 // Display duration for one notification before auto-clear.
 const GAME_NOTIFICATION_DISPLAY_MS = 2400;

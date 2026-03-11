@@ -7,7 +7,7 @@ import { AvatarId } from '@common/character/character.model';
 import { TurnPhase } from '@common/game-session';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMap, MapObject } from '@common/maps/map.interface';
-import { GamePlayerState, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerStatus } from '@common/player/player.interface';
 import { catchError, map, of, take } from 'rxjs';
 
 // Radix for random ID generation (base 36 for alphanumeric characters)
@@ -53,7 +53,6 @@ type DevAssignments = Record<string, Record<string, string>>;
   standalone: true,
   imports: [],
   templateUrl: './dev-game-launcher.component.html',
-  styleUrl: './dev-game-launcher.component.scss',
 })
 export class DevGameLauncherComponent {
   constructor(
@@ -115,7 +114,7 @@ export class DevGameLauncherComponent {
       take(1),
       map((maps) => {
         const selectedMap =
-          maps[Math.floor(Math.random() * maps.length)] ??
+          maps[Math.floor(2)] ??
           this.createFallbackEditorMap(this.getRandomFallbackMapSize());
         return this.createLocalSessionFromMap(selectedMap);
       }),
@@ -130,22 +129,32 @@ export class DevGameLauncherComponent {
    * Builds the player roster for the dev game, limited by map max player count.
    * Each player gets default stats and is set to Active status.
    */
-  private buildDevRoster(maxPlayers: number): GamePlayerState[] {
+  private buildDevRoster(maxPlayers: number): Player[] {
     const rosterLimit = Math.max(1, maxPlayers);
     return DEV_ROSTER.slice(0, rosterLimit).map((entry) => ({
-      id: entry.id,
-      name: entry.name,
-      avatarId: entry.avatarId,
-      wins: 0,
-      isOrganizer: entry.isOrganizer,
-      status: PlayerStatus.Active,
-      health: { current: DEFAULT_HEALTH, max: DEFAULT_HEALTH },
-      attributes: { speed: DEFAULT_SPEED, attack: DEFAULT_ATTACK, defense: DEFAULT_DEFENSE },
-      dice: { attack: 'D6', defense: 'D4' },
-      facing: 'front',
-      pose: 'idle',
-      remainingMovement: DEFAULT_MOVEMENT,
-      remainingActions: DEFAULT_ACTIONS,
+        id: entry.id,
+        information: {
+            name: entry.name,
+            avatarId: entry.avatarId,
+            isOrganizer: entry.isOrganizer,
+            dices: {
+                attack: 'D6',
+                defense: 'D4',
+            },
+            bonus: 'speed',
+        },
+        state: {
+            position: {x: 0, y: 1},
+            status: PlayerStatus.Active,
+            attributes: { health: DEFAULT_HEALTH, maxHealth: DEFAULT_HEALTH, speed: DEFAULT_SPEED, attack: DEFAULT_ATTACK, defense: DEFAULT_DEFENSE },
+            wins: 0,
+            remainingActions: DEFAULT_ACTIONS,
+            remainingMovements: DEFAULT_MOVEMENT,
+        },
+        render: {
+            facing: 'front',
+            pose: 'idle',
+        },
     }));
   }
 
@@ -154,7 +163,7 @@ export class DevGameLauncherComponent {
    * Returns existing assignment if still valid, or finds first available player.
    * Falls back to first dev player if none available.
    */
-  private assignPlayerSlot(sessionId: string, clientId: string, players: readonly GamePlayerState[]): string {
+  private assignPlayerSlot(sessionId: string, clientId: string, players: readonly Player[]): string {
     const assignments = this.readAssignments();
     const perSessionAssignments = assignments[sessionId] ?? {};
     const existingPlayerId = perSessionAssignments[clientId];
@@ -183,8 +192,8 @@ export class DevGameLauncherComponent {
   /**
    * Checks if all players are inactive (game ended or all disconnected).
    */
-  private hasNoActivePlayers(players: readonly GamePlayerState[]): boolean {
-    return !players.some((player) => player.status === PlayerStatus.Active);
+  private hasNoActivePlayers(players: readonly Player[]): boolean {
+    return !players.some((player) => player.state.status === PlayerStatus.Active);
   }
 
   /**

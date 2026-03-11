@@ -70,6 +70,7 @@ export class GameSessionService {
             const session = this.findSessionByPreview(payload.id);
             if (session && player) {
                 session.players.push(player.id);
+                this.gameMapService.updateNumberOfPlayers(payload.id, 1);
                 const internalPlayer = this.getPlayerFromGameSession(player.id); // Verification
                 const playerPayload: PlayerPayload = {
                     player: internalPlayer.player,
@@ -115,7 +116,6 @@ export class GameSessionService {
      * @param previewId 
      */
     private findSessionByPreview(previewId: string): GameSession | undefined {
-        this.logger.log(this.gameSessions);
         for (const session of this.gameSessions.values()) {
             if (session.mapTemplateId.includes(previewId)) {
                 return session;

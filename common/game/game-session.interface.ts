@@ -1,3 +1,4 @@
+import { GameNotification } from "@common/game-notification";
 import { GameMode, MapSize } from "@common/maps/map.enums";
 import { Player, PlayerInformation } from "@common/player/player.interface";
 
@@ -39,6 +40,15 @@ export interface GameSessionPreview {
     nbOfPlayers: number;
     previewImage?: string;
     previewImageFormat?: string;
+}
+
+// Types of game actions that can be executed by a player.
+export type GameActionType = 'MOVE' | 'ATTACK' | 'INTERACT';
+
+// Payload broadcast when a gameplay notification is created.
+export interface GameNotificationPayload {
+    sessionId: string;
+    notification: GameNotification;
 }
 
 export interface ChatPayload {

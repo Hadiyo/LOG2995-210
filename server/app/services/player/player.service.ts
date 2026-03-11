@@ -1,5 +1,5 @@
 import { InternalPlayer } from '@app/interface/player.interface';
-import { Player, PlayerInformation, PlayerState } from '@common/player/player.interface';
+import { Player, PlayerInformation, PlayerRenderState, PlayerState, PlayerStatus } from '@common/player/player.interface';
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
@@ -22,6 +22,7 @@ export class PlayerService {
             id: randomUUID(),
             information: info,
             state: this.setPlayerInitialState(),
+            render: this.setPlayerInitialRenderState(),
         };
 
         const newInternalPlayer: InternalPlayer = {
@@ -46,11 +47,26 @@ export class PlayerService {
     private setPlayerInitialState(): PlayerState {
         const state: PlayerState = {
             position: { x: 0, y: 0 },
-            health: 4,
+            status: PlayerStatus.Active,
+            attributes: {
+                health: 0,
+                maxHealth: 0,
+                speed: 0,
+                attack: 0,
+                defense: 0,
+            },
             wins: 0,
             remainingActions: 3,
             remainingMovements: 3,
         };
         return state;
+    }
+
+    private setPlayerInitialRenderState(): PlayerRenderState {
+        const render: PlayerRenderState = {
+            facing: 'front',
+            pose: 'idle',
+        };
+        return render;
     }
 }
