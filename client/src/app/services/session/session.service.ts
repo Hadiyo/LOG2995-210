@@ -1,12 +1,12 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ServiceState } from '@app/services/service-state.enum';
+import { SessionApiService } from '@app/services/session/session-api.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { CreateSessionPayload, GameSessionPreview, JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
 import { PlayerInformation } from '@common/player/player.interface';
 import { PageContext, PageSocketEvents, RoomSocketEvents } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
-import { SessionApiService } from './session-api.service';
 
 /**
  * This services allows a client to join, leave, create and delete game sessions which will later
@@ -148,8 +148,8 @@ export class SessionService {
    * Client request to leave a game session
    * @param sessionId 
    */
-  leaveGameSession(sessionId: string): void {
-    this.socket.send(RoomSocketEvents.LeaveGameRoom, sessionId);
+  leaveGameSession(playerId: string): void {
+    this.socket.send(RoomSocketEvents.LeaveGameRoom, playerId);
   }
 
   /**
@@ -163,7 +163,7 @@ export class SessionService {
     }
     // Add player to waiting room
     void payload.player;
-    // Re-direct to waiting-room with sessionId
+    // Re-direct to waiting-room with sessionId: Temporary 
     this.router.navigate(['waiting-room', payload.sessionId]);
   };
 
@@ -172,7 +172,7 @@ export class SessionService {
     this.updatePlayerCount(payload.mapPreviewId, 1);
     // Add player to waiting room
     void payload.player;
-    // Re-direct to waiting-room with sessionId
+    // Re-direct to waiting-room with sessionId: Temporary
     this.router.navigate(['waiting-room', payload.sessionId]);
   };
 
@@ -212,10 +212,10 @@ export class SessionService {
     this.sessionPreviewSubjects.next(updated);
   };
 
-  private updatePlayerCount(sessionId: string, delta: number): void {
+  private updatePlayerCount(previewId: string, delta: number): void {
     const updated = this.sessionPreviewSubjects.value.map(session =>
-      session.id === sessionId
-        ? { ...session, playerCount: session.nbOfPlayers + delta }
+      session.id === previewId
+        ? { ...session, nbOfPlayers: session.nbOfPlayers + delta }
         : session,
     );
     this.sessionPreviewSubjects.next(updated);

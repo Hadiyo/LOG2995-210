@@ -111,7 +111,6 @@ export class GameSessionService {
      * @param previewId 
      */
     private findSessionByPreview(previewId: string): GameSession | undefined {
-        this.logger.log(this.gameSessions);
         for (const session of this.gameSessions.values()) {
             if (session.mapTemplateId.includes(previewId)) {
                 return session;
