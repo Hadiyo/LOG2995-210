@@ -1,7 +1,7 @@
-import { InternalPlayer } from '@app/interface/player.interface';
 import { GameMapService } from '@app/services/game-map/game-map.service';
 import { PlayerService } from '@app/services/player/player.service';
 import { CreateSessionPayload, GameSession, JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
+import { PlayerInformation } from '@common/player/player.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
@@ -62,14 +62,14 @@ export class GameSessionService {
      */
     joinGameSession(payload: JoinSessionPayload, socketId: string): PlayerPayload | undefined {
         try {
-            const player = this.playerService.savePlayer(payload.character, socketId);
-            const session = this.findSessionByPreview(payload.id);
+            const player = this.playerService.savePlayer(payload.character, socketId); // Create Player with character information
+            const session = this.findSessionByPreview(payload.id); // Find the session from the previewId
             if (session && player) {
-                session.players.push(player.id);
+                session.players.push(player.id); 
                 this.gameMapService.updateNumberOfPlayers(payload.id, 1);
-                const internalPlayer = this.getPlayerFromGameSession(player.id); // Verification
                 const playerPayload: PlayerPayload = {
-                    player: internalPlayer.player,
+                    players: this.getPlayersFromGameSession(session.id),
+                    clientPlayer: player.information,
                     sessionId: session.id,
                     mapPreviewId: session.mapTemplateId,
                 };
@@ -138,13 +138,15 @@ export class GameSessionService {
      * @param playerId 
      * @returns InternalPlayer if in a game session otherwise undefined
      */
-    private getPlayerFromGameSession(playerId: string): InternalPlayer | undefined {
-        for (const session of this.gameSessions.values()) {
-            if (session.players.includes(playerId)) {
-                return this.playerService.getPlayerById(playerId);
-            }
-        }
-        return undefined;
+    private getPlayersFromGameSession(sessionId: string): PlayerInformation[] {
+        const session = [...this.gameSessions.values()]
+            .find(s => s.id.includes(sessionId));
+
+        if (!session) return [];
+
+        return session.players.map(playerId =>
+            this.playerService.getPlayerById(playerId).player.information,
+        );
     }
 
 }

@@ -2,12 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { SessionService } from '@app/services/session/session.service';
-
-interface WaitingPlayer {
-  name: string;
-  avatar: string;
-  isOrganizer: boolean;
-}
+import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
+import { PlayerInformation } from '@common/player/player.interface';
+import { map, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-waiting-room',
@@ -16,19 +13,35 @@ interface WaitingPlayer {
   styleUrls: ['./waiting-room.component.scss'],
 })
 export class WaitingRoomComponent implements OnInit, OnDestroy {
-  players: WaitingPlayer[] = [];
+  protected players$: Observable<PlayerInformation[]> = this.waitingRoomService.players$;
+  protected canStart$ = this.players$.pipe(map(players => this.isOrganizer && players.length >= 2));
+  protected errorMessage = '';
 
-  constructor(private router: Router, private sessionService: SessionService) {}
+  constructor(private router: Router, 
+    private waitingRoomService: WaitingRoomService,
+    private sessionService: SessionService) {}
 
   ngOnInit() {
-    this.sessionService.initGameSessionService();
+    this.waitingRoomService.initWaitingRoom();
+    this.sessionService.subscribeToSessionEvents();
   }
 
   ngOnDestroy(): void {
+    this.waitingRoomService.unsubscribeSocketEvents();
     this.sessionService.unsubscribeToSessionEvents();
   }
 
-  quitGame(): void {
-    this.router.navigate(['/home']);
+  get isOrganizer(): boolean {
+    return this.waitingRoomService.me?.isOrganizer ?? false;
   }
+
+  protected leaveGame(player: PlayerInformation): void {
+    this.waitingRoomService.leaveGameSession(player.name);
+  }
+
+  protected startGame(): void {
+    return;
+  }
+
+
 }

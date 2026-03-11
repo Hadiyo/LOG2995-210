@@ -1,59 +1,257 @@
+// ── Variables ──────────────────────────────────────────────────────────────
+@use 'sass:color';
+$color-organizer: #f0b429;   // doré — distingue l'organisateur
+$color-virtual:   #7c3aed;   // violet — distingue les JV
+$color-error:     #ef4444;
+$color-lock:      #f97316;
+$radius:          8px;
+$panel-bg:        rgba(255, 255, 255, 0.05);
+
+// ── Layout principal ───────────────────────────────────────────────────────
 .waiting-room-container {
-  height: 100vh;
-  box-sizing: border-box; 
-  padding: 56px 6vw 40px; 
-  background: var(--bg-main); 
-  color: var(--text-main);
-  
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  padding: 2rem;
+  gap: 1.5rem;
+  color: #e2e8f0;
+  background: #0f172a;
 }
 
-.title {
-  text-align: center;
-  color: var(--accent-primary);
-  margin-bottom: 20px; 
-  flex-shrink: 0;
+// ── Header ─────────────────────────────────────────────────────────────────
+.waiting-room-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+
+  .title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .access-code {
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.4rem 0.8rem;
+    border-radius: $radius;
+
+    strong {
+      letter-spacing: 0.15em;
+      color: #93c5fd;
+    }
+  }
+
+  .lock-badge {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $color-lock;
+    border: 1px solid $color-lock;
+    padding: 0.3rem 0.7rem;
+    border-radius: $radius;
+  }
 }
 
+// ── Bannière d'erreur ──────────────────────────────────────────────────────
+.error-banner {
+  background: rgba($color-error, 0.15);
+  border: 1px solid $color-error;
+  color: $color-error;
+  padding: 0.75rem 1rem;
+  border-radius: $radius;
+  font-size: 0.9rem;
+}
+
+// ── Grille de contenu ──────────────────────────────────────────────────────
 .content-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  
-  flex-grow: 1; 
-  min-height: 0;
-  margin-bottom: 20px;
+  gap: 1.5rem;
+  flex: 1;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 }
 
+// ── Panneaux ───────────────────────────────────────────────────────────────
 .panel {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--accent-primary);
-  border-radius: 8px;
-  padding: 20px;
-  box-sizing: border-box;
-  overflow-y: auto; 
-}
-
-.organizer {
-  color: #ffd700; 
-  font-weight: bold;
-}
-
-.actions {
+  background: $panel-bg;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: $radius;
+  padding: 1.25rem;
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  flex-shrink: 0; 
+  flex-direction: column;
+  gap: 1rem;
 }
 
-button {
-  padding: 12px 24px;
+.panel-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #cbd5e1;
+
+  .player-count {
+    font-weight: 400;
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+}
+
+// ── Liste des joueurs ──────────────────────────────────────────────────────
+.players-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.player-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: $radius;
+  background: rgba(255, 255, 255, 0.04);
+  transition: background 0.15s;
+
+  &.organizer {
+    border-left: 3px solid $color-organizer;
+    background: rgba($color-organizer, 0.08);
+
+    .player-name { color: $color-organizer; }
+  }
+
+  &.virtual {
+    border-left: 3px solid $color-virtual;
+    background: rgba($color-virtual, 0.08);
+
+    .player-name { color: color.adjust($color-virtual, $lightness: 20%); }
+  }
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.player-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ── Badges ─────────────────────────────────────────────────────────────────
+.badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
   border-radius: 4px;
+  width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  &--organizer {
+    background: rgba($color-organizer, 0.2);
+    color: $color-organizer;
+  }
+
+  &--virtual {
+    background: rgba($color-virtual, 0.2);
+    color: color.adjust($color-virtual, $lightness: 20%)
+  }
+}
+
+// ── Bouton d'exclusion ─────────────────────────────────────────────────────
+.btn-kick {
+  background: transparent;
+  border: 1px solid rgba($color-error, 0.4);
+  color: rgba($color-error, 0.7);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 0.8rem;
   cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba($color-error, 0.15);
+    border-color: $color-error;
+    color: $color-error;
+  }
+}
+
+// ── Chat placeholder ───────────────────────────────────────────────────────
+.chat-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 0.9rem;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: $radius;
+  min-height: 200px;
+}
+
+// ── Footer actions ─────────────────────────────────────────────────────────
+.waiting-room-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 0.5rem;
+}
+
+.btn-primary {
+  padding: 0.65rem 1.5rem;
+  background: #3b82f6;
+  color: white;
   border: none;
-  font-weight: bold;
-  
-  &.btn-primary { background: var(--accent-primary); color: white; }
-  &.btn-secondary { background: transparent; border: 1px solid var(--accent-primary); color: var(--accent-primary); }
+  border-radius: $radius;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) { background: #2563eb; }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.btn-secondary {
+  padding: 0.65rem 1.5rem;
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: $radius;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #e2e8f0;
+  }
 }

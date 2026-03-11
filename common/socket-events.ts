@@ -17,18 +17,21 @@ export enum PageContext {
 
 export enum RoomSocketEvents {
     JoinGameRoom = 'gameRoomJoined',
-    LeaveGameRoom = 'leaveGameRoom',
     CreateGameSession = 'createGameSession',
-    GameSessionCreated = 'gameSessionCreated',
     NewAvailableSession = 'newSessionAvailable',
-    DeleteGameSession = 'deleteGameSession',
-    GameSessionDeleted = 'gameSessionDeleted',
     PlayerJoinedGame = 'playerJoinedGame',
-    PlayerLeftGame = 'playerLeftGame',
     IncrementPlayerCount = 'incrementPlayerCount',
     DecrementPlayerCount = 'decrementPlayerCount',
-    AddCharacterToPlayer = 'addCharacterToPlayer',
     AddClientToSession = 'addClientToSession',
+}
+
+export enum WaitingRoomEvents {
+    LeaveGameRoom = 'leaveGameRoom',
+    DeleteGameSession = 'deleteGameSession',
+    GameSessionDeleted = 'gameSessionDeleted',
+    PlayerJoinedSession = 'playerJoinedSession',
+    PlayerLeftSession = 'playerLeftSession',
+    ClientJoinedSession = 'clientJoinedSession',
 }
 
 export enum ErrorSocketEvents {

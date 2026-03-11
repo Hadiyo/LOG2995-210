@@ -5,9 +5,9 @@
     <div class="panel players-list">
       <h2>Joueurs en attente</h2>
       <ul>
-        @for (player of players; track player.name) {
+        @for (player of players$ | async; track player.name) {
           <li [class.organizer]="player.isOrganizer">
-            <img [src]="player.avatar" alt="Avatar" class="avatar-small">
+            <img [src]="'assets/avatars/thumbs/' + player.avatarId + '.png'" alt="Avatar" class="avatar-small">
             <span>{{ player.name }}</span>
             @if( player.isOrganizer) {
               <span class="badge">Organisateur</span>
@@ -24,6 +24,78 @@
   </div>
 
   <div class="actions">
-    <button class="btn-secondary" (click)="quitGame()">Quitter la partie</button>
+    <button class="btn-secondary" (click)="leaveGame()">Quitter la partie</button>
   </div>
 </div>
+
+<div class="waiting-room-container">
+  @if (errorMessage) {
+    <div class="error-banner" role="alert">{{ errorMessage }}</div>
+  }
+
+  <div class="content-grid">
+    <section class="panel players-panel">
+      <h2 class="panel-title">
+        Joueurs
+        <span class="player-count">({{ players$ }})</span>
+      </h2>
+
+      <ul class="players-list">
+        @for (player of players$ | async; track player.name) {
+          <li class="player-item"
+              [class.organizer]="player.isOrganizer">
+
+            <img
+              class="avatar"
+              [src]="'assets/avatars/thumbs/' + player.avatarId + '.png'"
+              [alt]="player.name"
+            />
+
+            <div class="player-info">
+              <span class="player-name">{{ player.name }}</span>
+              @if (player.isOrganizer) {
+                <span class="badge badge--organizer">Organisateur</span>
+              }
+            </div>
+
+            <!-- Bouton d'exclusion : visible uniquement pour l'organisateur-->
+            @if (player.isOrganizer) {
+              <button
+                class="btn-kick"
+                aria-label="Exclure {{ player.name }}"
+                (click)="leaveGame(player)"
+              >
+                ✕
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="panel chat-panel">
+      <h2 class="panel-title">Clavardage</h2>
+      <div class="chat-placeholder">
+        <p>Zone de clavardage</p>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="waiting-room-actions">
+    <button class="btn-secondary" (click)="leaveGame()">
+      Quitter la partie
+    </button>
+
+    @if(canStart$) {
+      <button
+        class="btn-primary"
+        (click)="startGame()"
+      >
+        Lancer la partie
+      </button>
+    }
+  </footer>
+
+</div>
+

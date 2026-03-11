@@ -15,7 +15,8 @@ export interface GameSessionPayload {
 }
 
 export interface PlayerPayload {
-    player: Player,
+    players: PlayerInformation[],
+    clientPlayer: PlayerInformation,
     sessionId: string,
     mapPreviewId: string,
 }
