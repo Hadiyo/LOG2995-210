@@ -17,11 +17,22 @@
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
+.card--locked {
+  opacity: 0.72;
+}
+
 .card:focus-visible,
 .card:hover {
   transform: translateY(-2px);
   border-color: rgba(110, 168, 255, 0.45);
   box-shadow: 0 14px 28px rgba(5, 10, 18, 0.5);
+}
+
+.card--locked:focus-visible,
+.card--locked:hover {
+  transform: none;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
 }
 
 .thumbnail {
@@ -99,4 +110,9 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   white-space: nowrap;
   font-size: 0.94rem;
+}
+
+.chip--locked {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ffb0b0;
 }

@@ -17,17 +17,11 @@ export enum PageContext {
 
 export enum RoomSocketEvents {
     JoinGameRoom = 'gameRoomJoined',
-    LeaveGameRoom = 'leaveGameRoom',
     CreateGameSession = 'createGameSession',
-    GameSessionCreated = 'gameSessionCreated',
     NewAvailableSession = 'newSessionAvailable',
-    DeleteGameSession = 'deleteGameSession',
-    GameSessionDeleted = 'gameSessionDeleted',
     PlayerJoinedGame = 'playerJoinedGame',
-    PlayerLeftGame = 'playerLeftGame',
     IncrementPlayerCount = 'incrementPlayerCount',
     DecrementPlayerCount = 'decrementPlayerCount',
-    AddCharacterToPlayer = 'addCharacterToPlayer',
     AddClientToSession = 'addClientToSession',
 }
 
@@ -37,6 +31,22 @@ export enum ChatSocketEvents {
     LoadChatMessages = 'loadChatMessages',
     ChatValidationError = 'chatValidationError',
     ChatServerError = 'chatServerError',
+}
+
+export enum WaitingRoomEvents {
+    LeaveGameRoom = 'leaveGameRoom',
+    DeleteGameSession = 'deleteGameSession',
+    GameSessionDeleted = 'gameSessionDeleted',
+    PlayerJoinedSession = 'playerJoinedSession',
+    PlayerLeftSession = 'playerLeftSession',
+    ClientJoinedSession = 'clientJoinedSession',
+    KickPlayer = 'kickPlayer',
+    KickedFromSession = 'kickedFromSession',
+    WaitingRoomState = 'waitingRoomState',
+    SendMessage = 'waitingRoomSendMessage',
+    MessageSent = 'waitingRoomMessageSent',
+    StartGame = 'waitingRoomStartGame',
+    GameStarted = 'waitingRoomGameStarted',
 }
 
 export enum ErrorSocketEvents {

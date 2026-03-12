@@ -5,6 +5,10 @@
             <h2>Créer votre personnage</h2>
         </div>
 
+        @if (errorMessage) {
+        <div class="join-error" role="alert">{{ errorMessage }}</div>
+        }
+
         <label class="field">
             <span>Nom
                 @if (form.controls.name.touched && form.controls.name.invalid) {

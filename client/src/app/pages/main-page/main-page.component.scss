@@ -63,6 +63,17 @@
   align-self: center;
 }
 
+.flash-message {
+  align-self: center;
+  width: min(760px, 100%);
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(212, 231, 243, 0.24);
+  background: rgba(7, 18, 31, 0.72);
+  text-align: center;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+}
+
 app-name-slider {
   margin-top: auto;
   width: 100%;

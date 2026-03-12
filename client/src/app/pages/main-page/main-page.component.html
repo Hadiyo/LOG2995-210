@@ -17,6 +17,10 @@
     </div>
   </header>
 
+  @if (flashMessage()) {
+    <div class="flash-message" role="status">{{ flashMessage() }}</div>
+  }
+
   <div class="main-actions">
     @for (action of actions; track action.id) {
       <app-button
