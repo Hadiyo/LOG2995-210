@@ -1,6 +1,6 @@
 import { pageRoomMap } from '@app/gateways/rooms.record';
 import { GameSessionService } from '@app/services/session/game-session.service';
-import { JoinSessionPayload } from '@common/game/game-session.interface';
+import { JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
@@ -35,7 +35,18 @@ export class SessionGateway {
       }
       this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.NewAvailableSession, gameInformation.mapPreview);
       client.emit(RoomSocketEvents.PlayerJoinedGame);
-      client.emit(WaitingRoomEvents.PlayerJoinedSession, gameInformation.player.information);
+      const waitingRoomState = this.sessionService.getWaitingRoomState(gameInformation.sessionId);
+      const waitingRoomPayload: PlayerPayload = {
+        players: waitingRoomState?.players ?? [gameInformation.player.information],
+        clientPlayer: gameInformation.player.information,
+        sessionId: gameInformation.sessionId,
+        mapPreviewId: gameInformation.mapPreview.id,
+        messages: waitingRoomState?.messages ?? [],
+        isLocked: waitingRoomState?.isLocked ?? false,
+        maxPlayers: waitingRoomState?.maxPlayers ?? gameInformation.mapPreview.maxPlayers,
+      };
+      client.emit(WaitingRoomEvents.ClientJoinedSession, waitingRoomPayload);
+      client.emit(WaitingRoomEvents.WaitingRoomState, waitingRoomState);
     } catch (err) {
       this.logger.error(
         `Error creating session for client ${client.id}: ${err.message}`,
@@ -52,6 +63,9 @@ export class SessionGateway {
       client.join(playerPayload.sessionId); // Connect client to the room
       client.emit(WaitingRoomEvents.ClientJoinedSession, playerPayload); // Send full payload so client knows which player is themselves
       client.to(playerPayload.sessionId).emit(WaitingRoomEvents.PlayerJoinedSession, playerPayload.clientPlayer); // Send the new player information only
+      this.server
+        .to(playerPayload.sessionId)
+        .emit(WaitingRoomEvents.WaitingRoomState, this.sessionService.getWaitingRoomState(playerPayload.sessionId));
       this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, playerPayload.mapPreviewId); // increment player count in join-page for that session
     }
   }

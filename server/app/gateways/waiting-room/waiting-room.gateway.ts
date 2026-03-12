@@ -1,6 +1,7 @@
 import { pageRoomMap } from '@app/gateways/rooms.record';
 import { GameSessionService } from '@app/services/session/game-session.service';
 import { PlayerService } from '@app/services/player/player.service';
+import { GameStartedPayload, WaitingRoomMessagePayload, WaitingRoomRedirectPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
@@ -45,6 +46,7 @@ export class WaitingRoomGateway {
 
         const session = this.sessionService.getGameSessionById(sessionId);
         if (session) {
+            this.server.to(sessionId).emit(WaitingRoomEvents.WaitingRoomState, this.sessionService.getWaitingRoomState(sessionId));
             this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.DecrementPlayerCount, session.mapTemplateId);
         }
     }
@@ -70,9 +72,12 @@ export class WaitingRoomGateway {
 
             this.sessionService.deleteGameSession(session.mapTemplateId);
             // Notify all players in the session room that it was deleted
-            this.server.to(sessionId).emit(WaitingRoomEvents.GameSessionDeleted);
+            const payload: WaitingRoomRedirectPayload = {
+                reason: 'La salle d\'attente a ete fermee parce que l\'organisateur a quitte.',
+            };
+            this.server.to(sessionId).emit(WaitingRoomEvents.GameSessionDeleted, payload);
             // Notify the join-game page to remove the session from the list
-            this.server.to(pageRoomMap.joinGame).emit(WaitingRoomEvents.GameSessionDeleted, sessionId);
+            this.server.to(pageRoomMap.joinGame).emit(WaitingRoomEvents.GameSessionDeleted, session.mapTemplateId);
         } catch (err) {
             client.emit(ErrorSocketEvents.FailedSessionDeletion);
             this.logger.error(`Error deleting the game session: ${err}`);
@@ -96,16 +101,66 @@ export class WaitingRoomGateway {
             return;
         }
 
-        this.sessionService.leaveGameSession(target.player.id);
+        const removedSessionId = this.sessionService.leaveGameSession(target.player.id);
+        if (!removedSessionId) {
+            return;
+        }
         // Notify the kicked player individually
-        this.server.to(target.socketId).emit(WaitingRoomEvents.KickedFromSession);
+        this.server.in(target.socketId).socketsLeave(sessionId);
+
+        const redirectPayload: WaitingRoomRedirectPayload = {
+            reason: `Vous avez ete exclu de la salle d'attente par l'organisateur.`,
+        };
+        this.server.to(target.socketId).emit(WaitingRoomEvents.KickedFromSession, redirectPayload);
         // Notify the rest of the room
         this.server.to(sessionId).emit(WaitingRoomEvents.PlayerLeftSession, target.player.information);
 
         const session = this.sessionService.getGameSessionById(sessionId);
         if (session) {
+            this.server.to(sessionId).emit(WaitingRoomEvents.WaitingRoomState, this.sessionService.getWaitingRoomState(sessionId));
             this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.DecrementPlayerCount, session.mapTemplateId);
         }
+    }
+
+    @SubscribeMessage(WaitingRoomEvents.SendMessage)
+    sendMessage(@MessageBody() payload: WaitingRoomMessagePayload, @ConnectedSocket() client: Socket): void {
+        const internalPlayer = this.playerService.getPlayerBySocketId(client.id);
+        if (!internalPlayer) {
+            return;
+        }
+
+        const sessionId = this.getSessionIdFromSocket(client);
+        if (!sessionId) {
+            return;
+        }
+
+        const message = this.sessionService.addMessage(sessionId, internalPlayer.player.information.name, payload.content);
+        if (!message) {
+            return;
+        }
+
+        this.server.to(sessionId).emit(WaitingRoomEvents.MessageSent, message);
+    }
+
+    @SubscribeMessage(WaitingRoomEvents.StartGame)
+    startGame(@ConnectedSocket() client: Socket): void {
+        const sessionId = this.getSessionIdFromSocket(client);
+        if (!sessionId) {
+            return;
+        }
+
+        const internalPlayer = this.playerService.getPlayerBySocketId(client.id);
+        if (!internalPlayer?.player.information.isOrganizer) {
+            return;
+        }
+
+        const payload: GameStartedPayload | undefined = this.sessionService.startGameSession(sessionId);
+        if (!payload) {
+            client.emit(ErrorSocketEvents.ServerError, 'Impossible de demarrer la partie.');
+            return;
+        }
+
+        this.server.to(sessionId).emit(WaitingRoomEvents.GameStarted, payload);
     }
 
     private getSessionIdFromSocket(client: Socket): string | undefined {
