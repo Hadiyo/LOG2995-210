@@ -43,8 +43,6 @@ export enum WaitingRoomEvents {
     KickPlayer = 'kickPlayer',
     KickedFromSession = 'kickedFromSession',
     WaitingRoomState = 'waitingRoomState',
-    SendMessage = 'waitingRoomSendMessage',
-    MessageSent = 'waitingRoomMessageSent',
     StartGame = 'waitingRoomStartGame',
     GameStarted = 'waitingRoomGameStarted',
 }

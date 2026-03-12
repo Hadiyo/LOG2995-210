@@ -5,11 +5,9 @@ import { SocketManagerService } from '@app/services/socket-manager/socket-manage
 import {
   GameStartedPayload,
   PlayerPayload,
-  WaitingRoomMessagePayload,
   WaitingRoomRedirectPayload,
-  WaitingRoomStatePayload,
+  WaitingRoomStatePayload
 } from '@common/game/game-session.interface';
-import { ChatMessage } from '@common/chat-message';
 import { PlayerInformation } from '@common/player/player.interface';
 import { ErrorSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
@@ -22,9 +20,6 @@ export class WaitingRoomService {
 
   private playersSubjects = new BehaviorSubject<PlayerInformation[]>([]);
   readonly players$ = this.playersSubjects.asObservable();
-
-  private messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
-  readonly messages$ = this.messagesSubject.asObservable();
 
   private isLockedSubject = new BehaviorSubject(false);
   readonly isLocked$ = this.isLockedSubject.asObservable();
@@ -65,7 +60,6 @@ export class WaitingRoomService {
     this.socket.off<PlayerInformation>(WaitingRoomEvents.PlayerLeftSession, this.onPlayerLeft);
     this.socket.off<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
     this.socket.off<WaitingRoomStatePayload>(WaitingRoomEvents.WaitingRoomState, this.onWaitingRoomState);
-    this.socket.off<ChatMessage>(WaitingRoomEvents.MessageSent, this.onMessageSent);
     this.socket.off<WaitingRoomRedirectPayload>(WaitingRoomEvents.GameSessionDeleted, this.onDeletedSession);
     this.socket.off<WaitingRoomRedirectPayload>(WaitingRoomEvents.KickedFromSession, this.onKickedFromSession);
     this.socket.off<GameStartedPayload>(WaitingRoomEvents.GameStarted, this.onGameStarted);
@@ -85,11 +79,6 @@ export class WaitingRoomService {
     this.socket.send(WaitingRoomEvents.KickPlayer, playerName);
   }
 
-  sendMessage(content: string): void {
-    const payload: WaitingRoomMessagePayload = { content };
-    this.socket.send(WaitingRoomEvents.SendMessage, payload);
-  }
-
   startGame(): void {
     this.socket.send(WaitingRoomEvents.StartGame);
   }
@@ -99,7 +88,6 @@ export class WaitingRoomService {
     this.socket.on<PlayerInformation>(WaitingRoomEvents.PlayerLeftSession, this.onPlayerLeft);
     this.socket.on<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
     this.socket.on<WaitingRoomStatePayload>(WaitingRoomEvents.WaitingRoomState, this.onWaitingRoomState);
-    this.socket.on<ChatMessage>(WaitingRoomEvents.MessageSent, this.onMessageSent);
     this.socket.on<WaitingRoomRedirectPayload>(WaitingRoomEvents.GameSessionDeleted, this.onDeletedSession);
     this.socket.on<WaitingRoomRedirectPayload>(WaitingRoomEvents.KickedFromSession, this.onKickedFromSession);
     this.socket.on<GameStartedPayload>(WaitingRoomEvents.GameStarted, this.onGameStarted);
@@ -109,7 +97,6 @@ export class WaitingRoomService {
   private onClientJoinedSession = (payload: PlayerPayload) => {
     this.me = payload.clientPlayer;
     this.playersSubjects.next(payload.players);
-    this.messagesSubject.next(payload.messages);
     this.isLockedSubject.next(payload.isLocked);
     this.maxPlayersSubject.next(payload.maxPlayers);
   };
@@ -117,7 +104,6 @@ export class WaitingRoomService {
   private onWaitingRoomState = (payload: WaitingRoomStatePayload | undefined) => {
     if (!payload) return;
     this.playersSubjects.next(payload.players);
-    this.messagesSubject.next(payload.messages);
     this.isLockedSubject.next(payload.isLocked);
     this.maxPlayersSubject.next(payload.maxPlayers);
     this.minPlayersToStartSubject.next(payload.minPlayersToStart);
@@ -138,10 +124,6 @@ export class WaitingRoomService {
     );
     this.playersSubjects.next(updatedPlayers);
     this.statusMessageSubject.next(`${player.name} a quitte la salle d'attente.`);
-  };
-
-  private onMessageSent = (message: ChatMessage) => {
-    this.messagesSubject.next([...this.messagesSubject.value, message]);
   };
 
   private onDeletedSession = (payload: WaitingRoomRedirectPayload) => {
@@ -181,7 +163,6 @@ export class WaitingRoomService {
 
   private resetState(): void {
     this.playersSubjects.next([]);
-    this.messagesSubject.next([]);
     this.isLockedSubject.next(false);
     this.maxPlayersSubject.next(0);
     this.minPlayersToStartSubject.next(2);

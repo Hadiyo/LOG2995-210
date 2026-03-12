@@ -2,8 +2,9 @@ import { Injectable, signal } from '@angular/core';
 import { ServiceState } from '@app/services/service-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { validateChatMessage } from '@common/chat/chat-validation.utils';
-import { ChatMessage, ChatPayload } from '@common/chat/chat.interface';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { ChatSocketEvents } from '@common/socket-events';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -11,8 +12,8 @@ import { ChatSocketEvents } from '@common/socket-events';
 export class ChatService {
   readonly state = signal<ServiceState>(ServiceState.Idle);
 
-  private chatMessages = signal<ChatMessage[]>([]);
-  readonly chat$ = this.chatMessages.asReadonly();
+  private chatMessages = new BehaviorSubject<ChatMessage[]>([]);
+  readonly chat$ = this.chatMessages.asObservable();
 
   constructor(private socket: SocketManagerService) {}
 
@@ -21,38 +22,39 @@ export class ChatService {
       this.socket.connect();
     // Stay alert for navigator window closer to disconnect the client
     this.socket.subscribeToWindowEvent();
+    this.subscribeToSocketEvents();
   }
 
-  sendMessage(payload: ChatPayload): void {
-    if (validateChatMessage(payload.message)) {
-      this.socket.send(ChatSocketEvents.SendMessage, payload);
+  sendMessage(message: ChatMessage): void {
+    if (validateChatMessage(message)) {
+      this.socket.send(ChatSocketEvents.SendMessage, message);
     }
     else {
       console.error('Invalid chat message');
     }
   }
 
-  subscribeToSessionEvents() {
-    this.socket.on<ChatPayload>(ChatSocketEvents.ReceiveMessage, this.onRecieveMessage);
+  subscribeToSocketEvents() {
+    this.socket.on<ChatMessage>(ChatSocketEvents.ReceiveMessage, this.onReceiveMessage);
     this.socket.on<ChatMessage[]>(ChatSocketEvents.LoadChatMessages, this.onLoadChatMessages);
     this.socket.on<string>(ChatSocketEvents.ChatValidationError, this.onErrorMessage);
   }
 
-  unsubscribeToSessionEvents() {
-    this.socket.off<ChatPayload>(ChatSocketEvents.ReceiveMessage, this.onRecieveMessage);
+  unsubscribeToSocketEvents() {
+    this.socket.off<ChatMessage>(ChatSocketEvents.ReceiveMessage, this.onReceiveMessage);
     this.socket.off<ChatMessage[]>(ChatSocketEvents.LoadChatMessages, this.onLoadChatMessages);
     this.socket.off<string>(ChatSocketEvents.ChatValidationError, this.onErrorMessage);
   }
 
-  onLoadChatMessages = (messages: ChatMessage[]): void => {
-    this.chatMessages.set(messages);
+  private onLoadChatMessages = (messages: ChatMessage[]): void => {
+    this.chatMessages.next(messages);
   }
 
-  onRecieveMessage = (payload: ChatPayload): void => {
-    this.chatMessages.update(messages => [...messages, payload.message]);
+  private onReceiveMessage = (message: ChatMessage): void => {
+    this.chatMessages.next([...this.chatMessages.value, message]);
   }
 
-  onErrorMessage = (errorMessage: string): void => {
+  private onErrorMessage = (errorMessage: string): void => {
     console.error(`Chat error: ${errorMessage}`);
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { ChatMessage } from '@common/chat-message';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { GameNotificationKind } from '@common/game-notification';
 import { GameSessionSnapshot, TurnPhase } from '@common/game-session';
 import { GameActionType } from '@common/game/game-session.interface';

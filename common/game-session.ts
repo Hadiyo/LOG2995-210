@@ -1,4 +1,4 @@
-import { ChatMessage } from './chat-message';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { GameMap } from './maps/map.interface';
 import { Player } from './player/player.interface';
 

@@ -1,7 +1,7 @@
 import { pageRoomMap } from '@app/gateways/rooms.record';
-import { GameSessionService } from '@app/services/session/game-session.service';
 import { PlayerService } from '@app/services/player/player.service';
-import { GameStartedPayload, WaitingRoomMessagePayload, WaitingRoomRedirectPayload } from '@common/game/game-session.interface';
+import { GameSessionService } from '@app/services/session/game-session.service';
+import { GameStartedPayload, WaitingRoomRedirectPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
@@ -120,26 +120,6 @@ export class WaitingRoomGateway {
             this.server.to(sessionId).emit(WaitingRoomEvents.WaitingRoomState, this.sessionService.getWaitingRoomState(sessionId));
             this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.DecrementPlayerCount, session.mapTemplateId);
         }
-    }
-
-    @SubscribeMessage(WaitingRoomEvents.SendMessage)
-    sendMessage(@MessageBody() payload: WaitingRoomMessagePayload, @ConnectedSocket() client: Socket): void {
-        const internalPlayer = this.playerService.getPlayerBySocketId(client.id);
-        if (!internalPlayer) {
-            return;
-        }
-
-        const sessionId = this.getSessionIdFromSocket(client);
-        if (!sessionId) {
-            return;
-        }
-
-        const message = this.sessionService.addMessage(sessionId, internalPlayer.player.information.name, payload.content);
-        if (!message) {
-            return;
-        }
-
-        this.server.to(sessionId).emit(WaitingRoomEvents.MessageSent, message);
     }
 
     @SubscribeMessage(WaitingRoomEvents.StartGame)

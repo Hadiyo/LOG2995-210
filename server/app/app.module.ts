@@ -5,6 +5,7 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GameMapController } from './controllers/game-map/game-map.controller';
+import { ChatGateway } from './gateways/chat/chat.gateway';
 import { MapGateway } from './gateways/map/map.gateway';
 import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
 import { SessionGateway } from './gateways/session/session.gateway';
@@ -39,6 +40,7 @@ import { GameSessionService } from './services/session/game-session.service';
         PlayerService,
         GameMapService,
         ChatService,
+        ChatGateway,
         WaitingRoomGateway,
     ],
 })

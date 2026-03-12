@@ -1,6 +1,5 @@
 import { GameMapService } from '@app/services/game-map/game-map.service';
 import { PlayerService } from '@app/services/player/player.service';
-import { ChatMessage } from '@common/chat-message';
 import { GameSessionSnapshot, TurnPhase } from '@common/game-session';
 import {
     CreateSessionPayload,
@@ -15,22 +14,19 @@ import { GameCell, GameMap } from '@common/maps/map.interface';
 import { Player, PlayerInformation, PlayerStatus } from '@common/player/player.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { ChatService } from '../chat/chat.service';
 
 const TURN_DURATION_SECONDS = 30;
-const CHAT_MESSAGE_MAX_LENGTH = 300;
 const DEFAULT_ACTIONS_PER_TURN = 1;
 
 @Injectable()
 export class GameSessionService {
     /** HOLDS ALL GAME AND COMBAT SESSIONS WITH REFERENCES TO THE GAME-MAP TEMPLATES AND PLAYERS */
-    private gameSessions = new Map<string, GameSession>();
+    public gameSessions = new Map<string, GameSession>();
     private readonly logger: Logger;
 
     constructor(
         private readonly playerService: PlayerService,
         private readonly gameMapService: GameMapService,
-        private readonly chatService: ChatService,
     ) {
         this.logger = new Logger(GameSessionService.name);
     }
@@ -78,7 +74,6 @@ export class GameSessionService {
                 hasStarted: false,
             };
 
-            this.chatService.saveChat(gameSession.id);
             this.gameSessions.set(gameSession.id, gameSession);
 
             return {
@@ -150,27 +145,6 @@ export class GameSessionService {
         }
     }
 
-    addMessage(sessionId: string, author: string, content: string): ChatMessage | undefined {
-        const session = this.gameSessions.get(sessionId);
-        if (!session) {
-            return undefined;
-        }
-
-        const normalized = content.trim().slice(0, CHAT_MESSAGE_MAX_LENGTH);
-        if (!normalized) {
-            return undefined;
-        }
-
-        const message: ChatMessage = {
-            id: randomUUID(),
-            author,
-            content: normalized,
-            createdAt: new Date().toISOString(),
-        };
-        session.messages.push(message);
-        return message;
-    }
-
     canStartGame(sessionId: string): boolean {
         const session = this.gameSessions.get(sessionId);
         if (!session) return false;
@@ -227,7 +201,6 @@ export class GameSessionService {
         this.gameMapService.deleteGameMap(session.mapTemplateId);
         this.gameMapService.deleteGameMapPreview(session.mapTemplateId);
         this.gameSessions.delete(session.id);
-        this.chatService.deleteChat(session.id);
     }
 
     /**
@@ -246,7 +219,7 @@ export class GameSessionService {
      * Retreives the game sessionId win which the player is into
      * @returns the session id of the game in which the player is in
      */
-    private findPlayerInGameSession(playerId: string): string | undefined {
+    public findPlayerInGameSession(playerId: string): string | undefined {
         for (const session of this.gameSessions.values()) {
             if (session.players.includes(playerId)) {
                 return session.id;

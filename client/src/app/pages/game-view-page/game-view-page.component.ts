@@ -12,8 +12,11 @@ import { GameVisualFeedbackService } from '@app/services/game/game-visual-feedba
 //import { GAME_STORAGE_KEYS, GameStateService } from '@app/services/game/game-state.service';
 // TODO: use GameStateService when backend gameplay runtime is restored. 
 // LocalGameStateService is a temporary static-mode implementation.
+import { ChatService } from '@app/services/chat/chat.service';
 import { GAME_STORAGE_KEYS, LocalGameStateService } from '@app/services/game/local-game-state.service';
+import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { GameActionType } from '@common/game/game-session.interface';
 import { MapSize } from '@common/maps/map.enums';
 import { GameCell, MapObject } from '@common/maps/map.interface';
@@ -158,6 +161,8 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     private readonly gameVisualFeedbackService: GameVisualFeedbackService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
+    private readonly chatService: ChatService,
+    private readonly waitingRoomService: WaitingRoomService,
   ) {
     // Effect: redirect to home when game session ends
     effect(() => {
@@ -258,7 +263,18 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
 
   // Submit a chat message to the session
   onChatMessageSubmit(content: string): void {
-    this.gameStateService.sendMessage(content);
+    const author = this.waitingRoomService.me?.name;
+    if (!author) {
+      return;
+    }
+
+    const message: ChatMessage = {
+      author: author,
+      content: content,
+      createdAt: new Date().toISOString(),
+    }
+
+    this.chatService.sendMessage(message);
   }
 
   // Check if the current player can perform actions

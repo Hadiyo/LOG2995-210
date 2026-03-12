@@ -1,44 +1,26 @@
 import { validateChatMessage } from '@common/chat/chat-validation.utils';
-import { ChatMessage, ChatPayload } from '@common/chat/chat.interface';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { GameSessionService } from '../session/game-session.service';
 
 @Injectable()
 export class ChatService {
-    /** HOLD ALL CHAT ROOMS AND THEIR REFERENCE TO THE GAME THEY ARE IN */
-    private chatRooms = new Map<string, ChatMessage[]>();
+    constructor (private readonly gameSessionService: GameSessionService) {};
 
-    /**
-     * Chat room is saved in chatRooms
-     * @returns chatSessionId
-     */
-    saveChat(gameSessionId: string): string | null {
-        this.chatRooms.set(gameSessionId, []);
-
-        return gameSessionId;
-    }
-
-    loadChatMessages(gameSessionId: string): ChatMessage[] {
-        return [...(this.chatRooms.get(gameSessionId) ?? [])];
-    }
-
-    sendMessage(payload: ChatPayload): boolean {
-        const message = payload.message;
-
-        if (!validateChatMessage(message)) { 
-            return false 
+    addMessage(message: ChatMessage, sessionId: string): ChatMessage | undefined {
+        const session = this.gameSessionService.gameSessions.get(sessionId);
+        if (!session) {
+            return undefined;
         }
 
-        const gameSessionId = payload.sessionId;
-
-        if (!this.chatRooms.has(gameSessionId)) {
-            return false;
+        if (!validateChatMessage(message)) {
+            return undefined;
         }
 
-        this.chatRooms.get(gameSessionId)?.push(message);
-        return true;
-    }
+        message.id = randomUUID();
 
-    deleteChat(gameSessionId: string): void {
-        this.chatRooms.delete(gameSessionId);
+        session.messages.push(message);
+        return message;
     }
 }

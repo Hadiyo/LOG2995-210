@@ -1,4 +1,4 @@
-import { ChatMessage } from '@common/chat-message';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { GameNotification } from '@common/game-notification';
 import { GameSessionSnapshot } from '@common/game-session';
 import { GameMode, MapSize } from '@common/maps/map.enums';
