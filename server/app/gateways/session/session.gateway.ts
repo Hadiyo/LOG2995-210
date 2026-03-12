@@ -61,6 +61,7 @@ export class SessionGateway {
     const playerPayload = this.sessionService.joinGameSession(payload, client.id);
     if (playerPayload) {
       client.join(playerPayload.sessionId); // Connect client to the room
+      client.emit(RoomSocketEvents.PlayerJoinedGame); // Signal waiting room redirection
       client.emit(WaitingRoomEvents.ClientJoinedSession, playerPayload); // Send full payload so client knows which player is themselves
       client.to(playerPayload.sessionId).emit(WaitingRoomEvents.PlayerJoinedSession, playerPayload.clientPlayer); // Send the new player information only
       this.server
