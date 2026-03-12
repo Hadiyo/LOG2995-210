@@ -3,7 +3,6 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { ChatService } from '@app/services/chat/chat.service';
-import { SessionService } from '@app/services/session/session.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { ChatMessage } from '@common/chat/chat.interface';
@@ -32,13 +31,11 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   constructor(
     private readonly router: Router,
     private readonly waitingRoomService: WaitingRoomService,
-    private readonly sessionService: SessionService,
     private readonly chatService: ChatService,
   ) {}
 
   ngOnInit() {
     this.waitingRoomService.initWaitingRoom();
-    this.waitingRoomService.hydrateWaitingRoom(this.sessionService.consumeJoinedSessionPayload());
     this.chatService.initChat();
   }
 

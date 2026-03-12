@@ -1,7 +1,7 @@
 import { pageRoomMap } from '@app/gateways/rooms.record';
 import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionService } from '@app/services/session/game-session.service';
-import { JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
+import { JoinSessionPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
@@ -28,26 +28,15 @@ export class SessionGateway {
         return;
       }
 
-      client.join(gameInformation.sessionId);
+      client.join(gameInformation.waitingRoom.sessionId);
 
-      if (!client.rooms.has(gameInformation.sessionId)) {
-        this.logger.error(`Player ${client.id} failed to join room ${gameInformation.sessionId}`);
+      if (!client.rooms.has(gameInformation.waitingRoom.sessionId)) {
+        this.logger.error(`Player ${client.id} failed to join room ${gameInformation.waitingRoom.sessionId}`);
         return;
       }
       this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.NewAvailableSession, gameInformation.mapPreview);
       client.emit(RoomSocketEvents.PlayerJoinedGame);
-      const waitingRoomState = this.sessionService.getWaitingRoomState(gameInformation.sessionId);
-      const waitingRoomPayload: PlayerPayload = {
-        players: waitingRoomState?.players ?? [gameInformation.player.information],
-        clientPlayer: gameInformation.player.information,
-        sessionId: gameInformation.sessionId,
-        mapPreviewId: gameInformation.mapPreview.id,
-        messages: waitingRoomState?.messages ?? [],
-        isLocked: waitingRoomState?.isLocked ?? false,
-        maxPlayers: waitingRoomState?.maxPlayers ?? gameInformation.mapPreview.maxPlayers,
-      };
-      client.emit(WaitingRoomEvents.ClientJoinedSession, waitingRoomPayload);
-      client.emit(WaitingRoomEvents.WaitingRoomState, waitingRoomState);
+      client.emit(WaitingRoomEvents.ClientJoinedSession, gameInformation.waitingRoom);
     } catch (err) {
       this.logger.error(
         `Error creating session for client ${client.id}: ${err.message}`,
@@ -59,16 +48,16 @@ export class SessionGateway {
 
   @SubscribeMessage(RoomSocketEvents.JoinGameRoom)
   joinGameSession(@MessageBody() payload: JoinSessionPayload, @ConnectedSocket() client: Socket) {
-    const playerPayload = this.sessionService.joinGameSession(payload, client.id);
-    if (playerPayload) {
-      client.join(playerPayload.sessionId); // Connect client to the room
+    const waitingRoom = this.sessionService.joinGameSession(payload, client.id);
+    if (waitingRoom) {
+      client.join(waitingRoom.sessionId); // Connect client to the room
       client.emit(RoomSocketEvents.PlayerJoinedGame); // Signal waiting room redirection
-      client.emit(WaitingRoomEvents.ClientJoinedSession, playerPayload); // Send full payload so client knows which player is themselves
-      client.to(playerPayload.sessionId).emit(WaitingRoomEvents.PlayerJoinedSession, playerPayload.clientPlayer); // Send the new player information only
+      client.emit(WaitingRoomEvents.ClientJoinedSession, waitingRoom); // Send full payload so client knows which player is themselves
+      client.to(waitingRoom.sessionId).emit(WaitingRoomEvents.PlayerJoinedSession, waitingRoom.clientPlayer); // Send the new player information only
       this.server
-        .to(playerPayload.sessionId)
-        .emit(WaitingRoomEvents.WaitingRoomState, this.sessionService.getWaitingRoomState(playerPayload.sessionId));
-      this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, playerPayload.mapPreviewId); // increment player count in join-page for that session
+        .to(waitingRoom.sessionId)
+        .emit(WaitingRoomEvents.WaitingRoomState, waitingRoom);
+      this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, waitingRoom.mapPreviewId); // increment player count in join-page for that session
     }
   }
 }

@@ -2,7 +2,7 @@ import { ChatMessage } from '@common/chat/chat.interface';
 import { GameNotification } from '@common/game-notification';
 import { GameSessionSnapshot } from '@common/game-session';
 import { GameMode, MapSize } from '@common/maps/map.enums';
-import { Player, PlayerInformation } from '@common/player/player.interface';
+import { PlayerInformation } from '@common/player/player.interface';
 
 export interface GameSession {
     id: string;
@@ -21,19 +21,8 @@ export interface GameSessionPayload {
 }
 
 export interface PlayerPayload {
-    players: PlayerInformation[],
-    clientPlayer: PlayerInformation,
-    sessionId: string,
-    mapPreviewId: string,
-    messages: ChatMessage[],
-    isLocked: boolean,
-    maxPlayers: number,
-}
-
-export interface CreateSessionPayload {
+    waitingRoom: WaitingRoom,
     mapPreview: GameSessionPreview,
-    sessionId: string,
-    player: Player,
 }
 
 export interface JoinSessionPayload {
@@ -54,14 +43,14 @@ export interface GameSessionPreview {
     previewImageFormat?: string;
 }
 
-export interface WaitingRoomStatePayload {
+export interface WaitingRoom {
     sessionId: string;
     mapPreviewId: string;
     players: PlayerInformation[];
+    clientPlayer?: PlayerInformation;
     messages: ChatMessage[];
     isLocked: boolean;
     maxPlayers: number;
-    minPlayersToStart: number;
 }
 
 export interface WaitingRoomMessagePayload {
