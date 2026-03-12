@@ -28,7 +28,7 @@ const routes: Routes = [
     { path: 'game', component: CreateGamePageComponent },
     { path: 'admin', component: AdminPageComponent },
     { path: 'character-creation', component: CharacterCreationPageComponent },
-    { path: 'waiting-room/:sessionId', component: WaitingRoomComponent },
+    { path: 'waiting-room', component: WaitingRoomComponent },
     { path: 'game-view', component: GameViewPageComponent },
     { path: 'dev-game-launcher', component: DevGameLauncherComponent },
     { path: 'join-room', component: JoinGameComponent },

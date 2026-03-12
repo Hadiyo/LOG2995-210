@@ -3,9 +3,9 @@ import { Router } from '@angular/router';
 import { ServiceState } from '@app/services/service-state.enum';
 import { SessionApiService } from '@app/services/session/session-api.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { CreateSessionPayload, GameSessionPreview, JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
+import { GameSessionPreview, JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
 import { PlayerInformation } from '@common/player/player.interface';
-import { PageContext, PageSocketEvents, RoomSocketEvents } from '@common/socket-events';
+import { ErrorSocketEvents, PageContext, PageSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
 
 /**
@@ -25,8 +25,10 @@ export class SessionService {
 
   private currentMapId?: string;
   private currentPreviewId?: string;
+  private joinedSessionPayload?: PlayerPayload;
 
   readonly state = signal<ServiceState>(ServiceState.Idle);
+  readonly errorMessage = signal('');
 
   private api = inject(SessionApiService);
 
@@ -50,11 +52,18 @@ export class SessionService {
 
   setContext(context: 'create' | 'join') {
     this.contextSubject.next(context);
+    this.errorMessage.set('');
   }
 
   clearCurrentIds() {
     this.currentMapId = undefined;
     this.currentPreviewId = undefined;
+  }
+
+  consumeJoinedSessionPayload(): PlayerPayload | undefined {
+    const payload = this.joinedSessionPayload;
+    this.joinedSessionPayload = undefined;
+    return payload;
   }
   /**
    * Initialises the session service by setting socket connection and the GameSessionPreview list 
@@ -88,12 +97,13 @@ export class SessionService {
     // Stay alert for navigator window closer to disconnect the client
     this.socket.subscribeToWindowEvent();
     this.socket.send(PageSocketEvents.JoinPage, { page: PageContext.JoinGame });
-    this.socket.on<CreateSessionPayload>(RoomSocketEvents.GameSessionCreated, this.onSessionCreated);
     this.socket.on<string>(RoomSocketEvents.IncrementPlayerCount, this.onClientAddedToSession);
-    this.socket.on<PlayerPayload>(RoomSocketEvents.PlayerJoinedGame, this.onJoinedSession);
+    this.socket.on<void>(RoomSocketEvents.PlayerJoinedGame, this.onJoinedSession);
     this.socket.on<string>(RoomSocketEvents.DecrementPlayerCount, this.onPlayerLeft);
-    this.socket.on<string>(RoomSocketEvents.GameSessionDeleted, this.onDeleteSession);
+    this.socket.on<string>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
+    this.socket.on<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
     this.socket.on<GameSessionPreview>(RoomSocketEvents.NewAvailableSession, this.onNewAvailableSession);
+    this.socket.on<string>(ErrorSocketEvents.FailedJoinSession, this.onFailedJoinSession);
   }
 
   /**
@@ -101,13 +111,16 @@ export class SessionService {
   */
   unsubscribeToSessionEvents() {
     this.socket.send(PageSocketEvents.LeavePage, { page: PageContext.JoinGame });
-    this.socket.off<CreateSessionPayload>(RoomSocketEvents.GameSessionCreated, this.onSessionCreated);
     this.socket.off<string>(RoomSocketEvents.IncrementPlayerCount, this.onClientAddedToSession);
-    this.socket.off<PlayerPayload>(RoomSocketEvents.PlayerJoinedGame, this.onJoinedSession);
+    this.socket.off<void>(RoomSocketEvents.PlayerJoinedGame, this.onJoinedSession);
     this.socket.off<string>(RoomSocketEvents.DecrementPlayerCount, this.onPlayerLeft);
-    this.socket.off<string>(RoomSocketEvents.GameSessionDeleted, this.onDeleteSession);
+    this.socket.off<string>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
+    this.socket.off<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
     this.socket.off<GameSessionPreview>(RoomSocketEvents.NewAvailableSession, this.onNewAvailableSession);
+    this.socket.off<string>(ErrorSocketEvents.FailedJoinSession, this.onFailedJoinSession);
   }
+
+  /** REQUESTS */
 
   /**
    * Create a game session and redirect the user to the waiting room
@@ -115,6 +128,7 @@ export class SessionService {
    * @param payload 
    */
   createGameSession(character: PlayerInformation): void {
+    this.errorMessage.set('');
     const payload: JoinSessionPayload = {
       id: this.currentMapId,
       character,
@@ -128,6 +142,7 @@ export class SessionService {
    * @param sessionId 
    */
   joinGameSession(character: PlayerInformation): void {
+    this.errorMessage.set('');
     const payload: JoinSessionPayload = {
       id: this.currentPreviewId,
       character,
@@ -136,48 +151,25 @@ export class SessionService {
     this.clearCurrentIds();
   }
 
-  /**
- * Requests the server to delete the game session
- * @param sessionId 
- */
-  deleteGameSession(sessionId: string): void {
-    this.socket.send(RoomSocketEvents.DeleteGameSession, sessionId);
-  }
+  /** HANDLERS */
 
   /**
-   * Client request to leave a game session
-   * @param sessionId 
+   * Socket Event: RoomSocketEvents.PlayerJoinedGame
    */
-  leaveGameSession(playerId: string): void {
-    this.socket.send(RoomSocketEvents.LeaveGameRoom, playerId);
-  }
-
-  /**
-   * Navigate the user to the waiting room using the new sessionId
-   * @param sessionId 
-   */
-  private onSessionCreated = (payload: CreateSessionPayload) => {
-    // Add new mapPreview to Join Page
-    if (payload.mapPreview) {
-      this.sessionPreviewSubjects.next([...this.sessionPreviewSubjects.value, payload.mapPreview]);
-    }
-    // Add player to waiting room
-    void payload.player;
-    // Re-direct to waiting-room with sessionId: Temporary 
-    this.router.navigate(['waiting-room', payload.sessionId]);
+  private onJoinedSession = () => {
+    this.errorMessage.set('');
+    void this.router.navigate(['waiting-room']);
   };
 
-  private onJoinedSession = (payload: PlayerPayload) => {
-    // Increase player count in session by 1
-    this.updatePlayerCount(payload.mapPreviewId, 1);
-    // Add player to waiting room
-    void payload.player;
-    // Re-direct to waiting-room with sessionId: Temporary
-    this.router.navigate(['waiting-room', payload.sessionId]);
+  private onClientJoinedSession = (payload: PlayerPayload) => {
+    this.joinedSessionPayload = payload;
+    this.errorMessage.set('');
+    void this.router.navigate(['waiting-room']);
   };
 
   /**
    * Adds the available session to the Join Page UI
+   * Event: RoomSocketEvents.NewAvailableSession
    * @param sessionPreview 
    */
   private onNewAvailableSession = (sessionPreview: GameSessionPreview) => {
@@ -187,6 +179,7 @@ export class SessionService {
   /**
    * Increments the number of players in the list of available game sessions
    * by its previewId
+   * Event: RoomSocketEvents.IncrementPlayerCount
    * @param sessionId 
    */
   private onClientAddedToSession = (previewId: string) => {
@@ -195,6 +188,7 @@ export class SessionService {
 
   /**
    * Decrements the number of players in the given session
+   * Event: RoomSocketEvents.DecrementPlayerCount
    * @param sessionId 
    */
   private onPlayerLeft = (previewId: string) => {
@@ -203,6 +197,7 @@ export class SessionService {
 
   /**
    * Deletes the local copy of the given session
+   * Event: RoomSocketEvents.GameSessionDeleted
    * @param sessionId 
    */
   private onDeleteSession = (sessionId: string) => {
@@ -212,10 +207,18 @@ export class SessionService {
     this.sessionPreviewSubjects.next(updated);
   };
 
+  private onFailedJoinSession = (message: string) => {
+    this.errorMessage.set(message);
+  };
+
   private updatePlayerCount(previewId: string, delta: number): void {
     const updated = this.sessionPreviewSubjects.value.map(session =>
       session.id === previewId
-        ? { ...session, nbOfPlayers: session.nbOfPlayers + delta }
+        ? {
+          ...session,
+          nbOfPlayers: session.nbOfPlayers + delta,
+          isLocked: session.nbOfPlayers + delta >= session.maxPlayers,
+        }
         : session,
     );
     this.sessionPreviewSubjects.next(updated);

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { MAP_DIMENSIONS_BY_SIZE } from '@app/services/editor/constants/editor.constants';
+import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
 import { PreviewImageFormat } from '@common/enum';
 import { MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
@@ -299,9 +300,15 @@ export class MapThumbnailService {
 
         // url("...") -> ...
         const value = raw.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+        const resolved = this.resolveImageUrl(value);
         // Cache and return the value
-        this.cssImageVarCache.set(varName, value);
-        return value;
+        this.cssImageVarCache.set(varName, resolved);
+        return resolved;
+    }
+
+    private resolveImageUrl(url: string): string {
+        if (!url || /^(data:|https?:|blob:)/.test(url)) return url;
+        return resolveAssetUrl(url);
     }
 
     /**

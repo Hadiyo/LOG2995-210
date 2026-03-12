@@ -1,3 +1,5 @@
+import { resolveAssetUrl } from '@app/utils/asset-url.util';
+
 // Canvas clear origin.
 export const CANVAS_CLEAR_X = 0;
 export const CANVAS_CLEAR_Y = 0;
@@ -19,4 +21,4 @@ export const FALLBACK_AVATAR_ID = DEFAULT_AVATAR_ID;
 
 // For a given avatarId, returns the path to its spritesheet image.
 export const getSpriteSheetPath = (avatarId: number): string =>
-    `${SPRITE_PATH_PREFIX}${avatarId}${SPRITE_PATH_SUFFIX}`;
+    resolveAssetUrl(`${SPRITE_PATH_PREFIX}${avatarId}${SPRITE_PATH_SUFFIX}`);

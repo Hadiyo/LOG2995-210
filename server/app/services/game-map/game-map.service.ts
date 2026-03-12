@@ -7,6 +7,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 const DEFAULT_PLAYER_NUMBER = 1;
+const MAP_MAX_PLAYER_COUNT: Record<MapSize, number> = {
+    [MapSize.S]: 2,
+    [MapSize.M]: 4,
+    [MapSize.L]: 6,
+};
 
 @Injectable()
 export class GameMapService {
@@ -17,6 +22,10 @@ export class GameMapService {
 
     constructor(private readonly mapService: MapService) {
         this.logger = new Logger(GameMapService.name);
+    }
+
+    getPreviewById(id: string): GameSessionPreview {
+        return this.gameMapPreviews.find(preview => preview.id === id);
     }
 
     getGameMapById(id: string): GameMap {
@@ -35,7 +44,19 @@ export class GameMapService {
     updateNumberOfPlayers(previewId: string, delta: number): void {
         this.gameMapPreviews = this.gameMapPreviews.map(session =>
             session.id === previewId
-                ? { ...session, nbOfPlayers: session.nbOfPlayers + delta }
+                ? {
+                    ...session,
+                    nbOfPlayers: session.nbOfPlayers + delta,
+                    isLocked: session.nbOfPlayers + delta >= session.maxPlayers,
+                }
+                : session,
+        );
+    }
+
+    updatePreviewLockState(previewId: string, isLocked: boolean): void {
+        this.gameMapPreviews = this.gameMapPreviews.map(session =>
+            session.id === previewId
+                ? { ...session, isLocked }
                 : session,
         );
     }
@@ -113,6 +134,8 @@ export class GameMapService {
             mode: templateMap.mode,
             size: templateMap.size,
             nbOfPlayers: DEFAULT_PLAYER_NUMBER,
+            maxPlayers: MAP_MAX_PLAYER_COUNT[templateMap.size],
+            isLocked: DEFAULT_PLAYER_NUMBER >= MAP_MAX_PLAYER_COUNT[templateMap.size],
             previewImage: templateMap.previewImage,
             previewImageFormat: templateMap.previewImageFormat,
         };

@@ -15,7 +15,7 @@ export class GameChatPanelComponent implements OnChanges, AfterViewInit {
   @Input({ required: true }) messages: readonly ChatMessage[] = [];
   @Input() notification: GameNotification | null = null;
   @Input() currentPlayerName: string | null = null;
-  @Input() messageMaxLength = 300;
+  @Input() messageMaxLength = 200;
   @Input() title = 'Messages de partie';
   @Output() messageSubmit = new EventEmitter<string>();
   @ViewChild('messagesFeed') private messagesFeedRef?: ElementRef<HTMLDivElement>;
