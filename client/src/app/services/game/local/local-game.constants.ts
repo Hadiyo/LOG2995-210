@@ -11,6 +11,6 @@ export const SINGLE_STEP_DISTANCE = 1;
 export const TIMER_TICK_MS = 1000;
 export const WALK_POSE_DURATION_MS = 180;
 export const ATTACK_POSE_DURATION_MS = 220;
-export const CHAT_MESSAGE_MAX_LENGTH = 300;
+export const CHAT_MESSAGE_MAX_LENGTH = 200;
 export const D4_MAX = 4;
 export const D6_MAX = 6;

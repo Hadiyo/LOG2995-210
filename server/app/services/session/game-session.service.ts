@@ -17,7 +17,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 const TURN_DURATION_SECONDS = 30;
-const CHAT_MESSAGE_MAX_LENGTH = 300;
+const CHAT_MESSAGE_MAX_LENGTH = 200;
 const DEFAULT_ACTIONS_PER_TURN = 1;
 
 @Injectable()
