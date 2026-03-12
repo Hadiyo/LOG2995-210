@@ -11,6 +11,7 @@ import {
 import { PlayerInformation } from '@common/player/player.interface';
 import { ErrorSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
+import { ChatService } from '../chat/chat.service';
 
 @Injectable({
   providedIn: 'root',
@@ -37,6 +38,7 @@ export class WaitingRoomService {
     private readonly socket: SocketManagerService,
     private readonly router: Router,
     private readonly localGameStateService: LocalGameStateService,
+    private readonly chatService: ChatService,
   ) {}
 
   initWaitingRoom(): void {
@@ -105,6 +107,7 @@ export class WaitingRoomService {
     if (!payload) return;
     this.playersSubjects.next(payload.players);
     this.isLockedSubject.next(payload.isLocked);
+    this.chatService.loadChatMessages(payload.messages);
     this.maxPlayersSubject.next(payload.maxPlayers);
     this.minPlayersToStartSubject.next(payload.minPlayersToStart);
   };

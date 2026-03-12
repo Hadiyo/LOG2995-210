@@ -200,6 +200,7 @@ export class GameSessionService {
 
         this.gameMapService.deleteGameMap(session.mapTemplateId);
         this.gameMapService.deleteGameMapPreview(session.mapTemplateId);
+        this.gameSessions.get(session.id).players.forEach((playerId) => this.playerService.removePlayer(playerId));
         this.gameSessions.delete(session.id);
     }
 

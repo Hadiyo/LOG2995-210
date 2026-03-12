@@ -70,6 +70,12 @@ export class WaitingRoomGateway {
                 return;
             }
 
+            this.server.in(sessionId).fetchSockets().then((sockets) => {
+                sockets.forEach((socket) => {
+                  socket.leave(sessionId);
+                });
+            });
+
             this.sessionService.deleteGameSession(session.mapTemplateId);
             // Notify all players in the session room that it was deleted
             const payload: WaitingRoomRedirectPayload = {

@@ -26,6 +26,7 @@ export class ChatGateway {
   @SubscribeMessage(ChatSocketEvents.SendMessage)
   sendMessage(@MessageBody() message: ChatMessage, @ConnectedSocket() client: Socket) {
     const internalPlayer = this.playerService.getPlayerBySocketId(client.id);
+
     const sessionId = this.gameSessionService.findPlayerInGameSession(internalPlayer.player.id);
 
     if (this.chatService.addMessage(message, sessionId)) {

@@ -34,20 +34,18 @@ export class ChatService {
     }
   }
 
+  loadChatMessages(messages: ChatMessage[]): void {
+    this.chatMessages.next(messages);
+  }
+
   subscribeToSocketEvents() {
     this.socket.on<ChatMessage>(ChatSocketEvents.ReceiveMessage, this.onReceiveMessage);
-    this.socket.on<ChatMessage[]>(ChatSocketEvents.LoadChatMessages, this.onLoadChatMessages);
     this.socket.on<string>(ChatSocketEvents.ChatValidationError, this.onErrorMessage);
   }
 
   unsubscribeToSocketEvents() {
     this.socket.off<ChatMessage>(ChatSocketEvents.ReceiveMessage, this.onReceiveMessage);
-    this.socket.off<ChatMessage[]>(ChatSocketEvents.LoadChatMessages, this.onLoadChatMessages);
     this.socket.off<string>(ChatSocketEvents.ChatValidationError, this.onErrorMessage);
-  }
-
-  private onLoadChatMessages = (messages: ChatMessage[]): void => {
-    this.chatMessages.next(messages);
   }
 
   private onReceiveMessage = (message: ChatMessage): void => {
