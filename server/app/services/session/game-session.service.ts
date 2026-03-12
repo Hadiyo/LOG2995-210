@@ -1,10 +1,10 @@
 import { InternalPlayer } from '@app/interface/player.interface';
 import { GameMapService } from '@app/services/game-map/game-map.service';
 import { PlayerService } from '@app/services/player/player.service';
-import { ChatMessage, ChatPayload, CreateSessionPayload, GameSession, JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
+import { CreateSessionPayload, GameSession, JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { GameChatService } from '../game-chat/game-chat';
+import { ChatService } from '../chat/chat.service';
 
 @Injectable()
 export class GameSessionService {
@@ -15,7 +15,7 @@ export class GameSessionService {
     constructor(
         private readonly playerService: PlayerService,
         private readonly gameMapService: GameMapService,
-        private readonly gameChatService: GameChatService,
+        private readonly chatService: ChatService,
     ) {
         this.logger = new Logger(GameSessionService.name);
     }
@@ -44,7 +44,7 @@ export class GameSessionService {
                 debugMode: false,
             };
 
-            this.gameChatService.saveChat(gameSession.id);
+            this.chatService.saveChat(gameSession.id);
             this.gameSessions.set(gameSession.id, gameSession);
 
             const newPayload: CreateSessionPayload = {
@@ -109,6 +109,7 @@ export class GameSessionService {
         this.gameMapService.deleteGameMap(session.id);
         this.gameMapService.deleteGameMapPreview(session.id);
         this.gameSessions.delete(session.id);
+        this.chatService.deleteChat(session.id);
     }
 
     /**
@@ -149,21 +150,5 @@ export class GameSessionService {
             }
         }
         return undefined;
-    }
-
-    /**
-     * Saves sent message in the corresponding chat room
-     * @param ChatPayload 
-     * @returns InternalPlayer if in a game session otherwise undefined
-     */
-    sendMessage(payload: ChatPayload): boolean {
-        return this.gameChatService.sendMessage(
-            payload.message,
-            this.gameSessions.get(payload.sessionId).id,
-        );
-    }
-
-    getChatHistory(sessionId: string): ChatMessage[] {
-        return this.gameChatService.getChatHistory(sessionId);
     }
 }

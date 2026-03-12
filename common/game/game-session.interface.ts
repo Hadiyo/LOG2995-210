@@ -50,14 +50,3 @@ export interface GameNotificationPayload {
     sessionId: string;
     notification: GameNotification;
 }
-
-export interface ChatPayload {
-    message: ChatMessage;
-    sessionId: string;
-}
-
-export interface ChatMessage {
-    senderName: string;
-    message: string;
-    timestamp: string;
-}

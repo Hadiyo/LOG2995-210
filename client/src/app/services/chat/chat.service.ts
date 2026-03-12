@@ -1,7 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 import { ServiceState } from '@app/services/service-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { ChatMessage, ChatPayload } from '@common/game/game-session.interface';
+import { validateChatMessage } from '@common/chat/chat-validation.utils';
+import { ChatMessage, ChatPayload } from '@common/chat/chat.interface';
 import { ChatSocketEvents } from '@common/socket-events';
 
 @Injectable({
@@ -11,7 +12,7 @@ export class ChatService {
   readonly state = signal<ServiceState>(ServiceState.Idle);
 
   private chatMessages = signal<ChatMessage[]>([]);
-  readonly chat = this.chatMessages.asReadonly();
+  readonly chat$ = this.chatMessages.asReadonly();
 
   constructor(private socket: SocketManagerService) {}
 
@@ -23,17 +24,24 @@ export class ChatService {
   }
 
   sendMessage(payload: ChatPayload): void {
-    this.socket.send(ChatSocketEvents.SendMessage, payload);
+    if (validateChatMessage(payload.message)) {
+      this.socket.send(ChatSocketEvents.SendMessage, payload);
+    }
+    else {
+      console.error('Invalid chat message');
+    }
   }
 
   subscribeToSessionEvents() {
-    this.socket.on<ChatPayload>(ChatSocketEvents.RecieveMessage, this.onRecieveMessage);
+    this.socket.on<ChatPayload>(ChatSocketEvents.ReceiveMessage, this.onRecieveMessage);
     this.socket.on<ChatMessage[]>(ChatSocketEvents.LoadChatMessages, this.onLoadChatMessages);
+    this.socket.on<string>(ChatSocketEvents.ChatValidationError, this.onErrorMessage);
   }
 
   unsubscribeToSessionEvents() {
-    this.socket.off<ChatPayload>(ChatSocketEvents.RecieveMessage, this.onRecieveMessage);
+    this.socket.off<ChatPayload>(ChatSocketEvents.ReceiveMessage, this.onRecieveMessage);
     this.socket.off<ChatMessage[]>(ChatSocketEvents.LoadChatMessages, this.onLoadChatMessages);
+    this.socket.off<string>(ChatSocketEvents.ChatValidationError, this.onErrorMessage);
   }
 
   onLoadChatMessages = (messages: ChatMessage[]): void => {
@@ -42,5 +50,9 @@ export class ChatService {
 
   onRecieveMessage = (payload: ChatPayload): void => {
     this.chatMessages.update(messages => [...messages, payload.message]);
+  }
+
+  onErrorMessage = (errorMessage: string): void => {
+    console.error(`Chat error: ${errorMessage}`);
   }
 }

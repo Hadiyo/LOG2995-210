@@ -33,8 +33,10 @@ export enum RoomSocketEvents {
 
 export enum ChatSocketEvents {
     SendMessage = 'sendMessage',
-    RecieveMessage = 'recieveMessage',
+    ReceiveMessage = 'receiveMessage',
     LoadChatMessages = 'loadChatMessages',
+    ChatValidationError = 'chatValidationError',
+    ChatServerError = 'chatServerError',
 }
 
 export enum ErrorSocketEvents {
