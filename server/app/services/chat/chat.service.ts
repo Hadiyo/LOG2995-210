@@ -1,8 +1,8 @@
+import { GameSessionService } from '@app/services/session/game-session.service';
 import { validateChatMessage } from '@common/chat/chat-validation.utils';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { GameSessionService } from '../session/game-session.service';
 
 @Injectable()
 export class ChatService {

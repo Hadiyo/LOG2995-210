@@ -31,8 +31,7 @@ export class ChatGateway {
 
     if (this.chatService.addMessage(message, sessionId)) {
       this.server.to(sessionId).emit(ChatSocketEvents.ReceiveMessage, message);
-    }
-    else {
+    } else {
       this.logger.error('Failed to send message');
       client.emit(ChatSocketEvents.ChatServerError, 'Failed to send message');
     }

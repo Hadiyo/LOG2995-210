@@ -29,9 +29,6 @@ export class ChatService {
     if (validateChatMessage(message)) {
       this.socket.send(ChatSocketEvents.SendMessage, message);
     }
-    else {
-      console.error('Invalid chat message');
-    }
   }
 
   loadChatMessages(messages: ChatMessage[]): void {
@@ -50,9 +47,9 @@ export class ChatService {
 
   private onReceiveMessage = (message: ChatMessage): void => {
     this.chatMessages.next([...this.chatMessages.value, message]);
-  }
+  };
 
-  private onErrorMessage = (errorMessage: string): void => {
-    console.error(`Chat error: ${errorMessage}`);
-  }
+  private onErrorMessage = (errorMessage: string): string => {
+    return errorMessage;
+  };
 }

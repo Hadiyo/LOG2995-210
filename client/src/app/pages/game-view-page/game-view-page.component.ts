@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, effect, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GameActionBarComponent } from '@app/components/game/game-action-bar/game-action-bar.component';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
@@ -153,6 +153,8 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     return this.playerDirections()[player.id] ?? player.render?.facing ?? this.avatarDirection;
   });
 
+  private readonly chatService: ChatService = inject(ChatService);
+
   constructor(
     //private readonly gameStateService: GameStateService,
     // TODO: inject local static-mode state service.
@@ -161,7 +163,6 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     private readonly gameVisualFeedbackService: GameVisualFeedbackService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly chatService: ChatService,
     private readonly waitingRoomService: WaitingRoomService,
   ) {
     // Effect: redirect to home when game session ends
@@ -269,10 +270,10 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     }
 
     const message: ChatMessage = {
-      author: author,
-      content: content,
+      author,
+      content,
       createdAt: new Date().toISOString(),
-    }
+    };
 
     this.chatService.sendMessage(message);
   }

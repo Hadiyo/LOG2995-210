@@ -33,10 +33,7 @@ const routes: Routes = [
     { path: 'dev-game-launcher', component: DevGameLauncherComponent },
     { path: 'join-room', component: JoinGameComponent },
     { path: 'game-view', component: GameViewPageComponent },
-    //dev route, to be removed before release
-    { path: 'dev-game-launcher', component: DevGameLauncherComponent },
     { path: '**', redirectTo: '/home' },
-
 ];
 
 enableProfiling();

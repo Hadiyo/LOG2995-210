@@ -18,7 +18,7 @@ const TURN_DURATION_SECONDS = 30;
 @Injectable()
 export class GameSessionService {
     /** HOLDS ALL GAME AND COMBAT SESSIONS WITH REFERENCES TO THE GAME-MAP TEMPLATES AND PLAYERS */
-    public gameSessions = new Map<string, GameSession>();
+    gameSessions = new Map<string, GameSession>();
     private readonly logger: Logger;
 
     constructor(
@@ -236,7 +236,7 @@ export class GameSessionService {
      * Retreives the game sessionId win which the player is into
      * @returns the session id of the game in which the player is in
      */
-    public findPlayerInGameSession(playerId: string): string | undefined {
+    findPlayerInGameSession(playerId: string): string | undefined {
         for (const session of this.gameSessions.values()) {
             if (session.players.includes(playerId)) {
                 return session.id;

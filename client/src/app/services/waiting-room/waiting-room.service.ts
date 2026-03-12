@@ -1,16 +1,16 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
+import { ChatService } from '@app/services/chat/chat.service';
 import { GAME_STORAGE_KEYS, LocalGameStateService } from '@app/services/game/local-game-state.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import {
   GameStartedPayload,
   WaitingRoom,
-  WaitingRoomRedirectPayload
+  WaitingRoomRedirectPayload,
 } from '@common/game/game-session.interface';
 import { PlayerInformation } from '@common/player/player.interface';
 import { ErrorSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
-import { ChatService } from '../chat/chat.service';
 
 @Injectable({
   providedIn: 'root',

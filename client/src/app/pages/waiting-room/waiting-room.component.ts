@@ -86,10 +86,10 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     }
 
     const message: ChatMessage = {
-      author: author,
-      content: content,
+      author,
+      content,
       createdAt: new Date().toISOString(),
-    }
+    };
     
     this.chatService.sendMessage(message);
   }
