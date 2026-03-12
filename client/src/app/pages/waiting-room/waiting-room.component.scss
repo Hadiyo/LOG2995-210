@@ -1,257 +1,235 @@
-// ── Variables ──────────────────────────────────────────────────────────────
-@use 'sass:color';
-$color-organizer: #f0b429;   // doré — distingue l'organisateur
-$color-virtual:   #7c3aed;   // violet — distingue les JV
-$color-error:     #ef4444;
-$color-lock:      #f97316;
-$radius:          8px;
-$panel-bg:        rgba(255, 255, 255, 0.05);
+:host {
+  display: block;
+}
 
-// ── Layout principal ───────────────────────────────────────────────────────
 .waiting-room-container {
-  display: flex;
-  flex-direction: column;
   min-height: 100vh;
   padding: 2rem;
-  gap: 1.5rem;
-  color: #e2e8f0;
-  background: #0f172a;
+  color: #e5eef7;
+  background:
+    radial-gradient(circle at top, rgba(80, 140, 255, 0.18), transparent 45%),
+    linear-gradient(180deg, #08111d 0%, #0d1827 100%);
 }
 
-// ── Header ─────────────────────────────────────────────────────────────────
 .waiting-room-header {
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8fb4da;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.header-badges {
+  display: flex;
+  gap: 0.75rem;
   flex-wrap: wrap;
-
-  .title {
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0;
-  }
-
-  .access-code {
-    font-size: 1rem;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 0.4rem 0.8rem;
-    border-radius: $radius;
-
-    strong {
-      letter-spacing: 0.15em;
-      color: #93c5fd;
-    }
-  }
-
-  .lock-badge {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: $color-lock;
-    border: 1px solid $color-lock;
-    padding: 0.3rem 0.7rem;
-    border-radius: $radius;
-  }
+  justify-content: flex-end;
 }
 
-// ── Bannière d'erreur ──────────────────────────────────────────────────────
-.error-banner {
-  background: rgba($color-error, 0.15);
-  border: 1px solid $color-error;
-  color: $color-error;
-  padding: 0.75rem 1rem;
-  border-radius: $radius;
+.lock-badge,
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
   font-size: 0.9rem;
+  font-weight: 700;
 }
 
-// ── Grille de contenu ──────────────────────────────────────────────────────
+.lock-badge {
+  background: rgba(243, 123, 50, 0.18);
+  color: #ffb36a;
+  border: 1px solid rgba(243, 123, 50, 0.35);
+}
+
+.lock-badge--open {
+  background: rgba(52, 211, 153, 0.15);
+  color: #8bf0c3;
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.count-badge {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.status-banner {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: rgba(59, 130, 246, 0.14);
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  color: #d9ecff;
+}
+
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  flex: 1;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 1.25rem;
 }
 
-// ── Panneaux ───────────────────────────────────────────────────────────────
 .panel {
-  background: $panel-bg;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: $radius;
-  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(4, 11, 20, 0.72);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 .panel-title {
-  font-size: 1.1rem;
-  font-weight: 600;
   margin: 0;
-  color: #cbd5e1;
-
-  .player-count {
-    font-weight: 400;
-    color: #64748b;
-    font-size: 0.9rem;
-  }
+  font-size: 1.15rem;
 }
 
-// ── Liste des joueurs ──────────────────────────────────────────────────────
 .players-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .player-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: $radius;
+  gap: 0.85rem;
+  padding: 0.8rem;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
-  transition: background 0.15s;
+  border: 1px solid transparent;
+}
 
-  &.organizer {
-    border-left: 3px solid $color-organizer;
-    background: rgba($color-organizer, 0.08);
-
-    .player-name { color: $color-organizer; }
-  }
-
-  &.virtual {
-    border-left: 3px solid $color-virtual;
-    background: rgba($color-virtual, 0.08);
-
-    .player-name { color: color.adjust($color-virtual, $lightness: 20%); }
-  }
+.player-item.organizer {
+  background: rgba(255, 196, 81, 0.1);
+  border-color: rgba(255, 196, 81, 0.3);
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.15);
   flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.14);
 }
 
 .player-info {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
   flex: 1;
   min-width: 0;
 }
 
 .player-name {
-  font-size: 0.95rem;
-  font-weight: 500;
-  white-space: nowrap;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-// ── Badges ─────────────────────────────────────────────────────────────────
 .badge {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.15rem 0.45rem;
-  border-radius: 4px;
+  display: inline-flex;
   width: fit-content;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-
-  &--organizer {
-    background: rgba($color-organizer, 0.2);
-    color: $color-organizer;
-  }
-
-  &--virtual {
-    background: rgba($color-virtual, 0.2);
-    color: color.adjust($color-virtual, $lightness: 20%)
-  }
 }
 
-// ── Bouton d'exclusion ─────────────────────────────────────────────────────
+.badge--organizer {
+  background: rgba(255, 196, 81, 0.16);
+  color: #ffd37a;
+}
+
 .btn-kick {
-  background: transparent;
-  border: 1px solid rgba($color-error, 0.4);
-  color: rgba($color-error, 0.7);
+  width: 2rem;
+  height: 2rem;
+  border: 0;
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  font-size: 0.8rem;
+  background: rgba(239, 68, 68, 0.16);
+  color: #ff9a9a;
   cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.15s;
-
-  &:hover {
-    background: rgba($color-error, 0.15);
-    border-color: $color-error;
-    color: $color-error;
-  }
 }
 
-// ── Chat placeholder ───────────────────────────────────────────────────────
-.chat-placeholder {
+.chat-panel app-game-chat-panel {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #475569;
-  font-size: 0.9rem;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  border-radius: $radius;
-  min-height: 200px;
+  min-height: 0;
 }
 
-// ── Footer actions ─────────────────────────────────────────────────────────
 .waiting-room-actions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  padding-top: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  min-width: 180px;
+  padding: 0.85rem 1.35rem;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .btn-primary {
-  padding: 0.65rem 1.5rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: $radius;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
+  border: 0;
+  background: linear-gradient(135deg, #4f8cff 0%, #1d4ed8 100%);
+  color: #fff;
+}
 
-  &:hover:not(:disabled) { background: #2563eb; }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
+.btn-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .btn-secondary {
-  padding: 0.65rem 1.5rem;
+  color: #d9e2ec;
   background: transparent;
-  color: #94a3b8;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: $radius;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
 
-  &:hover {
-    border-color: rgba(255, 255, 255, 0.3);
-    color: #e2e8f0;
+@media (max-width: 900px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .waiting-room-header,
+  .waiting-room-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-badges {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .waiting-room-container {
+    padding: 1rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
   }
 }

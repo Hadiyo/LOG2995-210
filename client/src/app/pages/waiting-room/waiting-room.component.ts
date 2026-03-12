@@ -1,36 +1,45 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { SessionService } from '@app/services/session/session.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
+import { ChatMessage } from '@common/chat-message';
 import { PlayerInformation } from '@common/player/player.interface';
 import { map, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-waiting-room',
-  imports: [CommonModule],
+  imports: [CommonModule, GameChatPanelComponent],
   templateUrl: './waiting-room.component.html',
   styleUrls: ['./waiting-room.component.scss'],
 })
 export class WaitingRoomComponent implements OnInit, OnDestroy {
-  protected players$: Observable<PlayerInformation[]> = this.waitingRoomService.players$;
-  protected canStart$ = this.players$.pipe(map(players => this.isOrganizer && players.length >= 2));
-  protected errorMessage = '';
+  protected players$: Observable<PlayerInformation[]> = this.waitingRoomService.players$.pipe(
+    map((players) => {
+      const organizer = players.find((player) => player.isOrganizer);
+      const participants = players.filter((player) => !player.isOrganizer);
+      return organizer ? [organizer, ...participants] : participants;
+    }),
+  );
+  protected messages$: Observable<ChatMessage[]> = this.waitingRoomService.messages$;
+  protected isLocked$ = this.waitingRoomService.isLocked$;
+  protected maxPlayers$ = this.waitingRoomService.maxPlayers$;
+  protected statusMessage$ = this.waitingRoomService.statusMessage$;
 
   constructor(
-    private router: Router,
-    private waitingRoomService: WaitingRoomService,
-    private sessionService: SessionService,
+    private readonly router: Router,
+    private readonly waitingRoomService: WaitingRoomService,
+    private readonly sessionService: SessionService,
   ) {}
 
   ngOnInit() {
     this.waitingRoomService.initWaitingRoom();
-    this.sessionService.subscribeToSessionEvents();
+    this.waitingRoomService.hydrateWaitingRoom(this.sessionService.consumeJoinedSessionPayload());
   }
 
   ngOnDestroy(): void {
     this.waitingRoomService.unsubscribeSocketEvents();
-    this.sessionService.unsubscribeToSessionEvents();
   }
 
   get isOrganizer(): boolean {
@@ -50,7 +59,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       this.waitingRoomService.deleteGameSession();
     } else {
       this.waitingRoomService.leaveGameSession();
-      this.router.navigate(['']);
+      void this.router.navigate(['/home']);
     }
   }
 
@@ -62,7 +71,13 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   }
 
   protected startGame(): void {
-    // TODO: implement game start logic
-    return;
+    if (!this.isOrganizer) {
+      return;
+    }
+    this.waitingRoomService.startGame();
+  }
+
+  protected onMessageSubmit(content: string): void {
+    this.waitingRoomService.sendMessage(content);
   }
 }

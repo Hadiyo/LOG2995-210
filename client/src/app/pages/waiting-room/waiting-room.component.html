@@ -1,9 +1,26 @@
 <div class="waiting-room-container">
-  @if (errorMessage) {
-    <div class="error-banner" role="alert">{{ errorMessage }}</div>
-  }
+  <header class="waiting-room-header">
+    <div>
+      <p class="eyebrow">Avant-partie multijoueur</p>
+      <h1 class="title">Salle d'attente</h1>
+    </div>
+    <div class="header-badges">
+      @if (isLocked$ | async) {
+        <span class="lock-badge">Salle verrouillee</span>
+      } @else {
+        <span class="lock-badge lock-badge--open">Salle ouverte</span>
+      }
+      <span class="count-badge">
+        {{ (players$ | async)?.length ?? 0 }} / {{ maxPlayers$ | async }}
+      </span>
+    </div>
+  </header>
 
-  <h1 class="title">Salle d'attente</h1>
+  @if (statusMessage$ | async; as statusMessage) {
+    @if (statusMessage) {
+      <div class="status-banner" role="status">{{ statusMessage }}</div>
+    }
+  }
 
   <div class="content-grid">
     <section class="panel players-panel">
@@ -45,9 +62,12 @@
 
     <section class="panel chat-panel">
       <h2 class="panel-title">Clavardage</h2>
-      <div class="chat-placeholder">
-        <p>Zone de clavardage</p>
-      </div>
+      <app-game-chat-panel
+        [messages]="(messages$ | async) ?? []"
+        [currentPlayerName]="me?.name ?? null"
+        [title]="'Clavardage de la salle'"
+        (messageSubmit)="onMessageSubmit($event)"
+      />
     </section>
   </div>
 
@@ -56,7 +76,7 @@
       Quitter la partie
     </button>
 
-    @if (canStart$ | async) {
+    @if (isOrganizer) {
       <button class="btn-primary" (click)="startGame()">
         Lancer la partie
       </button>
