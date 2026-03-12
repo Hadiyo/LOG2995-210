@@ -47,6 +47,10 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
   constructor(private readonly fb: FormBuilder,
     private sessionService: SessionService) {}
 
+  get errorMessage(): string {
+    return this.sessionService.errorMessage();
+  }
+
   ngOnInit() {
     this.sessionService.initGameSessionService();
     // Optionally override from query params
