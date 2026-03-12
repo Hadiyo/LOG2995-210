@@ -35,7 +35,7 @@ export class SessionGateway {
       }
       this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.NewAvailableSession, gameInformation.mapPreview);
       client.emit(RoomSocketEvents.PlayerJoinedGame);
-      client.emit(WaitingRoomEvents.PlayerJoinedSession, gameInformation.player);
+      client.emit(WaitingRoomEvents.PlayerJoinedSession, gameInformation.player.information);
     } catch (err) {
       this.logger.error(
         `Error creating session for client ${client.id}: ${err.message}`,
@@ -50,7 +50,7 @@ export class SessionGateway {
     const playerPayload = this.sessionService.joinGameSession(payload, client.id);
     if (playerPayload) {
       client.join(playerPayload.sessionId); // Connect client to the room
-      client.emit(WaitingRoomEvents.ClientJoinedSession, playerPayload.players); // To initialize the waiting room for the client
+      client.emit(WaitingRoomEvents.ClientJoinedSession, playerPayload); // Send full payload so client knows which player is themselves
       client.to(playerPayload.sessionId).emit(WaitingRoomEvents.PlayerJoinedSession, playerPayload.clientPlayer); // Send the new player information only
       this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, playerPayload.mapPreviewId); // increment player count in join-page for that session
     }

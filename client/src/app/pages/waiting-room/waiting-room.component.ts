@@ -8,7 +8,7 @@ import { map, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-waiting-room',
-  imports: [CommonModule], // pour le ngIf
+  imports: [CommonModule],
   templateUrl: './waiting-room.component.html',
   styleUrls: ['./waiting-room.component.scss'],
 })
@@ -17,9 +17,11 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   protected canStart$ = this.players$.pipe(map(players => this.isOrganizer && players.length >= 2));
   protected errorMessage = '';
 
-  constructor(private router: Router, 
+  constructor(
+    private router: Router,
     private waitingRoomService: WaitingRoomService,
-    private sessionService: SessionService) {}
+    private sessionService: SessionService,
+  ) {}
 
   ngOnInit() {
     this.waitingRoomService.initWaitingRoom();
@@ -35,13 +37,32 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     return this.waitingRoomService.me?.isOrganizer ?? false;
   }
 
-  protected leaveGame(player: PlayerInformation): void {
-    this.waitingRoomService.leaveGameSession(player.name);
+  get me(): PlayerInformation | undefined {
+    return this.waitingRoomService.me;
+  }
+
+  /**
+   * Organizer leaves → deletes the whole session (navigates all players out).
+   * Regular player leaves → removes themselves from the session.
+   */
+  protected leaveSession(): void {
+    if (this.isOrganizer) {
+      this.waitingRoomService.deleteGameSession();
+    } else {
+      this.waitingRoomService.leaveGameSession();
+      this.router.navigate(['']);
+    }
+  }
+
+  /**
+   * Organizer kicks another player by name.
+   */
+  protected kickPlayer(player: PlayerInformation): void {
+    this.waitingRoomService.kickPlayer(player.name);
   }
 
   protected startGame(): void {
+    // TODO: implement game start logic
     return;
   }
-
-
 }

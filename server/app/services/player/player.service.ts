@@ -13,6 +13,24 @@ export class PlayerService {
         return this.players.get(id);
     }
 
+    getPlayerBySocketId(socketId: string): InternalPlayer | undefined {
+        for (const internalPlayer of this.players.values()) {
+            if (internalPlayer.socketId === socketId) {
+                return internalPlayer;
+            }
+        }
+        return undefined;
+    }
+
+    getPlayerByName(name: string): InternalPlayer | undefined {
+        for (const internalPlayer of this.players.values()) {
+            if (internalPlayer.player.information.name === name) {
+                return internalPlayer;
+            }
+        }
+        return undefined;
+    }
+
     /**
      * Saves player input to the list of players and create a unique reference id
      * @returns the player unique id

@@ -1,40 +1,119 @@
-import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import { Server } from 'socket.io';
+import { pageRoomMap } from '@app/gateways/rooms.record';
+import { GameSessionService } from '@app/services/session/game-session.service';
+import { PlayerService } from '@app/services/player/player.service';
+import { ErrorSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
+import { Logger } from '@nestjs/common';
+import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
-  namespace: '/api',
+    namespace: '/api',
 })
 export class WaitingRoomGateway {
     @WebSocketServer()
     private server: Server;
+    private readonly logger: Logger;
 
-  // @SubscribeMessage(WaitingRoomEvents.InitWaitingRoom)
-  // getPlayersFromSession(@MessageBody() sessionId: string, @ConnectedSocket() client: Socket): void {
-  //   // TODO: GET ALL PLAYERS FROM SESSION ID
-    
-  //   // SEND IT TO THE WAITING ROOM SERVER WITH SOCKET MESSAGE
+    constructor(
+        private readonly sessionService: GameSessionService,
+        private readonly playerService: PlayerService,
+    ) {
+        this.logger = new Logger(WaitingRoomGateway.name);
+    }
 
-  // }
-  //   @SubscribeMessage(RoomSocketEvents.LeaveGameRoom)
-  //   leaveGameSession(@MessageBody() playerId: string, @ConnectedSocket() client: Socket) {
-  //     const sessionId = this.sessionService.leaveGameSession(playerId);
-  //     if (!sessionId) {
-  //       this.logger.error('The player does not belong to any game session');
-  //       return;
-  //     }
-  //     client.leave(sessionId);
-  //     //Notify other players that the player has left the game session
-  //     this.server.to(sessionId).emit(RoomSocketEvents.PlayerLeftGame, playerId);
-  //   }
+    /**
+     * Removes the requesting player from their game session and notifies the room.
+     */
+    @SubscribeMessage(WaitingRoomEvents.LeaveGameRoom)
+    leaveGameSession(@ConnectedSocket() client: Socket): void {
+        const internalPlayer = this.playerService.getPlayerBySocketId(client.id);
+        if (!internalPlayer) {
+            this.logger.error(`No player found for socket ${client.id}`);
+            return;
+        }
 
-  // @SubscribeMessage(RoomSocketEvents.DeleteGameSession)
-  // deleteGameSession(@MessageBody() payload: { sessionId: string }, @ConnectedSocket() client: Socket) {
-  //   try {
-  //     this.sessionService.deleteGameSession(payload.sessionId);
-  //     this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.GameSessionDeleted, payload.sessionId);
-  //   } catch (err) {
-  //     client.emit(ErrorSocketEvents.FailedSessionDeletion);
-  //     this.logger.error(`Error deleting the game session: ${err}`);
-  //   }
-  // }
+        const player = internalPlayer.player;
+        const sessionId = this.sessionService.leaveGameSession(player.id);
+
+        if (!sessionId) {
+            this.logger.error(`Player ${player.id} does not belong to any game session`);
+            return;
+        }
+
+        client.leave(sessionId);
+        this.server.to(sessionId).emit(WaitingRoomEvents.PlayerLeftSession, player.information);
+
+        const session = this.sessionService.getGameSessionById(sessionId);
+        if (session) {
+            this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.DecrementPlayerCount, session.mapTemplateId);
+        }
+    }
+
+    /**
+     * Deletes the entire game session (organizer only).
+     * The session is identified from the organizer's socket room membership.
+     */
+    @SubscribeMessage(WaitingRoomEvents.DeleteGameSession)
+    deleteGameSession(@ConnectedSocket() client: Socket): void {
+        try {
+            const sessionId = this.getSessionIdFromSocket(client);
+            if (!sessionId) {
+                this.logger.error(`Could not find session for socket ${client.id}`);
+                return;
+            }
+
+            const session = this.sessionService.getGameSessionById(sessionId);
+            if (!session) {
+                this.logger.error(`Session ${sessionId} not found`);
+                return;
+            }
+
+            this.sessionService.deleteGameSession(session.mapTemplateId);
+            // Notify all players in the session room that it was deleted
+            this.server.to(sessionId).emit(WaitingRoomEvents.GameSessionDeleted);
+            // Notify the join-game page to remove the session from the list
+            this.server.to(pageRoomMap.joinGame).emit(WaitingRoomEvents.GameSessionDeleted, sessionId);
+        } catch (err) {
+            client.emit(ErrorSocketEvents.FailedSessionDeletion);
+            this.logger.error(`Error deleting the game session: ${err}`);
+        }
+    }
+
+    /**
+     * Kicks a player from the session by name (organizer only).
+     */
+    @SubscribeMessage(WaitingRoomEvents.KickPlayer)
+    kickPlayer(@MessageBody() playerName: string, @ConnectedSocket() client: Socket): void {
+        const sessionId = this.getSessionIdFromSocket(client);
+        if (!sessionId) {
+            this.logger.error(`Could not find session for socket ${client.id}`);
+            return;
+        }
+
+        const target = this.playerService.getPlayerByName(playerName);
+        if (!target) {
+            this.logger.error(`No player found with name ${playerName}`);
+            return;
+        }
+
+        this.sessionService.leaveGameSession(target.player.id);
+        // Notify the kicked player individually
+        this.server.to(target.socketId).emit(WaitingRoomEvents.KickedFromSession);
+        // Notify the rest of the room
+        this.server.to(sessionId).emit(WaitingRoomEvents.PlayerLeftSession, target.player.information);
+
+        const session = this.sessionService.getGameSessionById(sessionId);
+        if (session) {
+            this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.DecrementPlayerCount, session.mapTemplateId);
+        }
+    }
+
+    private getSessionIdFromSocket(client: Socket): string | undefined {
+        for (const room of client.rooms) {
+            if (room !== client.id) {
+                return room;
+            }
+        }
+        return undefined;
+    }
 }

@@ -32,6 +32,8 @@ export enum WaitingRoomEvents {
     PlayerJoinedSession = 'playerJoinedSession',
     PlayerLeftSession = 'playerLeftSession',
     ClientJoinedSession = 'clientJoinedSession',
+    KickPlayer = 'kickPlayer',
+    KickedFromSession = 'kickedFromSession',
 }
 
 export enum ErrorSocketEvents {

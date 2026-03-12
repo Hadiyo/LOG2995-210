@@ -88,6 +88,10 @@ export class GameSessionService {
         try {
             const sessionId = this.findPlayerInGameSession(playerId);
             if (sessionId) {
+                const session = this.gameSessions.get(sessionId);
+                if (session) {
+                    session.players = session.players.filter(id => id !== playerId);
+                }
                 this.playerService.removePlayer(playerId);
                 return sessionId;
             } else return undefined;
