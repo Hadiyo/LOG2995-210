@@ -13,7 +13,7 @@ export const DEFAULT_SPRITE_SIZE = 96;
 export const DEFAULT_SCALE = 1;
 
 // Spritesheet path builder.
-const SPRITE_PATH_PREFIX = 'assets/avatars/sheets/sprite-';
+const SPRITE_PATH_PREFIX = '../assets/avatars/sheets/sprite-';
 const SPRITE_PATH_SUFFIX = '.png';
 export const FALLBACK_AVATAR_ID = DEFAULT_AVATAR_ID;
 
