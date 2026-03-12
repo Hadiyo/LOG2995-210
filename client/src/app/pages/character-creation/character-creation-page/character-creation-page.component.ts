@@ -9,6 +9,7 @@ import {
   sanitizeCharacterName,
 } from '@app/services/character/character-generator';
 import { SessionService } from '@app/services/session/session.service';
+import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import {
   AVATAR_IDS,
   AVATAR_PROFILES,
@@ -190,6 +191,10 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
       character = this.buildCharacterFromForm(false);
       this.sessionService.joinGameSession(character);
     }
+  }
+
+  protected getAvatarThumbPath(avatarId: number): string {
+    return resolveAssetUrl(`assets/avatars/thumbs/${avatarId}.png`);
   }
 
 }

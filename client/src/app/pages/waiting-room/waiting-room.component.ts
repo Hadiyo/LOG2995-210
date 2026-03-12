@@ -5,6 +5,7 @@ import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/gam
 import { ChatService } from '@app/services/chat/chat.service';
 import { SessionService } from '@app/services/session/session.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
+import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { PlayerInformation } from '@common/player/player.interface';
 import { map, Observable } from 'rxjs';
@@ -94,5 +95,9 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     }
     
     this.chatService.sendMessage(message);
+  }
+
+  protected getAvatarThumbPath(avatarId: number): string {
+    return resolveAssetUrl(`assets/avatars/thumbs/${avatarId}.png`);
   }
 }
