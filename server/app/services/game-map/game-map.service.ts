@@ -24,6 +24,10 @@ export class GameMapService {
         this.logger = new Logger(GameMapService.name);
     }
 
+    getPreviewById(id: string): GameSessionPreview {
+        return this.gameMapPreviews.find(preview => preview.id === id);
+    }
+
     getGameMapById(id: string): GameMap {
         return this.gameMaps.get(id);
     }

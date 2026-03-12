@@ -1,24 +1,21 @@
 import { GameMapService } from '@app/services/game-map/game-map.service';
 import { PlayerService } from '@app/services/player/player.service';
 import { ChatMessage } from '@common/chat-message';
-import { TurnPhase, GameSessionSnapshot } from '@common/game-session';
+import { GameSessionSnapshot, TurnPhase } from '@common/game-session';
 import {
-    CreateSessionPayload,
     GameSession,
+    GameSessionPreview,
     GameStartedPayload,
     JoinSessionPayload,
     PlayerPayload,
-    WaitingRoomStatePayload,
+    WaitingRoom,
 } from '@common/game/game-session.interface';
-import { ObjectType } from '@common/maps/map.enums';
-import { GameCell, GameMap } from '@common/maps/map.interface';
-import { Player, PlayerInformation, PlayerStatus } from '@common/player/player.interface';
+import { PlayerInformation } from '@common/player/player.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 const TURN_DURATION_SECONDS = 30;
-const CHAT_MESSAGE_MAX_LENGTH = 200;
-const DEFAULT_ACTIONS_PER_TURN = 1;
+const CHAT_MESSAGE_MAX_LENGTH = 300;
 
 @Injectable()
 export class GameSessionService {
@@ -37,7 +34,7 @@ export class GameSessionService {
         return this.gameSessions.get(id);
     }
 
-    getWaitingRoomState(sessionId: string): WaitingRoomStatePayload | undefined {
+    getWaitingRoomState(sessionId: string): WaitingRoom | undefined {
         const session = this.getGameSessionById(sessionId);
         if (!session) return undefined;
 
@@ -48,7 +45,6 @@ export class GameSessionService {
             messages: [...session.messages],
             isLocked: session.isLocked,
             maxPlayers: session.maxPlayers,
-            minPlayersToStart: 0,
         };
     }
 
@@ -60,7 +56,8 @@ export class GameSessionService {
      * 3. Stores the new gameSession object in gameSession
      * @returns gameSessionId (for the client socket to join the room)
      */
-    async createGameSession(payload: JoinSessionPayload, socketId: string): Promise<CreateSessionPayload | undefined> {
+
+    async createGameSession(payload: JoinSessionPayload, socketId: string): Promise<PlayerPayload | undefined> {
         try {
             const mapPreviewSession = await this.gameMapService.saveGameMap(payload.id);
             const newPlayer = this.playerService.savePlayer(payload.character, socketId);
@@ -77,10 +74,11 @@ export class GameSessionService {
             };
             this.gameSessions.set(gameSession.id, gameSession);
 
+            const waitingRoomPayload = this.generateWaitingRoomPayload(gameSession, 
+                [newPlayer.information], newPlayer.information, mapPreviewSession);
             return {
+                waitingRoom: waitingRoomPayload,
                 mapPreview: mapPreviewSession,
-                sessionId: gameSession.id,
-                player: newPlayer,
             };
         } catch (err) {
             this.logger.error(`Error while creating game session: ${err}`);
@@ -92,7 +90,7 @@ export class GameSessionService {
      * Links the client to the game session and initializes its player
      * @returns the waiting room payload for the client
      */
-    joinGameSession(payload: JoinSessionPayload, socketId: string): PlayerPayload | undefined {
+    joinGameSession(payload: JoinSessionPayload, socketId: string): WaitingRoom | undefined {
         try {
             const session = this.findSessionByPreview(payload.id);
             if (!session) {
@@ -103,16 +101,11 @@ export class GameSessionService {
             session.players.push(player.id);
             this.syncSessionLockState(session);
             this.gameMapService.updateNumberOfPlayers(payload.id, 1);
+            const preview = this.gameMapService.getPreviewById(session.mapTemplateId);
+            const players = this.getPlayersFromGameSession(session.id);
+            const waitingRoom = this.generateWaitingRoomPayload(session, players, player.information, preview);
 
-            return {
-                players: this.getPlayersFromGameSession(session.id),
-                clientPlayer: player.information,
-                sessionId: session.id,
-                mapPreviewId: session.mapTemplateId,
-                messages: [...session.messages],
-                isLocked: session.isLocked,
-                maxPlayers: session.maxPlayers,
-            };
+            return waitingRoom;
         } catch (err) {
             this.logger.error(`Error while joining game session: ${err}`);
             return undefined;
@@ -184,7 +177,7 @@ export class GameSessionService {
             return undefined;
         }
 
-        const players = this.createRuntimePlayers(session.players, gameMap);
+        const players = this.playerService.createRuntimePlayers(session.players, gameMap);
         const activePlayerId = players[0]?.id ?? '';
         const snapshot: GameSessionSnapshot = {
             id: session.id,
@@ -223,6 +216,29 @@ export class GameSessionService {
         this.gameMapService.deleteGameMap(session.mapTemplateId);
         this.gameMapService.deleteGameMapPreview(session.mapTemplateId);
         this.gameSessions.delete(session.id);
+    }
+
+    /**
+     * Method to create a Waiting Room payload
+     * @param session 
+     * @param sessionPlayers 
+     * @param player 
+     * @param preview 
+     * @returns 
+     */
+    private generateWaitingRoomPayload(session: GameSession, 
+        sessionPlayers: PlayerInformation[], 
+        player: PlayerInformation, preview: GameSessionPreview): WaitingRoom {
+        return {
+            players: sessionPlayers,
+            clientPlayer: player,
+            sessionId: session.id,
+            mapPreviewId: session.mapTemplateId,
+            messages: session.messages ?? [],
+            isLocked: session.isLocked ?? false,
+            maxPlayers: session.maxPlayers ?? preview.maxPlayers,
+      };
+
     }
 
     /**
@@ -267,45 +283,4 @@ export class GameSessionService {
         this.gameMapService.updatePreviewLockState(session.mapTemplateId, session.isLocked);
     }
 
-    private createRuntimePlayers(playerIds: string[], gameMap: GameMap): Player[] {
-        const spawnPositions = gameMap.objects
-            .filter((object) => object.type === ObjectType.START)
-            .map((object) => ({ ...object.position }));
-        const walkablePositions = gameMap.map
-            .filter((cell) => cell.isWalkable)
-            .map((cell) => ({ ...cell.position }));
-
-        return playerIds
-            .map((playerId) => this.playerService.getPlayerById(playerId)?.player)
-            .filter((player): player is Player => Boolean(player))
-            .map((player, index) => ({
-                ...player,
-                information: { ...player.information },
-                state: {
-                    ...player.state,
-                    position: this.getInitialPosition(index, spawnPositions, walkablePositions),
-                    status: PlayerStatus.Active,
-                    remainingActions: DEFAULT_ACTIONS_PER_TURN,
-                    remainingMovements: player.state.attributes.speed,
-                },
-                render: {
-                    ...player.render,
-                    facing: player.render.facing ?? 'front',
-                    pose: player.render.pose ?? 'idle',
-                },
-            }));
-    }
-
-    private getInitialPosition(
-        index: number,
-        spawnPositions: { x: number; y: number }[],
-        walkablePositions: GameCell['position'][],
-    ): GameCell['position'] {
-        return (
-            spawnPositions[index] ??
-            walkablePositions[index] ??
-            walkablePositions[0] ??
-            { x: 0, y: 0 }
-        );
-    }
 }

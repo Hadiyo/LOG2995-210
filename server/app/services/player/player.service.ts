@@ -1,7 +1,11 @@
 import { InternalPlayer } from '@app/interface/player.interface';
+import { ObjectType } from '@common/maps/map.enums';
+import { GameCell, GameMap } from '@common/maps/map.interface';
 import { Player, PlayerInformation, PlayerRenderState, PlayerState, PlayerStatus } from '@common/player/player.interface';
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+
+const DEFAULT_ACTIONS_PER_TURN = 1;
 
 @Injectable()
 export class PlayerService {
@@ -57,6 +61,35 @@ export class PlayerService {
         this.players.delete(playerId);
     }
 
+    createRuntimePlayers(playerIds: string[], gameMap: GameMap): Player[] {
+        const spawnPositions = gameMap.objects
+            .filter((object) => object.type === ObjectType.START)
+            .map((object) => ({ ...object.position }));
+        const walkablePositions = gameMap.map
+            .filter((cell) => cell.isWalkable)
+            .map((cell) => ({ ...cell.position }));
+
+        return playerIds
+            .map((playerId) => this.getPlayerById(playerId)?.player)
+            .filter((player): player is Player => Boolean(player))
+            .map((player, index) => ({
+                ...player,
+                information: { ...player.information },
+                state: {
+                    ...player.state,
+                    position: this.getInitialPosition(index, spawnPositions, walkablePositions),
+                    status: PlayerStatus.Active,
+                    remainingActions: DEFAULT_ACTIONS_PER_TURN,
+                    remainingMovements: player.state.attributes.speed,
+                },
+                render: {
+                    ...player.render,
+                    facing: player.render.facing ?? 'front',
+                    pose: player.render.pose ?? 'idle',
+                },
+            }));
+    }
+
     /**
      * TODO: Sets the initiale player status according to its attributes
      * CURRENTLY HAVE DUMMY VALUES
@@ -86,5 +119,18 @@ export class PlayerService {
             pose: 'idle',
         };
         return render;
+    }
+
+    private getInitialPosition(
+        index: number,
+        spawnPositions: { x: number; y: number }[],
+        walkablePositions: GameCell['position'][],
+    ): GameCell['position'] {
+        return (
+            spawnPositions[index] ??
+            walkablePositions[index] ??
+            walkablePositions[0] ??
+            { x: 0, y: 0 }
+        );
     }
 }

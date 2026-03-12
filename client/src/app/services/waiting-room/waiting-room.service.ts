@@ -2,14 +2,13 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { GAME_STORAGE_KEYS, LocalGameStateService } from '@app/services/game/local-game-state.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
+import { ChatMessage } from '@common/chat-message';
 import {
   GameStartedPayload,
-  PlayerPayload,
+  WaitingRoom,
   WaitingRoomMessagePayload,
   WaitingRoomRedirectPayload,
-  WaitingRoomStatePayload,
 } from '@common/game/game-session.interface';
-import { ChatMessage } from '@common/chat-message';
 import { PlayerInformation } from '@common/player/player.interface';
 import { ErrorSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
@@ -32,9 +31,6 @@ export class WaitingRoomService {
   private maxPlayersSubject = new BehaviorSubject(0);
   readonly maxPlayers$ = this.maxPlayersSubject.asObservable();
 
-  private minPlayersToStartSubject = new BehaviorSubject(2);
-  readonly minPlayersToStart$ = this.minPlayersToStartSubject.asObservable();
-
   private statusMessageSubject = new BehaviorSubject('');
   readonly statusMessage$ = this.statusMessageSubject.asObservable();
 
@@ -52,19 +48,11 @@ export class WaitingRoomService {
     this.subscribeToSocketEvents();
   }
 
-  hydrateWaitingRoom(payload: PlayerPayload | undefined): void {
-    if (!payload) {
-      return;
-    }
-
-    this.onClientJoinedSession(payload);
-  }
-
   unsubscribeSocketEvents(): void {
     this.socket.off<PlayerInformation>(WaitingRoomEvents.PlayerJoinedSession, this.onJoinedPlayer);
     this.socket.off<PlayerInformation>(WaitingRoomEvents.PlayerLeftSession, this.onPlayerLeft);
-    this.socket.off<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
-    this.socket.off<WaitingRoomStatePayload>(WaitingRoomEvents.WaitingRoomState, this.onWaitingRoomState);
+    this.socket.off<WaitingRoom>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
+    this.socket.off<WaitingRoom>(WaitingRoomEvents.WaitingRoomState, this.onWaitingRoomState);
     this.socket.off<ChatMessage>(WaitingRoomEvents.MessageSent, this.onMessageSent);
     this.socket.off<WaitingRoomRedirectPayload>(WaitingRoomEvents.GameSessionDeleted, this.onDeletedSession);
     this.socket.off<WaitingRoomRedirectPayload>(WaitingRoomEvents.KickedFromSession, this.onKickedFromSession);
@@ -97,8 +85,8 @@ export class WaitingRoomService {
   private subscribeToSocketEvents(): void {
     this.socket.on<PlayerInformation>(WaitingRoomEvents.PlayerJoinedSession, this.onJoinedPlayer);
     this.socket.on<PlayerInformation>(WaitingRoomEvents.PlayerLeftSession, this.onPlayerLeft);
-    this.socket.on<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
-    this.socket.on<WaitingRoomStatePayload>(WaitingRoomEvents.WaitingRoomState, this.onWaitingRoomState);
+    this.socket.on<WaitingRoom>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
+    this.socket.on<WaitingRoom>(WaitingRoomEvents.WaitingRoomState, this.onWaitingRoomState);
     this.socket.on<ChatMessage>(WaitingRoomEvents.MessageSent, this.onMessageSent);
     this.socket.on<WaitingRoomRedirectPayload>(WaitingRoomEvents.GameSessionDeleted, this.onDeletedSession);
     this.socket.on<WaitingRoomRedirectPayload>(WaitingRoomEvents.KickedFromSession, this.onKickedFromSession);
@@ -106,7 +94,12 @@ export class WaitingRoomService {
     this.socket.on<string>(ErrorSocketEvents.ServerError, this.onServerError);
   }
 
-  private onClientJoinedSession = (payload: PlayerPayload) => {
+  /**
+   * Socket Event: WaitingRoomEvents.ClientJoinedSession
+   * @param payload 
+   */
+  private onClientJoinedSession = (payload: WaitingRoom) => {
+    if (!payload) return;
     this.me = payload.clientPlayer;
     this.playersSubjects.next(payload.players);
     this.messagesSubject.next(payload.messages);
@@ -114,13 +107,17 @@ export class WaitingRoomService {
     this.maxPlayersSubject.next(payload.maxPlayers);
   };
 
-  private onWaitingRoomState = (payload: WaitingRoomStatePayload | undefined) => {
+  // /**
+  //  * Socket Event: WaitingRoomEvents.WaitingRoomState
+  //  * @param payload 
+  //  * @returns 
+  //  */
+  private onWaitingRoomState = (payload: WaitingRoom | undefined) => {
     if (!payload) return;
     this.playersSubjects.next(payload.players);
     this.messagesSubject.next(payload.messages);
     this.isLockedSubject.next(payload.isLocked);
     this.maxPlayersSubject.next(payload.maxPlayers);
-    this.minPlayersToStartSubject.next(payload.minPlayersToStart);
   };
 
   private onJoinedPlayer = (player: PlayerInformation) => {
@@ -184,7 +181,7 @@ export class WaitingRoomService {
     this.messagesSubject.next([]);
     this.isLockedSubject.next(false);
     this.maxPlayersSubject.next(0);
-    this.minPlayersToStartSubject.next(2);
+    //this.minPlayersToStartSubject.next(2);
     this.statusMessageSubject.next('');
     this.me = undefined;
   }
