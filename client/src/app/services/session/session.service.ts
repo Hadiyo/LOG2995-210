@@ -3,9 +3,9 @@ import { Router } from '@angular/router';
 import { ServiceState } from '@app/services/service-state.enum';
 import { SessionApiService } from '@app/services/session/session-api.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { GameSessionPreview, JoinSessionPayload } from '@common/game/game-session.interface';
+import { GameSessionPreview, JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
 import { PlayerInformation } from '@common/player/player.interface';
-import { PageContext, PageSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
+import { ErrorSocketEvents, PageContext, PageSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
 
 /**
@@ -25,8 +25,10 @@ export class SessionService {
 
   private currentMapId?: string;
   private currentPreviewId?: string;
+  private joinedSessionPayload?: PlayerPayload;
 
   readonly state = signal<ServiceState>(ServiceState.Idle);
+  readonly errorMessage = signal('');
 
   private api = inject(SessionApiService);
 
@@ -50,11 +52,18 @@ export class SessionService {
 
   setContext(context: 'create' | 'join') {
     this.contextSubject.next(context);
+    this.errorMessage.set('');
   }
 
   clearCurrentIds() {
     this.currentMapId = undefined;
     this.currentPreviewId = undefined;
+  }
+
+  consumeJoinedSessionPayload(): PlayerPayload | undefined {
+    const payload = this.joinedSessionPayload;
+    this.joinedSessionPayload = undefined;
+    return payload;
   }
   /**
    * Initialises the session service by setting socket connection and the GameSessionPreview list 
@@ -92,7 +101,9 @@ export class SessionService {
     this.socket.on<void>(RoomSocketEvents.PlayerJoinedGame, this.onJoinedSession);
     this.socket.on<string>(RoomSocketEvents.DecrementPlayerCount, this.onPlayerLeft);
     this.socket.on<string>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
+    this.socket.on<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
     this.socket.on<GameSessionPreview>(RoomSocketEvents.NewAvailableSession, this.onNewAvailableSession);
+    this.socket.on<string>(ErrorSocketEvents.FailedJoinSession, this.onFailedJoinSession);
   }
 
   /**
@@ -104,7 +115,9 @@ export class SessionService {
     this.socket.off<void>(RoomSocketEvents.PlayerJoinedGame, this.onJoinedSession);
     this.socket.off<string>(RoomSocketEvents.DecrementPlayerCount, this.onPlayerLeft);
     this.socket.off<string>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
+    this.socket.off<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
     this.socket.off<GameSessionPreview>(RoomSocketEvents.NewAvailableSession, this.onNewAvailableSession);
+    this.socket.off<string>(ErrorSocketEvents.FailedJoinSession, this.onFailedJoinSession);
   }
 
   /** REQUESTS */
@@ -115,6 +128,7 @@ export class SessionService {
    * @param payload 
    */
   createGameSession(character: PlayerInformation): void {
+    this.errorMessage.set('');
     const payload: JoinSessionPayload = {
       id: this.currentMapId,
       character,
@@ -128,6 +142,7 @@ export class SessionService {
    * @param sessionId 
    */
   joinGameSession(character: PlayerInformation): void {
+    this.errorMessage.set('');
     const payload: JoinSessionPayload = {
       id: this.currentPreviewId,
       character,
@@ -142,7 +157,14 @@ export class SessionService {
    * Socket Event: RoomSocketEvents.PlayerJoinedGame
    */
   private onJoinedSession = () => {
-    this.router.navigate(['waiting-room']);
+    this.errorMessage.set('');
+    void this.router.navigate(['waiting-room']);
+  };
+
+  private onClientJoinedSession = (payload: PlayerPayload) => {
+    this.joinedSessionPayload = payload;
+    this.errorMessage.set('');
+    void this.router.navigate(['waiting-room']);
   };
 
   /**
@@ -185,10 +207,18 @@ export class SessionService {
     this.sessionPreviewSubjects.next(updated);
   };
 
+  private onFailedJoinSession = (message: string) => {
+    this.errorMessage.set(message);
+  };
+
   private updatePlayerCount(previewId: string, delta: number): void {
     const updated = this.sessionPreviewSubjects.value.map(session =>
       session.id === previewId
-        ? { ...session, nbOfPlayers: session.nbOfPlayers + delta }
+        ? {
+          ...session,
+          nbOfPlayers: session.nbOfPlayers + delta,
+          isLocked: session.nbOfPlayers + delta >= session.maxPlayers,
+        }
         : session,
     );
     this.sessionPreviewSubjects.next(updated);
