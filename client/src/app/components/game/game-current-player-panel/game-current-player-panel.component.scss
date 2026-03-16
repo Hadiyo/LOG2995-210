@@ -50,6 +50,22 @@ h3 {
   max-width: 100%;
 }
 
+.debug-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  border: 1px solid var(--object-flag);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: var(--bg-panel);
+  color: var(--object-flag);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
 .player-stats-grid {
   flex: 0 0 auto;
   min-height: 0;

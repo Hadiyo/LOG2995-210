@@ -37,6 +37,16 @@
   border: 1px solid var(--cell-border-color);
   padding: 0;
   background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Remove the native button focus ring on grid tiles to avoid the white outline on shift+click. */
+.cell:focus,
+.cell:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 /* Base tile image layer */
