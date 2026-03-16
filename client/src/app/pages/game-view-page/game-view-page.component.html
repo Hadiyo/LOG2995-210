@@ -82,7 +82,7 @@
       <section class="panel messages">
         <!-- Chat panel shows messages, notifications, and allows the current player to send messages. -->
         <app-game-chat-panel
-          [messages]="session()!.messages"
+          [messages]="chatMessages()"
           [notification]="activeNotification()"
           [currentPlayerName]="currentPlayer()?.information?.name ?? null"
           [messageMaxLength]="constants.messageMaxLength"

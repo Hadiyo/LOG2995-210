@@ -26,8 +26,18 @@ export class ChatGateway {
   @SubscribeMessage(ChatSocketEvents.SendMessage)
   sendMessage(@MessageBody() message: ChatMessage, @ConnectedSocket() client: Socket) {
     const internalPlayer = this.playerService.getPlayerBySocketId(client.id);
+    if (!internalPlayer) {
+      this.logger.error(`No player found for socket ${client.id}`);
+      client.emit(ChatSocketEvents.ChatServerError, 'Failed to send message');
+      return;
+    }
 
     const sessionId = this.gameSessionService.findPlayerInGameSession(internalPlayer.player.id);
+    if (!sessionId) {
+      this.logger.error(`No session found for player ${internalPlayer.player.id}`);
+      client.emit(ChatSocketEvents.ChatServerError, 'Failed to send message');
+      return;
+    }
 
     if (this.chatService.addMessage(message, sessionId)) {
       this.server.to(sessionId).emit(ChatSocketEvents.ReceiveMessage, message);

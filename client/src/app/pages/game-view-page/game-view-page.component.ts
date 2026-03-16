@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GameActionBarComponent } from '@app/components/game/game-action-bar/game-action-bar.component';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
@@ -14,7 +15,6 @@ import { GameVisualFeedbackService } from '@app/services/game/game-visual-feedba
 // LocalGameStateService is a temporary static-mode implementation.
 import { ChatService } from '@app/services/chat/chat.service';
 import { GAME_STORAGE_KEYS, LocalGameStateService } from '@app/services/game/local-game-state.service';
-import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { GameActionType } from '@common/game/game-session.interface';
@@ -56,9 +56,11 @@ import {
 // Main game view page component displaying map, players, and game UI
 export class GameViewPageComponent implements OnInit, OnDestroy {
   readonly constants = GAME_VIEW_CONSTANTS;
+  private readonly chatService: ChatService = inject(ChatService);
 
   // Session data from game state service
   readonly session = this.gameStateService.session;
+  readonly chatMessages = toSignal(this.chatService.chat$, { initialValue: [] as ChatMessage[] });
 
   // Computed map properties (cells, objects, dimensions)
   readonly mapCells = computed<readonly GameCell[]>(() => this.session()?.map.map ?? []);
@@ -153,8 +155,6 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     return this.playerDirections()[player.id] ?? player.render?.facing ?? this.avatarDirection;
   });
 
-  private readonly chatService: ChatService = inject(ChatService);
-
   constructor(
     //private readonly gameStateService: GameStateService,
     // TODO: inject local static-mode state service.
@@ -163,7 +163,6 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     private readonly gameVisualFeedbackService: GameVisualFeedbackService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly waitingRoomService: WaitingRoomService,
   ) {
     // Effect: redirect to home when game session ends
     effect(() => {
@@ -194,6 +193,10 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
       .loadSession(sessionId, playerId)
       .pipe(take(1))
       .subscribe({
+        next: (snapshot) => {
+          this.chatService.clearChat();
+          this.chatService.loadChatMessages(snapshot.messages);
+        },
         error: () => this.errorMessage.set('Impossible de charger la session de jeu.'),
       });
 
@@ -267,7 +270,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
 
   // Submit a chat message to the session
   onChatMessageSubmit(content: string): void {
-    const author = this.waitingRoomService.me?.name;
+    const author = this.currentPlayer()?.information.name;
     if (!author) {
       return;
     }

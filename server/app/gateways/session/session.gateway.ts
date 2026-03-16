@@ -28,6 +28,7 @@ export class SessionGateway {
         return;
       }
 
+      this.leavePreviousGameRooms(client);
       client.join(gameInformation.waitingRoom.sessionId);
 
       if (!client.rooms.has(gameInformation.waitingRoom.sessionId)) {
@@ -50,6 +51,7 @@ export class SessionGateway {
   joinGameSession(@MessageBody() payload: JoinSessionPayload, @ConnectedSocket() client: Socket) {
     const waitingRoom = this.sessionService.joinGameSession(payload, client.id);
     if (waitingRoom) {
+      this.leavePreviousGameRooms(client);
       client.join(waitingRoom.sessionId); // Connect client to the room
       client.emit(RoomSocketEvents.PlayerJoinedGame); // Signal waiting room redirection
       client.emit(WaitingRoomEvents.ClientJoinedSession, waitingRoom); // Send full payload so client knows which player is themselves
@@ -58,6 +60,17 @@ export class SessionGateway {
         .to(waitingRoom.sessionId)
         .emit(WaitingRoomEvents.WaitingRoomState, waitingRoom);
       this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, waitingRoom.mapPreviewId); // increment player count in join-page for that session
+    }
+  }
+
+  private leavePreviousGameRooms(client: Socket): void {
+    const pageRooms = new Set<string>(Object.values(pageRoomMap));
+    for (const room of client.rooms) {
+      if (room === client.id || pageRooms.has(room)) {
+        continue;
+      }
+
+      client.leave(room);
     }
   }
 }

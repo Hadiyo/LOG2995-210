@@ -86,13 +86,15 @@ export class WaitingRoomService {
 
   /**
    * Socket Event: WaitingRoomEvents.ClientJoinedSession
-   * @param payload 
+   * @param payload
    */
   private onClientJoinedSession = (payload: WaitingRoom) => {
     if (!payload) return;
     this.me = payload.clientPlayer;
     this.playersSubjects.next(payload.players);
     this.isLockedSubject.next(payload.isLocked);
+    this.chatService.clearChat();
+    this.chatService.loadChatMessages(payload.messages);
     this.maxPlayersSubject.next(payload.maxPlayers);
   };
 

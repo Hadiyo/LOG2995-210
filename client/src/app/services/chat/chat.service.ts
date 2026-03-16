@@ -32,7 +32,17 @@ export class ChatService {
   }
 
   loadChatMessages(messages: ChatMessage[]): void {
-    this.chatMessages.next(messages);
+    // Merge server messages with existing local messages, avoiding duplicates
+    const existingMessages = this.chatMessages.value;
+    const existingIds = new Set(existingMessages.map((msg) => msg.id ?? msg.createdAt));
+
+    const newMessages = messages.filter(
+      (msg) => !existingIds.has(msg.id ?? msg.createdAt),
+    );
+
+    if (newMessages.length > 0) {
+      this.chatMessages.next([...existingMessages, ...newMessages]);
+    }
   }
 
   clearChat(): void {
