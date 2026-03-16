@@ -75,7 +75,9 @@
     </button>
 
     @if (isOrganizer) {
-      <button class="btn-primary" (click)="startGame()">
+      <button class="btn-primary"
+              [disabled]="((players$ | async)?.length ?? 0) <= 1"
+              (click)="startGame()">
         Lancer la partie
       </button>
     }
