@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { ErrorHandler, Injectable, signal } from '@angular/core';
 import { ServiceState } from '@app/services/service-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { validateChatMessage } from '@common/chat/chat-validation.utils';
@@ -14,6 +14,8 @@ export class ChatService {
 
   private chatMessages = new BehaviorSubject<ChatMessage[]>([]);
   readonly chat$ = this.chatMessages.asObservable();
+
+  private errorHandler = new ErrorHandler();
 
   constructor(private socket: SocketManagerService) {}
 
@@ -63,7 +65,7 @@ export class ChatService {
     this.chatMessages.next([...this.chatMessages.value, message]);
   };
 
-  private onErrorMessage = (errorMessage: string): string => {
-    return errorMessage;
+  private onErrorMessage = (errorMessage: string): void => {
+    this.errorHandler.handleError(new Error(errorMessage));
   };
 }

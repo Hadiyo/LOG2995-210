@@ -28,14 +28,14 @@ export class ChatGateway {
     const internalPlayer = this.playerService.getPlayerBySocketId(client.id);
     if (!internalPlayer) {
       this.logger.error(`No player found for socket ${client.id}`);
-      client.emit(ChatSocketEvents.ChatServerError, 'Failed to send message');
+      client.emit(ChatSocketEvents.ChatServerError, 'Failed to find player information');
       return;
     }
 
     const sessionId = this.gameSessionService.findPlayerInGameSession(internalPlayer.player.id);
     if (!sessionId) {
       this.logger.error(`No session found for player ${internalPlayer.player.id}`);
-      client.emit(ChatSocketEvents.ChatServerError, 'Failed to send message');
+      client.emit(ChatSocketEvents.ChatServerError, 'Failed to find session');
       return;
     }
 

@@ -32,7 +32,6 @@ const routes: Routes = [
     { path: 'game-view', component: GameViewPageComponent },
     { path: 'dev-game-launcher', component: DevGameLauncherComponent },
     { path: 'join-room', component: JoinGameComponent },
-    { path: 'game-view', component: GameViewPageComponent },
     { path: '**', redirectTo: '/home' },
 ];
 
