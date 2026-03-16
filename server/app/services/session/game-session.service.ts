@@ -49,6 +49,20 @@ export class GameSessionService {
     }
 
     /**
+     * Retrieves all player information from the session preview ID
+     * @param previewId 
+     * @returns 
+     */
+    getPlayersFromGamePreview(previewId: string): PlayerInformation[] {
+        const session = this.findSessionByPreview(previewId);
+        if (!session) return [];
+        return session.players
+            .map((playerId) => this.playerService.getPlayerById(playerId)?.player.information)
+            .filter((player): player is PlayerInformation => Boolean(player));
+    }
+
+
+    /**
      * 1. Calls GameMapService to create a gameMap from the mapId and retrieves mapTemplateId
      * to store it in the current GameSession
      * 2. Calls PlayerService to create the player from the input player information and returns
@@ -244,7 +258,7 @@ export class GameSessionService {
     /**
      * Finds a session id by the preview template
      */
-    private findSessionByPreview(previewId: string): GameSession | undefined {
+    findSessionByPreview(previewId: string): GameSession | undefined {
         for (const session of this.gameSessions.values()) {
             if (session.mapTemplateId === previewId) {
                 return session;

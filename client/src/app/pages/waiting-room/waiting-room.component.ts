@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
+import { AvatarId } from '@common/character/character.model';
 import { ChatMessage } from '@common/chat-message';
 import { PlayerInformation } from '@common/player/player.interface';
 import { map, Observable } from 'rxjs';
@@ -26,11 +27,11 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   protected isLocked$ = this.waitingRoomService.isLocked$;
   protected maxPlayers$ = this.waitingRoomService.maxPlayers$;
   protected statusMessage$ = this.waitingRoomService.statusMessage$;
+  protected takenAvatards: AvatarId[] = [];
 
   constructor(
     private readonly router: Router,
     private readonly waitingRoomService: WaitingRoomService,
-    //private readonly sessionService: SessionService,
   ) {}
 
   ngOnInit() {

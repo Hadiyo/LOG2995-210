@@ -22,10 +22,11 @@ export enum RoomSocketEvents {
     PlayerJoinedGame = 'playerJoinedGame',
     IncrementPlayerCount = 'incrementPlayerCount',
     DecrementPlayerCount = 'decrementPlayerCount',
-    AddClientToSession = 'addClientToSession',
+    AddPlayerToSession = 'addPlayerToSession',
 }
 
 export enum WaitingRoomEvents {
+    InitPlayers = 'initPlayers',
     LeaveGameRoom = 'leaveGameRoom',
     DeleteGameSession = 'deleteGameSession',
     GameSessionDeleted = 'gameSessionDeleted',

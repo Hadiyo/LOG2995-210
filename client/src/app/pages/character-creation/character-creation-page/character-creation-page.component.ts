@@ -1,14 +1,16 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe, CommonModule } from '@angular/common';
 import { Component, computed, OnDestroy, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import {
   generateCharacterFormValues,
+  makeFullName,
   normalizeCharacterName,
   sanitizeCharacterName,
 } from '@app/services/character/character-generator';
 import { SessionService } from '@app/services/session/session.service';
+import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import {
   AVATAR_IDS,
@@ -24,7 +26,7 @@ import {
   PlusTwoAttributeName,
 } from '@common/character/character.model';
 import { Bonus, PlayerInformation } from '@common/player/player.interface';
-import { startWith, Subscription } from 'rxjs';
+import { map, startWith, Subscription } from 'rxjs';
 
 // Explicit type to widen the literal "attaque" to the full union ("attaque" | "defense"),
 // otherwise TS thinks comparisons to "defense" are impossible.
@@ -36,7 +38,7 @@ type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
 
 @Component({
   selector: 'app-character-creation-page',
-  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent, AsyncPipe],
   templateUrl: './character-creation-page.component.html',
   styleUrls: ['./character-creation-page.component.scss'],
 })
@@ -45,8 +47,13 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
   private context: 'create' | 'join';
   readonly avatars = AVATAR_IDS;
   readonly nameMaxLength = CHARACTER_NAME_MAX_LENGTH;
+  protected readonly takenAvatars$ = this.waitingRoomService.players$.pipe(
+    map(players => players.map(p => p.avatarId)),
+  );
+  
   constructor(private readonly fb: FormBuilder,
-    private sessionService: SessionService) {}
+    private sessionService: SessionService,
+    private waitingRoomService: WaitingRoomService) {}
 
   get errorMessage(): string {
     return this.sessionService.errorMessage();
@@ -54,7 +61,7 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.sessionService.initGameSessionService();
-    // Optionally override from query params
+    this.waitingRoomService.initWaitingRoom();
     this.contextSub = this.sessionService.context$.subscribe(ctx => {
       if (ctx) this.context = ctx;
     });
@@ -127,14 +134,15 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
 
   // Handler for the "Générer personnage" button, fills the form with random values
   onGenerate(): void {
-    const generated = generateCharacterFormValues();
+    const snapshot: AvatarId[] = this.waitingRoomService.getPlayerSnapshot().map(p => p.avatarId);
+    const availableAvatars = AVATAR_IDS.filter(avatar => !snapshot.includes(avatar));
+    const generated = generateCharacterFormValues(availableAvatars);
     this.form.patchValue(generated);
   }
 
   // Handler for the "Nom aléatoire" button, generates a random name and updates the form control
   onRandomName(): void {
-    const generated = generateCharacterFormValues();
-    this.form.controls.name.setValue(generated.name);
+    this.form.controls.name.setValue(makeFullName());
   }
 
   // Build a Character object from the current form values, applying necessary transformations
@@ -189,7 +197,7 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
       this.sessionService.createGameSession(character);
     } else {
       character = this.buildCharacterFromForm(false);
-      this.sessionService.joinGameSession(character);
+      this.sessionService.addPlayerToSession(character);
     }
   }
 

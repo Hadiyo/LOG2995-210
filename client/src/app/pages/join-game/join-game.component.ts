@@ -1,5 +1,6 @@
 import { AsyncPipe } from '@angular/common';
 import { Component, computed, OnDestroy, OnInit } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { JoinGameCardComponent } from '@app/components/join-game-card/join-game-card.component';
@@ -16,7 +17,9 @@ import { map, Observable } from 'rxjs';
   styleUrl: './join-game.component.scss',
 })
 export class JoinGameComponent implements OnInit, OnDestroy {
-  constructor(private readonly sessionService: SessionService, private readonly router: Router) {}
+  constructor(private readonly sessionService: SessionService, 
+              private readonly router: Router,
+              private snackBar: MatSnackBar) {}
 
   protected availableSessions$: Observable<GameSessionPreview[]>;;
   protected isLoading = computed(() => this.sessionService.state() === ServiceState.Loading);
@@ -40,6 +43,16 @@ export class JoinGameComponent implements OnInit, OnDestroy {
   onSelectedSession(previewId: string): void {
     this.sessionService.setPreviewId(previewId);
     this.sessionService.setContext('join');
-    this.router.navigate(['/character-creation']);
+    this.router.navigate(['/character-creation']).then(success => {
+      if(success)
+        this.sessionService.joinSession(previewId);
+      else {
+          this.snackBar.open('Impossible de naviguer vers la création de personnage', 'Fermer', {
+          duration: 3000, 
+          panelClass: ['error-snackbar'], 
+        });
+      }
+    });
+    
   }
 }

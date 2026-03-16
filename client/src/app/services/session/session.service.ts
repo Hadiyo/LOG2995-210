@@ -9,8 +9,8 @@ import { ErrorSocketEvents, PageContext, PageSocketEvents, RoomSocketEvents, Wai
 import { BehaviorSubject } from 'rxjs';
 
 /**
- * This services allows a client to join, leave, create and delete game sessions which will later
- * be used for further real-time multiplayer gaming
+ * This services allows a client to join and create a game sessions and provides dynamic UI features 
+ * (ex. player count in join-game page)
  */
 
 @Injectable({
@@ -137,17 +137,21 @@ export class SessionService {
     this.clearCurrentIds();
   }
 
+  joinSession(previewId: string): void {
+    this.socket.send(RoomSocketEvents.JoinGameRoom, previewId);
+  }
+
   /**
    * Client request to join a game session
    * @param sessionId 
    */
-  joinGameSession(character: PlayerInformation): void {
+  addPlayerToSession(character: PlayerInformation): void {
     this.errorMessage.set('');
     const payload: JoinSessionPayload = {
       id: this.currentPreviewId,
       character,
     };
-    this.socket.send(RoomSocketEvents.JoinGameRoom, payload);
+    this.socket.send(RoomSocketEvents.AddPlayerToSession, payload);
     this.clearCurrentIds();
   }
 

@@ -46,10 +46,19 @@ export class SessionGateway {
   }
 
   @SubscribeMessage(RoomSocketEvents.JoinGameRoom)
-  joinGameSession(@MessageBody() payload: JoinSessionPayload, @ConnectedSocket() client: Socket) {
+  joinGameSession(@MessageBody() previewId: string, @ConnectedSocket() client: Socket) {
+    const session = this.sessionService.findSessionByPreview(previewId);
+    if(session){
+      client.join(session.id); // Connect client to the room
+      const players = this.sessionService.getPlayersFromGamePreview(previewId);
+      client.emit(WaitingRoomEvents.InitPlayers, players); // Send a copy 
+    }
+  }
+
+  @SubscribeMessage(RoomSocketEvents.AddPlayerToSession)
+  addPlayerToSession(@MessageBody() payload: JoinSessionPayload, @ConnectedSocket() client: Socket) {
     const waitingRoom = this.sessionService.joinGameSession(payload, client.id);
     if (waitingRoom) {
-      client.join(waitingRoom.sessionId); // Connect client to the room
       client.emit(RoomSocketEvents.PlayerJoinedGame); // Signal waiting room redirection
       client.emit(WaitingRoomEvents.ClientJoinedSession, waitingRoom); // Send full payload so client knows which player is themselves
       client.to(waitingRoom.sessionId).emit(WaitingRoomEvents.PlayerJoinedSession, waitingRoom.clientPlayer); // Send the new player information only

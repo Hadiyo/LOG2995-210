@@ -33,12 +33,16 @@ export class WaitingRoomService {
 
   private statusMessageSubject = new BehaviorSubject('');
   readonly statusMessage$ = this.statusMessageSubject.asObservable();
-
+  
   constructor(
     private readonly socket: SocketManagerService,
     private readonly router: Router,
     private readonly localGameStateService: LocalGameStateService,
   ) {}
+
+  getPlayerSnapshot(): PlayerInformation[] {
+    return this.playersSubjects.getValue();
+  }
 
   initWaitingRoom(): void {
     if (!this.socket.isSocketAlive()) {
@@ -47,6 +51,8 @@ export class WaitingRoomService {
 
     this.subscribeToSocketEvents();
   }
+
+  /** SOCKET EVENTS SUBSCRIPTION */
 
   unsubscribeSocketEvents(): void {
     this.socket.off<PlayerInformation>(WaitingRoomEvents.PlayerJoinedSession, this.onJoinedPlayer);
@@ -58,6 +64,7 @@ export class WaitingRoomService {
     this.socket.off<WaitingRoomRedirectPayload>(WaitingRoomEvents.KickedFromSession, this.onKickedFromSession);
     this.socket.off<GameStartedPayload>(WaitingRoomEvents.GameStarted, this.onGameStarted);
     this.socket.off<string>(ErrorSocketEvents.ServerError, this.onServerError);
+    this.socket.off<PlayerInformation[]>(WaitingRoomEvents.InitPlayers, this.onInitPlayers);
     this.resetState();
   }
 
@@ -92,8 +99,13 @@ export class WaitingRoomService {
     this.socket.on<WaitingRoomRedirectPayload>(WaitingRoomEvents.KickedFromSession, this.onKickedFromSession);
     this.socket.on<GameStartedPayload>(WaitingRoomEvents.GameStarted, this.onGameStarted);
     this.socket.on<string>(ErrorSocketEvents.ServerError, this.onServerError);
+    this.socket.on<PlayerInformation[]>(WaitingRoomEvents.InitPlayers, this.onInitPlayers);
   }
 
+  /** SOCKET EVENT HANDLERS */
+  private onInitPlayers = (payload: PlayerInformation[]) => {
+    this.playersSubjects.next(payload);
+  };
   /**
    * Socket Event: WaitingRoomEvents.ClientJoinedSession
    * @param payload 
@@ -107,11 +119,11 @@ export class WaitingRoomService {
     this.maxPlayersSubject.next(payload.maxPlayers);
   };
 
-  // /**
-  //  * Socket Event: WaitingRoomEvents.WaitingRoomState
-  //  * @param payload 
-  //  * @returns 
-  //  */
+  /**
+   * Socket Event: WaitingRoomEvents.WaitingRoomState
+   * @param payload 
+   * @returns 
+   */
   private onWaitingRoomState = (payload: WaitingRoom | undefined) => {
     if (!payload) return;
     this.playersSubjects.next(payload.players);
@@ -120,6 +132,11 @@ export class WaitingRoomService {
     this.maxPlayersSubject.next(payload.maxPlayers);
   };
 
+  /**
+   * Socket Event: WaitingRoomEvents.PlayerJoinedSession
+   * @param player 
+   * @returns 
+   */
   private onJoinedPlayer = (player: PlayerInformation) => {
     if (this.playersSubjects.value.some((participant) => participant.name === player.name)) {
       return;
@@ -129,6 +146,10 @@ export class WaitingRoomService {
     this.statusMessageSubject.next(`${player.name} a rejoint la salle d'attente.`);
   };
 
+  /**
+   * Socket Event: WaitingRoomEvents.PlayerLeftSession
+   * @param player 
+   */
   private onPlayerLeft = (player: PlayerInformation) => {
     const updatedPlayers = this.playersSubjects.value.filter(
       (participant) => participant.name !== player.name,
@@ -141,18 +162,31 @@ export class WaitingRoomService {
     this.messagesSubject.next([...this.messagesSubject.value, message]);
   };
 
+  /**
+   * Socket Event: WaitingRoomEvents.GameSessionDeleted
+   * @param payload 
+   */
   private onDeletedSession = (payload: WaitingRoomRedirectPayload) => {
     void this.router.navigate(['/home'], {
       state: { message: payload.reason },
     });
   };
 
+  /**
+   * Socket Event: WaitingRoomEvents.KickedFromSession
+   * @param payload 
+   */
   private onKickedFromSession = (payload: WaitingRoomRedirectPayload) => {
     void this.router.navigate(['/home'], {
       state: { message: payload.reason },
     });
   };
 
+  /**
+   * Socket Event: WaitingRoomEvents.GameStarted
+   * @param payload 
+   * @returns 
+   */
   private onGameStarted = (payload: GameStartedPayload) => {
     const currentPlayer = payload.snapshot.players.find(
       (player) => player.information.name === this.me?.name,
@@ -172,16 +206,20 @@ export class WaitingRoomService {
     });
   };
 
+  /**
+   * Socket Event: WaitingRoomEvents.ServerError
+   * @param message 
+   */
   private onServerError = (message: string) => {
     this.statusMessageSubject.next(message || 'Une erreur serveur est survenue.');
   };
 
+  /** UTILITIES */
   private resetState(): void {
     this.playersSubjects.next([]);
     this.messagesSubject.next([]);
     this.isLockedSubject.next(false);
     this.maxPlayersSubject.next(0);
-    //this.minPlayersToStartSubject.next(2);
     this.statusMessageSubject.next('');
     this.me = undefined;
   }
