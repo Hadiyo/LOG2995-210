@@ -10,7 +10,16 @@
 }
 
 h3 {
-  margin: 0 0 10px;
+  margin: 0 0 2px;
+}
+
+.player__name {
+  margin: 0 0 2px;
+}
+
+.messages__header {
+  position: relative;
+  z-index: 2;
 }
 
 .messages__feed {

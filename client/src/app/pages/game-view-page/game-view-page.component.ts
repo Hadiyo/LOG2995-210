@@ -196,6 +196,8 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
       .subscribe({
         error: () => this.errorMessage.set('Impossible de charger la session de jeu.'),
       });
+
+    this.chatService.initChat();
   }
 
   // Cleanup: stop timers, leave session, reset local visual overrides.
@@ -203,6 +205,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     this.stopLocalPoseRefreshClock();
     this.gameVisualFeedbackService.resetVisualOverrides();
     this.gameStateService.leaveCurrentSession();
+    this.chatService.unsubscribeToSocketEvents();
   }
 
   // End the current player's turn (server-side)

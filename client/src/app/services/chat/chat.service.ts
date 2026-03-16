@@ -35,6 +35,10 @@ export class ChatService {
     this.chatMessages.next(messages);
   }
 
+  clearChat(): void {
+    this.chatMessages.next([]);
+  }
+
   subscribeToSocketEvents() {
     this.socket.on<ChatMessage>(ChatSocketEvents.ReceiveMessage, this.onReceiveMessage);
     this.socket.on<string>(ChatSocketEvents.ChatValidationError, this.onErrorMessage);

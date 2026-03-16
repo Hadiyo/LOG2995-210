@@ -63,6 +63,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       this.waitingRoomService.leaveGameSession();
       void this.router.navigate(['/home']);
     }
+    this.chatService.clearChat();
   }
 
   /**
