@@ -199,6 +199,13 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
   // Listen to the M shortcut and delegate the toggle to the debug service.
   @HostListener('document:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
+    const target = event.target;
+    // Ignore shortcuts while the user is typing in chat or any editable field.
+    if (target instanceof HTMLElement) {
+      const tagName = target.tagName.toLowerCase();
+      if (tagName === 'input' || tagName === 'textarea' || target.isContentEditable) return;
+    }
+
     // Escape closes the tile information modal if it is open.
     if (event.key === 'Escape' && this.selectedTileInfo()) {
       event.preventDefault();
@@ -303,6 +310,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     // Keep right click reserved for teleportation during the organizer debug turn.
     if (this.gameDebugService.usesTeleportRightClick()) {
       if (this.gameDebugService.canTeleportToCell(targetCell)) {
+        this.applyTeleportVisualDirection(targetCell);
         this.gameDebugService.teleportToCell(index);
       }
       return;
@@ -335,6 +343,22 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
   // Build the modal payload for the clicked cell and open it.
   private openTileInfoModal(index: number): void {
     this.gameTileInfoService.openTileInfo(this.mapCells()[index], this.mapObjects(), this.players());
+  }
+
+  // Keep the local visual override in sync with debug teleport direction changes.
+  private applyTeleportVisualDirection(targetCell: GameCell | undefined): void {
+    const currentPlayer = this.currentPlayer();
+    if (!currentPlayer?.state.position || !targetCell) return;
+
+    const direction = getDirectionToTarget(
+      currentPlayer.state.position.x,
+      currentPlayer.state.position.y,
+      targetCell.position.x,
+      targetCell.position.y,
+    );
+    if (!direction) return;
+
+    this.gameVisualFeedbackService.setVisualDirection(currentPlayer.id, direction);
   }
 
   // Apply visual feedback (direction and pose animation) for click action

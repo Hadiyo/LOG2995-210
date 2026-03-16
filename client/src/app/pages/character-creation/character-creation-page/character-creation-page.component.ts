@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, OnDestroy, OnInit } from '@angular/core';
+import { Component, computed, effect, OnDestroy, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
@@ -20,6 +20,7 @@ import {
   Die,
   DIE_TARGET_ATTRIBUTE_NAMES,
   DieTargetAttributeName,
+  HIDDEN_AVATAR_ID,
   PLUS_TWO_ATTRIBUTE_NAMES,
   PlusTwoAttributeName,
 } from '@common/character/character.model';
@@ -30,6 +31,8 @@ import { startWith, Subscription } from 'rxjs';
 // otherwise TS thinks comparisons to "defense" are impossible.
 const DEFAULT_PLUS_TWO: PlusTwoAttributeName = PLUS_TWO_ATTRIBUTE_NAMES[0];
 const DEFAULT_D6_TARGET: DieTargetAttributeName = DIE_TARGET_ATTRIBUTE_NAMES[0];
+// Easter egg trigger name to unlock the hidden avatar.
+const EMPEROR_TRIGGER_NAME = 'emperor';
 
 // Base attributes that every character starts with before applying bonuses
 type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
@@ -43,10 +46,17 @@ type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
 export class CharacterCreationPageComponent implements OnInit, OnDestroy {
   private contextSub!: Subscription;
   private context: 'create' | 'join';
+  // Preserve the last visible avatar when the hidden Emperor avatar takes over.
+  private lastSelectedStandardAvatarId: AvatarId | null = null;
   readonly avatars = AVATAR_IDS;
   readonly nameMaxLength = CHARACTER_NAME_MAX_LENGTH;
   constructor(private readonly fb: FormBuilder,
-    private sessionService: SessionService) {}
+    private sessionService: SessionService) {
+    // Keep the Emperor easter egg synced even when the name changes programmatically.
+    effect(() => {
+      this.syncEmperorAvatarState(this.nameValue());
+    });
+  }
 
   get errorMessage(): string {
     return this.sessionService.errorMessage();
@@ -79,7 +89,7 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
   });
 
   // Precompute avatar fallback colors from CSS variables for use in the template
-  readonly avatarFallbackColors = Array.from({ length: 12 }, (_, i) =>
+  readonly avatarFallbackColors = Array.from({ length: HIDDEN_AVATAR_ID + 1 }, (_, i) =>
     getComputedStyle(document.documentElement).getPropertyValue(`--avatar-${i}`).trim(),
   );
 
@@ -92,9 +102,21 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
     { initialValue: this.form.controls.avatarId.value },
   );
 
+  // Name value signal used for the Emperor avatar easter egg trigger and synchronization
+  private readonly nameValue = toSignal(
+    this.form.controls.name.valueChanges.pipe(startWith(this.form.controls.name.value)),
+    { initialValue: this.form.controls.name.value },
+  );
+
+  // Force the hidden avatar whenever the easter egg name is used.
+  readonly effectiveAvatarId = computed<AvatarId | null>(() => {
+    if (this.isEmperorTriggerName(this.nameValue())) return HIDDEN_AVATAR_ID;
+    return this.avatarIdValue();
+  });
+
   // Compute the selected avatar profile based on the current avatarId form value
   readonly selectedAvatarProfile = computed(() => {
-    const id = this.avatarIdValue();
+    const id = this.effectiveAvatarId();
     return id === null ? null : AVATAR_PROFILES[id];
   });
 
@@ -122,6 +144,8 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
 
   // Handler for when an avatar is selected, updates the form control value
   onSelectAvatar(id: AvatarId): void {
+    this.lastSelectedStandardAvatarId = id;
+    if (this.isEmperorTriggerName(this.form.controls.name.value)) return;
     this.form.controls.avatarId.setValue(id);
   }
 
@@ -129,6 +153,7 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
   onGenerate(): void {
     const generated = generateCharacterFormValues();
     this.form.patchValue(generated);
+    this.lastSelectedStandardAvatarId = generated.avatarId;
   }
 
   // Handler for the "Nom aléatoire" button, generates a random name and updates the form control
@@ -150,10 +175,12 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
     }
     const attaqueDie: Die = d6GoesTo === 'attaque' ? 'D6' : 'D4';
     const defenseDie: Die = d6GoesTo === 'defense' ? 'D6' : 'D4';
+    // Final override so the hidden avatar is submitted even if form state lags.
+    const effectiveAvatarId = this.resolveAvatarId(name, avatarId);
 
     return {
       name: normalizeCharacterName(name),
-      avatarId,
+      avatarId: effectiveAvatarId,
       isOrganizer: isAnOrganizer,
       dices: {
         attack: attaqueDie,
@@ -195,6 +222,40 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
 
   protected getAvatarThumbPath(avatarId: number): string {
     return resolveAssetUrl(`assets/avatars/thumbs/${avatarId}.png`);
+  }
+
+  // Resolve the preview background from the actual avatar currently in use.
+  protected getAvatarFallbackColor(avatarId: number | null): string | null {
+    if (avatarId === null) return null;
+    return this.avatarFallbackColors[avatarId] || this.avatarFallbackColors[0] || null;
+  }
+
+  // Trigger for the Emperor easter egg, checks if the given name matches the trigger condition.
+  private isEmperorTriggerName(name: string | null | undefined): boolean {
+    return normalizeCharacterName(name ?? '').toLowerCase() === EMPEROR_TRIGGER_NAME;
+  }
+
+  // Keep the hidden avatar active only while the player name matches the easter egg trigger.
+  private syncEmperorAvatarState(name: string | null | undefined): void {
+    const avatarControl = this.form.controls.avatarId;
+    if (this.isEmperorTriggerName(name)) {
+      if (avatarControl.value !== HIDDEN_AVATAR_ID) {
+        if (avatarControl.value !== null) {
+          this.lastSelectedStandardAvatarId = avatarControl.value;
+        }
+        avatarControl.setValue(HIDDEN_AVATAR_ID, { emitEvent: false });
+      }
+      return;
+    }
+
+    if (avatarControl.value === HIDDEN_AVATAR_ID) {
+      avatarControl.setValue(this.lastSelectedStandardAvatarId, { emitEvent: false });
+    }
+  }
+
+  // Submission also resolves the easter egg so the hidden avatar reaches the waiting room/game runtime.
+  private resolveAvatarId(name: string, avatarId: AvatarId): AvatarId {
+    return this.isEmperorTriggerName(name) ? HIDDEN_AVATAR_ID : avatarId;
   }
 
 }

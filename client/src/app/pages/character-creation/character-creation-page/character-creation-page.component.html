@@ -98,10 +98,10 @@
 
         <div class="preview-identity">
             <div class="preview-avatar"
-                [style.background]="form.controls.avatarId.value !== null ? avatarFallbackColors[form.controls.avatarId.value] : null">
-                @if (form.controls.avatarId.value !== null) {
-                <img [src]="getAvatarThumbPath(form.controls.avatarId.value)"
-                    [alt]="'Avatar ' + form.controls.avatarId.value" />
+                [style.background]="getAvatarFallbackColor(effectiveAvatarId())">
+                @if (effectiveAvatarId() !== null) {
+                <img [src]="getAvatarThumbPath(effectiveAvatarId()!)"
+                    [alt]="'Avatar ' + effectiveAvatarId()" />
                 } @else {
                 <div class="preview-placeholder">Aucun avatar</div>
                 }
