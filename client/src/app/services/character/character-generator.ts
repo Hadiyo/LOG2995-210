@@ -1,5 +1,4 @@
 import {
-  AVATAR_IDS,
   DIE_TARGET_ATTRIBUTE_NAMES,
   PLUS_TWO_ATTRIBUTE_NAMES,
   AvatarId,
@@ -28,7 +27,7 @@ function pickOne<T>(items: readonly T[]): T {
 
 // Generate a random full name with a chance for a middle name, 
 // ensuring it doesn't exceed the max length
-function makeFullName(): string {
+export function makeFullName(): string {
   const includeMiddle = Math.random() < MIDDLE_NAME_PROBABILITY;
   const first = pickOne(FIRST_NAME_POOL);
   const last = pickOne(FAMILY_NAME_POOL);
@@ -47,10 +46,10 @@ function makeFullName(): string {
 }
 
 // Generate random character form possible values
-export function generateCharacterFormValues(): GeneratedCharacterFormValues {
+export function generateCharacterFormValues(availableAvatar: AvatarId[]): GeneratedCharacterFormValues {
   return {
     name: makeFullName(),
-    avatarId: pickOne(AVATAR_IDS),
+    avatarId: pickOne(availableAvatar),
     plusTwo: pickOne(PLUS_TWO_ATTRIBUTE_NAMES),
     d6GoesTo: pickOne(DIE_TARGET_ATTRIBUTE_NAMES),
   };
