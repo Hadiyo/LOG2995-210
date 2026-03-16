@@ -1,4 +1,5 @@
-import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 import { NameSliderComponent } from '@app/components/name-slider/name-slider.component';
 
@@ -10,6 +11,7 @@ import { NameSliderComponent } from '@app/components/name-slider/name-slider.com
 })
 export class MainPageComponent implements AfterViewInit {
   @ViewChild('backgroundVideo') backgroundVideo?: ElementRef<HTMLVideoElement>;
+  readonly flashMessage = signal('');
 
   readonly title: string = 'LOG2995';
   readonly actions: readonly {
@@ -46,6 +48,14 @@ export class MainPageComponent implements AfterViewInit {
     'Thong',
     'Fallou',
   ];
+
+  constructor(private readonly router: Router) {
+    const navigation = this.router.getCurrentNavigation();
+    const message = navigation?.extras?.state?.message as string | undefined;
+    if (message) {
+      this.flashMessage.set(message);
+    }
+  }
 
   ngAfterViewInit(): void {
     this.tryPlayVideo();

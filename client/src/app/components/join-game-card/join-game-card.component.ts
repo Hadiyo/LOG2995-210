@@ -12,6 +12,9 @@ export class JoinGameCardComponent {
   @Output() select = new EventEmitter<string>();
 
   onSelect(): void {
+    if (this.session.isLocked) {
+      return;
+    }
     this.select.emit(this.session.id);
   }
 }
