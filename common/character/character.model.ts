@@ -1,7 +1,7 @@
 export type Die = (typeof DICE)[number];
 export type PlusTwoAttributeName = (typeof PLUS_TWO_ATTRIBUTE_NAMES)[number];
 export type DieTargetAttributeName = (typeof DIE_TARGET_ATTRIBUTE_NAMES)[number];
-export type AvatarId = (typeof AVATAR_IDS)[number];
+export type AvatarId = (typeof AVATAR_IDS)[number] | typeof HIDDEN_AVATAR_ID;
 export type AvatarProfile = {
   subtitle: string;
   description: string;
@@ -28,6 +28,8 @@ export const DIE_D4_SIDES = 4 as const;
 export const DIE_D6_SIDES = 6 as const;
 export const DIE_TARGET_ATTRIBUTE_NAMES = ['attaque', 'defense'] as const;
 
+// Hidden avatar reserved for the Emperor easter egg.
+export const HIDDEN_AVATAR_ID = 12 as const;
 // The list of 12 avatar IDs available for character creation
 export const AVATAR_IDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 
@@ -103,6 +105,10 @@ export const AVATAR_PROFILES: Record<AvatarId, AvatarProfile> = {
   11: {
     subtitle: 'Vigile Nocturne',
     description: 'Chasseur de fragments d’astrolabe. Veille aux frontières du royaume céleste.',
+  },
+  12: {
+    subtitle: 'Empereur Eternel',
+    description: 'Assis sur un trone de guerre depuis des millenaires, veille sur l’humanite par une volonte absolue.',
   },
 };
 

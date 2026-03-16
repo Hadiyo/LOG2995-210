@@ -1,6 +1,12 @@
 import { GameSessionSnapshot } from '@common/game-session';
-import { GameCell } from '@common/maps/map.interface';
+import { GameCell, Vec2 } from '@common/maps/map.interface';
 import { Player, PlayerStatus } from '@common/player/player.interface';
+
+// Result payload used by the local runtime to finish teleport side effects like facing.
+export interface DebugTeleportResult {
+  previousPosition: Vec2;
+  player: Player;
+}
 
 // Resolve the current player from a session snapshot and player id.
 export function getCurrentDebugPlayer(
@@ -104,13 +110,17 @@ export function applyDebugTeleportInSession(
   session: GameSessionSnapshot | null,
   currentPlayerId: string | null,
   targetCell: GameCell | undefined,
-): Player | null {
+): DebugTeleportResult | null {
   if (!canTeleportInDebugMode(session, currentPlayerId, targetCell)) return null;
   if (!session || !currentPlayerId || !targetCell) return null;
 
   const currentPlayer = session.players.find((player) => player.id === currentPlayerId);
   if (!currentPlayer?.state.position) return null;
 
+  const previousPosition = { ...currentPlayer.state.position };
   currentPlayer.state.position = { ...targetCell.position };
-  return currentPlayer;
+  return {
+    previousPosition,
+    player: currentPlayer,
+  };
 }

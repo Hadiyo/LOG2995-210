@@ -191,13 +191,16 @@ export class LocalGameStateService {
     // Teleport the active player without consuming movement points while debug mode is enabled.
     teleportToCellInDebugMode(targetIndex: number): void {
         const session = this.getMutableCurrentSession();
-        const currentPlayerId = this.currentPlayerIdSignal();
         const targetCell = session?.map.map[targetIndex];
         if (!session || !targetCell) return;
-        const currentPlayer = applyDebugTeleportInSession(session, currentPlayerId, targetCell);
-        if (!currentPlayer) return;
+        const teleportResult = applyDebugTeleportInSession(session, this.currentPlayerIdSignal(), targetCell);
+        if (!teleportResult) return;
 
-        currentPlayer.render.facing = localGameRuntimeUtils.getFacingToTarget(currentPlayer.state.position, targetCell.position);
+        // Compute facing from the previous position before the teleport mutation.
+        teleportResult.player.render.facing = localGameRuntimeUtils.getFacingToTarget(
+            teleportResult.previousPosition,
+            targetCell.position,
+        );
         this.publishSession(session);
     }
 
