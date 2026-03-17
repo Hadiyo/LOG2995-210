@@ -5,10 +5,12 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GameMapController } from './controllers/game-map/game-map.controller';
+import { ChatGateway } from './gateways/chat/chat.gateway';
 import { MapGateway } from './gateways/map/map.gateway';
 import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
 import { SessionGateway } from './gateways/session/session.gateway';
 import { WaitingRoomGateway } from './gateways/waiting-room/waiting-room.gateway';
+import { ChatService } from './services/chat/chat.service';
 import { GameMapService } from './services/game-map/game-map.service';
 import { PlayerService } from './services/player/player.service';
 import { GameSessionService } from './services/session/game-session.service';
@@ -37,6 +39,9 @@ import { GameSessionService } from './services/session/game-session.service';
         GameSessionService,
         PlayerService,
         GameMapService,
-        WaitingRoomGateway],
+        ChatService,
+        ChatGateway,
+        WaitingRoomGateway,
+    ],
 })
 export class AppModule {}

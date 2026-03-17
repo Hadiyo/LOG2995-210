@@ -2,9 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
+import { ChatService } from '@app/services/chat/chat.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
-import { ChatMessage } from '@common/chat-message';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { PlayerInformation } from '@common/player/player.interface';
 import { map, Observable } from 'rxjs';
 
@@ -22,7 +23,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       return organizer ? [organizer, ...participants] : participants;
     }),
   );
-  protected messages$: Observable<ChatMessage[]> = this.waitingRoomService.messages$;
+  protected messages$: Observable<ChatMessage[]> = this.chatService.chat$;
   protected isLocked$ = this.waitingRoomService.isLocked$;
   protected maxPlayers$ = this.waitingRoomService.maxPlayers$;
   protected statusMessage$ = this.waitingRoomService.statusMessage$;
@@ -30,15 +31,17 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   constructor(
     private readonly router: Router,
     private readonly waitingRoomService: WaitingRoomService,
-    //private readonly sessionService: SessionService,
+    private readonly chatService: ChatService,
   ) {}
 
   ngOnInit() {
     this.waitingRoomService.initWaitingRoom();
+    this.chatService.initChat();
   }
 
   ngOnDestroy(): void {
     this.waitingRoomService.unsubscribeSocketEvents();
+    this.chatService.unsubscribeToSocketEvents();
   }
 
   get isOrganizer(): boolean {
@@ -60,6 +63,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       this.waitingRoomService.leaveGameSession();
       void this.router.navigate(['/home']);
     }
+    this.chatService.clearChat();
   }
 
   /**
@@ -77,7 +81,18 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   }
 
   protected onMessageSubmit(content: string): void {
-    this.waitingRoomService.sendMessage(content);
+    const author = this.me?.name;
+    if (!author) {
+      return;
+    }
+
+    const message: ChatMessage = {
+      author,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+    
+    this.chatService.sendMessage(message);
   }
 
   protected getAvatarThumbPath(avatarId: number): string {

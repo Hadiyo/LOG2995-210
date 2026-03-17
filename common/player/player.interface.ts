@@ -63,6 +63,7 @@ export interface PlayerState {
 }
 
 
+// Player to player info to test changes
 export interface Player {
     id: string;
     information: PlayerInformation;

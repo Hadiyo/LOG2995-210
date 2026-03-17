@@ -61,7 +61,6 @@
     </section>
 
     <section class="panel chat-panel">
-      <h2 class="panel-title">Clavardage</h2>
       <app-game-chat-panel
         [messages]="(messages$ | async) ?? []"
         [currentPlayerName]="me?.name ?? null"
