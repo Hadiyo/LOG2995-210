@@ -2,6 +2,7 @@ import { AsyncPipe, CommonModule } from '@angular/common';
 import { Component, computed, OnDestroy, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import {
   generateCharacterFormValues,
@@ -38,18 +39,22 @@ type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
 
 @Component({
   selector: 'app-character-creation-page',
-  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent, AsyncPipe],
+  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent, AsyncPipe, RouterModule],
   templateUrl: './character-creation-page.component.html',
   styleUrls: ['./character-creation-page.component.scss'],
 })
 export class CharacterCreationPageComponent implements OnInit, OnDestroy {
-  private contextSub!: Subscription;
-  private context: 'create' | 'join';
   readonly avatars = AVATAR_IDS;
   readonly nameMaxLength = CHARACTER_NAME_MAX_LENGTH;
+
+  protected isLocked$ = this.waitingRoomService.isLocked$;
   protected readonly takenAvatars$ = this.waitingRoomService.players$.pipe(
     map(players => players.map(p => p.avatarId)),
   );
+
+  private contextSub!: Subscription;
+  private context: 'create' | 'join';
+  //private router = inject(Router);
   
   constructor(private readonly fb: FormBuilder,
     private sessionService: SessionService,
@@ -62,10 +67,12 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.sessionService.initGameSessionService();
     this.waitingRoomService.initWaitingRoom();
+    // To know whether the client comes from join-room page or create-game page
     this.contextSub = this.sessionService.context$.subscribe(ctx => {
       if (ctx) this.context = ctx;
     });
   }
+
 
   ngOnDestroy(): void {
     this.contextSub.unsubscribe();
@@ -145,32 +152,6 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
     this.form.controls.name.setValue(makeFullName());
   }
 
-  // Build a Character object from the current form values, applying necessary transformations
-  private buildCharacterFromForm(isAnOrganizer: boolean): PlayerInformation {
-    const PLUS_TWO_TO_BONUS: Record<PlusTwoAttributeName, Bonus> = {
-      vie: 'life',
-      rapidite: 'speed',
-    };
-    const { name, avatarId, plusTwo, d6GoesTo } = this.form.getRawValue();
-
-    if (!name || avatarId === null || !plusTwo || !d6GoesTo) {
-      throw new Error('Form invalid: missing required fields');
-    }
-    const attaqueDie: Die = d6GoesTo === 'attaque' ? 'D6' : 'D4';
-    const defenseDie: Die = d6GoesTo === 'defense' ? 'D6' : 'D4';
-
-    return {
-      name: normalizeCharacterName(name),
-      avatarId,
-      isOrganizer: isAnOrganizer,
-      dices: {
-        attack: attaqueDie,
-        defense: defenseDie,
-      },
-      bonus: PLUS_TWO_TO_BONUS[plusTwo],
-    };
-  }
-
   // Handler for name input changes, 
   // sanitizes the input and updates the form control without emitting another event to avoid loops
   onNameInput(event: Event): void {
@@ -201,8 +182,38 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  onLeavingCharacterCreation(): void {
+    this.sessionService.leaveSession();
+  }
+
   protected getAvatarThumbPath(avatarId: number): string {
     return resolveAssetUrl(`assets/avatars/thumbs/${avatarId}.png`);
+  }
+
+    // Build a Character object from the current form values, applying necessary transformations
+  private buildCharacterFromForm(isAnOrganizer: boolean): PlayerInformation {
+    const PLUS_TWO_TO_BONUS: Record<PlusTwoAttributeName, Bonus> = {
+      vie: 'life',
+      rapidite: 'speed',
+    };
+    const { name, avatarId, plusTwo, d6GoesTo } = this.form.getRawValue();
+
+    if (!name || avatarId === null || !plusTwo || !d6GoesTo) {
+      throw new Error('Form invalid: missing required fields');
+    }
+    const attaqueDie: Die = d6GoesTo === 'attaque' ? 'D6' : 'D4';
+    const defenseDie: Die = d6GoesTo === 'defense' ? 'D6' : 'D4';
+
+    return {
+      name: normalizeCharacterName(name),
+      avatarId,
+      isOrganizer: isAnOrganizer,
+      dices: {
+        attack: attaqueDie,
+        defense: defenseDie,
+      },
+      bonus: PLUS_TWO_TO_BONUS[plusTwo],
+    };
   }
 
 }

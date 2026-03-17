@@ -68,4 +68,11 @@ export class SessionGateway {
       this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, waitingRoom.mapPreviewId); // increment player count in join-page for that session
     }
   }
+
+  @SubscribeMessage(RoomSocketEvents.LeaveSession)
+  leaveSession(@MessageBody() previewId: string, @ConnectedSocket() client: Socket) {
+    const session = this.sessionService.findSessionByPreview(previewId);
+    if(session && client.rooms.has(session.id))
+      client.leave(session.id);
+  }
 }

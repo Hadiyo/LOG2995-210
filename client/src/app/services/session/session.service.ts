@@ -141,6 +141,10 @@ export class SessionService {
     this.socket.send(RoomSocketEvents.JoinGameRoom, previewId);
   }
 
+  leaveSession(): void {
+    this.socket.send(RoomSocketEvents.LeaveSession, this.currentPreviewId);
+  }
+
   /**
    * Client request to join a game session
    * @param sessionId 

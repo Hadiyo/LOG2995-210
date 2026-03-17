@@ -342,6 +342,11 @@ h3 {
   &:hover {
     border-color: var(--accent-success);
   }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(60%);
+  }
 }
 
 .btn-generate-name {
@@ -398,6 +403,23 @@ h3 {
 .preview-avatar::before {
   background-size: 11px 11px;
 }
+
+.join-error-container {
+  background-color: rgba(239, 68, 68, 0.14);
+}
+
+.join-error {
+  background-color: transparent;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-align: center;
+  width: fit-content;
+}
+
+.join-error-btn {
+  width: 100%;
+}
+
 
 /* Responsive adjustments */
 @media (max-width: 900px) {

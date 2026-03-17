@@ -23,6 +23,7 @@ export enum RoomSocketEvents {
     IncrementPlayerCount = 'incrementPlayerCount',
     DecrementPlayerCount = 'decrementPlayerCount',
     AddPlayerToSession = 'addPlayerToSession',
+    LeaveSession = 'leaveSession',
 }
 
 export enum WaitingRoomEvents {
