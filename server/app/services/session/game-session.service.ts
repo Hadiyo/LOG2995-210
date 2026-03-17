@@ -1,6 +1,5 @@
 import { GameMapService } from '@app/services/game-map/game-map.service';
 import { PlayerService } from '@app/services/player/player.service';
-import { ChatMessage } from '@common/chat-message';
 import { GameSessionSnapshot, TurnPhase } from '@common/game-session';
 import {
     GameSession,
@@ -15,12 +14,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 const TURN_DURATION_SECONDS = 30;
-const CHAT_MESSAGE_MAX_LENGTH = 300;
 
 @Injectable()
 export class GameSessionService {
     /** HOLDS ALL GAME AND COMBAT SESSIONS WITH REFERENCES TO THE GAME-MAP TEMPLATES AND PLAYERS */
-    private gameSessions = new Map<string, GameSession>();
+    gameSessions = new Map<string, GameSession>();
     private readonly logger: Logger;
 
     constructor(
@@ -59,6 +57,7 @@ export class GameSessionService {
 
     async createGameSession(payload: JoinSessionPayload, socketId: string): Promise<PlayerPayload | undefined> {
         try {
+            this.cleanupExistingPlayerForSocket(socketId);
             const mapPreviewSession = await this.gameMapService.saveGameMap(payload.id);
             const newPlayer = this.playerService.savePlayer(payload.character, socketId);
 
@@ -72,6 +71,7 @@ export class GameSessionService {
                 messages: [],
                 hasStarted: false,
             };
+
             this.gameSessions.set(gameSession.id, gameSession);
 
             const waitingRoomPayload = this.generateWaitingRoomPayload(gameSession, 
@@ -92,6 +92,7 @@ export class GameSessionService {
      */
     joinGameSession(payload: JoinSessionPayload, socketId: string): WaitingRoom | undefined {
         try {
+            this.cleanupExistingPlayerForSocket(socketId);
             const session = this.findSessionByPreview(payload.id);
             if (!session) {
                 return undefined;
@@ -132,32 +133,16 @@ export class GameSessionService {
             this.syncSessionLockState(session);
             this.gameMapService.updateNumberOfPlayers(session.mapTemplateId, -1);
             this.playerService.removePlayer(playerId);
+
+            if (session.players.length === 0) {
+                this.gameSessions.delete(sessionId);
+            }
+
             return sessionId;
         } catch (err) {
             this.logger.error(`Error while leaving game session: ${err}`);
             return undefined;
         }
-    }
-
-    addMessage(sessionId: string, author: string, content: string): ChatMessage | undefined {
-        const session = this.gameSessions.get(sessionId);
-        if (!session) {
-            return undefined;
-        }
-
-        const normalized = content.trim().slice(0, CHAT_MESSAGE_MAX_LENGTH);
-        if (!normalized) {
-            return undefined;
-        }
-
-        const message: ChatMessage = {
-            id: randomUUID(),
-            author,
-            content: normalized,
-            createdAt: new Date().toISOString(),
-        };
-        session.messages.push(message);
-        return message;
     }
 
     canStartGame(sessionId: string): boolean {
@@ -208,13 +193,13 @@ export class GameSessionService {
      * Requests deletion of gameMap, map preview and deletes game session reference
      */
     deleteGameSession(sessionPreviewId: string): void {
-        const session = this.findSessionByPreview(sessionPreviewId);
+        const session = this.findSessionByPreviewForDeletion(sessionPreviewId);
         if (!session) {
             return;
         }
 
-        this.gameMapService.deleteGameMap(session.mapTemplateId);
-        this.gameMapService.deleteGameMapPreview(session.mapTemplateId);
+        // Only delete players and session, keep the map for reuse
+        this.gameSessions.get(session.id).players.forEach((playerId) => this.playerService.removePlayer(playerId));
         this.gameSessions.delete(session.id);
     }
 
@@ -242,9 +227,21 @@ export class GameSessionService {
     }
 
     /**
-     * Finds a session id by the preview template
+     * Finds a session id by the preview template (only non-started sessions)
      */
     private findSessionByPreview(previewId: string): GameSession | undefined {
+        for (const session of this.gameSessions.values()) {
+            if (session.mapTemplateId === previewId && !session.hasStarted) {
+                return session;
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Finds a session by preview template for deletion (includes started sessions)
+     */
+    private findSessionByPreviewForDeletion(previewId: string): GameSession | undefined {
         for (const session of this.gameSessions.values()) {
             if (session.mapTemplateId === previewId) {
                 return session;
@@ -257,7 +254,7 @@ export class GameSessionService {
      * Retreives the game sessionId win which the player is into
      * @returns the session id of the game in which the player is in
      */
-    private findPlayerInGameSession(playerId: string): string | undefined {
+    findPlayerInGameSession(playerId: string): string | undefined {
         for (const session of this.gameSessions.values()) {
             if (session.players.includes(playerId)) {
                 return session.id;
@@ -281,6 +278,15 @@ export class GameSessionService {
     private syncSessionLockState(session: GameSession): void {
         session.isLocked = session.players.length >= session.maxPlayers;
         this.gameMapService.updatePreviewLockState(session.mapTemplateId, session.isLocked);
+    }
+
+    private cleanupExistingPlayerForSocket(socketId: string): void {
+        const existingPlayer = this.playerService.getPlayerBySocketId(socketId);
+        if (!existingPlayer) {
+            return;
+        }
+
+        this.leaveGameSession(existingPlayer.player.id);
     }
 
 }
