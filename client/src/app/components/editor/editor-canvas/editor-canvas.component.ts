@@ -101,7 +101,7 @@ export class EditorCanvasComponent {
         this.onCellMouseMove(event.index, event.originalEvent);
         break;
       case MouseEventType.LEAVE:
-        this.onGridMouseLeave();
+        this.onCellMouseLeave();
         break;
     }
   }
@@ -174,7 +174,7 @@ export class EditorCanvasComponent {
     this.tooltipY.set(event.clientY + CURSOR_OFFSET);
   }
 
-  protected onGridMouseLeave(): void {
+  protected onCellMouseLeave(): void {
     this.tooltipText.set(null);
   }
 
