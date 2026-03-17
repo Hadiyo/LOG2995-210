@@ -55,11 +55,6 @@ export class SessionService {
     this.errorMessage.set('');
   }
 
-  clearCurrentIds() {
-    this.currentMapId = undefined;
-    this.currentPreviewId = undefined;
-  }
-
   consumeJoinedSessionPayload(): PlayerPayload | undefined {
     const payload = this.joinedSessionPayload;
     this.joinedSessionPayload = undefined;
@@ -218,6 +213,12 @@ export class SessionService {
   private onFailedJoinSession = (message: string) => {
     this.errorMessage.set(message);
   };
+
+  /** UTILS */
+  private clearCurrentIds() {
+    this.currentMapId = undefined;
+    this.currentPreviewId = undefined;
+  }
 
   private updatePlayerCount(previewId: string, delta: number): void {
     const updated = this.sessionPreviewSubjects.value.map(session =>
