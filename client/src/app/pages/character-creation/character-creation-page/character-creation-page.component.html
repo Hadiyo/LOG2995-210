@@ -18,7 +18,7 @@
 
             <div class="input-with-actions">
                 <input type="text" [formControl]="form.controls.name" [maxlength]="nameMaxLength"
-                    placeholder="lettres, espace, - et ’" (input)="onNameInput($event)" />
+                    placeholder="lettres, chiffres, espace, - et ’" (input)="onNameInput($event)" />
                 <button type="button" class="mini-btn btn-generate-name" (click)="onRandomName()">Nom Aléatoire</button>
                 <button type="button" class="mini-btn btn-clear-name" (click)="form.controls.name.setValue('')">Effacer</button>
             </div>
