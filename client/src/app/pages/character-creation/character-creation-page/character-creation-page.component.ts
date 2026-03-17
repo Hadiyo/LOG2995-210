@@ -9,6 +9,7 @@ import {
   makeFullName,
   normalizeCharacterName,
   sanitizeCharacterName,
+  validatePlayerName,
 } from '@app/services/character/character-generator';
 import { SessionService } from '@app/services/session/session.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
@@ -54,7 +55,6 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
 
   private contextSub!: Subscription;
   private context: 'create' | 'join';
-  //private router = inject(Router);
   
   constructor(private readonly fb: FormBuilder,
     private sessionService: SessionService,
@@ -85,7 +85,7 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
       Validators.required,
       Validators.maxLength(CHARACTER_NAME_MAX_LENGTH),
       // Allow letters, spaces, apostrophes, and hyphens (including accented characters)
-      Validators.pattern(/^[A-Za-zÀ-ÖØ-öø-ÿ'’ -]+$/),
+      Validators.pattern(/^[A-Za-zÀ-ÖØ-öø-ÿ0-9'’ -]+$/),
     ]],
     avatarId: [null as AvatarId | null, Validators.required],
     plusTwo: [DEFAULT_PLUS_TWO as PlusTwoAttributeName, Validators.required],
@@ -141,15 +141,17 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
 
   // Handler for the "Générer personnage" button, fills the form with random values
   onGenerate(): void {
-    const snapshot: AvatarId[] = this.waitingRoomService.getPlayerSnapshot().map(p => p.avatarId);
+    const snapshot: AvatarId[] = this.waitingRoomService.getPlayerSnapshot().map(player => player.avatarId);
     const availableAvatars = AVATAR_IDS.filter(avatar => !snapshot.includes(avatar));
-    const generated = generateCharacterFormValues(availableAvatars);
+    const takenNames: string[] = this.waitingRoomService.getPlayerSnapshot().map(player => player.name);
+    const generated = generateCharacterFormValues(takenNames, availableAvatars);
     this.form.patchValue(generated);
   }
 
   // Handler for the "Nom aléatoire" button, generates a random name and updates the form control
   onRandomName(): void {
-    this.form.controls.name.setValue(makeFullName());
+    const takenNames: string[] = this.waitingRoomService.getPlayerSnapshot().map(player => player.name);
+    this.form.controls.name.setValue(makeFullName(takenNames));
   }
 
   // Handler for name input changes, 
@@ -171,13 +173,15 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
       this.form.markAllAsTouched();
       return;
     }
+    // Validate the name
+    const name = this.validateName(this.form.controls.name.value);
 
     let character: PlayerInformation;
     if (this.context === 'create') {
-      character = this.buildCharacterFromForm(true);
+      character = this.buildCharacterFromForm(true, name);
       this.sessionService.createGameSession(character);
     } else {
-      character = this.buildCharacterFromForm(false);
+      character = this.buildCharacterFromForm(false, name);
       this.sessionService.addPlayerToSession(character);
     }
   }
@@ -191,12 +195,12 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
   }
 
     // Build a Character object from the current form values, applying necessary transformations
-  private buildCharacterFromForm(isAnOrganizer: boolean): PlayerInformation {
+  private buildCharacterFromForm(isAnOrganizer: boolean, name: string): PlayerInformation {
     const PLUS_TWO_TO_BONUS: Record<PlusTwoAttributeName, Bonus> = {
       vie: 'life',
       rapidite: 'speed',
     };
-    const { name, avatarId, plusTwo, d6GoesTo } = this.form.getRawValue();
+    const { avatarId, plusTwo, d6GoesTo } = this.form.getRawValue();
 
     if (!name || avatarId === null || !plusTwo || !d6GoesTo) {
       throw new Error('Form invalid: missing required fields');
@@ -214,6 +218,15 @@ export class CharacterCreationPageComponent implements OnInit, OnDestroy {
       },
       bonus: PLUS_TWO_TO_BONUS[plusTwo],
     };
+  }
+
+  private validateName(name: string | null): string {
+    const takenNames: string[] = this.waitingRoomService.getPlayerSnapshot().map(player => player.name);
+    if(!name) {
+      name = makeFullName(takenNames);
+      return validatePlayerName(name, takenNames);
+    }
+    return validatePlayerName(name, takenNames);
   }
 
 }
