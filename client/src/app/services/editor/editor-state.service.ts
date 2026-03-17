@@ -348,6 +348,7 @@ export class EditorStateService {
 
             // Collision policy: placement is rejected if it intersects an existing object.
             const newObj: MapObject = {
+                id: this.nextObjectId(objectsFiltered),
                 type,
                 position: { ...anchor },
                 size,
@@ -356,5 +357,18 @@ export class EditorStateService {
             const nextObjects = [...objectsFiltered, newObj];
             return { ...editorMap, objects: nextObjects, map: this.occupancy.refreshOccupied(editorMap.map, nextObjects, editorMap.size) };
         });
+    }
+
+    /* =========================================================
+       Occupancy + object lookup
+       ========================================================= */
+
+    /**
+     * Generates a new incremental object id.
+     */
+    private nextObjectId(objects: MapObject[]): number {
+        let max = 0;
+        for (const o of objects) max = Math.max(max, o.id);
+        return max + 1;
     }
 }

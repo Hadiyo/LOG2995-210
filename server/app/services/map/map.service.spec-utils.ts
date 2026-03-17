@@ -51,6 +51,7 @@ export const makeCell = (overrides: Partial<EditorCell> = {}): EditorCell => ({
 });
 
 export const makeObject = (overrides: Partial<MapObject> = {}): MapObject => ({
+    id: 1,
     type: ObjectType.START,
     position: { x: 0, y: 0 },
     size: ObjectSize.S,

@@ -7,6 +7,7 @@ export interface Vec2 {
 }
 
 export interface MapObject {
+    id: number;
     type: ObjectType;
     position: Vec2;
     size: ObjectSize;
