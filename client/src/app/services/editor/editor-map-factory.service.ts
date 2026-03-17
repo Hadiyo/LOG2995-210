@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
-import { MAP_DIMENSIONS_BY_SIZE } from './constants/editor.constants';
-import { EditorCell, EditorMap, MapDimensions } from '@common/maps/map.interface';
 import { GameMode, MapSize, TileType } from '@common/maps/map.enums';
+import { EditorCell, EditorMap } from '@common/maps/map.interface';
 
 @Injectable({ providedIn: 'root' })
 export class EditorMapFactoryService {
@@ -9,13 +8,6 @@ export class EditorMapFactoryService {
     /* =========================================================
        Map creation & rule helpers
        ========================================================= */
-
-    /**
-     * MapSize -> numeric dimensions.
-     */
-    getDimensions(size: MapSize): MapDimensions {
-        return MAP_DIMENSIONS_BY_SIZE[size] ?? MAP_DIMENSIONS_BY_SIZE[MapSize.S];
-    }
 
     /**
      * Creates a fresh empty editor map.
@@ -32,7 +24,8 @@ export class EditorMapFactoryService {
         const name = opts?.name ?? '';
         const description = opts?.description ?? '';
 
-        const { cols, rows } = this.getDimensions(size);
+        const cols = size;
+        const rows = size;
 
         // Generate base grid (default: walkable dirt)
         const cells: EditorCell[] = [];

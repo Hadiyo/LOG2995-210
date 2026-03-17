@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
+import { getCellPositionAtIndex } from '@common/maps/map-utils';
+import { MapSize } from '@common/maps/map.enums';
 import { EditorCell, MapObject, Vec2 } from '@common/maps/map.interface';
 import { getCoveredPositions } from './utils/editor-geometry.util';
-import { MapSize } from '@common/maps/map.enums';
-import { getCellPositionAtIndex } from '@common/maps/map-utils';
 
 /**
  * Service to determine cell occupancy in the editor map.
@@ -40,18 +40,20 @@ export class EditorOccupancyService {
      * Supports 2x2 objects by checking their covered area.
      */
     findObjectCoveringPosition(objects: MapObject[], pos: Vec2): MapObject | null {
-        for (const o of objects) {
-            const covered = getCoveredPositions(o.position, o.size);
-            if (covered.some((p) => p.x === pos.x && p.y === pos.y)) return o;
+        for (const object of objects) {
+            const covered = getCoveredPositions(object.position, object.size);
+            if (covered.some((position) => position.x === pos.x && position.y === pos.y)) {
+                return object;
+            }
         }
         return null;
     }
 
     // Filter out object to remove
-    removeObjectByPosition(objects: MapObject[], position: Vec2): MapObject[] {
-        return objects.filter((o) => {
-            const covered = getCoveredPositions(o.position, o.size);
-            return !covered.some((p) => p.x === position.x && p.y === position.y);
+    removeObjectByPosition(objects: MapObject[], pos: Vec2): MapObject[] {
+        return objects.filter((object) => {
+            const covered = getCoveredPositions(object.position, object.size);
+            return !covered.some((position) => position.x === pos.x && position.y === pos.y);
         });
     }
 }

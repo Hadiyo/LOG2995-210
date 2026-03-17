@@ -7,7 +7,6 @@ export interface Vec2 {
 }
 
 export interface MapObject {
-    id: number;
     type: ObjectType;
     position: Vec2;
     size: ObjectSize;
@@ -47,9 +46,4 @@ export interface GameMap extends BaseMap {
 export interface ObjectCountAndLimit {
     count: number;
     limit: number;
-}
-
-export interface MapDimensions {
-    cols: number;
-    rows: number;
 }

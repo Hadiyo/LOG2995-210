@@ -1,15 +1,4 @@
 import { MapSize } from '@common/maps/map.enums';
-import { MapDimensions } from '@common/maps/map.interface';
-
-/* =========================================================
-   Map dimensions by size
-   - Used to configure the editor grid
-   ========================================================= */
-export const MAP_DIMENSIONS_BY_SIZE: Record<MapSize, MapDimensions> = {
-  [MapSize.S]: { cols: 10, rows: 10 },
-  [MapSize.M]: { cols: 15, rows: 15 },
-  [MapSize.L]: { cols: 20, rows: 20 },
-};
 
 /* =========================================================
    Placement limits by map size
