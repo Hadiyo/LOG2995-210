@@ -74,6 +74,7 @@ export enum RoomSocketEvents {
     AddClientToSession = 'addClientToSession',
     LeaveSession = 'leaveSession',
     AddPlayerToSession = 'addPlayerToSession',
+    LeaveSession = 'leaveSession',
 }
 
 export enum WaitingRoomEvents {
