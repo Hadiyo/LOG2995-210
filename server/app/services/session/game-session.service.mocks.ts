@@ -1,5 +1,5 @@
 import { InternalPlayer } from '@app/interface/player.interface';
-import { ChatMessage } from '@common/chat-message';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { GameSession, GameSessionPreview, WaitingRoom } from '@common/game/game-session.interface';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import { Player, PlayerInformation, PlayerStatus } from '@common/player/player.interface';

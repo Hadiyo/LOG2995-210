@@ -128,7 +128,7 @@ export class SessionService {
       this.errorMessage.set('MapId ou personnage invalid.');
       return;
     } 
-    const payload = this.setJoinSessionPayload(character);
+    const payload = this.setJoinSessionPayload(character, this.currentMapId);
     this.socket.send(RoomSocketEvents.CreateGameSession, payload);
   }
 
@@ -145,7 +145,7 @@ export class SessionService {
    * @param sessionId 
    */
   addPlayerToSession(character: PlayerInformation): void {
-    const payload = this.setJoinSessionPayload(character);
+    const payload = this.setJoinSessionPayload(character, this.currentPreviewId);
     this.socket.send(RoomSocketEvents.AddPlayerToSession, payload);
   }
 
@@ -228,10 +228,10 @@ export class SessionService {
     this.sessionPreviewSubjects.next(updated);
   }
 
-  private setJoinSessionPayload(character: PlayerInformation): JoinSessionPayload {
+  private setJoinSessionPayload(character: PlayerInformation, id: string | undefined): JoinSessionPayload {
     this.errorMessage.set('');
     const payload: JoinSessionPayload = {
-      id: this.currentPreviewId,
+      id,
       character,
     };
     this.clearCurrentIds();
