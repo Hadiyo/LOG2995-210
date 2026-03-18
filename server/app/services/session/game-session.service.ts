@@ -96,7 +96,6 @@ export class GameSessionService {
             };
         } catch (err) {
             this.logger.error(`Error while creating game session: ${err}`);
-            return undefined;
         }
     }
 
