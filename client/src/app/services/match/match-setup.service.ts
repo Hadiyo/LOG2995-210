@@ -7,6 +7,7 @@ import {
 import { MatchEndState, InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { ObjectType } from '@common/maps/map.enums';
 import { EditorMapDetails } from '@common/maps/map.interface';
+import { generateClientId } from '@app/utils/id.util';
 import {
     CLASSIC_WIN_THRESHOLD,
     DEFAULT_PLAYER_ATTACK,
@@ -25,7 +26,7 @@ export class MatchSetupService {
         isOrganizer: boolean,
     ): MatchLobbyPlayer {
         return {
-            id: existingLocalPlayer?.id ?? crypto.randomUUID(),
+            id: existingLocalPlayer?.id ?? generateClientId(),
             name: character.name,
             avatarId: character.avatarId,
             isOrganizer,
@@ -124,7 +125,7 @@ export class MatchSetupService {
 
     createClassicEndState(winner: MatchPlayer): MatchEndState {
         return {
-            id: crypto.randomUUID(),
+            id: generateClientId(),
             winnerKind: 'player',
             winnerPlayerId: winner.id,
             message: `${winner.name} remporte la partie avec ${winner.combatWins} victoires de combat.`,
@@ -134,7 +135,7 @@ export class MatchSetupService {
 
     createNoWinnerEndState(remainingPlayer: MatchPlayer): MatchEndState {
         return {
-            id: crypto.randomUUID(),
+            id: generateClientId(),
             winnerKind: 'none',
             winnerPlayerId: null,
             message: `La partie se termine sans gagnant: ${remainingPlayer.name} est le dernier joueur encore en partie apres les abandons.`,
