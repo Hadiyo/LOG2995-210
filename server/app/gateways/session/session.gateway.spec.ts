@@ -14,6 +14,21 @@ import { ErrorSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/
 import { Test, TestingModule } from '@nestjs/testing';
 import { Server, Socket } from 'socket.io';
 
+/**
+ * SessionGateway Unit Tests
+ *
+ * Testing Strategy:
+ * - Verify gateway logic for creating, joining, leaving sessions, and adding players via WebSocket events.
+ * - Edge cases tested include:
+ *    • Service returns undefined or throws errors, to ensure proper logging and server error emissions.
+ *    • Client failing to join previous or new rooms to confirm rooms are left/joined correctly.
+ *    • Missing sessions when joining or leaving, to ensure gateway does nothing in invalid cases.
+ * - These edge cases are important to maintain reliable real-time session behavior and prevent inconsistent
+ *   states across clients.
+ *
+ * Mocks (GameSessionService, Socket.IO Server/Socket) isolate gateway logic from networking and database operations.
+ */
+
 const MOCK_MAX_PLAYERS = 4;
 
 const mockPlayerInfo: PlayerInformation = {

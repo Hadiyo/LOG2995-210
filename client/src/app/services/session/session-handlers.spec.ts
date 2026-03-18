@@ -6,6 +6,21 @@ import { ErrorSocketEvents, PageContext, PageSocketEvents, RoomSocketEvents, Wai
 import { SessionApiService } from './session-api.service';
 import { SessionService } from './session.service';
 
+/**
+ * SessionService Event Handlers Unit Tests
+ *
+ * Testing Strategy:
+ * - Verify that all session-related socket events are correctly handled and propagate state updates.
+ * - Edge cases tested include:
+ *    • Client joining with invalid payload to check error handling and navigation fallback.
+ *    • Adding/removing players to ensure player counts update correctly and sessions lock/unlock as expected.
+ *    • Deleting sessions and new session notifications to confirm internal state stays consistent.
+ * - These cases are tested to guarantee correct handling of real-time updates and invalid or unexpected events,
+ *   preventing runtime errors or inconsistent session state during live gameplay.
+ *
+ * Mocks (SocketManagerService, SessionApiService, Router) isolate event handling from actual networking and routing.
+ */
+
 describe('SessionService - Handlers', () => {
     let service: SessionService;
     let socketManagerMock: jasmine.SpyObj<SocketManagerService>;

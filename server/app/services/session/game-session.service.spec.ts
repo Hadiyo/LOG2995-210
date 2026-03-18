@@ -16,6 +16,25 @@ import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { GameSessionService } from './game-session.service';
 
+/**
+ * GameSessionService Unit Tests
+ *
+ * Testing Strategy:
+ * - Verify core session lifecycle operations: create, join, leave, start, delete, and generate payloads/snapshots.
+ * - Edge cases explicitly tested include:
+ *    • saveGameMap or savePlayer failures when creating a session → ensures proper error logging and graceful failure.
+ *    • Duplicate socketId when creating a session → tests cleanup of previous player references.
+ *    • Joining a session that does not exist → validates safe handling of invalid session references.
+ *    • Leaving a session as the last player → ensures session deletion logic works correctly.
+ *    • Starting a game when session is missing, already started, or map not found → prevents invalid game start.
+ *    • Map and object cloning → ensures snapshot copies are deep, preventing reference leaks between sessions.
+ *    • Missing or undefined properties (messages, maxPlayers, debugMode, etc.) → tests default value handling.
+ * - These edge cases were chosen to simulate realistic failure scenarios and boundary conditions
+ *   that could occur during gameplay or server-side session management.
+ *
+ * Mocks (PlayerService, GameMapService, Logger) isolate service logic from database or external dependencies.
+ */
+
 describe('GameSessionService', () => {
   let service: GameSessionService;
   let mockPlayerService: Partial<PlayerService>;

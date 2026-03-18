@@ -18,7 +18,10 @@ import { JoinGameComponent } from './join-game.component';
  * and ngOnDestroy() delegates to unsubscribeToSessionEvents().
  *
  * We confirm that onSelectedSession() sets the preview id, the context to 'join',
- * and navigates to '/character-creation'.
+ * and navigates to '/character-creation'. 
+ * 
+ * We confirm that when the client navigates to the character-creation page, it sends
+ * a request to join the session and if the navigation fails an error message opens.
  *
  * We verify the template reacts to the service state: a loading spinner message appears
  * when state is Loading, an empty-state message when the session list is empty, and

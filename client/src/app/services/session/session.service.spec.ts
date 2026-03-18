@@ -13,6 +13,20 @@ import { of, Subscription, throwError } from 'rxjs';
 import { SessionApiService } from './session-api.service';
 import { SessionService } from './session.service';
 
+/**
+ * SessionService Unit Tests
+ *
+ * Testing Strategy:
+ * - Verify core state management for sessions: current map/preview IDs, context, and session initialization.
+ * - Edge cases tested include:
+ *    • Undefined currentMapId or currentPreviewId to ensure getters return undefined correctly.
+ *    • Switching context between 'create' and 'join' to confirm proper context updates and error resets.
+ *    • Socket alive vs not alive during initialization to validate correct behavior depending on connection state.
+ *    • Handling invalid inputs in createGameSession (undefined map or character) to check proper error handling.
+ * - These edge cases are important to ensure stability and predictable service behavior in all game session scenarios.
+ *
+ * Mocks (SocketManagerService, SessionApiService) isolate the service logic from external dependencies.
+ */
 
 describe('SessionService', () => {
     let service: SessionService;

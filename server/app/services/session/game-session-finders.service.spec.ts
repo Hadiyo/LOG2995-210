@@ -5,6 +5,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { GameSessionService } from './game-session.service';
 import { createInternalPlayer, createMockSessionPlayers, mockGameSession1, mockGameSession2, mockWaitingRoom1 } from './game-session.service.mocks';
 
+/**
+ * GameSessionService Unit Tests
+ *
+ * Testing Strategy:
+ * - Verify core session management functionality: retrieving sessions, waiting rooms, and player data.
+ * - Include edge cases such as:
+ *    • Nonexistent session or preview IDs to ensure methods handle missing data gracefully.
+ *    • Sessions that have already started to prevent joining or fetching players incorrectly.
+ *    • Players not in any session to ensure queries return empty/undefined results.
+ * - These cases are tested to guarantee robustness and proper handling of invalid or unexpected inputs,
+ *   which is crucial for maintaining correct game state and avoiding runtime errors during live gameplay.
+ *
+ * Mocks (PlayerService, GameMapService, Logger) isolate the service from external dependencies.
+ */
 
 describe('GameSessionService', () => {
   let service: GameSessionService;
