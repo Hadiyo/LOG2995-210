@@ -149,10 +149,6 @@ export class WaitingRoomService {
     this.statusMessageSubject.next(`${player.name} a quitte la salle d'attente.`);
   };
 
-  private onMessageSent = (message: ChatMessage) => {
-    this.messagesSubject.next([...this.messagesSubject.value, message]);
-  };
-
   /**
    * Socket Event: WaitingRoomEvents.GameSessionDeleted
    * @param payload 
