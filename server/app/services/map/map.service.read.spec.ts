@@ -120,10 +120,55 @@ describe('MapService (read)', () => {
         expect(maps[0].id).toBe('id-2');
     });
 
+    it('getAllMapsSummary() should return summary fields without hydrated map data', async () => {
+        const doc = makeDoc({
+            _id: 'id-summary',
+            name: 'Summary map',
+            description: 'summary desc',
+            mode: GameMode.CLASSIC,
+            size: MapSize.S,
+            date: '2026-02-08T10:00:00.000Z',
+            visibility: true,
+            previewImage: 'AAA=',
+            previewImageFormat: PreviewImageFormat.PNG,
+            map: [{ tileType: TileType.DIRT }],
+            objects: [makeObject({ position: { x: 0, y: 0 }, size: ObjectSize.S })],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        const query = makeQuery([doc]);
+        mapModel.find.mockReturnValue(query);
+
+        const [summary] = await service.getAllMapsSummary();
+
+        expect(mapModel.find).toHaveBeenCalledWith();
+        expect(query.sort).toHaveBeenCalledWith({ createdAt: 1 });
+        expect(summary).toEqual({
+            id: 'id-summary',
+            name: 'Summary map',
+            description: 'summary desc',
+            mode: GameMode.CLASSIC,
+            size: MapSize.S,
+            date: '2026-02-08T10:00:00.000Z',
+            visibility: true,
+            previewImage: 'AAA=',
+            previewImageFormat: PreviewImageFormat.PNG,
+        });
+        expect((summary as unknown as { map?: unknown[] }).map).toBeUndefined();
+        expect((summary as unknown as { objects?: unknown[] }).objects).toBeUndefined();
+    });
+
     it('getMapById() should throw when missing', async () => {
         mapModel.findById.mockReturnValue(makeQuery(null));
 
         await expect(service.getMapById('missing')).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('getMapByIdForEditor() should throw when missing', async () => {
+        mapModel.findById.mockReturnValue(makeQuery(null));
+
+        await expect(service.getMapByIdForEditor('missing')).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('getMapById() should return hydrated map when found', async () => {
@@ -176,5 +221,29 @@ describe('MapService (read)', () => {
         });
         expect((map as unknown as { visibility?: boolean }).visibility).toBeUndefined();
         expect((map as unknown as { date?: string }).date).toBeUndefined();
+    });
+
+    it('getAllMaps() should mark every covered tile as occupied for large objects', async () => {
+        const CUSTOM_MAP_SIZE = 3 as MapSize;
+        const doc = makeDoc({
+            _id: 'id-large-object',
+            name: 'Large object map',
+            description: 'desc',
+            mode: GameMode.CLASSIC,
+            size: CUSTOM_MAP_SIZE,
+            date: '2026-02-08T10:00:00.000Z',
+            visibility: true,
+            map: new Array(CUSTOM_MAP_SIZE * CUSTOM_MAP_SIZE).fill(null).map(() => ({ tileType: TileType.DIRT })),
+            objects: [makeObject({ id: 1, position: { x: 1, y: 1 }, size: ObjectSize.L })],
+        });
+
+        mapModel.find.mockReturnValue(makeQuery([doc]));
+
+        const [map] = await service.getAllMaps();
+        const occupiedPositions = map.map
+            .filter((cell) => cell.isOccupied)
+            .map((cell) => `${cell.position.x},${cell.position.y}`);
+
+        expect(occupiedPositions).toEqual(['1,1', '2,1', '1,2', '2,2']);
     });
 });

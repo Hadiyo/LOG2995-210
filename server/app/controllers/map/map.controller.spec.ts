@@ -56,6 +56,24 @@ describe('MapController', () => {
         expect(maps).toEqual([sampleMap]);
     });
 
+    it('getAllMapsSummary() should return all map summaries', async () => {
+        const sampleSummary = {
+            id: sampleMap.id,
+            name: sampleMap.name,
+            description: sampleMap.description,
+            mode: sampleMap.mode,
+            size: sampleMap.size,
+            date: sampleMap.date,
+            visibility: sampleMap.visibility,
+        };
+        mapService.getAllMapsSummary.resolves([sampleSummary]);
+
+        const summaries = await controller.getAllMapsSummary();
+
+        expect(mapService.getAllMapsSummary.calledOnce).toBe(true);
+        expect(summaries).toEqual([sampleSummary]);
+    });
+
     it('getMapById() should return the requested map', async () => {
         mapService.getMapById.resolves(sampleMap);
 
