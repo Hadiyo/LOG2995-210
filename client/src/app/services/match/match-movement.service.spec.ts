@@ -80,6 +80,7 @@ const createMatch = (): InitializedMatch => {
         mapName: 'Arena',
         mode: GameMode.CLASSIC,
         mapSize: MapSize.S,
+        debugMode: false,
         map: createCells(),
         objects: allObjects,
         allObjects,
