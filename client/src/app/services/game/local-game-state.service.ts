@@ -7,6 +7,12 @@ import { TileType } from '@common/maps/map.enums';
 import { GameCell } from '@common/maps/map.interface';
 import { Player, PlayerStatus } from '@common/player/player.interface';
 import { Observable, of, throwError } from 'rxjs';
+import {
+    applyDebugTeleportInSession,
+    canForceEndTurnInDebugMode,
+    disableDebugModeIfOrganizerLeaves,
+    toggleDebugModeInSession,
+} from './debug/game-debug.utils';
 import { GameNotificationStateService } from './game-notification-state.service';
 import { applyRuntimePlayerDefaults, assignInitialPositions, toGameMapState } from './local/local-game-map.utils';
 import * as localGameRuntimeUtils from './local/local-game-runtime.utils';
@@ -125,6 +131,27 @@ export class LocalGameStateService {
         this.publishSession(session);
     }
 
+    // Allow the organizer to end the active turn while debug mode is enabled.
+    forceEndTurnInDebugMode(): void {
+        const session = this.getMutableCurrentSession();
+        const currentPlayerId = this.currentPlayerIdSignal();
+        if (!canForceEndTurnInDebugMode(session, currentPlayerId)) return;
+        if (!session) return;
+
+        this.advanceTurn(session, 'EARLY');
+        this.publishSession(session);
+    }
+
+    // Toggle the shared debug flag in the local session snapshot.
+    toggleDebugMode(): void {
+        const session = this.getMutableCurrentSession();
+        const currentPlayerId = this.currentPlayerIdSignal();
+        // Apply the debug toggle through the shared utility to keep this service thin.
+        if (!toggleDebugModeInSession(session, currentPlayerId)) return;
+        if (!session) return;
+        this.publishSession(session);
+    }
+
     // Local action mode is handled in component local state.
     // Kept to preserve call compatibility with game-view flow.
     setActionMode(enabled: boolean): void {
@@ -161,11 +188,32 @@ export class LocalGameStateService {
         this.publishSession(session);
     }
 
+    // Teleport the active player without consuming movement points while debug mode is enabled.
+    teleportToCellInDebugMode(targetIndex: number): void {
+        const session = this.getMutableCurrentSession();
+        const targetCell = session?.map.map[targetIndex];
+        if (!session || !targetCell) return;
+        const teleportResult = applyDebugTeleportInSession(session, this.currentPlayerIdSignal(), targetCell);
+        if (!teleportResult) return;
+
+        // Compute facing from the previous position before the teleport mutation.
+        teleportResult.player.render.facing = localGameRuntimeUtils.getFacingToTarget(
+            teleportResult.previousPosition,
+            targetCell.position,
+        );
+        this.publishSession(session);
+    }
+
     // Local surrender flow for static mode.
     // Placeholder only: in static local mode this action is handled at page level
     // (navigate home), without authoritative multiplayer session updates.
     surrender(): void {
-        return;
+        const session = this.getMutableCurrentSession();
+        const currentPlayerId = this.currentPlayerIdSignal();
+        // Apply organizer-leave cleanup through the shared debug utility.
+        if (!disableDebugModeIfOrganizerLeaves(session, currentPlayerId)) return;
+        if (!session) return;
+        this.publishSession(session);
     }
 
     // Local chat flow for static mode.

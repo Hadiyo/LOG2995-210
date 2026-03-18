@@ -50,7 +50,15 @@
         [playerStates]="playerStates()"
         [actionModeEnabled]="actionModeEnabled()"
         (cellClick)="onCellClick($event)"
+        (cellRightClick)="onCellRightClick($event)"
       />
+      @if (selectedTileInfo(); as tileInfo) {
+        <!-- Keep the tile info overlay scoped to the map panel so side panels stay usable. -->
+        <app-game-tile-info-modal
+          [tileInfo]="tileInfo"
+          (close)="closeTileInfoModal()"
+        />
+      }
     </section>
 
     <aside class="side-panel side-panel--right">
@@ -94,7 +102,7 @@
         <!-- Action bar shows buttons for ending turn, toggling action mode, and surrendering, with appropriate enabling/disabling. -->
         <app-game-action-bar
           [actionModeEnabled]="actionModeEnabled()"
-          [canAct]="isCurrentPlayersTurn()"
+          [canAct]="canEndTurn()"
           [canUseActionMode]="canUseActionMode()"
           (endTurn)="onEndTurn()"
           (toggleActionMode)="onToggleActionMode()"
