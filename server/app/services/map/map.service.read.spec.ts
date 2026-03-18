@@ -224,16 +224,16 @@ describe('MapService (read)', () => {
     });
 
     it('getAllMaps() should mark every covered tile as occupied for large objects', async () => {
-        const CUSTOM_MAP_SIZE = 3 as MapSize;
+        const THREE_BY_THREE_MAP_SIZE = Number('3') as MapSize;
         const doc = makeDoc({
             _id: 'id-large-object',
             name: 'Large object map',
             description: 'desc',
             mode: GameMode.CLASSIC,
-            size: CUSTOM_MAP_SIZE,
+            size: THREE_BY_THREE_MAP_SIZE,
             date: '2026-02-08T10:00:00.000Z',
             visibility: true,
-            map: new Array(CUSTOM_MAP_SIZE * CUSTOM_MAP_SIZE).fill(null).map(() => ({ tileType: TileType.DIRT })),
+            map: new Array(THREE_BY_THREE_MAP_SIZE * THREE_BY_THREE_MAP_SIZE).fill(null).map(() => ({ tileType: TileType.DIRT })),
             objects: [makeObject({ id: 1, position: { x: 1, y: 1 }, size: ObjectSize.L })],
         });
 
