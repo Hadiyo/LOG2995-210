@@ -1,6 +1,5 @@
 export enum GameMode {
-    CLASSIC = 'CLASSIC',
-    CTF = 'CTF'
+    CLASSIC = 'CLASSIC'
 }
 
 export enum MapSize {
@@ -18,10 +17,7 @@ export enum TileType {
 }
 
 export enum ObjectType {
-    START = 'START',
-    FLAG = 'FLAG',
-    REGEN = 'REGEN',
-    ARENA = 'ARENA'
+    START = 'START'
 }
 
 export enum ObjectSize {

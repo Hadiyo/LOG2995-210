@@ -1,7 +1,15 @@
 <div class="grid" [class.grid--action-mode]="actionModeEnabled" [style.--cols]="cols" [style.--rows]="rows">
    <!-- Angular @for over all cells; $index used as click target index -->
   @for (cell of cells; track $index) {
-    <button type="button" class="cell" (click)="onCellClick($index)" (contextmenu)="onCellRightClick($index, $event)">
+    <button
+      type="button"
+      class="cell"
+      [class.cell--reachable]="isReachableCell(cell)"
+      [class.cell--reachable-origin]="isReachableOrigin(cell)"
+      [class.cell--action-target]="isActionTarget(cell)"
+      (click)="onCellClick($index)"
+      (contextmenu)="onCellContextMenu($event, $index)"
+    >
        <!-- Base tile layer with tile type and door-open/closed flags -->
       <span
         class="tile"

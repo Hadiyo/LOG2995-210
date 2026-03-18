@@ -3,110 +3,149 @@
     <section class="panel panel--error">
       <p>{{ errorMessage() }}</p>
     </section>
-  } @else if (session()) {
+  } @else if (match(); as currentMatch) {
     <aside class="side-panel side-panel--left">
       <section class="panel panel--game-title">
-        <h2 class="game-title">{{ session()!.map.name }}</h2>
+        <h2 class="game-title">{{ currentMatch.mapName }}</h2>
       </section>
 
       <section class="panel">
-        <!-- Session info panel shows map name, player counts, and turn timer. -->
         <app-game-session-info-panel
           [cols]="cols()"
           [rows]="rows()"
           [currentPlayers]="activePlayersCount()"
           [maxPlayers]="maxPlayers()"
-          [activePlayerName]="activePlayer()?.information?.name ?? null"
-          [remainingSeconds]="session()!.turn.remainingSeconds"
-          [totalSeconds]="session()!.turn.totalSeconds"
-          [highlightTimer]="isCurrentPlayersTurn()"
+          [activePlayerName]="activePanelName()"
+          [remainingSeconds]="remainingSeconds()"
+          [totalSeconds]="totalSeconds()"
+          [highlightTimer]="highlightTimer()"
           [defaultPanelTitle]="constants.defaultPanelTitle"
         />
       </section>
 
       <section class="panel panel--player-info">
-        <!-- Current player panel shows detailed info about the current player, including avatar and stats. -->
         <app-game-current-player-panel
           [player]="currentPlayer()"
-          [avatarId]="panelAvatarId()"
-          [avatarState]="panelAvatarState()"
-          [avatarDirection]="panelAvatarDirection()"
+          [avatarId]="currentPlayer()?.information?.avatarId ?? 0"
           [avatarSpriteSize]="constants.avatarSpriteSize"
           [defaultPanelTitle]="constants.defaultPanelTitle"
         />
       </section>
+
+      <section class="panel panel--turn-status">
+        <h3>Etat du tour</h3>
+        <p class="turn-status__headline">{{ phaseHeadline() }}</p>
+        <p class="turn-status__copy">{{ phaseDescription() }}</p>
+        <div class="turn-status__meta">
+          <span>Etat local: {{ display.localPlayerStateLabel() }}</span>
+          <span>Mouvements: {{ display.localMovementCount() }}</span>
+          <span>Action: {{ display.localActionAvailable() ? 'Disponible' : 'Utilisee' }}</span>
+        </div>
+        @if (interaction.movementFeedback()) {
+          <p class="turn-status__feedback">{{ interaction.movementFeedback() }}</p>
+        }
+      </section>
     </aside>
 
     <section class="map-panel panel">
-      <!-- Map grid shows the game map, including cells, objects, and player positions. -->
+      <div class="map-panel__header">
+        <div>
+          <h3>Carte de la partie</h3>
+          <p class="map-panel__copy">
+            WASD deplace votre personnage a la releve de la touche. Clic droit pour inspecter une tuile ou un joueur.
+          </p>
+        </div>
+      </div>
+
       <app-game-map-grid
         [cols]="cols()"
         [rows]="rows()"
         [cells]="mapCells()"
         [objects]="mapObjects()"
         [players]="players()"
-        [nowMs]="nowMs()"
-        [playerDirections]="playerDirections()"
-        [playerStates]="playerStates()"
         [actionModeEnabled]="actionModeEnabled()"
+        [reachableCellKeys]="reachableCellKeys()"
+        [reachableOriginKey]="reachableOriginKey()"
+        [actionTargetCellKeys]="interaction.actionTargets()"
         (cellClick)="onCellClick($event)"
-        (cellRightClick)="onCellRightClick($event)"
+        (cellContextMenu)="onCellContextMenu($event)"
       />
-      @if (selectedTileInfo(); as tileInfo) {
-        <!-- Keep the tile info overlay scoped to the map panel so side panels stay usable. -->
-        <app-game-tile-info-modal
-          [tileInfo]="tileInfo"
-          (close)="closeTileInfoModal()"
-        />
+
+      @if (interaction.actionSelectionOpen()) {
+        <div class="map-panel__action-picker">
+          <p>Choisissez une action pour ce tour.</p>
+          <div class="map-panel__action-buttons">
+            @for (option of interaction.availableActionContexts(); track option.context) {
+              <button type="button" class="panel__toggle-btn" (click)="interaction.selectActionContext(option.context)">
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        </div>
+      } @else if (interaction.actionContext()) {
+        <p class="map-panel__hint">{{ interaction.actionHelperText() }}</p>
+      } @else {
+        <p class="map-panel__hint">Les cases surlignees indiquent les deplacements atteignables avec vos points restants.</p>
       }
+
+      <section class="panel panel--turn-order panel--turn-order-inline">
+        <h3>Ordre et departs</h3>
+        <ul class="turn-order__details">
+          @for (player of turnDetails(); track player.id) {
+            <li class="turn-order__detail">
+              <div>
+                <strong>{{ player.name }}</strong>
+                <span>Depart ({{ player.startingPosition.x }}, {{ player.startingPosition.y }})</span>
+              </div>
+              <div>
+                <span>Rapidite {{ player.speed }}</span>
+                <span>Victoires {{ player.combatWins }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
     </section>
 
     <aside class="side-panel side-panel--right">
-      <!-- Player list panel shows the list of players, their status, and allows toggling expansion for more details. -->
       <section class="panel panel--players">
         <div class="panel__header">
           <h3>Liste des joueurs</h3>
-          @if (players().length > 2) {
-            <button
-              type="button"
-              class="panel__toggle-btn"
-              [attr.aria-expanded]="isPlayerListExpanded()"
-              (click)="onTogglePlayerListExpanded()"
-            >
-              {{ isPlayerListExpanded() ? 'Réduire' : players().length + ' Total' }}
-            </button>
-          }
         </div>
         <app-game-player-list
           [players]="players()"
           [turnOrder]="turnOrder()"
           [activePlayerId]="activePlayerId()"
-          [currentPlayerId]="currentPlayerId() ?? ''"
+          [currentPlayerId]="localPlayerId()"
           [maxPlayers]="maxPlayers()"
-          [expanded]="isPlayerListExpanded()"
+          [expanded]="true"
         />
       </section>
 
       <section class="panel messages">
-        <!-- Chat panel shows messages, notifications, and allows the current player to send messages. -->
+        <div class="panel__header">
+          <h3>Clavardage</h3>
+        </div>
         <app-game-chat-panel
           [messages]="chatMessages()"
-          [notification]="activeNotification()"
+          [notification]="null"
           [currentPlayerName]="currentPlayer()?.information?.name ?? null"
           [messageMaxLength]="constants.messageMaxLength"
+          [title]="'Clavardage'"
+          [showTitle]="false"
+          [readOnly]="false"
           (messageSubmit)="onChatMessageSubmit($event)"
         />
       </section>
 
       <section class="panel panel--action-bar">
-        <!-- Action bar shows buttons for ending turn, toggling action mode, and surrendering, with appropriate enabling/disabling. -->
         <app-game-action-bar
           [actionModeEnabled]="actionModeEnabled()"
-          [canAct]="canEndTurn()"
+          [canAct]="canAct()"
           [canUseActionMode]="canUseActionMode()"
           (endTurn)="onEndTurn()"
           (toggleActionMode)="onToggleActionMode()"
-          (surrender)="onSurrender()"
+          (surrender)="quitGame()"
         />
       </section>
     </aside>
@@ -116,3 +155,72 @@
     </section>
   }
 </main>
+
+@if (display.matchEndState(); as endState) {
+  <div class="match-end-overlay">
+    <section class="match-end-modal" role="dialog" aria-modal="true">
+      <p class="match-end-modal__eyebrow">Partie terminee</p>
+      <h2>{{ endState.message }}</h2>
+      <p>Retour a l accueil dans {{ endRedirectCountdownSeconds() }} secondes.</p>
+    </section>
+  </div>
+}
+
+@if (effects.combatNotifications().length > 0) {
+  <div class="combat-toast-stack" aria-live="polite" aria-atomic="false">
+    @for (notification of effects.combatNotifications(); track notification.id) {
+      <section class="combat-toast" role="status">
+        <p>{{ notification.message }}</p>
+        <button type="button" class="combat-toast__close" (click)="effects.dismissCombatNotification(notification.id)">Fermer</button>
+      </section>
+    }
+  </div>
+}
+
+@if (interaction.inspectedTile(); as tileDetails) {
+  <div class="modal-backdrop" (click)="interaction.closeInspection()">
+    <section
+      class="tile-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tile-details-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="tile-modal__header">
+        <div>
+          <p class="tile-modal__eyebrow">Coordonnees {{ tileDetails.position.x }}, {{ tileDetails.position.y }}</p>
+          <h2 id="tile-details-title">{{ tileDetails.tileLabel }}</h2>
+        </div>
+
+        <button type="button" class="tile-modal__close" (click)="interaction.closeInspection()">Fermer</button>
+      </div>
+
+      <div class="tile-modal__section">
+        <h3>Caracteristiques</h3>
+        <ul>
+          @for (characteristic of tileDetails.characteristics; track characteristic) {
+            <li>{{ characteristic }}</li>
+          }
+        </ul>
+      </div>
+
+      @if (tileDetails.object; as objectDetails) {
+        <div class="tile-modal__section">
+          <h3>Objet</h3>
+          <p>{{ objectDetails.type }}</p>
+          <p>{{ objectDetails.description }}</p>
+        </div>
+      }
+
+      @if (tileDetails.player; as playerDetails) {
+        <div class="tile-modal__section tile-modal__player">
+          <h3>Joueur</h3>
+          <img [src]="display.avatarUrl(playerDetails.avatarId)" [alt]="playerDetails.name">
+          <div>
+            <p>{{ playerDetails.name }}</p>
+          </div>
+        </div>
+      }
+    </section>
+  </div>
+}

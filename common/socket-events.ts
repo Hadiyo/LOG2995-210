@@ -1,8 +1,54 @@
+import { ChatMessage } from './chat/chat.interface';
+import { InitializedMatch, MatchLobbyPlayer } from './game/match.interface';
+import { MatchTurnState } from './game/turn.interface';
+
+export enum SocketEvents {
+    MapCreated = 'mapCreated',
+    MapUpdated = 'mapUpdated',
+    MapDeleted = 'mapDeleted',
+    JoinRoom = 'roomJoined',
+    LeaveRoom = 'leaveRoom',
+    ToggleMapVisibility = 'toggleMapVisibility',
+
+    CreateWaitingRoom = 'createWaitingRoom',
+    JoinWaitingRoom = 'joinWaitingRoom',
+    LeaveWaitingRoom = 'leaveWaitingRoom',
+    KickWaitingRoomPlayer = 'kickWaitingRoomPlayer',
+    SendWaitingRoomMessage = 'sendWaitingRoomMessage',
+    StartWaitingRoomGame = 'startWaitingRoomGame',
+
+    WaitingRoomUpdated = 'waitingRoomUpdated',
+    WaitingRoomDirectoryUpdated = 'waitingRoomDirectoryUpdated',
+    WaitingRoomMessageSent = 'waitingRoomMessageSent',
+    WaitingRoomPlayerKicked = 'waitingRoomPlayerKicked',
+    WaitingRoomCancelled = 'waitingRoomCancelled',
+    WaitingRoomGameStarted = 'waitingRoomGameStarted',
+    WaitingRoomError = 'waitingRoomError',
+
+    JoinGameSession = 'joinGameSession',
+    MoveGamePlayer = 'moveGamePlayer',
+    EndGameTurn = 'endGameTurn',
+    StartCombat = 'startCombat',
+    ToggleDoor = 'toggleDoor',
+    SurrenderGame = 'surrenderGame',
+
+    GameSessionSnapshot = 'gameSessionSnapshot',
+    GameSessionError = 'gameSessionError',
+}
+
+export enum ChatSocketEvents {
+    SendMessage = 'sendMessage',
+    ReceiveMessage = 'receiveMessage',
+    LoadChatMessages = 'loadChatMessages',
+    ChatValidationError = 'chatValidationError',
+    ChatServerError = 'chatServerError',
+}
+
 export enum MapSocketEvents {
     MapCreated = 'mapCreated',
     MapUpdated = 'mapUpdated',
     MapDeleted = 'mapDeleted',
-    ToogleMapVisibility = 'toggleMapVisibility',
+    ToggleMapVisibility = 'toggleMapVisibility',
 }
 
 export enum PageSocketEvents {
@@ -23,14 +69,6 @@ export enum RoomSocketEvents {
     IncrementPlayerCount = 'incrementPlayerCount',
     DecrementPlayerCount = 'decrementPlayerCount',
     AddClientToSession = 'addClientToSession',
-}
-
-export enum ChatSocketEvents {
-    SendMessage = 'sendMessage',
-    ReceiveMessage = 'receiveMessage',
-    LoadChatMessages = 'loadChatMessages',
-    ChatValidationError = 'chatValidationError',
-    ChatServerError = 'chatServerError',
 }
 
 export enum WaitingRoomEvents {
@@ -54,10 +92,99 @@ export enum ErrorSocketEvents {
     ServerError = 'serverError',
 }
 
-/** BROWSER SOCKET EVENTS */
-export const BEFORE_UNLOAD = 'beforeunload'
+export const BEFORE_UNLOAD = 'beforeunload';
 
 export interface MapVisibilityEventPayload {
-    id: string,
-    isVisible: boolean,
+    id: string;
+    isVisible: boolean;
+}
+
+export const getWaitingRoomRoom = (accessCode: string): string => `waiting:${accessCode}`;
+export const getGameSessionRoom = (sessionId: string): string => `game:${sessionId}`;
+
+export interface CreateWaitingRoomPayload {
+    mapId: string;
+    player: MatchLobbyPlayer;
+}
+
+export interface JoinWaitingRoomPayload {
+    accessCode: string;
+    player: MatchLobbyPlayer;
+}
+
+export interface LeaveWaitingRoomPayload {
+    accessCode: string;
+    playerId: string;
+}
+
+export interface KickWaitingRoomPlayerPayload {
+    accessCode: string;
+    playerId: string;
+}
+
+export interface SendWaitingRoomMessagePayload {
+    accessCode: string;
+    content: string;
+}
+
+export interface WaitingRoomStatePayload {
+    accessCode: string;
+    mapId: string;
+    players: MatchLobbyPlayer[];
+    messages: ChatMessage[];
+    isLocked: boolean;
+    maxPlayers: number;
+    minPlayersToStart: number;
+}
+
+export interface WaitingRoomGameStartedPayload {
+    accessCode: string;
+    sessionId: string;
+}
+
+export interface WaitingRoomErrorPayload {
+    message: string;
+}
+
+export interface JoinGameSessionPayload {
+    sessionId: string;
+    playerId: string;
+}
+
+export interface MoveGamePlayerPayload {
+    sessionId: string;
+    playerId: string;
+    direction: 'up' | 'down' | 'left' | 'right';
+}
+
+export interface EndGameTurnPayload {
+    sessionId: string;
+    playerId: string;
+}
+
+export interface StartCombatPayload {
+    sessionId: string;
+    playerId: string;
+    defenderId: string;
+}
+
+export interface ToggleDoorPayload {
+    sessionId: string;
+    playerId: string;
+    position: { x: number; y: number };
+}
+
+export interface SurrenderGamePayload {
+    sessionId: string;
+    playerId: string;
+}
+
+export interface GameSessionSnapshotPayload {
+    sessionId: string;
+    match: InitializedMatch;
+    turnState: MatchTurnState;
+}
+
+export interface GameSessionErrorPayload {
+    message: string;
 }

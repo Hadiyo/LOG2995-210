@@ -1,4 +1,4 @@
-import { GameSessionService } from '@app/services/session/game-session.service';
+import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { validateChatMessage } from '@common/chat/chat-validation.utils';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { Injectable } from '@nestjs/common';
@@ -6,21 +6,25 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class ChatService {
-    constructor (private readonly gameSessionService: GameSessionService) {};
+    constructor(private readonly gameSessionService: GameSessionService) {}
 
-    addMessage(message: ChatMessage, sessionId: string): ChatMessage | undefined {
-        const session = this.gameSessionService.gameSessions.get(sessionId);
-        if (!session) {
-            return undefined;
+    addMessage(sessionId: string, socketId: string, content: string): ChatMessage | null {
+        const playerName = this.gameSessionService.getPlayerNameForSocket(socketId, sessionId);
+        if (!playerName) {
+            return null;
         }
+
+        const message: ChatMessage = {
+            id: randomUUID(),
+            author: playerName,
+            content,
+            createdAt: new Date().toISOString(),
+        };
 
         if (!validateChatMessage(message)) {
-            return undefined;
+            return null;
         }
 
-        message.id = randomUUID();
-
-        session.messages.push(message);
         return message;
     }
 }
