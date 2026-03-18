@@ -70,20 +70,22 @@ export class WaitingRoomGateway {
                 return;
             }
 
+            this.sessionService.deleteGameSession(session.mapTemplateId);
+            // Notify all players in the session room that it was deleted
+            const payload: WaitingRoomRedirectPayload = {
+                sessionId: session.mapTemplateId,
+                reason: 'La salle d\'attente a ete fermee parce que l\'organisateur a quitte.',
+            };
+            this.server.to(sessionId).emit(WaitingRoomEvents.GameSessionDeleted, payload);
+
             this.server.in(sessionId).fetchSockets().then((sockets) => {
                 sockets.forEach((socket) => {
                   socket.leave(sessionId);
                 });
             });
 
-            this.sessionService.deleteGameSession(session.mapTemplateId);
-            // Notify all players in the session room that it was deleted
-            const payload: WaitingRoomRedirectPayload = {
-                reason: 'La salle d\'attente a ete fermee parce que l\'organisateur a quitte.',
-            };
-            this.server.to(sessionId).emit(WaitingRoomEvents.GameSessionDeleted, payload);
             // Notify the join-game page to remove the session from the list
-            this.server.to(pageRoomMap.joinGame).emit(WaitingRoomEvents.GameSessionDeleted, session.mapTemplateId);
+            this.server.to(pageRoomMap.joinGame).emit(WaitingRoomEvents.GameSessionDeleted, payload);
         } catch (err) {
             client.emit(ErrorSocketEvents.FailedSessionDeletion);
             this.logger.error(`Error deleting the game session: ${err}`);
@@ -115,6 +117,7 @@ export class WaitingRoomGateway {
         this.server.in(target.socketId).socketsLeave(sessionId);
 
         const redirectPayload: WaitingRoomRedirectPayload = {
+            sessionId: removedSessionId,
             reason: `Vous avez ete exclu de la salle d'attente par l'organisateur.`,
         };
         this.server.to(target.socketId).emit(WaitingRoomEvents.KickedFromSession, redirectPayload);
