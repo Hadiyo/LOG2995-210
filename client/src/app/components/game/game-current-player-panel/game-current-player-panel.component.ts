@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { CharacterSpriteComponent } from '@app/components/game/character-sprite/character-sprite.component';
+import { GameDebugService } from '@app/services/game/debug/game-debug.service';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
 import { Player } from '@common/player/player.interface';
 
@@ -18,4 +19,9 @@ export class GameCurrentPlayerPanelComponent {
   @Input() avatarDirection: CharacterDirection = 'front';
   @Input() avatarSpriteSize = 96;
   @Input() defaultPanelTitle = 'N/A';
+
+  // Expose the debug mode state for conditional UI rendering.
+  readonly isDebugModeEnabled = this.gameDebugService.isDebugModeEnabled;
+
+  constructor(private readonly gameDebugService: GameDebugService) {}
 }
