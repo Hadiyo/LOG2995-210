@@ -105,6 +105,7 @@ export class SessionService {
   * Unsubscribes to all real-time socket events related to JoinPage
   */
   unsubscribeToSessionEvents() {
+    this.socket.unsubscribeFromWindowEvent();
     this.socket.send(PageSocketEvents.LeavePage, { page: PageContext.JoinGame });
     this.socket.off<string>(RoomSocketEvents.IncrementPlayerCount, this.onClientAddedToSession);
     this.socket.off<void>(RoomSocketEvents.PlayerJoinedGame, this.onJoinedSession);
@@ -122,14 +123,13 @@ export class SessionService {
    * corresponding to its sessionId. Requires the client socket id
    * @param payload 
    */
-  createGameSession(character: PlayerInformation): void {
-    this.errorMessage.set('');
-    const payload: JoinSessionPayload = {
-      id: this.currentMapId,
-      character,
-    };
+  createGameSession(character: PlayerInformation | undefined): void {
+    if (!this.currentMapId || !character) {
+      this.errorMessage.set('MapId ou personnage invalid.');
+      return;
+    } 
+    const payload = this.setJoinSessionPayload(character);
     this.socket.send(RoomSocketEvents.CreateGameSession, payload);
-    this.clearCurrentIds();
   }
 
   joinSession(previewId: string): void {
@@ -145,13 +145,8 @@ export class SessionService {
    * @param sessionId 
    */
   addPlayerToSession(character: PlayerInformation): void {
-    this.errorMessage.set('');
-    const payload: JoinSessionPayload = {
-      id: this.currentPreviewId,
-      character,
-    };
+    const payload = this.setJoinSessionPayload(character);
     this.socket.send(RoomSocketEvents.AddPlayerToSession, payload);
-    this.clearCurrentIds();
   }
 
   /** HANDLERS */
@@ -231,5 +226,15 @@ export class SessionService {
         : session,
     );
     this.sessionPreviewSubjects.next(updated);
+  }
+
+  private setJoinSessionPayload(character: PlayerInformation): JoinSessionPayload {
+    this.errorMessage.set('');
+    const payload: JoinSessionPayload = {
+      id: this.currentPreviewId,
+      character,
+    };
+    this.clearCurrentIds();
+    return payload;
   }
 }
