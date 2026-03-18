@@ -3,6 +3,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { ChatService } from '@app/services/chat/chat.service';
+import { SessionService } from '@app/services/session/session.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { AvatarId } from '@common/character/character.model';
@@ -34,16 +35,19 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly waitingRoomService: WaitingRoomService,
     private readonly chatService: ChatService,
+    private readonly sessionService: SessionService,
   ) {}
 
   ngOnInit() {
     this.waitingRoomService.initWaitingRoom();
     this.chatService.initChat();
+    this.sessionService.initGameSessionService();
   }
 
   ngOnDestroy(): void {
     this.waitingRoomService.unsubscribeSocketEvents();
     this.chatService.unsubscribeToSocketEvents();
+    this.sessionService.unsubscribeToSessionEvents();
   }
 
   get isOrganizer(): boolean {

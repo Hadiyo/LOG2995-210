@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { ServiceState } from '@app/services/service-state.enum';
 import { SessionApiService } from '@app/services/session/session-api.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { GameSessionPreview, JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
+import { GameSessionPreview, JoinSessionPayload, PlayerPayload, WaitingRoomRedirectPayload } from '@common/game/game-session.interface';
 import { PlayerInformation } from '@common/player/player.interface';
 import { ErrorSocketEvents, PageContext, PageSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
@@ -95,7 +95,7 @@ export class SessionService {
     this.socket.on<string>(RoomSocketEvents.IncrementPlayerCount, this.onClientAddedToSession);
     this.socket.on<void>(RoomSocketEvents.PlayerJoinedGame, this.onJoinedSession);
     this.socket.on<string>(RoomSocketEvents.DecrementPlayerCount, this.onPlayerLeft);
-    this.socket.on<string>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
+    this.socket.on<WaitingRoomRedirectPayload>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
     this.socket.on<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
     this.socket.on<GameSessionPreview>(RoomSocketEvents.NewAvailableSession, this.onNewAvailableSession);
     this.socket.on<string>(ErrorSocketEvents.FailedJoinSession, this.onFailedJoinSession);
@@ -110,7 +110,7 @@ export class SessionService {
     this.socket.off<string>(RoomSocketEvents.IncrementPlayerCount, this.onClientAddedToSession);
     this.socket.off<void>(RoomSocketEvents.PlayerJoinedGame, this.onJoinedSession);
     this.socket.off<string>(RoomSocketEvents.DecrementPlayerCount, this.onPlayerLeft);
-    this.socket.off<string>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
+    this.socket.off<WaitingRoomRedirectPayload>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
     this.socket.off<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
     this.socket.off<GameSessionPreview>(RoomSocketEvents.NewAvailableSession, this.onNewAvailableSession);
     this.socket.off<string>(ErrorSocketEvents.FailedJoinSession, this.onFailedJoinSession);
@@ -198,9 +198,9 @@ export class SessionService {
    * Event: RoomSocketEvents.GameSessionDeleted
    * @param sessionId 
    */
-  private onDeleteSession = (sessionId: string) => {
+  private onDeleteSession = (payload: WaitingRoomRedirectPayload) => {
     const updated = this.sessionPreviewSubjects.value.filter(
-      s => s.id !== sessionId,
+      s => s.id !== payload.sessionId,
     );
     this.sessionPreviewSubjects.next(updated);
   };
