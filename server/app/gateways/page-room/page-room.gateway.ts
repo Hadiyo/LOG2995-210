@@ -13,7 +13,6 @@ import { Server, Socket } from 'socket.io';
 @WebSocketGateway({
   namespace: '/api',
 })
-@WebSocketGateway()
 export class PageRoomGateway {
   @WebSocketServer() server: Server;
 

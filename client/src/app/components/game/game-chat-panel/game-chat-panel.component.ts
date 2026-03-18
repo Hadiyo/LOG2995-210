@@ -10,6 +10,9 @@ import { GameNotification } from '@common/game-notification';
   imports: [CommonModule, GameNotificationsPanelComponent],
   templateUrl: './game-chat-panel.component.html',
   styleUrl: './game-chat-panel.component.scss',
+  host: {
+    '[class.chat-panel--no-title]': '!showTitle',
+  },
 })
 export class GameChatPanelComponent implements OnChanges, AfterViewInit {
   @Input({ required: true }) messages: readonly ChatMessage[] = [];
@@ -17,6 +20,8 @@ export class GameChatPanelComponent implements OnChanges, AfterViewInit {
   @Input() currentPlayerName: string | null = null;
   @Input() messageMaxLength = 200;
   @Input() title = 'Messages de partie';
+  @Input() showTitle = true;
+  @Input() readOnly = false;
   @Output() messageSubmit = new EventEmitter<string>();
   @ViewChild('messagesFeed') private messagesFeedRef?: ElementRef<HTMLDivElement>;
 
@@ -51,6 +56,7 @@ export class GameChatPanelComponent implements OnChanges, AfterViewInit {
 
   // Emits current message value and clears input.
   submitMessage(): void {
+    if (this.readOnly) return;
     this.messageSubmit.emit(this.messageInput());
     this.messageInput.set('');
   }

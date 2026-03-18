@@ -1,5 +1,5 @@
-import { PreviewImageFormat } from "../enum";
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from "./map.enums";
+import { PreviewImageFormat } from '../enum';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from './map.enums';
 
 export interface Vec2 {
     x: number;
@@ -14,17 +14,30 @@ export interface MapObject {
 }
 
 export interface EditorCell {
+    position: Vec2;
     tileType: TileType;
     isWalkable: boolean;
     isOccupied: boolean;
 }
 
 export interface BaseMap {
-    id: string,
-    name: string,
-    size: MapSize,
-    mode: GameMode,
+    id: string;
+    name: string;
+    size: MapSize;
+    mode: GameMode;
     objects: MapObject[];
+}
+
+export interface MapSummary {
+    id: string;
+    name: string;
+    description: string;
+    mode: GameMode;
+    size: MapSize;
+    date: string;
+    visibility: boolean;
+    previewImage?: string;
+    previewImageFormat?: PreviewImageFormat;
 }
 
 export interface EditorMap extends BaseMap {
@@ -32,8 +45,18 @@ export interface EditorMap extends BaseMap {
     date: string;
     map: EditorCell[];
     visibility: boolean;
-    previewImage?: string; // Optional base64-encoded preview image
-    previewImageFormat?: PreviewImageFormat; // Optional format of the preview image
+    previewImage?: string;
+    previewImageFormat?: PreviewImageFormat;
+}
+
+export interface EditorMapDetails {
+    id: string;
+    name: string;
+    description: string;
+    mode: GameMode;
+    mapsize: MapSize;
+    map: EditorCell[];
+    objects: MapObject[];
 }
 
 export interface GameCell extends EditorCell {
@@ -47,4 +70,9 @@ export interface GameMap extends BaseMap {
 export interface ObjectCountAndLimit {
     count: number;
     limit: number;
+}
+
+export interface MapDimensions {
+    cols: number;
+    rows: number;
 }

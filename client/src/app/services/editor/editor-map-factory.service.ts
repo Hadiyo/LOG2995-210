@@ -32,6 +32,7 @@ export class EditorMapFactoryService {
         for (let y = 0; y < rows; y++) {
             for (let x = 0; x < cols; x++) {
                 cells.push({
+                    position: { x, y },
                     tileType: TileType.DIRT,
                     isWalkable: true,
                     isOccupied: false,

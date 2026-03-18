@@ -65,6 +65,24 @@ describe('MapController', () => {
         expect(map).toEqual(sampleMap);
     });
 
+    it('getMapByIdForEditor() should return the requested map with editor fields', async () => {
+        const editorMap = {
+            id: sampleMap.id,
+            name: sampleMap.name,
+            description: sampleMap.description,
+            mode: sampleMap.mode,
+            mapsize: sampleMap.size,
+            map: sampleMap.map,
+            objects: sampleMap.objects,
+        };
+        mapService.getMapByIdForEditor.resolves(editorMap);
+
+        const map = await controller.getMapByIdForEditor(sampleMap.id);
+
+        expect(mapService.getMapByIdForEditor.calledOnceWithExactly(sampleMap.id)).toBe(true);
+        expect(map).toEqual(editorMap);
+    });
+
     it('createMap() should forward payload to service', async () => {
         mapService.createMap.resolves(sampleMap);
 

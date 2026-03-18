@@ -10,6 +10,8 @@ import { environment } from 'src/environments/environment';
 export class SocketManagerService {
   private socket: Socket;
   private readonly baseUrl = environment.serverUrl;
+  private readonly listeners = new Map<string, Set<(...args: unknown[]) => void>>();
+  private beforeUnloadSubscribed = false;
 
   /**
    * Verifies if client is connected to a socket
@@ -25,6 +27,17 @@ export class SocketManagerService {
    * @param action 
    */
   on<T>(event: string, action: (data: T) => void): void {
+    if (!this.socket) {
+      this.connect();
+    }
+
+    const listeners = this.listeners.get(event) ?? new Set<(...args: unknown[]) => void>();
+    if (listeners.has(action as (...args: unknown[]) => void)) {
+      return;
+    }
+
+    listeners.add(action as (...args: unknown[]) => void);
+    this.listeners.set(event, listeners);
     this.socket.on(event, action);
   }
 
@@ -34,6 +47,7 @@ export class SocketManagerService {
    * @param action 
    */
   off<T>(event: string, action: (data: T) => void): void {
+    this.listeners.get(event)?.delete(action as (...args: unknown[]) => void);
     this.socket.off(event, action);
   }
 
@@ -55,7 +69,12 @@ export class SocketManagerService {
  * @returns null
  */
   connect(): void {
-    if (this.socket?.connected) return;
+    if (this.socket) {
+      if (this.socket.connected) return;
+      this.socket.connect();
+      return;
+    }
+
     this.socket = io(this.baseUrl, {
       transports: ['websocket'],
       upgrade: false, // Disables HTTP long-polling and 
@@ -71,9 +90,14 @@ export class SocketManagerService {
   }
 
   subscribeToWindowEvent(): void {
+    if (this.beforeUnloadSubscribed) {
+      return;
+    }
+
+    this.beforeUnloadSubscribed = true;
     // Adds event listener to disconnects the client socket when the application is closed
     window.addEventListener(BEFORE_UNLOAD, () => {
-      this.socket.disconnect();
+      this.socket?.disconnect();
     });
   }
 

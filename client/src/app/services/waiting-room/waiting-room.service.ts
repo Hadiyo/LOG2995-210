@@ -1,174 +1,243 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChatService } from '@app/services/chat/chat.service';
-import { GAME_STORAGE_KEYS, LocalGameStateService } from '@app/services/game/local-game-state.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
+import { ChatMessage } from '@common/chat-message';
+import { MatchLobbyPlayer } from '@common/game/match.interface';
 import {
-  GameStartedPayload,
-  WaitingRoom,
-  WaitingRoomRedirectPayload,
-} from '@common/game/game-session.interface';
-import { PlayerInformation } from '@common/player/player.interface';
-import { ErrorSocketEvents, WaitingRoomEvents } from '@common/socket-events';
+  CreateWaitingRoomPayload,
+  JoinWaitingRoomPayload,
+  KickWaitingRoomPlayerPayload,
+  SendWaitingRoomMessagePayload,
+  SocketEvents,
+  WaitingRoomErrorPayload,
+  WaitingRoomGameStartedPayload,
+  WaitingRoomStatePayload,
+} from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class WaitingRoomService {
-  me?: PlayerInformation;
+  public code = '';
+  public currentMapId = '';
 
-  private playersSubjects = new BehaviorSubject<PlayerInformation[]>([]);
-  readonly players$ = this.playersSubjects.asObservable();
+  private mePlayer: MatchLobbyPlayer | null = null;
+  private roomPlayers: MatchLobbyPlayer[] = [];
+  private listenersRegistered = false;
 
-  private isLockedSubject = new BehaviorSubject(false);
+  private readonly playersSubject = new BehaviorSubject<MatchLobbyPlayer[]>([]);
+  readonly players$ = this.playersSubject.asObservable();
+
+  private readonly messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
+  readonly messages$ = this.messagesSubject.asObservable();
+
+  private readonly isLockedSubject = new BehaviorSubject(false);
   readonly isLocked$ = this.isLockedSubject.asObservable();
 
-  private maxPlayersSubject = new BehaviorSubject(0);
+  private readonly maxPlayersSubject = new BehaviorSubject(0);
   readonly maxPlayers$ = this.maxPlayersSubject.asObservable();
 
-  private statusMessageSubject = new BehaviorSubject('');
+  private readonly minPlayersToStartSubject = new BehaviorSubject(2);
+  readonly minPlayersToStart$ = this.minPlayersToStartSubject.asObservable();
+
+  private readonly statusMessageSubject = new BehaviorSubject('');
   readonly statusMessage$ = this.statusMessageSubject.asObservable();
 
+  private readonly errorSubject = new BehaviorSubject('');
+  readonly error$ = this.errorSubject.asObservable();
+
   constructor(
-    private readonly socket: SocketManagerService,
+    private readonly socketManager: SocketManagerService,
     private readonly router: Router,
-    private readonly localGameStateService: LocalGameStateService,
-    private readonly chatService: ChatService,
   ) {}
 
-  initWaitingRoom(): void {
-    if (!this.socket.isSocketAlive()) {
-      this.socket.connect();
-    }
-
-    this.subscribeToSocketEvents();
+  public get me(): MatchLobbyPlayer | null {
+    return this.mePlayer;
   }
 
-  unsubscribeSocketEvents(): void {
-    this.socket.off<PlayerInformation>(WaitingRoomEvents.PlayerJoinedSession, this.onJoinedPlayer);
-    this.socket.off<PlayerInformation>(WaitingRoomEvents.PlayerLeftSession, this.onPlayerLeft);
-    this.socket.off<WaitingRoom>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
-    this.socket.off<WaitingRoom>(WaitingRoomEvents.WaitingRoomState, this.onWaitingRoomState);
-    this.socket.off<WaitingRoomRedirectPayload>(WaitingRoomEvents.GameSessionDeleted, this.onDeletedSession);
-    this.socket.off<WaitingRoomRedirectPayload>(WaitingRoomEvents.KickedFromSession, this.onKickedFromSession);
-    this.socket.off<GameStartedPayload>(WaitingRoomEvents.GameStarted, this.onGameStarted);
-    this.socket.off<string>(ErrorSocketEvents.ServerError, this.onServerError);
+  public initAsOrganizer(mapId: string, player: MatchLobbyPlayer): void {
+    this.ensureConnected();
+    this.registerListeners();
+
+    this.currentMapId = mapId;
+    this.mePlayer = {
+      ...player,
+      isOrganizer: true,
+      controller: 'human',
+    };
+
+    this.socketManager.send<CreateWaitingRoomPayload>(SocketEvents.CreateWaitingRoom, {
+      mapId,
+      player: this.mePlayer,
+    });
+  }
+
+  public initAsPlayer(accessCode: string, player: MatchLobbyPlayer): void {
+    this.ensureConnected();
+    this.registerListeners();
+
+    this.code = accessCode;
+    this.mePlayer = {
+      ...player,
+      isOrganizer: false,
+      controller: 'human',
+    };
+
+    this.socketManager.send<JoinWaitingRoomPayload>(SocketEvents.JoinWaitingRoom, {
+      accessCode,
+      player: this.mePlayer,
+    });
+  }
+
+  public initWaitingRoom(): void {
+    this.ensureConnected();
+    this.registerListeners();
+  }
+
+  public unsubscribeSocketEvents(): void {
+    if (!this.listenersRegistered) {
+      return;
+    }
+
+    this.socketManager.off<WaitingRoomStatePayload>(SocketEvents.WaitingRoomUpdated, this.handleWaitingRoomUpdated);
+    this.socketManager.off<ChatMessage>(SocketEvents.WaitingRoomMessageSent, this.handleWaitingRoomMessageSent);
+    this.socketManager.off<WaitingRoomErrorPayload>(SocketEvents.WaitingRoomError, this.handleWaitingRoomError);
+    this.socketManager.off<{ message: string }>(SocketEvents.WaitingRoomPlayerKicked, this.handleWaitingRoomCancelled);
+    this.socketManager.off<{ message: string }>(SocketEvents.WaitingRoomCancelled, this.handleWaitingRoomCancelled);
+    this.socketManager.off<WaitingRoomGameStartedPayload>(SocketEvents.WaitingRoomGameStarted, this.handleGameStarted);
+    this.listenersRegistered = false;
+  }
+
+  public deleteGameSession(): void {
+    this.leaveWaitingRoom();
+  }
+
+  public leaveGameSession(): void {
+    this.leaveWaitingRoom();
+  }
+
+  public leaveGame(): void {
+    this.leaveWaitingRoom();
     this.resetState();
+    void this.router.navigate(['/home']);
   }
 
-  deleteGameSession(): void {
-    this.socket.send(WaitingRoomEvents.DeleteGameSession);
-  }
-
-  leaveGameSession(): void {
-    this.socket.send(WaitingRoomEvents.LeaveGameRoom);
-  }
-
-  kickPlayer(playerName: string): void {
-    this.socket.send(WaitingRoomEvents.KickPlayer, playerName);
-  }
-
-  startGame(): void {
-    this.socket.send(WaitingRoomEvents.StartGame);
-  }
-
-  private subscribeToSocketEvents(): void {
-    this.socket.on<PlayerInformation>(WaitingRoomEvents.PlayerJoinedSession, this.onJoinedPlayer);
-    this.socket.on<PlayerInformation>(WaitingRoomEvents.PlayerLeftSession, this.onPlayerLeft);
-    this.socket.on<WaitingRoom>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
-    this.socket.on<WaitingRoom>(WaitingRoomEvents.WaitingRoomState, this.onWaitingRoomState);
-    this.socket.on<WaitingRoomRedirectPayload>(WaitingRoomEvents.GameSessionDeleted, this.onDeletedSession);
-    this.socket.on<WaitingRoomRedirectPayload>(WaitingRoomEvents.KickedFromSession, this.onKickedFromSession);
-    this.socket.on<GameStartedPayload>(WaitingRoomEvents.GameStarted, this.onGameStarted);
-    this.socket.on<string>(ErrorSocketEvents.ServerError, this.onServerError);
-  }
-
-  /**
-   * Socket Event: WaitingRoomEvents.ClientJoinedSession
-   * @param payload
-   */
-  private onClientJoinedSession = (payload: WaitingRoom) => {
-    if (!payload) return;
-    this.me = payload.clientPlayer;
-    this.playersSubjects.next(payload.players);
-    this.isLockedSubject.next(payload.isLocked);
-    this.chatService.clearChat();
-    this.chatService.loadChatMessages(payload.messages);
-    this.maxPlayersSubject.next(payload.maxPlayers);
-  };
-
-  // /**
-  //  * Socket Event: WaitingRoomEvents.WaitingRoomState
-  //  * @param payload 
-  //  * @returns 
-  //  */
-  private onWaitingRoomState = (payload: WaitingRoom | undefined) => {
-    if (!payload) return;
-    this.playersSubjects.next(payload.players);
-    this.isLockedSubject.next(payload.isLocked);
-    this.chatService.loadChatMessages(payload.messages);
-    this.maxPlayersSubject.next(payload.maxPlayers);
-  };
-
-  private onJoinedPlayer = (player: PlayerInformation) => {
-    if (this.playersSubjects.value.some((participant) => participant.name === player.name)) {
+  public kickPlayer(playerId: string): void {
+    if (!this.code) {
       return;
     }
 
-    this.playersSubjects.next([...this.playersSubjects.value, player]);
-    this.statusMessageSubject.next(`${player.name} a rejoint la salle d'attente.`);
-  };
-
-  private onPlayerLeft = (player: PlayerInformation) => {
-    const updatedPlayers = this.playersSubjects.value.filter(
-      (participant) => participant.name !== player.name,
-    );
-    this.playersSubjects.next(updatedPlayers);
-    this.statusMessageSubject.next(`${player.name} a quitte la salle d'attente.`);
-  };
-
-  private onDeletedSession = (payload: WaitingRoomRedirectPayload) => {
-    void this.router.navigate(['/home'], {
-      state: { message: payload.reason },
-    });
-  };
-
-  private onKickedFromSession = (payload: WaitingRoomRedirectPayload) => {
-    void this.router.navigate(['/home'], {
-      state: { message: payload.reason },
-    });
-  };
-
-  private onGameStarted = (payload: GameStartedPayload) => {
-    const currentPlayer = payload.snapshot.players.find(
-      (player) => player.information.name === this.me?.name,
-    );
-    if (!currentPlayer) {
+    const player = this.roomPlayers.find((candidate) => candidate.id === playerId);
+    if (!player) {
       return;
     }
 
-    this.localGameStateService.applyLocalSnapshot(payload.snapshot);
-    sessionStorage.setItem(GAME_STORAGE_KEYS.sessionId, payload.snapshot.id);
-    sessionStorage.setItem(GAME_STORAGE_KEYS.playerId, currentPlayer.id);
+    this.socketManager.send<KickWaitingRoomPlayerPayload>(SocketEvents.KickWaitingRoomPlayer, {
+      accessCode: this.code,
+      playerId: player.id,
+    });
+  }
+
+  public sendMessage(content: string): void {
+    if (!this.code) {
+      return;
+    }
+
+    this.socketManager.send<SendWaitingRoomMessagePayload>(SocketEvents.SendWaitingRoomMessage, {
+      accessCode: this.code,
+      content,
+    });
+  }
+
+  public startGame(): void {
+    if (!this.code) {
+      return;
+    }
+
+    this.socketManager.send(SocketEvents.StartWaitingRoomGame, { accessCode: this.code });
+  }
+
+  private ensureConnected(): void {
+    if (!this.socketManager.isSocketAlive()) {
+      this.socketManager.connect();
+    }
+  }
+
+  private registerListeners(): void {
+    if (this.listenersRegistered) {
+      return;
+    }
+
+    this.listenersRegistered = true;
+    this.socketManager.on<WaitingRoomStatePayload>(SocketEvents.WaitingRoomUpdated, this.handleWaitingRoomUpdated);
+    this.socketManager.on<ChatMessage>(SocketEvents.WaitingRoomMessageSent, this.handleWaitingRoomMessageSent);
+    this.socketManager.on<WaitingRoomErrorPayload>(SocketEvents.WaitingRoomError, this.handleWaitingRoomError);
+    this.socketManager.on<{ message: string }>(SocketEvents.WaitingRoomPlayerKicked, this.handleWaitingRoomCancelled);
+    this.socketManager.on<{ message: string }>(SocketEvents.WaitingRoomCancelled, this.handleWaitingRoomCancelled);
+    this.socketManager.on<WaitingRoomGameStartedPayload>(SocketEvents.WaitingRoomGameStarted, this.handleGameStarted);
+  }
+
+  private readonly handleWaitingRoomUpdated = (payload: WaitingRoomStatePayload): void => {
+    this.code = payload.accessCode;
+    this.currentMapId = payload.mapId;
+    this.roomPlayers = payload.players;
+    this.playersSubject.next(payload.players);
+    this.messagesSubject.next(payload.messages);
+    this.isLockedSubject.next(payload.isLocked);
+    this.maxPlayersSubject.next(payload.maxPlayers);
+    this.minPlayersToStartSubject.next(payload.minPlayersToStart);
+    this.errorSubject.next('');
+
+    const currentPlayerId = this.mePlayer?.id ?? null;
+    this.mePlayer = currentPlayerId ? payload.players.find((player) => player.id === currentPlayerId) ?? this.mePlayer : this.mePlayer;
+  };
+
+  private readonly handleWaitingRoomMessageSent = (message: ChatMessage): void => {
+    this.messagesSubject.next([...this.messagesSubject.value, message]);
+  };
+
+  private readonly handleWaitingRoomError = (payload: WaitingRoomErrorPayload): void => {
+    this.errorSubject.next(payload.message);
+    this.statusMessageSubject.next('');
+  };
+
+  private readonly handleWaitingRoomCancelled = (payload: { message: string }): void => {
+    this.resetState();
+    void this.router.navigate(['/home'], {
+      state: { message: payload.message },
+    });
+  };
+
+  private readonly handleGameStarted = (payload: WaitingRoomGameStartedPayload): void => {
+    this.statusMessageSubject.next('La partie commence.');
     void this.router.navigate(['/game-view'], {
-      queryParams: {
-        sessionId: payload.snapshot.id,
-        playerId: currentPlayer.id,
-      },
+      queryParams: { sessionId: payload.sessionId },
     });
   };
 
-  private onServerError = (message: string) => {
-    this.statusMessageSubject.next(message || 'Une erreur serveur est survenue.');
-  };
+  private leaveWaitingRoom(): void {
+    if (!this.code || !this.mePlayer) {
+      return;
+    }
+
+    this.socketManager.send(SocketEvents.LeaveWaitingRoom, {
+      accessCode: this.code,
+      playerId: this.mePlayer.id,
+    });
+  }
 
   private resetState(): void {
-    this.playersSubjects.next([]);
+    this.mePlayer = null;
+    this.roomPlayers = [];
+    this.code = '';
+    this.currentMapId = '';
+    this.playersSubject.next([]);
+    this.messagesSubject.next([]);
     this.isLockedSubject.next(false);
     this.maxPlayersSubject.next(0);
-    //this.minPlayersToStartSubject.next(2);
+    this.minPlayersToStartSubject.next(2);
     this.statusMessageSubject.next('');
-    this.me = undefined;
+    this.errorSubject.next('');
   }
+
 }
+

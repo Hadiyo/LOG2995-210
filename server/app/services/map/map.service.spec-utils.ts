@@ -44,6 +44,7 @@ export const makeEditorMap = (overrides: Partial<EditorMap> = {}): EditorMap => 
 });
 
 export const makeCell = (overrides: Partial<EditorCell> = {}): EditorCell => ({
+    position: { x: 0, y: 0 },
     tileType: TileType.DIRT,
     isWalkable: true,
     isOccupied: false,
@@ -57,4 +58,3 @@ export const makeObject = (overrides: Partial<MapObject> = {}): MapObject => ({
     size: ObjectSize.S,
     ...overrides,
 });
-

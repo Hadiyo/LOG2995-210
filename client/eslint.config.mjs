@@ -35,6 +35,16 @@ export default [
         },
     },
     {
+        files: ['**/*.spec.ts'],
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-magic-numbers': 'off',
+            '@typescript-eslint/no-non-null-assertion': 'off',
+            'max-classes-per-file': 'off',
+            'max-lines': 'off',
+        },
+    },
+    {
         files: ['**/*.html'],
         languageOptions: {
             parser: templateParser,

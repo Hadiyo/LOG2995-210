@@ -15,6 +15,7 @@
   box-sizing: border-box;
   display: grid;
   grid-template-columns: var(--side-panel-left-width) minmax(0, 1fr) var(--side-panel-right-width);
+  grid-template-areas: 'left map right';
   gap: var(--view-gap);
   padding: var(--view-padding);
   background: var(--bg-main);
@@ -36,7 +37,8 @@
 .map-panel {
   position: relative;
   display: grid;
-  place-items: center;
+  align-content: start;
+  gap: 14px;
   min-height: 0;
   overflow: hidden;
 }
@@ -47,15 +49,25 @@
   gap: var(--view-gap);
   min-height: 0;
   overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.side-panel--left {
+  grid-area: left;
+}
+
+.map-panel {
+  grid-area: map;
 }
 
 .side-panel--right {
+  grid-area: right;
   padding-bottom: 2px;
   overflow: hidden;
 }
 
 .side-panel--left {
-  overflow: hidden;
+  overflow: auto;
 }
 
 .panel--game-title {
@@ -110,25 +122,282 @@
   background: color-mix(in srgb, var(--accent-primary) 12%, var(--bg-main));
 }
 
+.panel__toggle-btn--active {
+  border-color: color-mix(in srgb, var(--accent-primary) 65%, var(--border-soft));
+  background: color-mix(in srgb, var(--accent-primary) 18%, var(--bg-main));
+}
+
 .panel__toggle-btn:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 38%, transparent);
 }
 
+.panel__header--tabs {
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.panel__tab-list {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.panel__header--tabs h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel__header--tabs .panel__toggle-btn {
+  white-space: nowrap;
+}
+
 .messages {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   min-height: 0;
   flex: 1 1 auto;
+  height: 100%;
   overflow: hidden;
 }
 
 .messages app-game-chat-panel {
   flex: 1 1 0;
   min-height: 0;
+  width: 100%;
+}
+
+.messages--tabs {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
 }
 
 .panel--action-bar {
   margin-top: auto;
+  flex: 0 0 auto;
+}
+
+.panel--turn-status {
+  flex: 0 0 auto;
+}
+
+.turn-status__headline {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.turn-status__copy {
+  margin: 0;
+  color: color-mix(in srgb, var(--text-main) 84%, transparent);
+}
+
+.turn-status__meta {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 0.92rem;
+}
+
+.turn-status__feedback {
+  margin: 12px 0 0;
+  color: color-mix(in srgb, var(--accent-primary) 72%, var(--text-main));
+}
+
+.map-panel__header h3 {
+  margin: 0 0 4px;
+}
+
+.map-panel__copy,
+.map-panel__hint {
+  margin: 0;
+  color: color-mix(in srgb, var(--text-main) 78%, transparent);
+}
+
+.map-panel__action-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.map-panel__action-picker p {
+  margin: 0;
+}
+
+.map-panel__action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.panel--turn-order {
+  flex: 0 0 auto;
+}
+
+.panel--turn-order-inline {
+  margin-top: 4px;
+}
+
+.turn-order__details {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.turn-order__detail {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  font-size: 0.92rem;
+}
+
+.turn-order__detail div {
+  display: grid;
+  gap: 4px;
+}
+
+.match-end-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 20;
+}
+
+.match-end-modal {
+  width: min(520px, calc(100vw - 32px));
+  padding: 24px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-main);
+}
+
+.match-end-modal__eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.match-end-modal h2 {
+  margin: 0 0 8px;
+}
+
+.combat-toast-stack {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  gap: 10px;
+  z-index: 21;
+}
+
+.combat-toast {
+  width: min(360px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+
+.combat-toast p {
+  margin: 0 0 10px;
+}
+
+.combat-toast__close {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: transparent;
+  color: inherit;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.48);
+  z-index: 22;
+}
+
+.tile-modal {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(80dvh, 720px);
+  overflow: auto;
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+}
+
+.tile-modal__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.tile-modal__header h2,
+.tile-modal__section h3 {
+  margin: 0;
+}
+
+.tile-modal__eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tile-modal__close {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: transparent;
+  color: inherit;
+}
+
+.tile-modal__section + .tile-modal__section {
+  margin-top: 16px;
+}
+
+.tile-modal__section ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.tile-modal__player {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.tile-modal__player img {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
 }
 
 @media (max-width: 1600px) {
@@ -138,9 +407,61 @@
   }
 }
 
-@media (max-width: 1220px) {
+@media (max-width: 1440px) {
+  :host {
+    --view-gap: 12px;
+    --view-padding: 12px;
+    --panel-padding: 10px;
+    --side-panel-left-width: 220px;
+  }
+
   .game-view {
-    grid-template-columns: var(--side-panel-left-width) minmax(0, 1fr) var(--side-panel-right-width);
+    grid-template-columns: var(--side-panel-left-width) minmax(0, 1fr);
+    grid-template-areas:
+      'left map'
+      'right right';
+    align-content: start;
+  }
+
+  .side-panel--right {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel--players,
+  .messages,
+  .panel--action-bar {
+    margin-top: 0;
+  }
+
+  .messages--tabs,
+  .panel--action-bar {
+    min-width: 0;
+  }
+
+  .turn-order__detail {
+    flex-direction: column;
+    align-items: flex-start;
+   }
+}
+
+@media (max-width: 1280px) {
+  :host {
+    --side-panel-left-width: 200px;
+  }
+
+  .game-title {
+    font-size: 1rem;
+  }
+
+  .turn-status__meta,
+  .turn-order__detail {
+    font-size: 0.86rem;
+  }
+
+  .messages {
+    min-height: 200px;
   }
 }
 
@@ -155,6 +476,10 @@
     height: auto;
     min-height: 100dvh;
     grid-template-columns: 1fr;
+    grid-template-areas:
+      'left'
+      'map'
+      'right';
     overflow: visible;
   }
 
@@ -166,9 +491,74 @@
     overflow: visible;
   }
 
+  .side-panel--right {
+    overflow: visible;
+  }
+
   .messages {
     min-height: 260px;
     height: clamp(260px, 42dvh, 420px);
+    flex: 0 0 auto;
     max-height: 420px;
+  }
+
+  .messages--tabs {
+    height: auto;
+  }
+
+  .combat-toast-stack {
+    right: 12px;
+    left: 12px;
+  }
+}
+
+@media (max-height: 920px) {
+  :host {
+    --view-gap: 12px;
+    --view-padding: 12px;
+    --panel-padding: 10px;
+  }
+
+  .game-title {
+    font-size: 1rem;
+  }
+
+  .map-panel {
+    gap: 10px;
+  }
+
+  .messages {
+    min-height: 160px;
+    flex: 0 0 160px;
+    height: auto;
+  }
+
+  .messages--tabs {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .panel--player-info {
+    flex: 0 0 auto;
+  }
+
+  .turn-order__details {
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .turn-order__detail {
+    padding: 8px 10px;
+    font-size: 0.88rem;
+  }
+
+  .turn-status__meta {
+    margin-top: 10px;
+    gap: 4px;
+    font-size: 0.88rem;
+  }
+
+  .panel__tab-list {
+    gap: 6px;
   }
 }

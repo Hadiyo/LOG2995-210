@@ -110,8 +110,8 @@ describe('EditorTopbarComponent', () => {
       navigate: jasmine.createSpy('navigate').and.resolveTo(true),
     };
 
-    mapApiServiceSpy = jasmine.createSpyObj<MapApiService>('MapApiService', ['saveMap', 'getAllMaps']);
-    mapApiServiceSpy.getAllMaps.and.returnValue(of([]));
+    mapApiServiceSpy = jasmine.createSpyObj<MapApiService>('MapApiService', ['saveMap', 'getAllMapsSummary']);
+    mapApiServiceSpy.getAllMapsSummary.and.returnValue(of([]));
 
     thumbnailSpy = jasmine.createSpyObj<MapThumbnailService>('MapThumbnailService', ['generatePreview']);
 
@@ -277,6 +277,9 @@ describe('EditorTopbarComponent', () => {
     const el: HTMLElement = fixture.nativeElement;
     const alert = el.querySelector('.validation-panel[role=\"alert\"]') as HTMLElement | null;
     expect(alert?.textContent).toContain('Le nom de la carte est requis.');
+    const saveButton = el.querySelector('button[aria-label=\"Enregistrer\"]') as HTMLButtonElement | null;
+    expect(saveButton?.classList.contains('invalid')).toBeTrue();
+    expect(saveButton?.classList.contains('success')).toBeFalse();
   });
 
   it('onSave() should alert when save fails with a non-HTTP error', async () => {

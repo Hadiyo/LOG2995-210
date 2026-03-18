@@ -1,14 +1,14 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MapConfig } from '@app/config/map.config';
 import { MapApiService } from '@app/services/map/map-api.service';
-import { getCellPositionAtIndex, getIndexFromPosition } from '@common/maps/map-utils';
-import { GameMode, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
-import type { EditorCell, EditorMap, MapObject, ObjectCountAndLimit } from '@common/maps/map.interface';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import type { EditorCell, EditorMap, EditorMapDetails, MapObject, ObjectCountAndLimit } from '@common/maps/map.interface';
 import { MouseButton } from '@common/mouse-events.enum';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { EditorMapFactoryService } from './editor-map-factory.service';
 import { EditorOccupancyService } from './editor-occupancy.service';
 import { EditorPlacementRulesService } from './editor-placement-rules.service';
+import type { SelectedCellInfo } from './types/selected-cell-info.type';
 import { getCoveredPositions } from './utils/editor-geometry.util';
 
 @Injectable({ providedIn: 'root' })
@@ -36,6 +36,9 @@ export class EditorStateService {
     readonly selectedTileType = signal<TileType | null>(null);
     readonly selectedObjectType = signal<ObjectType | null>(null);
 
+    // Current inspected cell info (used when tool = 'mouse')
+    readonly selectedCell = signal<SelectedCellInfo | null>(null);
+
     /* =========================================================
        Editor map state (single source of truth)
        ========================================================= */
@@ -45,27 +48,14 @@ export class EditorStateService {
     // Map snapshot for edition revert operations
     readonly editorMapSnapshot = signal<EditorMap>(this.mapFactory.createEmptyMap());
 
-    // Dimensions for template usage
-    readonly cols = computed(() => this.editorMap().size);
-    readonly rows = computed(() => this.editorMap().size);
+    // Derived dimensions based on chosen map size
+    readonly dimensions = computed(() => this.mapFactory.getDimensions(this.editorMap().size));
+    readonly cols = computed(() => this.dimensions().cols);
+    readonly rows = computed(() => this.dimensions().rows);
 
     // Convenience computed signals for template usage
     readonly cells = computed(() => this.editorMap().map);
-    // readonly objects = computed(() => this.editorMap().objects);
-    
-    readonly objectLookUp = computed(() => {
-        const editorMap = this.editorMap();
-        const lookup = new Map<number, MapObject | null>();
-
-        for (const object of editorMap.objects) {
-            const covered = getCoveredPositions(object.position, object.size);
-            for (const position of covered) {
-                lookup.set(getIndexFromPosition(position, editorMap.size), object);
-            }
-        }
-
-        return lookup;
-    });
+    readonly objects = computed(() => this.editorMap().objects);
 
     /* =========================================================
        Public API — palette selection
@@ -79,19 +69,14 @@ export class EditorStateService {
     selectTile(tileType: TileType): void {
         this.selectedTileType.set(tileType);
         this.selectedObjectType.set(null);
-        // this.selectedTool.set('applicator');
     }
 
     /**
      * Select an object to place:
-     * - enforces CTF rule for FLAG
      * - clears tile selection
      * - switches tool to applicator
      */
     selectObject(objectType: ObjectType): void {
-        // Flag is only available when map mode is CTF
-        if (objectType === ObjectType.FLAG && this.editorMap().mode !== GameMode.CTF) return;
-
         this.selectedObjectType.set(objectType);
         this.selectedTileType.set(null);
     }
@@ -110,11 +95,38 @@ export class EditorStateService {
        ========================================================= */
 
     setName(name: string): void {
-        this.editorMap.update((editorMap) => ({ ...editorMap, name }));
+        this.editorMap.update((currentMap) => ({ ...currentMap, name }));
     }
 
     setDescription(description: string): void {
-        this.editorMap.update((editorMap) => ({ ...editorMap, description }));
+        this.editorMap.update((currentMap) => ({ ...currentMap, description }));
+    }
+
+    /**
+     * Change game mode.
+     */
+    setMode(mode: GameMode): void {
+        this.editorMap.update((currentMap) => ({ ...currentMap, mode }));
+    }
+
+    /**
+     * Change map size:
+     * - rebuilds a fresh empty map with same mode/name/description
+     * - clears UI selection
+     *
+     * (Note: currently does NOT attempt to migrate existing content.)
+     */
+    setSize(size: MapSize): void {
+        const current = this.editorMap();
+        this.editorMap.set(
+            this.mapFactory.createEmptyMap({
+                size,
+                mode: current.mode,
+                name: current.name,
+                description: current.description,
+            }),
+        );
+        this.clearSelection();
     }
 
     /**
@@ -154,8 +166,18 @@ export class EditorStateService {
      */
     loadExistingEditorMap(mapId: string): Observable<boolean> {
         return this.mapService.getMapById(mapId).pipe(
-            tap(remoteMap => {
-                this.loadMap(remoteMap);
+            tap((remoteMap: EditorMapDetails) => {
+                this.loadMap({
+                    id: remoteMap.id,
+                    name: remoteMap.name,
+                    description: remoteMap.description,
+                    mode: remoteMap.mode,
+                    size: remoteMap.mapsize,
+                    map: remoteMap.map,
+                    objects: remoteMap.objects,
+                    date: '',
+                    visibility: false,
+                });
             }),
             map(() => true),
             catchError(() => of(false)), // AdminService manages error handling with AdminPage
@@ -181,9 +203,9 @@ export class EditorStateService {
     * Get count of object of a given type and its limit
     */
     getObjectCountAndLimit(type: ObjectType): ObjectCountAndLimit {
-        const editorMap = this.editorMap();
-        const count = editorMap.objects.filter((object) => object.type === type).length;
-        const limit = this.rules.getObjectLimit(type, editorMap.size, editorMap.mode);
+        const currentMap = this.editorMap();
+        const count = currentMap.objects.filter((object) => object.type === type).length;
+        const limit = this.rules.getObjectLimit(type, currentMap.size, currentMap.mode);
         return { count, limit };
     }
 
@@ -214,7 +236,7 @@ export class EditorStateService {
         const cell = tempMap.map[index];
         if (!cell) return null;
 
-        return this.occupancy.findObjectCoveringPosition(tempMap.objects, getCellPositionAtIndex(index, tempMap.size));
+        return this.occupancy.findObjectCoveringPosition(tempMap.objects, cell.position);
     }
 
     /**
@@ -223,20 +245,20 @@ export class EditorStateService {
      * (This makes erasing intuitive for 2x2 objects as well.)
      */
     eraseObjectAtIndex(index: number): void {
-        this.editorMap.update((editorMap) => {
-            const cell = editorMap.map[index];
-            if (!cell) return editorMap;
+        this.editorMap.update((currentMap) => {
+            const cell = currentMap.map[index];
+            if (!cell) return currentMap;
 
             // Keep only objects that DO NOT cover the clicked cell
             const remaining = this.occupancy.removeObjectByPosition(
-                editorMap.objects,
-                getCellPositionAtIndex(index, editorMap.size),
+                currentMap.objects,
+                cell.position,
             );
 
             return {
-                ...editorMap,
+                ...currentMap,
                 objects: remaining,
-                map: this.occupancy.refreshOccupied(editorMap.map, remaining, editorMap.size),
+                map: this.occupancy.refreshOccupied(currentMap.map, remaining, currentMap.size),
             };
         });
     }
@@ -260,9 +282,9 @@ export class EditorStateService {
      * - Door "open/closed" is encoded in isWalkable (toggle on repeat apply)
      */
     private applyTileAtIndex(index: number, tileType: TileType): void {
-        this.editorMap.update((editorMap) => {
-            const cell = editorMap.map[index];
-            if (!cell) return editorMap;
+        this.editorMap.update((currentMap) => {
+            const cell = currentMap.map[index];
+            if (!cell) return currentMap;
 
             let nextTileType = tileType;
             let nextWalkable = this.rules.isWalkable(tileType);
@@ -280,10 +302,10 @@ export class EditorStateService {
                 }
             }
 
-            let existingObjects = editorMap.objects;
+            let existingObjects = currentMap.objects;
 
             if (!nextWalkable) {
-                existingObjects = this.occupancy.removeObjectByPosition(editorMap.objects, getCellPositionAtIndex(index, editorMap.size));
+                existingObjects = this.occupancy.removeObjectByPosition(currentMap.objects, cell.position);
             }
 
             const updated: EditorCell = {
@@ -293,11 +315,11 @@ export class EditorStateService {
             };
 
             // Immutable update to keep signals predictable
-            const newMap = editorMap.map.slice();
+            const newMap = currentMap.map.slice();
             newMap[index] = updated;
 
-            const next = { ...editorMap, map: newMap, objects: existingObjects };
-            return { ...next, map: this.occupancy.refreshOccupied(next.map, next.objects, this.editorMap().size) };
+            const next = { ...currentMap, map: newMap, objects: existingObjects };
+            return { ...next, map: this.occupancy.refreshOccupied(next.map, next.objects, next.size) };
         });
     }
 
@@ -307,44 +329,40 @@ export class EditorStateService {
      * - must be on walkable tiles
      * - must fit within bounds (2x2 supported)
      * - must not collide with other objects
-     * - must respect type limits (start/sanctuary/flag)
+     * - must respect type limits (start)
      * - placing overwrites intersecting objects (by design)
      */
     private placeObjectAtIndex(index: number, type: ObjectType): void {
-        // Hard rule: flag only in CTF
-        if (type === ObjectType.FLAG && this.editorMap().mode !== GameMode.CTF) return;
-
-        this.editorMap.update((editorMap) => {
-            const cell = editorMap.map[index];
-            if (!cell) return editorMap;
+        this.editorMap.update((currentMap) => {
+            const cell = currentMap.map[index];
+            if (!cell) return currentMap;
 
             // Objects only on walkable tiles
-            if (!cell.isWalkable) return editorMap;
+            if (!cell.isWalkable) return currentMap;
+            if (type === ObjectType.START && cell.tileType === TileType.DOOR) return currentMap;
 
-            const anchor = getCellPositionAtIndex(index, editorMap.size);
+            const anchor = cell.position;
 
-            // Size rule: sanctuaries are 2x2, others are 1x1
-            const size: ObjectSize =
-                type === ObjectType.REGEN || type === ObjectType.ARENA ? ObjectSize.L : ObjectSize.S;
+            const size: ObjectSize = ObjectSize.S;
 
             // Enforce per-type limits based on map size + mode
-            const limit = this.rules.getObjectLimit(type, editorMap.size, editorMap.mode);
-            if (limit === 0) return editorMap;
+            const limit = this.rules.getObjectLimit(type, currentMap.size, currentMap.mode);
+            if (limit === 0) return currentMap;
 
-            const existingOfType = editorMap.objects.filter((o) => o.type === type);
-            if (existingOfType.length >= limit) return editorMap;
+            const existingOfType = currentMap.objects.filter((object) => object.type === type);
+            if (existingOfType.length >= limit) return currentMap;
 
             // Current object list (kept as-is unless overwritten by intersection)
-            const objectsFiltered = editorMap.objects;
+            const objectsFiltered = currentMap.objects;
 
             // Covered positions for this placement (1x1 or 2x2)
             const covered = getCoveredPositions(anchor, size);
 
             // Must fit inside the map
-            if (!this.rules.arePositionsInBounds(covered, editorMap.size)) return editorMap;
+            if (!this.rules.arePositionsInBounds(covered, currentMap.size)) return currentMap;
 
             // Must be walkable everywhere + no collisions
-            if (!this.rules.canPlaceObject(covered, objectsFiltered, editorMap)) return editorMap;
+            if (!this.rules.canPlaceObject(covered, objectsFiltered, currentMap)) return currentMap;
 
             // Collision policy: placement is rejected if it intersects an existing object.
             const newObj: MapObject = {
@@ -355,7 +373,7 @@ export class EditorStateService {
             };
 
             const nextObjects = [...objectsFiltered, newObj];
-            return { ...editorMap, objects: nextObjects, map: this.occupancy.refreshOccupied(editorMap.map, nextObjects, editorMap.size) };
+            return { ...currentMap, objects: nextObjects, map: this.occupancy.refreshOccupied(currentMap.map, nextObjects, currentMap.size) };
         });
     }
 
@@ -368,7 +386,7 @@ export class EditorStateService {
      */
     private nextObjectId(objects: MapObject[]): number {
         let max = 0;
-        for (const o of objects) max = Math.max(max, o.id);
+        for (const object of objects) max = Math.max(max, object.id);
         return max + 1;
     }
 }

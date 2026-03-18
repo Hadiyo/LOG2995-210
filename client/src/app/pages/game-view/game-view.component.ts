@@ -2,28 +2,27 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
-import { ChatService } from '@app/services/chat/chat.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
-import { ChatMessage } from '@common/chat/chat.interface';
-import { PlayerInformation } from '@common/player/player.interface';
+import { ChatMessage } from '@common/chat-message';
+import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { map, Observable } from 'rxjs';
 
 @Component({
-  selector: 'app-waiting-room',
+  selector: 'app-game-view',
   imports: [CommonModule, GameChatPanelComponent],
-  templateUrl: './waiting-room.component.html',
-  styleUrls: ['./waiting-room.component.scss'],
+  templateUrl: './game-view.component.html',
+  styleUrls: ['./game-view.component.scss'],
 })
-export class WaitingRoomComponent implements OnInit, OnDestroy {
-  protected players$: Observable<PlayerInformation[]> = this.waitingRoomService.players$.pipe(
+export class GameViewComponent implements OnInit, OnDestroy {
+  protected players$: Observable<MatchLobbyPlayer[]> = this.waitingRoomService.players$.pipe(
     map((players) => {
       const organizer = players.find((player) => player.isOrganizer);
       const participants = players.filter((player) => !player.isOrganizer);
       return organizer ? [organizer, ...participants] : participants;
     }),
   );
-  protected messages$: Observable<ChatMessage[]> = this.chatService.chat$;
+  protected messages$: Observable<ChatMessage[]> = this.waitingRoomService.messages$;
   protected isLocked$ = this.waitingRoomService.isLocked$;
   protected maxPlayers$ = this.waitingRoomService.maxPlayers$;
   protected statusMessage$ = this.waitingRoomService.statusMessage$;
@@ -31,31 +30,24 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   constructor(
     private readonly router: Router,
     private readonly waitingRoomService: WaitingRoomService,
-    private readonly chatService: ChatService,
   ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.waitingRoomService.initWaitingRoom();
-    this.chatService.initChat();
   }
 
   ngOnDestroy(): void {
     this.waitingRoomService.unsubscribeSocketEvents();
-    this.chatService.unsubscribeToSocketEvents();
   }
 
   get isOrganizer(): boolean {
     return this.waitingRoomService.me?.isOrganizer ?? false;
   }
 
-  get me(): PlayerInformation | undefined {
+  get me(): MatchLobbyPlayer | null {
     return this.waitingRoomService.me;
   }
 
-  /**
-   * Organizer leaves → deletes the whole session (navigates all players out).
-   * Regular player leaves → removes themselves from the session.
-   */
   protected leaveSession(): void {
     if (this.isOrganizer) {
       this.waitingRoomService.deleteGameSession();
@@ -63,14 +55,10 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       this.waitingRoomService.leaveGameSession();
       void this.router.navigate(['/home']);
     }
-    this.chatService.clearChat();
   }
 
-  /**
-   * Organizer kicks another player by name.
-   */
-  protected kickPlayer(player: PlayerInformation): void {
-    this.waitingRoomService.kickPlayer(player.name);
+  protected kickPlayer(player: MatchLobbyPlayer): void {
+    this.waitingRoomService.kickPlayer(player.id);
   }
 
   protected startGame(): void {
@@ -81,18 +69,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   }
 
   protected onMessageSubmit(content: string): void {
-    const author = this.me?.name;
-    if (!author) {
-      return;
-    }
-
-    const message: ChatMessage = {
-      author,
-      content,
-      createdAt: new Date().toISOString(),
-    };
-    
-    this.chatService.sendMessage(message);
+    this.waitingRoomService.sendMessage(content);
   }
 
   protected getAvatarThumbPath(avatarId: number): string {

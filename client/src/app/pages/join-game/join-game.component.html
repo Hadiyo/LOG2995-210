@@ -7,13 +7,15 @@
     <h2 class="section-title">Parties disponibles</h2>
     @if (isLoading()) {
       <p class="status">Chargement des parties...</p>
-    } @else if ((sessions$ | async)?.length === 0) {
+    } @else if (errorMessage()) {
+      <p class="status status--error">{{ errorMessage() }}</p>
+    } @else if (previews().length === 0) {
       <p class="status">Aucune partie n'est disponible.</p>
     } @else {
       <div class="grid">
-        @for (session of sessions$ | async; track session.id) {
+        @for (session of previews(); track session.accessCode) {
           <div class="select-card">
-            <app-join-game-card                
+            <app-join-game-card
                 [session]="session"
                 (select)="onSelectedSession($event)">
             </app-join-game-card>

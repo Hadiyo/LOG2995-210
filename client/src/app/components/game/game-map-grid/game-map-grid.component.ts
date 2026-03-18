@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CharacterSpriteComponent } from '@app/components/game/character-sprite/character-sprite.component';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
+import { positionKey } from '@app/services/match/match-geometry';
 import { TileType } from '@common/maps/map.enums';
 import { GameCell, MapObject } from '@common/maps/map.interface';
 import { Player, PlayerStatus } from '@common/player/player.interface';
@@ -37,10 +38,13 @@ export class GameMapGridComponent {
   @Input() nowMs = 0;
   // Toggles action-mode cursor style.
   @Input() actionModeEnabled = false;
+  // Reachable tiles and armed action targets.
+  @Input() reachableCellKeys: ReadonlySet<string> = new Set<string>();
+  @Input() reachableOriginKey: string | null = null;
+  @Input() actionTargetCellKeys: ReadonlySet<string> = new Set<string>();
   // Emits tile index when user clicks a cell.
   @Output() cellClick = new EventEmitter<number>();
-  // Emit tile index on right click for debug teleportation.
-  @Output() cellRightClick = new EventEmitter<number>();
+  @Output() cellContextMenu = new EventEmitter<{ event: MouseEvent; index: number }>();
 
   // Expose enum to template.
   readonly tileType = TileType;
@@ -53,10 +57,20 @@ export class GameMapGridComponent {
     this.cellClick.emit(index);
   }
 
-  // Prevent the browser context menu so right click can be used for debug teleportation.
-  onCellRightClick(index: number, event: MouseEvent): void {
-    event.preventDefault();
-    this.cellRightClick.emit(index);
+  onCellContextMenu(event: MouseEvent, index: number): void {
+    this.cellContextMenu.emit({ event, index });
+  }
+
+  isReachableCell(cell: GameCell): boolean {
+    return this.reachableCellKeys.has(this.getCellKey(cell));
+  }
+
+  isReachableOrigin(cell: GameCell): boolean {
+    return this.reachableOriginKey !== null && this.reachableOriginKey === this.getCellKey(cell);
+  }
+
+  isActionTarget(cell: GameCell): boolean {
+    return this.actionTargetCellKeys.has(this.getCellKey(cell));
   }
 
   // Find player occupying this exact cell.
@@ -108,5 +122,9 @@ export class GameMapGridComponent {
     const startedAtMs = Date.parse(player.render?.poseStartedAt);
     if (Number.isNaN(startedAtMs)) return false;
     return this.nowMs >= startedAtMs + player.render?.poseDurationMs;
+  }
+
+  private getCellKey(cell: GameCell): string {
+    return positionKey(cell.position);
   }
 }

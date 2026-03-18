@@ -38,3 +38,11 @@
   border-color: color-mix(in srgb, var(--accent-danger) 55%, transparent);
   color: var(--accent-danger);
 }
+
+@media (max-height: 920px) {
+  :host {
+    --action-gap: 6px;
+    --action-padding-y: 8px;
+    --action-padding-x: 10px;
+  }
+}

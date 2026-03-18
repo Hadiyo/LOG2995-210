@@ -22,6 +22,15 @@ export class MapController {
     }
 
     @ApiOkResponse({
+        description: 'Return all maps summary (without map data)',
+        isArray: true,
+    })
+    @Get('/summary')
+    getAllMapsSummary() {
+        return this.mapService.getAllMapsSummary();
+    }
+
+    @ApiOkResponse({
         description: 'Return visible maps',
         type: Map,
         isArray: true,
@@ -33,6 +42,15 @@ export class MapController {
 
     @ApiOkResponse({
         description: 'Return one map',
+        type: Map,
+    })
+    @Get('/:id/editor')
+    getMapByIdForEditor(@Param('id') id: string) {
+        return this.mapService.getMapByIdForEditor(id);
+    }
+
+    @ApiOkResponse({
+        description: 'Return one full map',
         type: Map,
     })
     @Get('/:id')

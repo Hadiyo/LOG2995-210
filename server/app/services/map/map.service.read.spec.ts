@@ -65,7 +65,7 @@ describe('MapService (read)', () => {
             ],
             objects: [
                 makeObject({ id: 1, type: ObjectType.START, position: { x: 0, y: 0 }, size: ObjectSize.S }),
-                makeObject({ id: 2, type: ObjectType.ARENA, position: { x: 0, y: 0 }, size: ObjectSize.L }),
+                makeObject({ id: 2, type: ObjectType.START, position: { x: 1, y: 1 }, size: ObjectSize.S }),
             ],
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -144,5 +144,37 @@ describe('MapService (read)', () => {
 
         expect(mapModel.findById).toHaveBeenCalledWith('id-found');
         expect(map.id).toBe('id-found');
+    });
+
+    it('getMapByIdForEditor() should return only editor-required fields', async () => {
+        const doc = makeDoc({
+            _id: 'id-editor',
+            name: 'Editor map',
+            description: 'desc',
+            mode: GameMode.CLASSIC,
+            size: MapSize.S,
+            date: '2026-02-08T10:00:00.000Z',
+            visibility: true,
+            previewImage: 'AAA=',
+            previewImageFormat: PreviewImageFormat.WEBP,
+            map: [{ position: { x: 0, y: 0 }, tileType: TileType.DIRT }],
+            objects: [makeObject({ position: { x: 0, y: 0 }, size: ObjectSize.S })],
+        });
+        mapModel.findById.mockReturnValue(makeQuery(doc));
+
+        const map = await service.getMapByIdForEditor('id-editor');
+
+        expect(mapModel.findById).toHaveBeenCalledWith('id-editor');
+        expect(map).toEqual({
+            id: 'id-editor',
+            name: 'Editor map',
+            description: 'desc',
+            mode: GameMode.CLASSIC,
+            mapsize: MapSize.S,
+            map: expect.any(Array),
+            objects: expect.any(Array),
+        });
+        expect((map as unknown as { visibility?: boolean }).visibility).toBeUndefined();
+        expect((map as unknown as { date?: string }).date).toBeUndefined();
     });
 });

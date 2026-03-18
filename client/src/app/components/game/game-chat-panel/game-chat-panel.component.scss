@@ -9,6 +9,10 @@
   isolation: isolate;
 }
 
+:host(.chat-panel--no-title) {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
 h3 {
   margin: 0 0 2px;
 }
@@ -36,7 +40,14 @@ h3 {
 .messages__feed-wrap {
   position: relative;
   min-height: 0;
-  overflow: visible;
+  overflow: hidden;
+  flex: 1 1 auto;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 82%, transparent);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-main) 28%, transparent), transparent 28px),
+    color-mix(in srgb, var(--bg-main) 42%, transparent);
+  padding: 10px;
 }
 
 .messages__notification {
@@ -103,23 +114,75 @@ h3 {
   gap: 8px;
   position: relative;
   z-index: 2;
+  flex: 0 0 auto;
+  align-items: center;
 }
 
 .messages__input,
 .messages__send-btn {
   border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  background: var(--bg-main);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-main) 88%, var(--bg-panel));
   color: var(--text-main);
-  padding: 8px 10px;
+  min-height: 42px;
+  padding: 10px 12px;
   box-sizing: border-box;
+  transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
 }
 
 .messages__send-btn {
   cursor: pointer;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent-primary) 15%, var(--bg-main));
+}
+
+.messages__send-btn:hover {
+  border-color: color-mix(in srgb, var(--accent-primary) 45%, var(--border-soft));
+  background: color-mix(in srgb, var(--accent-primary) 22%, var(--bg-main));
+}
+
+.messages__send-btn:active {
+  transform: translateY(1px);
 }
 
 .messages__input:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 2px var(--text-main);
+}
+
+.messages__input::placeholder {
+  color: var(--text-muted);
+}
+
+@media (max-width: 520px) {
+  .messages__input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .messages__send-btn {
+    width: 100%;
+  }
+}
+
+@media (max-height: 920px) {
+  :host {
+    gap: 6px;
+  }
+
+  h3 {
+    margin: 0 0 6px;
+  }
+
+  .messages__feed {
+    gap: 6px;
+  }
+
+  .message {
+    padding: 6px 8px;
+  }
+
+  .messages__input,
+  .messages__send-btn {
+    padding: 6px 8px;
+  }
 }

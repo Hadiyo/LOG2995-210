@@ -49,6 +49,36 @@
   box-shadow: none;
 }
 
+.cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.cell--reachable::after {
+  opacity: 1;
+  background:
+    radial-gradient(circle at center, rgba(94, 234, 212, 0.18), rgba(94, 234, 212, 0.04) 60%, transparent 75%);
+  box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.4);
+}
+
+.cell--reachable-origin::after {
+  opacity: 1;
+  background:
+    radial-gradient(circle at center, rgba(250, 204, 21, 0.2), rgba(250, 204, 21, 0.06) 58%, transparent 75%);
+  box-shadow: inset 0 0 0 2px rgba(250, 204, 21, 0.55);
+}
+
+.cell--action-target::after {
+  opacity: 1;
+  background:
+    linear-gradient(135deg, rgba(248, 113, 113, 0.12), rgba(248, 113, 113, 0.22));
+  box-shadow: inset 0 0 0 2px rgba(248, 113, 113, 0.65);
+}
+
 /* Base tile image layer */
 .tile {
   position: absolute;

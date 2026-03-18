@@ -136,7 +136,7 @@ describe('MapService (update)', () => {
         );
 
         // Check that the event was emitted correctly
-        expect(emitSpy).toHaveBeenCalledWith(MapSocketEvents.ToogleMapVisibility, {
+        expect(emitSpy).toHaveBeenCalledWith(MapSocketEvents.ToggleMapVisibility, {
             id: 'id-vis',
             isVisible: nextVisibility,
         });

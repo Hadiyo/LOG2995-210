@@ -2,7 +2,7 @@ import { MapGateway } from '@app/gateways/map/map.gateway';
 import { PageRoom } from '@app/gateways/rooms.record';
 import { MapService } from '@app/services/map/map.service';
 import { GameMode, MapSize } from '@common/maps/map.enums';
-import { type EditorMap } from '@common/maps/map.interface';
+import type { EditorMap, MapSummary } from '@common/maps/map.interface';
 import { MapSocketEvents, MapVisibilityEventPayload } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -57,7 +57,7 @@ describe('MapGateway', () => {
         if (event === MapSocketEvents.MapCreated) {
           mapCreatedHandler = callback as (map: EditorMap) => void;
         }
-        if (event === MapSocketEvents.ToogleMapVisibility) {
+        if (event === MapSocketEvents.ToggleMapVisibility) {
           mapVisibilityHandler = callback as (payload: MapVisibilityEventPayload) => void;
         }
         if (event === MapSocketEvents.MapUpdated) {
@@ -96,7 +96,7 @@ describe('MapGateway', () => {
     expect(mapServiceMock.on).toHaveBeenCalledWith(MapSocketEvents.MapDeleted, expect.any(Function));
     expect(mapServiceMock.on).toHaveBeenCalledWith(MapSocketEvents.MapCreated, expect.any(Function));
     expect(mapServiceMock.on).toHaveBeenCalledWith(MapSocketEvents.MapUpdated, expect.any(Function));
-    expect(mapServiceMock.on).toHaveBeenCalledWith(MapSocketEvents.ToogleMapVisibility, expect.any(Function));
+    expect(mapServiceMock.on).toHaveBeenCalledWith(MapSocketEvents.ToggleMapVisibility, expect.any(Function));
   });
 
   // Test that the gateway unsubscribes from map events on destroy
@@ -123,12 +123,22 @@ describe('MapGateway', () => {
       objects: [],
       visibility: true,
     };
-    // Verify that the gateway emits the MapCreated event to the MapManagementRoom with the correct payload
+    const expectedSummary: MapSummary = {
+      id: 'map-1',
+      name: 'Created map',
+      description: 'desc',
+      mode: GameMode.CLASSIC,
+      size: MapSize.S,
+      date: '2026-02-12T00:00:00.000Z',
+      visibility: true,
+      previewImage: undefined,
+      previewImageFormat: undefined,
+    };
     expect(mapCreatedHandler).toBeDefined();
     mapCreatedHandler?.(createdMap);
 
     expect(to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
-    expect(emit).toHaveBeenCalledWith(MapSocketEvents.MapCreated, createdMap);
+    expect(emit).toHaveBeenCalledWith(MapSocketEvents.MapCreated, expectedSummary);
   });
 
   it('forward ToggleMapVisibility to MapManagement', () => {
@@ -139,7 +149,7 @@ describe('MapGateway', () => {
     expect(mapVisibilityHandler).toBeDefined();
     mapVisibilityHandler?.(payload);
     expect(to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
-    expect(emit).toHaveBeenCalledWith(MapSocketEvents.ToogleMapVisibility, payload);
+    expect(emit).toHaveBeenCalledWith(MapSocketEvents.ToggleMapVisibility, payload);
   });
 
   it('should forward updated Map to map management', () => {
@@ -154,12 +164,22 @@ describe('MapGateway', () => {
       objects: [],
       visibility: true,
     };
-    // Verify that the gateway emits the MapCreated event to the MapManagementRoom with the correct payload
+    const expectedSummary: MapSummary = {
+      id: 'map-1',
+      name: 'Created map',
+      description: 'desc',
+      mode: GameMode.CLASSIC,
+      size: MapSize.S,
+      date: '2026-02-12T00:00:00.000Z',
+      visibility: true,
+      previewImage: undefined,
+      previewImageFormat: undefined,
+    };
     expect(mapEditHandler).toBeDefined();
     mapEditHandler?.(updatedMap);
 
     expect(to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
-    expect(emit).toHaveBeenCalledWith(MapSocketEvents.MapUpdated, updatedMap);
+    expect(emit).toHaveBeenCalledWith(MapSocketEvents.MapUpdated, expectedSummary);
   });
 
   it('should unsubscribe to all handlers if the gateway is destroyed', () => {
@@ -176,7 +196,7 @@ describe('MapGateway', () => {
     );
 
     expect(mapServiceMock.off).toHaveBeenCalledWith(
-      MapSocketEvents.ToogleMapVisibility,
+      MapSocketEvents.ToggleMapVisibility,
       expect.any(Function),
     );
 
