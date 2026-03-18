@@ -1,5 +1,5 @@
 <div class="action-bar">
-  <button type="button" class="action-btn" [disabled]="!canAct" (click)="endTurn.emit()">Terminer<br> le tour</button>
+  <button type="button" class="action-btn" [disabled]="!canEndTurn" (click)="endTurn.emit()">Terminer<br> le tour</button>
   <button type="button" class="action-btn" [disabled]="!canAct || !canUseActionMode" [class.action-btn--active]="actionModeEnabled"
     (click)="toggleActionMode.emit()">
     {{ actionModeEnabled ? 'Action active' : 'Mode action' }}

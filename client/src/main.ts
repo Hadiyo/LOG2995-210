@@ -8,14 +8,12 @@ import { AdminPageComponent } from '@app/pages/admin-page/admin-page.component';
 import { AppComponent } from '@app/pages/app/app.component';
 import { CharacterCreationPageComponent } from '@app/pages/character-creation/character-creation-page/character-creation-page.component';
 import { CreateGamePageComponent } from '@app/pages/create-game-page/create-game-page.component';
-import { DevGameLauncherComponent } from '@app/pages/dev-game-launcher/dev-game-launcher.component';
 import { EditorPageComponent } from '@app/pages/editor-page/editor-page.component';
 import { GameViewPageComponent } from '@app/pages/game-view-page/game-view-page.component';
 import { JoinGameComponent } from '@app/pages/join-game/join-game.component';
 import { MainPageComponent } from '@app/pages/main-page/main-page.component';
 import { GameViewComponent } from '@app/pages/game-view/game-view.component';
 import { environment } from './environments/environment';
-//dev component, to be removed before release
 
 if (environment.production) {
     enableProdMode();
@@ -31,7 +29,6 @@ const routes: Routes = [
     { path: 'waiting-room', component: GameViewComponent },
     { path: 'game-view', component: GameViewPageComponent },
     { path: 'play', component: GameViewPageComponent },
-    { path: 'dev-game-launcher', component: DevGameLauncherComponent },
     { path: 'join-room', component: JoinGameComponent },
     { path: '**', redirectTo: '/home' },
 ];

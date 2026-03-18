@@ -1,3 +1,4 @@
+import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { TileType } from '@common/maps/map.enums';
@@ -14,13 +15,14 @@ export interface GameSessionRuntime {
     sessionId: string;
     match: InitializedMatch;
     turnState: MatchTurnState;
+    messages: ChatMessage[];
     socketToPlayerId: Map<string, string>;
     transitionTimeoutId: NodeJS.Timeout | null;
     activeTurnTimeoutId: NodeJS.Timeout | null;
     timerIntervalId: NodeJS.Timeout | null;
 }
 
-export function buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[]): GameSessionRuntime {
+export function buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[], messages: ChatMessage[] = []): GameSessionRuntime {
     const sessionId = crypto.randomUUID();
     const match = buildInitializedMatchFromEditor(map, players, Math.random);
     const order = buildTurnOrderFromPlayers(match.players, Math.random);
@@ -47,6 +49,7 @@ export function buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[])
         sessionId,
         match,
         turnState,
+        messages: messages.map((message) => ({ ...message })),
         socketToPlayerId: new Map(),
         transitionTimeoutId: null,
         activeTurnTimeoutId: null,

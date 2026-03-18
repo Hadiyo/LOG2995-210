@@ -2,7 +2,7 @@
   --view-gap: 16px;
   --view-padding: 16px;
   --side-panel-left-width: 270px;
-  --side-panel-right-width: 380px;
+  --side-panel-right-width: 500px;
   --panel-radius: 10px;
   --panel-padding: 12px;
   display: block;
@@ -168,6 +168,7 @@
   min-height: 0;
   flex: 1 1 auto;
   height: 100%;
+  min-height: 420px;
   overflow: hidden;
 }
 
@@ -403,7 +404,7 @@
 @media (max-width: 1600px) {
   :host {
     --side-panel-left-width: 235px;
-    --side-panel-right-width: 275px;
+    --side-panel-right-width: 420px;
   }
 }
 
@@ -461,7 +462,7 @@
   }
 
   .messages {
-    min-height: 200px;
+    min-height: 320px;
   }
 }
 
@@ -496,10 +497,10 @@
   }
 
   .messages {
-    min-height: 260px;
-    height: clamp(260px, 42dvh, 420px);
+    min-height: 320px;
+    height: clamp(320px, 48dvh, 520px);
     flex: 0 0 auto;
-    max-height: 420px;
+    max-height: 520px;
   }
 
   .messages--tabs {
@@ -528,8 +529,8 @@
   }
 
   .messages {
-    min-height: 160px;
-    flex: 0 0 160px;
+    min-height: 280px;
+    flex: 0 0 280px;
     height: auto;
   }
 

@@ -211,6 +211,7 @@ export class WaitingRoomService {
     this.statusMessageSubject.next('La partie commence.');
     void this.router.navigate(['/game-view'], {
       queryParams: { sessionId: payload.sessionId },
+      state: { messages: payload.messages },
     });
   };
 

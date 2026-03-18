@@ -62,6 +62,7 @@ export class MatchSetupService {
             mapName: map.name,
             mode: map.mode,
             mapSize: map.mapsize,
+            debugMode: false,
             map: map.map.map((cell) => ({ ...cell, position: cloneVec2(cell.position) })),
             objects: this.matchBoardService.buildVisibleObjects(map.objects, initializedPlayers),
             allObjects: map.objects.map((object) => ({ ...object, position: cloneVec2(object.position) })),
@@ -108,6 +109,7 @@ export class MatchSetupService {
 
         return {
             ...match,
+            debugMode: match.debugMode ?? false,
             players: normalizedPlayers,
             allObjects,
             allStartingPoints,
