@@ -77,7 +77,8 @@
             "app/services/map/map.service.ts",
             "app/validators/server-map-validation.ts",
             "app/gateways/map/map.gateway.ts",
-            "app/services/session/game-session.service.ts"
+            "app/services/session/game-session.service.ts",
+            "app/services/gateways/session/session.gateway.ts"
         ],
         "coverageThreshold": {
             "global": {

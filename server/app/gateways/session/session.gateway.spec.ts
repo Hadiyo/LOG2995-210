@@ -1,5 +1,5 @@
-import { SessionGateway } from '@app/gateways/session/session.gateway';
 import { PageRoom } from '@app/gateways/rooms.record';
+import { SessionGateway } from '@app/gateways/session/session.gateway';
 import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionService } from '@app/services/session/game-session.service';
 import {
@@ -11,7 +11,6 @@ import {
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import { PlayerInformation } from '@common/player/player.interface';
 import { ErrorSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
-import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Server, Socket } from 'socket.io';
 
@@ -95,7 +94,6 @@ describe('SessionGateway', () => {
                 SessionGateway,
                 { provide: GameSessionService, useValue: sessionServiceMock },
                 { provide: ChatService, useValue: {} },
-                { provide: Logger, useValue: { error: jest.fn(), log: jest.fn() } },
             ],
         }).compile();
 
@@ -108,6 +106,7 @@ describe('SessionGateway', () => {
     });
 
     describe('createGameSession', () => {
+
         it('should join room and emit events when session is created successfully', async () => {
             const client = createMockSocket('socket-1');
             (sessionServiceMock.createGameSession as jest.Mock).mockResolvedValue(mockPlayerPayload);
@@ -123,6 +122,9 @@ describe('SessionGateway', () => {
         });
 
         it('should log error and return early when service returns undefined', async () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const gatewayLogger = (gateway as any).logger;
+            jest.spyOn(gatewayLogger, 'error').mockImplementation(jest.fn());
             const client = createMockSocket('socket-1');
             (sessionServiceMock.createGameSession as jest.Mock).mockResolvedValue(undefined);
 
@@ -130,9 +132,13 @@ describe('SessionGateway', () => {
 
             expect(client.join as jest.Mock).not.toHaveBeenCalled();
             expect(client.emit as jest.Mock).not.toHaveBeenCalled();
+            expect(gatewayLogger.error).toHaveBeenCalled();
         });
 
         it('should log error and stop when client fails to join the socket room', async () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const gatewayLogger = (gateway as any).logger;
+            jest.spyOn(gatewayLogger, 'error').mockImplementation(jest.fn());
             const client = createMockSocket('socket-1');
             // Override join to not actually add to rooms so has() stays false
             (client.join as jest.Mock).mockImplementation(() => { /* intentionally empty */ });
@@ -142,15 +148,25 @@ describe('SessionGateway', () => {
 
             expect(serverTo).not.toHaveBeenCalled();
             expect(client.emit as jest.Mock).not.toHaveBeenCalled();
+            expect(gatewayLogger.error).toHaveBeenCalled();
         });
 
         it('should emit ServerError to client when service throws', async () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const gatewayLogger = (gateway as any).logger;
+            jest.spyOn(gatewayLogger, 'error').mockImplementation(jest.fn());
             const client = createMockSocket('socket-1');
-            (sessionServiceMock.createGameSession as jest.Mock).mockRejectedValue(new Error('DB failure'));
+            (sessionServiceMock.createGameSession as jest.Mock)
+                .mockRejectedValue(new Error('DB failure'));
 
-            await gateway.createGameSession(mockJoinPayload, client);
+            await expect(
+                gateway.createGameSession(mockJoinPayload, client),
+            ).resolves.toBeUndefined();
 
-            expect(client.emit as jest.Mock).toHaveBeenCalledWith(ErrorSocketEvents.ServerError);
+            expect(client.emit as jest.Mock).toHaveBeenCalledWith(
+                ErrorSocketEvents.ServerError,
+            );
+            expect(gatewayLogger.error).toHaveBeenCalled();
         });
 
         it('should leave previous game rooms before joining the new session room', async () => {

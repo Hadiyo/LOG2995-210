@@ -1,5 +1,4 @@
 import { pageRoomMap } from '@app/gateways/rooms.record';
-import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionService } from '@app/services/session/game-session.service';
 import { JoinSessionPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
@@ -15,7 +14,7 @@ export class SessionGateway {
   private server: Server;
   private readonly logger: Logger;
 
-  constructor(private readonly sessionService: GameSessionService, private readonly chatService: ChatService) {
+  constructor(private readonly sessionService: GameSessionService) {
     this.logger = new Logger(SessionGateway.name);
   }
 
