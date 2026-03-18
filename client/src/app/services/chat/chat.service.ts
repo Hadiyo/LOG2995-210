@@ -10,27 +10,27 @@ import { BehaviorSubject } from 'rxjs';
     providedIn: 'root',
 })
 export class ChatService {
-    public readonly state = signal<ServiceState>(ServiceState.Idle);
+    readonly state = signal<ServiceState>(ServiceState.Idle);
 
     private readonly chatMessages = new BehaviorSubject<ChatMessage[]>([]);
     readonly chat$ = this.chatMessages.asObservable();
 
     constructor(private readonly socket: SocketManagerService) {}
 
-    public initChat(): void {
+    initChat(): void {
         if (!this.socket.isSocketAlive()) {
             this.socket.connect();
         }
         this.subscribeToSocketEvents();
     }
 
-    public sendMessage(message: ChatMessage): void {
+    sendMessage(message: ChatMessage): void {
         if (validateChatMessage(message)) {
             this.socket.send(ChatSocketEvents.SendMessage, message);
         }
     }
 
-    public loadChatMessages(messages: ChatMessage[]): void {
+    loadChatMessages(messages: ChatMessage[]): void {
         const existingMessages = this.chatMessages.value;
         const existingIds = new Set(existingMessages.map((msg) => msg.id ?? msg.createdAt));
         const newMessages = messages.filter((msg) => !existingIds.has(msg.id ?? msg.createdAt));
@@ -39,15 +39,15 @@ export class ChatService {
         }
     }
 
-    public clearChat(): void {
+    clearChat(): void {
         this.chatMessages.next([]);
     }
 
-    public subscribeToSocketEvents(): void {
+    subscribeToSocketEvents(): void {
         this.socket.on<ChatMessage>(ChatSocketEvents.ReceiveMessage, this.onReceiveMessage);
     }
 
-    public unsubscribeToSocketEvents(): void {
+    unsubscribeToSocketEvents(): void {
         this.socket.off<ChatMessage>(ChatSocketEvents.ReceiveMessage, this.onReceiveMessage);
     }
 

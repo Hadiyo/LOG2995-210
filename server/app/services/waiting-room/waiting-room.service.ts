@@ -1,7 +1,7 @@
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { MapService } from '@app/services/map/map.service';
 import { Injectable } from '@nestjs/common';
-import { ChatMessage } from '@common/chat-message';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { WaitingRoomPreview } from '@common/game/waiting-room-preview.interface';
 import { MapSize } from '@common/maps/map.enums';
@@ -47,15 +47,15 @@ export class WaitingRoomService {
         private readonly gameSessionService: GameSessionService,
     ) {}
 
-    public on<T>(event: SocketEvents, callback: (payload: T) => void): void {
+    on<T>(event: SocketEvents, callback: (payload: T) => void): void {
         this.events.on(event, callback);
     }
 
-    public off<T>(event: SocketEvents, callback: (payload: T) => void): void {
+    off<T>(event: SocketEvents, callback: (payload: T) => void): void {
         this.events.off(event, callback);
     }
 
-    public async getAvailableWaitingRoomPreviews(): Promise<WaitingRoomPreview[]> {
+    async getAvailableWaitingRoomPreviews(): Promise<WaitingRoomPreview[]> {
         const roomEntries = [...this.rooms.values()].filter((room) => !room.isLocked && room.players.length < room.maxPlayers);
         if (roomEntries.length === 0) {
             return [];
@@ -75,7 +75,7 @@ export class WaitingRoomService {
         return previews;
     }
 
-    public getWaitingRoomState(accessCode: string): WaitingRoomStatePayload | null {
+    getWaitingRoomState(accessCode: string): WaitingRoomStatePayload | null {
         const room = this.rooms.get(accessCode);
         if (!room) {
             return null;
@@ -92,7 +92,7 @@ export class WaitingRoomService {
         };
     }
 
-    public async createWaitingRoom(socketId: string, payload: CreateWaitingRoomPayload): Promise<string> {
+    async createWaitingRoom(socketId: string, payload: CreateWaitingRoomPayload): Promise<string> {
         const map = await this.mapService.getMapById(payload.mapId);
         const maxPlayers = this.resolveMaxPlayers(map.size);
         const accessCode = this.generateAccessCode();
@@ -120,7 +120,7 @@ export class WaitingRoomService {
         return accessCode;
     }
 
-    public joinWaitingRoom(socketId: string, payload: JoinWaitingRoomPayload): boolean {
+    joinWaitingRoom(socketId: string, payload: JoinWaitingRoomPayload): boolean {
         const room = this.rooms.get(payload.accessCode);
         if (!room) {
             this.emitError(socketId, 'Partie introuvable.');
@@ -147,7 +147,7 @@ export class WaitingRoomService {
         return true;
     }
 
-    public addMessage(socketId: string, payload: SendWaitingRoomMessagePayload): void {
+    addMessage(socketId: string, payload: SendWaitingRoomMessagePayload): void {
         const room = this.rooms.get(payload.accessCode);
         if (!room) {
             this.emitError(socketId, 'Salle introuvable.');
@@ -180,7 +180,7 @@ export class WaitingRoomService {
         } as WaitingRoomMessageSentEvent);
     }
 
-    public leaveWaitingRoom(socketId: string, accessCode: string): void {
+    leaveWaitingRoom(socketId: string, accessCode: string): void {
         const room = this.rooms.get(accessCode);
         if (!room) {
             return;
@@ -199,7 +199,7 @@ export class WaitingRoomService {
         this.emitDirectoryUpdated();
     }
 
-    public kickPlayer(organizerSocketId: string, payload: KickWaitingRoomPlayerPayload): void {
+    kickPlayer(organizerSocketId: string, payload: KickWaitingRoomPlayerPayload): void {
         const room = this.rooms.get(payload.accessCode);
         if (!room) {
             return;
@@ -227,7 +227,7 @@ export class WaitingRoomService {
         this.emitDirectoryUpdated();
     }
 
-    public async startGame(organizerSocketId: string, accessCode: string): Promise<void> {
+    async startGame(organizerSocketId: string, accessCode: string): Promise<void> {
         const room = this.rooms.get(accessCode);
         if (!room) {
             return;
@@ -252,14 +252,14 @@ export class WaitingRoomService {
         this.emitDirectoryUpdated();
     }
 
-    public handleDisconnect(socketId: string): void {
+    handleDisconnect(socketId: string): void {
         const accessCode = this.getAccessCodeForSocket(socketId);
         if (accessCode) {
             this.leaveWaitingRoom(socketId, accessCode);
         }
     }
 
-    public getAccessCodeForSocket(socketId: string): string | undefined {
+    getAccessCodeForSocket(socketId: string): string | undefined {
         return findWaitingRoomAccessCode(this.rooms.values(), socketId);
     }
 

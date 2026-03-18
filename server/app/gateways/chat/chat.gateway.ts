@@ -1,8 +1,7 @@
 import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { ChatMessage } from '@common/chat/chat.interface';
-import { ChatSocketEvents } from '@common/socket-events';
-import { getGameSessionRoom } from '@common/socket-events';
+import { ChatSocketEvents, getGameSessionRoom } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
@@ -18,7 +17,7 @@ export class ChatGateway {
     ) {}
 
     @SubscribeMessage(ChatSocketEvents.SendMessage)
-    public sendMessage(
+    sendMessage(
         @MessageBody() message: ChatMessage,
         @ConnectedSocket() client: Socket,
     ): void {

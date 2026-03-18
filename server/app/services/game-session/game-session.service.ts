@@ -1,57 +1,52 @@
 import { MapService } from '@app/services/map/map.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
-import { buildTurnOrderFromPlayers } from '@app/services/game-session/game-session.turn';
+import { InitializedMatch, MatchLobbyPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { TileType } from '@common/maps/map.enums';
-import { EditorMapDetails, Vec2 } from '@common/maps/map.interface';
 import { SocketEvents } from '@common/socket-events';
 import { EventEmitter } from 'events';
 import {
     buildGameSessionVisibleObjects,
-    buildInitializedMatchFromEditor,
     getGameSessionDestination,
     getGameSessionMovementCost,
 } from './game-session.match';
-
-const TRANSITION_DURATION_MS = 3000;
-const ACTIVE_TURN_DURATION_MS = 30000;
-const SNAPSHOT_TICK_MS = 1000;
-const CLASSIC_WIN_THRESHOLD = 3;
-
-interface GameSessionRuntime {
-    sessionId: string;
-    match: InitializedMatch;
-    turnState: MatchTurnState;
-    socketToPlayerId: Map<string, string>;
-    transitionTimeoutId: NodeJS.Timeout | null;
-    activeTurnTimeoutId: NodeJS.Timeout | null;
-    timerIntervalId: NodeJS.Timeout | null;
-}
+import {
+    ACTIVE_TURN_DURATION_MS,
+    buildSession,
+    canStartCombat,
+    CLASSIC_WIN_THRESHOLD,
+    createActiveTurnState,
+    createTransitionTurnState,
+    GameSessionRuntime,
+    rebuildTurnStateAfterRosterChange,
+    resolveRespawnPosition,
+    SNAPSHOT_TICK_MS,
+    TRANSITION_DURATION_MS,
+} from './game-session.runtime';
 @Injectable()
 export class GameSessionService {
     private readonly sessions = new Map<string, GameSessionRuntime>();
     private readonly events = new EventEmitter();
     constructor(private readonly mapService: MapService) {}
 
-    public on<T>(event: SocketEvents, callback: (payload: T) => void): void {
+    on<T>(event: SocketEvents, callback: (payload: T) => void): void {
         this.events.on(event, callback);
     }
 
-    public off<T>(event: SocketEvents, callback: (payload: T) => void): void {
+    off<T>(event: SocketEvents, callback: (payload: T) => void): void {
         this.events.off(event, callback);
     }
 
-    public async createSessionFromWaitingRoom(mapId: string, players: MatchLobbyPlayer[]): Promise<string> {
+    async createSessionFromWaitingRoom(mapId: string, players: MatchLobbyPlayer[]): Promise<string> {
         const map = await this.mapService.getMapByIdForEditor(mapId);
-        const session = this.buildSession(map, players);
+        const session = buildSession(map, players);
         this.sessions.set(session.sessionId, session);
         this.emitSnapshot(session);
         this.startTransition(session);
         return session.sessionId;
     }
 
-    public registerSocket(sessionId: string, playerId: string, socketId: string): { match: InitializedMatch; turnState: MatchTurnState } {
+    registerSocket(sessionId: string, playerId: string, socketId: string): { match: InitializedMatch; turnState: MatchTurnState } {
         const session = this.sessions.get(sessionId);
         if (!session) {
             throw new NotFoundException('Game session not found');
@@ -61,11 +56,11 @@ export class GameSessionService {
         return { match: session.match, turnState: session.turnState };
     }
 
-    public getPlayerIdForSocket(socketId: string, sessionId: string): string | null {
+    getPlayerIdForSocket(socketId: string, sessionId: string): string | null {
         return this.sessions.get(sessionId)?.socketToPlayerId.get(socketId) ?? null;
     }
 
-    public getPlayerNameForSocket(socketId: string, sessionId: string): string | null {
+    getPlayerNameForSocket(socketId: string, sessionId: string): string | null {
         const session = this.sessions.get(sessionId);
         if (!session) {
             return null;
@@ -75,7 +70,7 @@ export class GameSessionService {
         return session.match.players.find((player) => player.id === playerId)?.name ?? null;
     }
 
-    public findSessionIdForSocket(socketId: string): string | null {
+    findSessionIdForSocket(socketId: string): string | null {
         for (const session of this.sessions.values()) {
             if (session.socketToPlayerId.has(socketId)) {
                 return session.sessionId;
@@ -85,7 +80,7 @@ export class GameSessionService {
         return null;
     }
 
-    public removeSocket(socketId: string): { sessionId: string; playerId: string } | null {
+    removeSocket(socketId: string): { sessionId: string; playerId: string } | null {
         for (const session of this.sessions.values()) {
             const playerId = session.socketToPlayerId.get(socketId);
             if (!playerId) {
@@ -103,7 +98,7 @@ export class GameSessionService {
         return null;
     }
 
-    public endTurn(sessionId: string, playerId: string): boolean {
+    endTurn(sessionId: string, playerId: string): boolean {
         const session = this.sessions.get(sessionId);
         if (!session || session.turnState.phase !== 'active' || session.turnState.activePlayerId !== playerId) {
             return false;
@@ -113,7 +108,7 @@ export class GameSessionService {
         return true;
     }
 
-    public surrender(sessionId: string, playerId: string): boolean {
+    surrender(sessionId: string, playerId: string): boolean {
         const session = this.sessions.get(sessionId);
         if (!session) {
             return false;
@@ -155,17 +150,17 @@ export class GameSessionService {
         const removedActivePlayer = session.turnState.activePlayerId === playerId ||
             session.turnState.transitionTargetPlayerId === playerId;
         if (removedActivePlayer) {
-            session.turnState = this.rebuildTurnStateAfterRosterChange(session.turnState, nextPlayers);
+            session.turnState = rebuildTurnStateAfterRosterChange(session.turnState, nextPlayers);
             this.startTransition(session);
             return true;
         }
 
-        session.turnState = this.rebuildTurnStateAfterRosterChange(session.turnState, nextPlayers);
+        session.turnState = rebuildTurnStateAfterRosterChange(session.turnState, nextPlayers);
         this.emitSnapshot(session);
         return true;
     }
 
-    public movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
+    movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
         const session = this.sessions.get(sessionId);
         if (!session || session.turnState.phase !== 'active' || session.turnState.activePlayerId !== playerId) {
             return false;
@@ -199,7 +194,7 @@ export class GameSessionService {
         return true;
     }
 
-    public toggleDoor(sessionId: string, playerId: string, position: { x: number; y: number }): boolean {
+    toggleDoor(sessionId: string, playerId: string, position: { x: number; y: number }): boolean {
         const session = this.sessions.get(sessionId);
         if (!session ||
             session.turnState.phase !== 'active' ||
@@ -248,7 +243,7 @@ export class GameSessionService {
         return true;
     }
 
-    public startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
+    startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
         const session = this.sessions.get(sessionId);
         if (!session ||
             session.turnState.phase !== 'active' ||
@@ -260,11 +255,11 @@ export class GameSessionService {
 
         const attacker = session.match.players.find((player) => player.id === attackerId);
         const defender = session.match.players.find((player) => player.id === defenderId);
-        if (!attacker || !defender || !this.canStartCombat(attacker, defender)) {
+        if (!attacker || !defender || !canStartCombat(attacker, defender)) {
             return false;
         }
 
-        const respawnPosition = this.resolveRespawnPosition(session.match, defenderId);
+        const respawnPosition = resolveRespawnPosition(session.match, defenderId);
         const nextPlayers = session.match.players.map((player) => {
             if (player.id === attackerId) {
                 return { ...player, combatWins: player.combatWins + 1 };
@@ -304,57 +299,9 @@ export class GameSessionService {
         return true;
     }
 
-    private buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[]): GameSessionRuntime {
-        const sessionId = crypto.randomUUID();
-        const match = buildInitializedMatchFromEditor(map, players, Math.random);
-        const order = buildTurnOrderFromPlayers(match.players, Math.random);
-        const firstPlayerId = order[0]?.playerId ?? null;
-        const turnState: MatchTurnState = {
-            matchId: match.mapId,
-            hasStarted: false,
-            order,
-            currentTurnIndex: 0,
-            phase: 'transition',
-            activePlayerId: null,
-            transitionTargetPlayerId: firstPlayerId,
-            transitionEndsAt: Date.now() + TRANSITION_DURATION_MS,
-            transitionRemainingMs: TRANSITION_DURATION_MS,
-            activeTurnEndsAt: null,
-            activeTurnRemainingMs: 0,
-            movementPointsRemaining: 0,
-            actionTaken: false,
-            movementCount: 0,
-            playerStates: order.map((entry) => ({ playerId: entry.playerId, state: 'waiting' })),
-        };
-
-        return {
-            sessionId,
-            match,
-            turnState,
-            socketToPlayerId: new Map(),
-            transitionTimeoutId: null,
-            activeTurnTimeoutId: null,
-            timerIntervalId: null,
-        };
-    }
-
     private startTransition(session: GameSessionRuntime): void {
         this.clearTimers(session);
-        session.turnState = {
-            ...session.turnState,
-            phase: 'transition',
-            hasStarted: session.turnState.hasStarted,
-            activePlayerId: null,
-            transitionTargetPlayerId: session.turnState.order[session.turnState.currentTurnIndex]?.playerId ?? null,
-            transitionEndsAt: Date.now() + TRANSITION_DURATION_MS,
-            transitionRemainingMs: TRANSITION_DURATION_MS,
-            activeTurnEndsAt: null,
-            activeTurnRemainingMs: 0,
-            movementPointsRemaining: 0,
-            actionTaken: false,
-            movementCount: 0,
-            playerStates: session.turnState.order.map((entry) => ({ playerId: entry.playerId, state: 'waiting' })),
-        };
+        session.turnState = createTransitionTurnState(session.turnState);
         this.emitSnapshot(session);
         session.timerIntervalId = setInterval(() => this.tickTimers(session), SNAPSHOT_TICK_MS);
         session.transitionTimeoutId = setTimeout(() => this.activateTurn(session), TRANSITION_DURATION_MS);
@@ -368,24 +315,7 @@ export class GameSessionService {
         }
 
         this.clearTimers(session);
-        session.turnState = {
-            ...session.turnState,
-            hasStarted: true,
-            phase: 'active',
-            activePlayerId,
-            transitionTargetPlayerId: null,
-            transitionEndsAt: null,
-            transitionRemainingMs: 0,
-            activeTurnEndsAt: Date.now() + ACTIVE_TURN_DURATION_MS,
-            activeTurnRemainingMs: ACTIVE_TURN_DURATION_MS,
-            movementPointsRemaining: activePlayer.speed,
-            actionTaken: false,
-            movementCount: 0,
-            playerStates: session.turnState.order.map((entry) => ({
-                playerId: entry.playerId,
-                state: entry.playerId === activePlayerId ? 'active' : 'waiting',
-            })),
-        };
+        session.turnState = createActiveTurnState(session.turnState, activePlayer);
         this.emitSnapshot(session);
         session.timerIntervalId = setInterval(() => this.tickTimers(session), SNAPSHOT_TICK_MS);
         session.activeTurnTimeoutId = setTimeout(() => this.advanceToNextTurn(session), ACTIVE_TURN_DURATION_MS);
@@ -441,65 +371,6 @@ export class GameSessionService {
         this.sessions.delete(session.sessionId);
     }
 
-    private canStartCombat(attacker: MatchPlayer, defender: MatchPlayer): boolean {
-        return Math.abs(attacker.position.x - defender.position.x) + Math.abs(attacker.position.y - defender.position.y) === 1;
-    }
-
-    private resolveRespawnPosition(match: InitializedMatch, defeatedPlayerId: string): Vec2 {
-        const defeatedPlayer = match.players.find((player) => player.id === defeatedPlayerId);
-        if (!defeatedPlayer) {
-            return { x: 0, y: 0 };
-        }
-
-        const occupiedKeys = new Set(
-            match.players
-                .filter((player) => player.id !== defeatedPlayerId)
-                .map((player) => `${player.position.x}:${player.position.y}`),
-        );
-
-        const origin = defeatedPlayer.startingPosition;
-
-        const isFree = (pos: Vec2): boolean => !occupiedKeys.has(`${pos.x}:${pos.y}`);
-
-        if (isFree(origin)) {
-            return { ...origin };
-        }
-
-        const candidates = match.map
-            .filter((cell) => cell.tileType !== TileType.WALL && cell.tileType !== TileType.DOOR && isFree(cell.position))
-            .sort((left, right) => {
-                const distanceDelta =
-                    (Math.abs(left.position.x - origin.x) + Math.abs(left.position.y - origin.y)) -
-                    (Math.abs(right.position.x - origin.x) + Math.abs(right.position.y - origin.y));
-                if (distanceDelta !== 0) return distanceDelta;
-                if (left.position.y !== right.position.y) return left.position.y - right.position.y;
-                return left.position.x - right.position.x;
-            });
-
-        return candidates[0] ? { ...candidates[0].position } : { ...origin };
-    }
-
-    private rebuildTurnStateAfterRosterChange(current: MatchTurnState, players: MatchPlayer[]): MatchTurnState {
-        const playerIds = new Set(players.map((player) => player.id));
-        const order = current.order.filter((entry) => playerIds.has(entry.playerId));
-        const removedBeforeCurrent = current.order
-            .slice(0, current.currentTurnIndex)
-            .filter((entry) => !playerIds.has(entry.playerId)).length;
-        const currentTurnIndex = order.length === 0 ? 0 : (current.currentTurnIndex - removedBeforeCurrent) % order.length;
-        const activePlayerId = order[currentTurnIndex]?.playerId ?? null;
-        return {
-            ...current,
-            order,
-            currentTurnIndex,
-            activePlayerId,
-            transitionTargetPlayerId: current.phase === 'transition' ? activePlayerId : null,
-            playerStates: order.map((entry) => ({
-                playerId: entry.playerId,
-                state: current.phase === 'active' && entry.playerId === activePlayerId ? 'active' : 'waiting',
-            })),
-        };
-    }
-
     private emitSnapshot(session: GameSessionRuntime): void {
         this.events.emit(SocketEvents.GameSessionSnapshot, {
             sessionId: session.sessionId,
@@ -522,5 +393,4 @@ export class GameSessionService {
             session.timerIntervalId = null;
         }
     }
-
 }

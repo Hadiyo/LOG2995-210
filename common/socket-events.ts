@@ -1,4 +1,4 @@
-import { ChatMessage } from './chat-message';
+import { ChatMessage } from './chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer } from './game/match.interface';
 import { MatchTurnState } from './game/turn.interface';
 
@@ -69,14 +69,6 @@ export enum RoomSocketEvents {
     IncrementPlayerCount = 'incrementPlayerCount',
     DecrementPlayerCount = 'decrementPlayerCount',
     AddClientToSession = 'addClientToSession',
-}
-
-export enum ChatSocketEvents {
-    SendMessage = 'sendMessage',
-    ReceiveMessage = 'receiveMessage',
-    LoadChatMessages = 'loadChatMessages',
-    ChatValidationError = 'chatValidationError',
-    ChatServerError = 'chatServerError',
 }
 
 export enum WaitingRoomEvents {

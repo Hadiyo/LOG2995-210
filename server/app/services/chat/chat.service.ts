@@ -8,7 +8,7 @@ import { randomUUID } from 'crypto';
 export class ChatService {
     constructor(private readonly gameSessionService: GameSessionService) {}
 
-    public addMessage(sessionId: string, socketId: string, content: string): ChatMessage | null {
+    addMessage(sessionId: string, socketId: string, content: string): ChatMessage | null {
         const playerName = this.gameSessionService.getPlayerNameForSocket(socketId, sessionId);
         if (!playerName) {
             return null;

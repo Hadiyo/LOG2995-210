@@ -5,7 +5,7 @@ import {
   TILE_LABELS,
 } from '@app/components/game/game-tile-info-modal/game-tile-info-modal.constants';
 import { GameTileInfoModalData } from '@app/components/game/game-tile-info-modal/game-tile-info-modal.interface';
-import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { ObjectSize, TileType } from '@common/maps/map.enums';
 import { GameCell, MapObject, Vec2 } from '@common/maps/map.interface';
 import { Player } from '@common/player/player.interface';
 
@@ -28,8 +28,8 @@ export function buildTileInfoModalData(
     tileCharacteristics,
     tileBlockingReason,
     objectType: object?.type ?? null,
-    objectLabel: object ? OBJECT_LABELS[object.type] : null,
-    objectDescription: object ? OBJECT_DESCRIPTIONS[object.type] : null,
+    objectLabel: object ? OBJECT_LABELS[object.type] ?? null : null,
+    objectDescription: object ? OBJECT_DESCRIPTIONS[object.type] ?? null : null,
     playerName: player?.information.name ?? null,
     playerAvatarId: player?.information.avatarId ?? null,
   };
@@ -54,10 +54,6 @@ function buildTileCharacteristics(cell: GameCell, isBlockedByOccupant: boolean):
 function getTileBlockingReason(object: MapObject | null, player: Player | null): string | null {
   if (player) {
     return 'Un joueur occupe actuellement cette tuile.';
-  }
-
-  if (object?.type === ObjectType.REGEN || object?.type === ObjectType.ARENA) {
-    return 'Un sanctuaire occupe cette tuile.';
   }
 
   return null;

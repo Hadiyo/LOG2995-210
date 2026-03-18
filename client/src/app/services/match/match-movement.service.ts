@@ -27,7 +27,7 @@ const DIRECTION_OFFSETS: Record<MovementDirection, Vec2> = {
 
 @Injectable({ providedIn: 'root' })
 export class MatchMovementService {
-    public getDestination(position: Vec2, direction: MovementDirection): Vec2 {
+    getDestination(position: Vec2, direction: MovementDirection): Vec2 {
         const offset = DIRECTION_OFFSETS[direction];
         return {
             x: position.x + offset.x,
@@ -35,7 +35,7 @@ export class MatchMovementService {
         };
     }
 
-    public getMovementCost(match: InitializedMatch, destination: Vec2, movingPlayerId: string): number | null {
+    getMovementCost(match: InitializedMatch, destination: Vec2, movingPlayerId: string): number | null {
         const cell = this.getCell(match, destination);
         if (!cell) return null;
         if (cell.tileType === TileType.WALL) return null;
@@ -55,7 +55,7 @@ export class MatchMovementService {
         }
     }
 
-    public tryMove(match: InitializedMatch, playerId: string, direction: MovementDirection, movementPointsRemaining: number): MovementAttemptResult {
+    tryMove(match: InitializedMatch, playerId: string, direction: MovementDirection, movementPointsRemaining: number): MovementAttemptResult {
         const player = match.players.find((candidate) => candidate.id === playerId);
         if (!player) {
             return { success: false, cost: 0, destination: null, reason: 'PLAYER_NOT_FOUND' };
@@ -79,7 +79,7 @@ export class MatchMovementService {
         };
     }
 
-    public getReachableTiles(match: InitializedMatch, playerId: string, movementPointsAvailable: number): Map<string, number> {
+    getReachableTiles(match: InitializedMatch, playerId: string, movementPointsAvailable: number): Map<string, number> {
         const player = match.players.find((candidate) => candidate.id === playerId);
         const start = player?.position;
         if (!player || !start) {

@@ -19,7 +19,7 @@ import { cloneVec2, shuffle } from './match-geometry';
 export class MatchSetupService {
     private readonly matchBoardService = inject(MatchBoardService);
 
-    public buildLocalPlayer(character: Character, existingLocalPlayer: MatchLobbyPlayer | null): MatchLobbyPlayer {
+    buildLocalPlayer(character: Character, existingLocalPlayer: MatchLobbyPlayer | null): MatchLobbyPlayer {
         return {
             id: existingLocalPlayer?.id ?? crypto.randomUUID(),
             name: character.name,
@@ -35,7 +35,7 @@ export class MatchSetupService {
         };
     }
 
-    public buildInitializedMatch(map: EditorMapDetails, players: MatchLobbyPlayer[], random: () => number): InitializedMatch {
+    buildInitializedMatch(map: EditorMapDetails, players: MatchLobbyPlayer[], random: () => number): InitializedMatch {
         if (players.length === 0) {
             throw new Error('Impossible de demarrer une partie sans joueur.');
         }
@@ -71,7 +71,7 @@ export class MatchSetupService {
         };
     }
 
-    public normalizeLobbyPlayer(player: MatchLobbyPlayer | null): MatchLobbyPlayer | null {
+    normalizeLobbyPlayer(player: MatchLobbyPlayer | null): MatchLobbyPlayer | null {
         if (!player) {
             return null;
         }
@@ -84,7 +84,7 @@ export class MatchSetupService {
         };
     }
 
-    public normalizeMatch(match: InitializedMatch | null): InitializedMatch | null {
+    normalizeMatch(match: InitializedMatch | null): InitializedMatch | null {
         if (!match) {
             return null;
         }
@@ -116,7 +116,7 @@ export class MatchSetupService {
         };
     }
 
-    public createClassicEndState(winner: MatchPlayer): MatchEndState {
+    createClassicEndState(winner: MatchPlayer): MatchEndState {
         return {
             id: crypto.randomUUID(),
             winnerKind: 'player',
@@ -126,7 +126,7 @@ export class MatchSetupService {
         };
     }
 
-    public createNoWinnerEndState(remainingPlayer: MatchPlayer): MatchEndState {
+    createNoWinnerEndState(remainingPlayer: MatchPlayer): MatchEndState {
         return {
             id: crypto.randomUUID(),
             winnerKind: 'none',
@@ -136,7 +136,7 @@ export class MatchSetupService {
         };
     }
 
-    public isClassicWinner(combatWins: number): boolean {
+    isClassicWinner(combatWins: number): boolean {
         return combatWins >= CLASSIC_WIN_THRESHOLD;
     }
 

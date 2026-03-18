@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { ChatMessage } from '@common/chat-message';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
 import {
   CreateWaitingRoomPayload,
@@ -17,8 +17,8 @@ import { BehaviorSubject } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class WaitingRoomService {
-  public code = '';
-  public currentMapId = '';
+  code = '';
+  currentMapId = '';
 
   private mePlayer: MatchLobbyPlayer | null = null;
   private roomPlayers: MatchLobbyPlayer[] = [];
@@ -50,11 +50,11 @@ export class WaitingRoomService {
     private readonly router: Router,
   ) {}
 
-  public get me(): MatchLobbyPlayer | null {
+  get me(): MatchLobbyPlayer | null {
     return this.mePlayer;
   }
 
-  public initAsOrganizer(mapId: string, player: MatchLobbyPlayer): void {
+  initAsOrganizer(mapId: string, player: MatchLobbyPlayer): void {
     this.ensureConnected();
     this.registerListeners();
 
@@ -71,7 +71,7 @@ export class WaitingRoomService {
     });
   }
 
-  public initAsPlayer(accessCode: string, player: MatchLobbyPlayer): void {
+  initAsPlayer(accessCode: string, player: MatchLobbyPlayer): void {
     this.ensureConnected();
     this.registerListeners();
 
@@ -88,12 +88,12 @@ export class WaitingRoomService {
     });
   }
 
-  public initWaitingRoom(): void {
+  initWaitingRoom(): void {
     this.ensureConnected();
     this.registerListeners();
   }
 
-  public unsubscribeSocketEvents(): void {
+  unsubscribeSocketEvents(): void {
     if (!this.listenersRegistered) {
       return;
     }
@@ -107,21 +107,21 @@ export class WaitingRoomService {
     this.listenersRegistered = false;
   }
 
-  public deleteGameSession(): void {
+  deleteGameSession(): void {
     this.leaveWaitingRoom();
   }
 
-  public leaveGameSession(): void {
+  leaveGameSession(): void {
     this.leaveWaitingRoom();
   }
 
-  public leaveGame(): void {
+  leaveGame(): void {
     this.leaveWaitingRoom();
     this.resetState();
     void this.router.navigate(['/home']);
   }
 
-  public kickPlayer(playerId: string): void {
+  kickPlayer(playerId: string): void {
     if (!this.code) {
       return;
     }
@@ -137,7 +137,7 @@ export class WaitingRoomService {
     });
   }
 
-  public sendMessage(content: string): void {
+  sendMessage(content: string): void {
     if (!this.code) {
       return;
     }
@@ -148,7 +148,7 @@ export class WaitingRoomService {
     });
   }
 
-  public startGame(): void {
+  startGame(): void {
     if (!this.code) {
       return;
     }
@@ -240,4 +240,3 @@ export class WaitingRoomService {
   }
 
 }
-

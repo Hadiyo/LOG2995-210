@@ -1,5 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostBinding,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  ViewChild,
+  signal,
+} from '@angular/core';
 import { GameNotificationsPanelComponent } from '@app/components/game/game-notifications-panel/game-notifications-panel.component';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { GameNotification } from '@common/game-notification';
@@ -10,9 +22,6 @@ import { GameNotification } from '@common/game-notification';
   imports: [CommonModule, GameNotificationsPanelComponent],
   templateUrl: './game-chat-panel.component.html',
   styleUrl: './game-chat-panel.component.scss',
-  host: {
-    '[class.chat-panel--no-title]': '!showTitle',
-  },
 })
 export class GameChatPanelComponent implements OnChanges, AfterViewInit {
   @Input({ required: true }) messages: readonly ChatMessage[] = [];
@@ -27,6 +36,11 @@ export class GameChatPanelComponent implements OnChanges, AfterViewInit {
 
   readonly messageInput = signal('');
   private previousMessageCount = 0;
+
+  @HostBinding('class.chat-panel--no-title')
+  protected get noTitleClass(): boolean {
+    return !this.showTitle;
+  }
 
   // Scrolls to bottom when new messages arrive, 
   // but only if message count increased (prevents scroll on edits).

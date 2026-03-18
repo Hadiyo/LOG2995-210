@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
-import { ChatMessage } from '@common/chat-message';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { map, Observable } from 'rxjs';
 

@@ -12,9 +12,11 @@ import { MAP_SIZE_CONFIG } from '@app/config/map.config';
 import { GameSessionDisplayService } from '@app/pages/game-view/game-session-display.service';
 import { GameSessionInteractionService } from '@app/pages/game-view/game-session-interaction.service';
 import {
+    ACTIVE_TURN_DURATION_MS,
     CLOCK_TICK_MS,
     MATCH_END_REDIRECT_DURATION_MS,
     MILLISECONDS_PER_SECOND,
+    TRANSITION_DURATION_MS,
 } from '@app/pages/game-view/game-session.constants';
 import { GameSessionTargetsService } from '@app/pages/game-view/game-session-targets.service';
 import { GameSessionTurnEffectsService } from '@app/pages/game-view/game-session-turn-effects.service';
@@ -52,6 +54,9 @@ import { GAME_VIEW_CONSTANTS } from './game-view.constants';
     ],
 })
 export class GameViewPageComponent implements OnInit, OnDestroy {
+    private static readonly activeTurnDurationSeconds = ACTIVE_TURN_DURATION_MS / MILLISECONDS_PER_SECOND;
+    private static readonly transitionDurationSeconds = TRANSITION_DURATION_MS / MILLISECONDS_PER_SECOND;
+
     protected readonly constants = GAME_VIEW_CONSTANTS;
     protected readonly display = inject(GameSessionDisplayService);
     protected readonly interaction = inject(GameSessionInteractionService);
@@ -103,7 +108,11 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             ? this.display.activeTurnCountdownSeconds()
             : this.display.transitionCountdownSeconds(),
     );
-    protected readonly totalSeconds = computed<number>(() => this.display.turnState()?.phase === 'active' ? 30 : 3);
+    protected readonly totalSeconds = computed<number>(() =>
+        this.display.turnState()?.phase === 'active'
+            ? GameViewPageComponent.activeTurnDurationSeconds
+            : GameViewPageComponent.transitionDurationSeconds,
+    );
     protected readonly highlightTimer = computed<boolean>(() => this.display.turnState()?.phase === 'active');
     protected readonly activePanelName = computed<string | null>(() => {
         const turnState = this.display.turnState();

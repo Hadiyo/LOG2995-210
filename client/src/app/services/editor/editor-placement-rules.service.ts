@@ -21,7 +21,7 @@ export class EditorPlacementRulesService {
      * - default is closed when first placed (walkable=false)
      * - toggling happens in applyTileAtIndex()
      */
-    public isWalkable(tileType: TileType): boolean {
+    isWalkable(tileType: TileType): boolean {
         switch (tileType) {
             case TileType.WALL:
                 return false;
@@ -41,7 +41,8 @@ export class EditorPlacementRulesService {
      * Object limits (editor-time validation)
      * - START: depends on map size
      */
-    public getObjectLimit(type: ObjectType, size: MapSize, _mode: GameMode): number {
+    getObjectLimit(type: ObjectType, size: MapSize, mode: GameMode): number {
+        void mode;
         if (type === ObjectType.START) {
             return START_LIMITS_BY_SIZE[size];
         }
@@ -52,7 +53,7 @@ export class EditorPlacementRulesService {
     /**
      * Bounds check for any covered positions (prevents placing outside grid).
      */
-    public arePositionsInBounds(positions: Vec2[], size: MapSize): boolean {
+    arePositionsInBounds(positions: Vec2[], size: MapSize): boolean {
         const { cols, rows } = this.mapFactory.getDimensions(size);
         return positions.every((position) => position.x >= 0 && position.y >= 0 && position.x < cols && position.y < rows);
     }
@@ -62,9 +63,11 @@ export class EditorPlacementRulesService {
      * - all covered tiles must exist and be walkable
      * - must not collide with existing objects
      */
-    public canPlaceObject(covered: Vec2[], objects: MapObject[], editorMap: EditorMap): boolean {
+    canPlaceObject(covered: Vec2[], objects: MapObject[], editorMap: EditorMap): boolean {
         // Map cell lookup by "x,y" for fast access
-        const cellByKey = new Map(editorMap.map.map((cell, index) => [`${index % editorMap.size},${Math.floor(index / editorMap.size)}`, cell] as const));
+        const cellByKey = new Map(
+            editorMap.map.map((cell, index) => [`${index % editorMap.size},${Math.floor(index / editorMap.size)}`, cell] as const),
+        );
 
         // Check walkable
         for (const position of covered) {

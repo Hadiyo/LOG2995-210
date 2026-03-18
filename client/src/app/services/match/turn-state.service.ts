@@ -30,11 +30,11 @@ export class TurnStateService {
     private transitionTimerId: number | null = null;
     private activeTurnTimerId: number | null = null;
 
-    public buildTurnOrder(players: MatchPlayer[], random: () => number): MatchTurnOrderEntry[] {
+    buildTurnOrder(players: MatchPlayer[], random: () => number): MatchTurnOrderEntry[] {
         return buildTurnOrderFromPlayers(players, random);
     }
 
-    public initialize(match: InitializedMatch, random: () => number): void {
+    initialize(match: InitializedMatch, random: () => number): void {
         const raw = readStoredJson<MatchTurnState>(TURN_STATE_STORAGE_KEY);
         if (raw && isReusableTurnState(raw, match)) {
             const currentState = this.turnState();
@@ -52,13 +52,13 @@ export class TurnStateService {
         this.startTransition(match.mapId, order, 0, false);
     }
 
-    public advanceToNextTurn(): void {
+    advanceToNextTurn(): void {
         const currentState = this.turnState();
         if (!currentState) return;
         this.advanceFromExpiredTurn(currentState);
     }
 
-    public hydrateSnapshot(turnState: MatchTurnState | null): void {
+    hydrateSnapshot(turnState: MatchTurnState | null): void {
         this.clearTransitionTimer();
         this.clearActiveTurnTimer();
 
@@ -71,7 +71,7 @@ export class TurnStateService {
         this.setPersistedState(turnState);
     }
 
-    public canPlayerInteract(playerId: string, context: InteractionContext = 'default'): boolean {
+    canPlayerInteract(playerId: string, context: InteractionContext = 'default'): boolean {
         const currentState = this.turnState();
         if (!currentState) return false;
         if (context === 'inspection') return true;
@@ -84,19 +84,19 @@ export class TurnStateService {
         return currentState.activePlayerId === playerId && playerState === 'active';
     }
 
-    public canPerformMovement(playerId: string, cost: number = 0): boolean {
+    canPerformMovement(playerId: string, cost: number = 0): boolean {
         const currentState = this.turnState();
         if (!currentState) return false;
         return this.canPlayerInteract(playerId) && currentState.movementPointsRemaining >= cost;
     }
 
-    public canPerformAction(playerId: string): boolean {
+    canPerformAction(playerId: string): boolean {
         const currentState = this.turnState();
         if (!currentState || currentState.actionTaken) return false;
         return this.canPlayerInteract(playerId);
     }
 
-    public recordMovement(playerId: string, cost: number): boolean {
+    recordMovement(playerId: string, cost: number): boolean {
         const currentState = this.turnState();
         if (!currentState || !this.canPerformMovement(playerId, cost)) return false;
 
@@ -108,7 +108,7 @@ export class TurnStateService {
         return true;
     }
 
-    public consumeAction(playerId: string): boolean {
+    consumeAction(playerId: string): boolean {
         const currentState = this.turnState();
         if (!currentState || !this.canPerformAction(playerId)) return false;
 
@@ -119,14 +119,14 @@ export class TurnStateService {
         return true;
     }
 
-    public clear(): void {
+    clear(): void {
         this.clearTransitionTimer();
         this.clearActiveTurnTimer();
         this.turnState.set(null);
         localStorage.removeItem(TURN_STATE_STORAGE_KEY);
     }
 
-    public removePlayer(playerId: string): void {
+    removePlayer(playerId: string): void {
         const currentState = this.turnState();
         if (!currentState) return;
 

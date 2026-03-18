@@ -17,11 +17,11 @@ import { MatchSessionStore } from './match-session.store';
 export class MatchStateService extends MatchSessionStore {
     private readonly matchBoardService = inject(MatchBoardService);
 
-    public buildInitializedMatch(map: EditorMapDetails, players: MatchLobbyPlayer[], random: () => number): InitializedMatch {
+    buildInitializedMatch(map: EditorMapDetails, players: MatchLobbyPlayer[], random: () => number): InitializedMatch {
         return this.matchSetupService.buildInitializedMatch(map, players, random);
     }
 
-    public removePlayer(playerId: string): void {
+    removePlayer(playerId: string): void {
         const isLocalPlayer = this.localPlayer()?.id === playerId;
 
         if (isLocalPlayer) {
@@ -43,7 +43,7 @@ export class MatchStateService extends MatchSessionStore {
         this.turnStateService.removePlayer(playerId);
     }
 
-    public async initializeFromPendingSelection(): Promise<boolean> {
+    async initializeFromPendingSelection(): Promise<boolean> {
         const persistedMatch = this.match();
         if (!persistedMatch) {
             return false;
@@ -52,7 +52,7 @@ export class MatchStateService extends MatchSessionStore {
         return true;
     }
 
-    public hydrateSnapshot(match: InitializedMatch | null): void {
+    hydrateSnapshot(match: InitializedMatch | null): void {
         if (!match) {
             this.resetMatchState();
             return;
@@ -63,7 +63,7 @@ export class MatchStateService extends MatchSessionStore {
         this.errorMessage.set('');
     }
 
-    public abandonLocalPlayer(message: string): void {
+    abandonLocalPlayer(message: string): void {
         const localPlayer = this.localPlayer();
         if (!localPlayer) {
             this.endLocalSession(message);
@@ -85,7 +85,7 @@ export class MatchStateService extends MatchSessionStore {
         this.errorMessage.set('');
     }
 
-    public updatePlayerPosition(playerId: string, position: Vec2): MatchPlayer | null {
+    updatePlayerPosition(playerId: string, position: Vec2): MatchPlayer | null {
         const currentMatch = this.match();
         if (!currentMatch) {
             return null;
@@ -104,7 +104,7 @@ export class MatchStateService extends MatchSessionStore {
         return nextPlayers.find((player) => player.id === playerId) ?? null;
     }
 
-    public applyCombatAftermath(defeatedPlayerIds: string[]): CombatAftermathResult | null {
+    applyCombatAftermath(defeatedPlayerIds: string[]): CombatAftermathResult | null {
         const currentMatch = this.match();
         if (!currentMatch) {
             return null;
@@ -119,23 +119,23 @@ export class MatchStateService extends MatchSessionStore {
         return aftermath.outcome;
     }
 
-    public endLocalSession(message: string): void {
+    endLocalSession(message: string): void {
         this.setHomeReturnMessage(message);
         this.clearLocalPlayer();
         this.resetMatchState();
     }
 
-    public setHomeReturnMessage(message: string): void {
+    setHomeReturnMessage(message: string): void {
         this.writeStoredJson(HOME_RETURN_MESSAGE_STORAGE_KEY, message);
     }
 
-    public consumeHomeReturnMessage(): string | null {
+    consumeHomeReturnMessage(): string | null {
         const message = this.readStoredJson<string>(HOME_RETURN_MESSAGE_STORAGE_KEY);
         localStorage.removeItem(HOME_RETURN_MESSAGE_STORAGE_KEY);
         return message;
     }
 
-    public registerCombatVictory(playerId: string): { player: MatchPlayer | null; endState: MatchEndState | null } | null {
+    registerCombatVictory(playerId: string): { player: MatchPlayer | null; endState: MatchEndState | null } | null {
         const currentMatch = this.match();
         if (!currentMatch) {
             return null;
@@ -165,17 +165,17 @@ export class MatchStateService extends MatchSessionStore {
         };
     }
 
-    public getPlayerAt(position: Vec2): MatchPlayer | null {
+    getPlayerAt(position: Vec2): MatchPlayer | null {
         const currentMatch = this.match();
         return currentMatch ? this.matchBoardService.getPlayerAt(currentMatch, position) : null;
     }
 
-    public getObjectCovering(position: Vec2): MapObject | null {
+    getObjectCovering(position: Vec2): MapObject | null {
         const currentMatch = this.match();
         return currentMatch ? this.matchBoardService.getObjectCovering(currentMatch.objects, position) : null;
     }
 
-    public inspectTile(position: Vec2): MatchTileInspection | null {
+    inspectTile(position: Vec2): MatchTileInspection | null {
         const currentMatch = this.match();
         return currentMatch ? this.matchBoardService.inspectTile(currentMatch, position) : null;
     }

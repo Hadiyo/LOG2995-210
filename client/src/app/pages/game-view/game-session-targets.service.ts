@@ -13,11 +13,11 @@ export class GameSessionTargetsService {
     private readonly matchBoardService = inject(MatchBoardService);
     private readonly movementService = inject(MatchMovementService);
 
-    public canUseAction(): boolean {
+    canUseAction(): boolean {
         return !this.display.matchEndState() && this.isLocalPlayerTurn() && this.display.localActionAvailable();
     }
 
-    public isLocalPlayerTurn(): boolean {
+    isLocalPlayerTurn(): boolean {
         const localPlayer = this.display.localPlayer();
         const currentTurnState = this.display.turnState();
         return !this.display.matchEndState() &&
@@ -26,11 +26,11 @@ export class GameSessionTargetsService {
             currentTurnState.activePlayerId === localPlayer.id;
     }
 
-    public getCombatActionTargets(): Set<string> {
+    getCombatActionTargets(): Set<string> {
         return this.getCombatActionTargetsForPlayer(this.display.findPlayerById(this.display.localPlayer()?.id ?? null));
     }
 
-    public getCombatActionTargetsForPlayer(positionedPlayer: MatchPlayer | null): Set<string> {
+    getCombatActionTargetsForPlayer(positionedPlayer: MatchPlayer | null): Set<string> {
         const currentMatch = this.display.match();
         if (!currentMatch || !positionedPlayer) {
             return new Set<string>();
@@ -47,34 +47,35 @@ export class GameSessionTargetsService {
         );
     }
 
-    public getDoorActionTargets(): Set<string> {
+    getDoorActionTargets(): Set<string> {
         const currentMatch = this.display.match();
         const localPlayer = this.display.findPlayerById(this.display.localPlayer()?.id ?? null);
         if (!currentMatch || !localPlayer) {
             return new Set<string>();
         }
 
-        const adjacentDoors = currentMatch.map.filter(
-            (cell) =>
-                cell.tileType === TileType.DOOR &&
-                Math.abs(cell.position.x - localPlayer.position.x) + Math.abs(cell.position.y - localPlayer.position.y) === 1 &&
-                !(cell.isWalkable && currentMatch.players.some((player) => player.position.x === cell.position.x && player.position.y === cell.position.y)),
-        );
+        const adjacentDoors = currentMatch.map.filter((cell) => {
+            const isAdjacent =
+                Math.abs(cell.position.x - localPlayer.position.x) +
+                    Math.abs(cell.position.y - localPlayer.position.y) ===
+                1;
+            const occupiedByPlayer = currentMatch.players.some(
+                (player) => player.position.x === cell.position.x && player.position.y === cell.position.y,
+            );
+            return cell.tileType === TileType.DOOR && isAdjacent && !(cell.isWalkable && occupiedByPlayer);
+        });
 
         return new Set(adjacentDoors.map((cell) => positionKey(cell.position)));
     }
 
-    public hasAnyActionTarget(player: MatchPlayer): boolean {
+    hasAnyActionTarget(player: MatchPlayer): boolean {
         return this.getCombatActionTargetsForPlayer(player).size > 0 || this.getDoorActionTargets().size > 0;
     }
 
-    public hasAvailableMovement(player: MatchPlayer, movementPointsRemaining: number): boolean {
+    hasAvailableMovement(player: MatchPlayer, movementPointsRemaining: number): boolean {
         const currentMatch = this.display.match();
         return !!currentMatch && MOVEMENT_DIRECTIONS.some((direction: MovementDirection) =>
             this.movementService.tryMove(currentMatch, player.id, direction, movementPointsRemaining).success,
         );
     }
-
 }
-
-

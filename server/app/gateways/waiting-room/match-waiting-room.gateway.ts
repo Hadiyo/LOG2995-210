@@ -86,7 +86,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
         this.waitingRoomService.on(SocketEvents.WaitingRoomDirectoryUpdated, this.onDirectoryUpdated);
     }
 
-    public onModuleDestroy(): void {
+    onModuleDestroy(): void {
         this.waitingRoomService.off(SocketEvents.WaitingRoomUpdated, this.onUpdated);
         this.waitingRoomService.off(SocketEvents.WaitingRoomMessageSent, this.onMessage);
         this.waitingRoomService.off(SocketEvents.WaitingRoomError, this.onError);
@@ -96,12 +96,12 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
         this.waitingRoomService.off(SocketEvents.WaitingRoomDirectoryUpdated, this.onDirectoryUpdated);
     }
 
-    public handleDisconnect(client: Socket): void {
+    handleDisconnect(client: Socket): void {
         this.waitingRoomService.handleDisconnect(client.id);
     }
 
     @SubscribeMessage(SocketEvents.CreateWaitingRoom)
-    public async createWaitingRoom(
+    async createWaitingRoom(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: CreateWaitingRoomPayload,
     ): Promise<void> {
@@ -119,7 +119,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
     }
 
     @SubscribeMessage(SocketEvents.JoinWaitingRoom)
-    public joinWaitingRoom(
+    joinWaitingRoom(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: JoinWaitingRoomPayload,
     ): void {
@@ -136,7 +136,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
     }
 
     @SubscribeMessage(SocketEvents.LeaveWaitingRoom)
-    public leaveWaitingRoom(
+    leaveWaitingRoom(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: { accessCode: string },
     ): void {
@@ -145,7 +145,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
     }
 
     @SubscribeMessage(SocketEvents.KickWaitingRoomPlayer)
-    public kickPlayer(
+    kickPlayer(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: KickWaitingRoomPlayerPayload,
     ): void {
@@ -153,7 +153,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
     }
 
     @SubscribeMessage(SocketEvents.SendWaitingRoomMessage)
-    public sendMessage(
+    sendMessage(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: SendWaitingRoomMessagePayload,
     ): void {
@@ -161,7 +161,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
     }
 
     @SubscribeMessage(SocketEvents.StartWaitingRoomGame)
-    public async startGame(
+    async startGame(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: { accessCode: string },
     ): Promise<void> {

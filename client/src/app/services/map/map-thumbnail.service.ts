@@ -61,7 +61,7 @@ export class MapThumbnailService {
      * Generate a base64 preview image from an EditorMap.
      * Returns WebP when supported; falls back to PNG.
      */
-    public async generatePreview(map: EditorMap): Promise<PreviewImage | null> {
+    async generatePreview(map: EditorMap): Promise<PreviewImage | null> {
         // Get 2D drawing context
         const ctx = this.createContext();
         // if context is missing, skip drawing

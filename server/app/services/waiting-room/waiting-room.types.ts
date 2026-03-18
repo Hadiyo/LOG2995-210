@@ -1,4 +1,4 @@
-import { ChatMessage } from '@common/chat-message';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { WaitingRoomErrorPayload, WaitingRoomStatePayload } from '@common/socket-events';
 

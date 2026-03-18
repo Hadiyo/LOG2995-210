@@ -43,7 +43,7 @@ export interface CombatAftermathResult {
 
 @Injectable({ providedIn: 'root' })
 export class MatchBoardService {
-    public buildVisibleObjects(objects: MapObject[], players: MatchPlayer[]): MapObject[] {
+    buildVisibleObjects(objects: MapObject[], players: MatchPlayer[]): MapObject[] {
         const activeStarts = new Set(players.map((player) => positionKey(player.startingPosition)));
 
         return objects
@@ -51,15 +51,15 @@ export class MatchBoardService {
             .map((object) => ({ ...object, position: cloneVec2(object.position) }));
     }
 
-    public getPlayerAt(match: InitializedMatch, position: Vec2): MatchPlayer | null {
+    getPlayerAt(match: InitializedMatch, position: Vec2): MatchPlayer | null {
         return match.players.find((player) => samePosition(player.position, position)) ?? null;
     }
 
-    public getObjectCovering(objects: MapObject[], position: Vec2): MapObject | null {
+    getObjectCovering(objects: MapObject[], position: Vec2): MapObject | null {
         return objects.find((object) => this.objectFootprint(object).some((tile) => samePosition(tile, position))) ?? null;
     }
 
-    public inspectTile(match: InitializedMatch, position: Vec2): MatchTileInspection | null {
+    inspectTile(match: InitializedMatch, position: Vec2): MatchTileInspection | null {
         const cell = match.map.find((candidate) => samePosition(candidate.position, position));
         if (!cell) {
             return null;
@@ -86,7 +86,7 @@ export class MatchBoardService {
         };
     }
 
-    public applyCombatAftermath(match: InitializedMatch, defeatedPlayerIds: string[]): {
+    applyCombatAftermath(match: InitializedMatch, defeatedPlayerIds: string[]): {
         nextMatch: InitializedMatch;
         outcome: CombatAftermathResult;
     } | null {
@@ -143,7 +143,7 @@ export class MatchBoardService {
         };
     }
 
-    public objectFootprint(object: MapObject): Vec2[] {
+    objectFootprint(object: MapObject): Vec2[] {
         const offsets = object.size === ObjectSize.L ? DOUBLE_TILE_OFFSETS : SINGLE_TILE_OFFSETS;
         return offsets.map((offset) => ({
             x: object.position.x + offset.x,
@@ -151,7 +151,7 @@ export class MatchBoardService {
         }));
     }
 
-    public areAdjacent(left: Vec2, right: Vec2): boolean {
+    areAdjacent(left: Vec2, right: Vec2): boolean {
         return Math.abs(left.x - right.x) + Math.abs(left.y - right.y) === 1;
     }
 

@@ -20,6 +20,8 @@ import type { EditorCell, EditorMap, MapObject } from '@common/maps/map.interfac
  */
 
 describe('common map-validation (validateMap)', () => {
+    const threeByThreeMapSize = Number('3') as MapSize;
+
     const makeCell = (xOrTileType: number | TileType, yOrTileType?: number | TileType, maybeTileType?: TileType): EditorCell => {
         const tileType = typeof xOrTileType === 'number' ? (maybeTileType as TileType) : xOrTileType;
         const position = typeof xOrTileType === 'number' ? { x: xOrTileType, y: yOrTileType as number } : { x: 0, y: 0 };
@@ -142,7 +144,7 @@ describe('common map-validation (validateMap)', () => {
 
     it('should validate door placement from array order even when cell positions are malformed', () => {
         const malformedMap = makeEditorMap({
-            size: 3 as MapSize,
+            size: threeByThreeMapSize,
             map: [
                 makeCell(TileType.WALL),
                 makeCell(TileType.DIRT),

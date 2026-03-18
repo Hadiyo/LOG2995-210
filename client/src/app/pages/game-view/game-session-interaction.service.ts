@@ -24,11 +24,11 @@ export class GameSessionInteractionService {
     private readonly movementService = inject(MatchMovementService);
     private readonly targets = inject(GameSessionTargetsService);
     private readonly turnStateService = inject(TurnStateService);
-    public readonly inspectedTile = signal<MatchTileInspection | null>(null);
-    public readonly movementFeedback = signal('');
-    public readonly actionContext = signal<GameSessionActionContext | null>(null);
-    public readonly actionSelectionOpen = signal(false);
-    public readonly availableActionContexts = computed<GameSessionActionOption[]>(() => {
+    readonly inspectedTile = signal<MatchTileInspection | null>(null);
+    readonly movementFeedback = signal('');
+    readonly actionContext = signal<GameSessionActionContext | null>(null);
+    readonly actionSelectionOpen = signal(false);
+    readonly availableActionContexts = computed<GameSessionActionOption[]>(() => {
         if (!this.canUseAction()) {
             return [];
         }
@@ -41,7 +41,7 @@ export class GameSessionInteractionService {
         }
         return options;
     });
-    public readonly actionTargets = computed(() => {
+    readonly actionTargets = computed(() => {
         switch (this.actionContext()) {
             case 'combat':
                 return this.targets.getCombatActionTargets();
@@ -51,41 +51,41 @@ export class GameSessionInteractionService {
                 return new Set<string>();
         }
     });
-    public inspectTile(event: MouseEvent, tile: EditorCell): void {
+    inspectTile(event: MouseEvent, tile: EditorCell): void {
         event.preventDefault();
         if (!this.display.matchEndState()) {
             this.inspectedTile.set(this.display.inspectTile(tile.position));
         }
     }
 
-    public closeInspection(): void {
+    closeInspection(): void {
         this.inspectedTile.set(null);
     }
 
-    public clearActionSelection(): void {
+    clearActionSelection(): void {
         this.actionSelectionOpen.set(false);
         this.actionContext.set(null);
     }
 
-    public isActionTarget(tile: EditorCell): boolean {
+    isActionTarget(tile: EditorCell): boolean {
         return this.actionTargets().has(positionKey(tile.position));
     }
 
-    public actionHelperText(): string {
+    actionHelperText(): string {
         if (this.actionContext() === 'combat') return 'Choisissez un adversaire adjacent pour engager le combat.';
         if (this.actionContext() === 'door') return 'Choisissez une porte adjacente pour l ouvrir ou la fermer.';
         return '';
     }
 
-    public canUseAction(): boolean {
+    canUseAction(): boolean {
         return this.targets.canUseAction();
     }
 
-    public canToggleActionMode(): boolean {
+    canToggleActionMode(): boolean {
         return !!this.actionContext() || this.actionSelectionOpen() || this.availableActionContexts().length > 0;
     }
 
-    public toggleActionMode(): void {
+    toggleActionMode(): void {
         if (this.actionContext() || this.actionSelectionOpen()) {
             this.clearActionSelection();
             return;
@@ -101,12 +101,12 @@ export class GameSessionInteractionService {
         }
     }
 
-    public selectActionContext(context: GameSessionActionContext): void {
+    selectActionContext(context: GameSessionActionContext): void {
         this.actionSelectionOpen.set(false);
         this.actionContext.set(context);
     }
 
-    public endCurrentTurn(): void {
+    endCurrentTurn(): void {
         const localPlayer = this.display.localPlayer();
         if (localPlayer) {
             this.gameSessionSocket.endTurn(localPlayer.id);
@@ -115,7 +115,7 @@ export class GameSessionInteractionService {
         }
     }
 
-    public moveLocal(direction: MovementDirection): void {
+    moveLocal(direction: MovementDirection): void {
         const currentMatch = this.display.match();
         const localPlayer = this.display.localPlayer();
         const movementPointsRemaining = this.display.turnState()?.movementPointsRemaining ?? 0;
@@ -139,15 +139,15 @@ export class GameSessionInteractionService {
         );
     }
 
-    public hasAvailableMovement(player: MatchPlayer, movementPointsRemaining: number): boolean {
+    hasAvailableMovement(player: MatchPlayer, movementPointsRemaining: number): boolean {
         return this.targets.hasAvailableMovement(player, movementPointsRemaining);
     }
 
-    public hasAnyActionTarget(player: MatchPlayer): boolean {
+    hasAnyActionTarget(player: MatchPlayer): boolean {
         return this.targets.hasAnyActionTarget(player);
     }
 
-    public handleCellPrimaryAction(tile: EditorCell): void {
+    handleCellPrimaryAction(tile: EditorCell): void {
         if (this.actionContext() === 'combat') {
             this.handleCombatAction(tile);
         } else if (this.actionContext() === 'door') {
@@ -155,7 +155,7 @@ export class GameSessionInteractionService {
         }
     }
 
-    public handleMovementKeyup(event: KeyboardEvent): void {
+    handleMovementKeyup(event: KeyboardEvent): void {
         const direction = MOVEMENT_KEY_BINDINGS.get(event.code);
         if (!direction || this.shouldIgnoreMovementShortcut(event)) {
             return;

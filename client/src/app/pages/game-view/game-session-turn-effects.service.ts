@@ -16,7 +16,7 @@ export class GameSessionTurnEffectsService {
     private readonly display = inject(GameSessionDisplayService);
     private readonly gameSessionSocket = inject(GameSessionSocketService);
     private readonly interaction = inject(GameSessionInteractionService);
-    public readonly combatNotifications = signal<LocalCombatNotification[]>([]);
+    readonly combatNotifications = signal<LocalCombatNotification[]>([]);
 
     private previousObservedPhase: MatchTurnState['phase'] | null = null;
     private previousObservedActivePlayerId: string | null = null;
@@ -52,12 +52,12 @@ export class GameSessionTurnEffectsService {
         });
     }
 
-    public destroy(): void {
+    destroy(): void {
         this.combatNotificationTimerIds.forEach((timerId) => window.clearTimeout(timerId));
         this.combatNotificationTimerIds.clear();
     }
 
-    public dismissCombatNotification(notificationId: string): void {
+    dismissCombatNotification(notificationId: string): void {
         const timerId = this.combatNotificationTimerIds.get(notificationId);
         if (timerId !== undefined) {
             window.clearTimeout(timerId);

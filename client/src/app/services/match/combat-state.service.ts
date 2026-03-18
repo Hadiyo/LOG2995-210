@@ -23,7 +23,7 @@ export class CombatStateService {
         private readonly turnStateService: TurnStateService,
     ) {}
 
-    public startCombat(attackerId: string, defenderId: string): boolean {
+    startCombat(attackerId: string, defenderId: string): boolean {
         const match = this.matchStateService.match();
         const turnState = this.turnStateService.turnState();
         if (!match || match.endState || !turnState || turnState.phase !== 'active') {

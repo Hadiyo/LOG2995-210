@@ -37,19 +37,19 @@ export class GameSessionDisplayService {
             currentTurnState.movementPointsRemaining,
         );
     });
-    public avatarUrl(avatarId: string | number): string {
+    avatarUrl(avatarId: string | number): string {
         return `assets/avatars/thumbs/${avatarId}.png`;
     }
 
-    public playerAt(tile: EditorCell): MatchPlayer | null {
+    playerAt(tile: EditorCell): MatchPlayer | null {
         return this.matchState.getPlayerAt(tile.position);
     }
 
-    public inspectTile(position: Vec2): MatchTileInspection | null {
+    inspectTile(position: Vec2): MatchTileInspection | null {
         return this.matchState.inspectTile(position);
     }
 
-    public turnOrderedPlayers(): MatchPlayer[] {
+    turnOrderedPlayers(): MatchPlayer[] {
         const currentMatch = this.match();
         const currentTurnState = this.turnState();
         if (!currentMatch || !currentTurnState) {
@@ -62,23 +62,23 @@ export class GameSessionDisplayService {
             .filter((player): player is MatchPlayer => player !== null);
     }
 
-    public currentActivePlayer(): MatchPlayer | null {
+    currentActivePlayer(): MatchPlayer | null {
         return this.findPlayerById(this.turnState()?.activePlayerId ?? null);
     }
 
-    public transitionTargetPlayer(): MatchPlayer | null {
+    transitionTargetPlayer(): MatchPlayer | null {
         return this.findPlayerById(this.turnState()?.transitionTargetPlayerId ?? null);
     }
 
-    public transitionCountdownSeconds(): number {
+    transitionCountdownSeconds(): number {
         return this.toCountdownSeconds(this.turnState()?.transitionRemainingMs ?? 0);
     }
 
-    public activeTurnCountdownSeconds(): number {
+    activeTurnCountdownSeconds(): number {
         return this.toCountdownSeconds(this.turnState()?.activeTurnRemainingMs ?? 0);
     }
 
-    public localPlayerStateLabel(): string {
+    localPlayerStateLabel(): string {
         const localPlayer = this.localPlayer();
         const playerState = this.turnState()?.playerStates.find((entry) => entry.playerId === localPlayer?.id)?.state ?? 'waiting';
 
@@ -90,20 +90,20 @@ export class GameSessionDisplayService {
         }
     }
 
-    public localMovementCount(): number {
+    localMovementCount(): number {
         return this.turnState()?.movementCount ?? 0;
     }
 
-    public localMovementPointsRemaining(): number {
+    localMovementPointsRemaining(): number {
         return this.turnState()?.movementPointsRemaining ?? 0;
     }
 
-    public localActionAvailable(): boolean {
+    localActionAvailable(): boolean {
         const localPlayer = this.localPlayer();
         return !!localPlayer && this.turnStateService.canPerformAction(localPlayer.id);
     }
 
-    public findPlayerById(playerId: string | null): MatchPlayer | null {
+    findPlayerById(playerId: string | null): MatchPlayer | null {
         if (!playerId) {
             return null;
         }
