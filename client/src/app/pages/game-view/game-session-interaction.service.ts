@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MatchPlayer, MatchTileInspection } from '@common/game/match.interface';
 import { EditorCell } from '@common/maps/map.interface';
+import { TileType } from '@common/maps/map.enums';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
 import { positionKey } from '@app/services/match/match-geometry';
 import { CombatStateService } from '@app/services/match/combat-state.service';
@@ -53,6 +54,9 @@ export class GameSessionInteractionService {
     });
     inspectTile(event: MouseEvent, tile: EditorCell): void {
         event.preventDefault();
+        if (this.tryDebugTeleport(tile)) {
+            return;
+        }
         if (!this.display.matchEndState()) {
             this.inspectedTile.set(this.display.inspectTile(tile.position));
         }
@@ -109,7 +113,15 @@ export class GameSessionInteractionService {
     endCurrentTurn(): void {
         const localPlayer = this.display.localPlayer();
         if (localPlayer) {
-            this.gameSessionSocket.endTurn(localPlayer.id);
+            const canForceEndTurn =
+                !!localPlayer.isOrganizer &&
+                !!this.display.match()?.debugMode &&
+                !this.display.matchEndState();
+            if (canForceEndTurn) {
+                this.gameSessionSocket.forceEndDebugTurn(localPlayer.id);
+            } else {
+                this.gameSessionSocket.endTurn(localPlayer.id);
+            }
             this.clearActionSelection();
             this.closeInspection();
         }
@@ -204,5 +216,40 @@ export class GameSessionInteractionService {
 
         const target = event.target;
         return target instanceof HTMLElement && (target.isContentEditable || EDITABLE_TARGET_TAGS.has(target.tagName));
+    }
+
+    private tryDebugTeleport(tile: EditorCell): boolean {
+        const currentMatch = this.display.match();
+        const localPlayer = this.display.localPlayer();
+        if (!currentMatch ||
+            !localPlayer ||
+            !currentMatch.debugMode ||
+            this.display.matchEndState() ||
+            this.display.turnState()?.phase !== 'active' ||
+            this.display.turnState()?.activePlayerId !== localPlayer.id) {
+            return false;
+        }
+
+        if (tile.tileType === TileType.WALL || (tile.tileType === TileType.DOOR && !tile.isWalkable)) {
+            this.movementFeedback.set('Teleportation debug refusee: tuile invalide.');
+            return true;
+        }
+
+        const occupiedByPlayer = currentMatch.players.some(
+            (player) => player.id !== localPlayer.id && player.position.x === tile.position.x && player.position.y === tile.position.y,
+        );
+        const occupiedByObject = currentMatch.objects.some(
+            (object) => object.position.x === tile.position.x && object.position.y === tile.position.y,
+        );
+        if (occupiedByPlayer || occupiedByObject) {
+            this.movementFeedback.set('Teleportation debug refusee: case occupee.');
+            return true;
+        }
+
+        this.matchState.updatePlayerPosition(localPlayer.id, tile.position);
+        this.gameSessionSocket.debugTeleportPlayer(localPlayer.id, tile.position);
+        this.closeInspection();
+        this.movementFeedback.set(`Teleportation debug vers (${tile.position.x}, ${tile.position.y}).`);
+        return true;
     }
 }

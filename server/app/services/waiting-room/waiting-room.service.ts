@@ -243,10 +243,11 @@ export class WaitingRoomService {
             return;
         }
 
-        const sessionId = await this.gameSessionService.createSessionFromWaitingRoom(room.mapId, room.players);
+        const sessionId = await this.gameSessionService.createSessionFromWaitingRoom(room.mapId, room.players, room.messages);
         this.events.emit(SocketEvents.WaitingRoomGameStarted, {
             accessCode,
             sessionId,
+            messages: room.messages,
         } as WaitingRoomGameStartedEvent);
         this.rooms.delete(accessCode);
         this.emitDirectoryUpdated();

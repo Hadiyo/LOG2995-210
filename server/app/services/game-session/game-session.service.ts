@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+import { ChatMessage } from '@common/chat/chat.interface';
 import { MapService } from '@app/services/map/map.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InitializedMatch, MatchLobbyPlayer } from '@common/game/match.interface';
@@ -37,23 +39,27 @@ export class GameSessionService {
         this.events.off(event, callback);
     }
 
-    async createSessionFromWaitingRoom(mapId: string, players: MatchLobbyPlayer[]): Promise<string> {
+    async createSessionFromWaitingRoom(mapId: string, players: MatchLobbyPlayer[], messages: ChatMessage[] = []): Promise<string> {
         const map = await this.mapService.getMapByIdForEditor(mapId);
-        const session = buildSession(map, players);
+        const session = buildSession(map, players, messages);
         this.sessions.set(session.sessionId, session);
         this.emitSnapshot(session);
         this.startTransition(session);
         return session.sessionId;
     }
 
-    registerSocket(sessionId: string, playerId: string, socketId: string): { match: InitializedMatch; turnState: MatchTurnState } {
+    registerSocket(
+        sessionId: string,
+        playerId: string,
+        socketId: string,
+    ): { match: InitializedMatch; turnState: MatchTurnState; messages: ChatMessage[] } {
         const session = this.sessions.get(sessionId);
         if (!session) {
             throw new NotFoundException('Game session not found');
         }
 
         session.socketToPlayerId.set(socketId, playerId);
-        return { match: session.match, turnState: session.turnState };
+        return { match: session.match, turnState: session.turnState, messages: session.messages };
     }
 
     getPlayerIdForSocket(socketId: string, sessionId: string): string | null {
@@ -114,6 +120,9 @@ export class GameSessionService {
             return false;
         }
 
+        const departingPlayer = session.match.players.find((player) => player.id === playerId);
+        const organizerLeftWhileDebugEnabled = !!departingPlayer?.isOrganizer && session.match.debugMode;
+
         const nextPlayers = session.match.players.filter((player) => player.id !== playerId);
         if (nextPlayers.length === session.match.players.length) {
             return false;
@@ -121,6 +130,7 @@ export class GameSessionService {
 
         session.match = {
             ...session.match,
+            debugMode: organizerLeftWhileDebugEnabled ? false : session.match.debugMode,
             players: nextPlayers,
             objects: buildGameSessionVisibleObjects(session.match.allObjects, nextPlayers),
         };
@@ -158,6 +168,86 @@ export class GameSessionService {
         session.turnState = rebuildTurnStateAfterRosterChange(session.turnState, nextPlayers);
         this.emitSnapshot(session);
         return true;
+    }
+
+    toggleDebugMode(sessionId: string, playerId: string): boolean {
+        const session = this.sessions.get(sessionId);
+        const player = session?.match.players.find((candidate) => candidate.id === playerId);
+        if (!session || !player?.isOrganizer) {
+            return false;
+        }
+
+        session.match = {
+            ...session.match,
+            debugMode: !session.match.debugMode,
+        };
+        this.emitSnapshot(session);
+        return true;
+    }
+
+    forceEndDebugTurn(sessionId: string, playerId: string): boolean {
+        const session = this.sessions.get(sessionId);
+        const player = session?.match.players.find((candidate) => candidate.id === playerId);
+        if (!session || !session.match.debugMode || !player?.isOrganizer || session.match.endState) {
+            return false;
+        }
+
+        this.advanceToNextTurn(session);
+        return true;
+    }
+
+    debugTeleportPlayer(sessionId: string, playerId: string, position: { x: number; y: number }): boolean {
+        const session = this.sessions.get(sessionId);
+        const player = session?.match.players.find((candidate) => candidate.id === playerId);
+        if (!session ||
+            !player ||
+            !session.match.debugMode ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== playerId ||
+            session.match.endState) {
+            return false;
+        }
+
+        const targetCell = session.match.map.find(
+            (cell) => cell.position.x === position.x && cell.position.y === position.y,
+        );
+        if (!targetCell || targetCell.tileType === TileType.WALL || (targetCell.tileType === TileType.DOOR && !targetCell.isWalkable)) {
+            return false;
+        }
+
+        const occupiedByPlayer = session.match.players.some(
+            (candidate) => candidate.id !== playerId && candidate.position.x === position.x && candidate.position.y === position.y,
+        );
+        if (occupiedByPlayer) {
+            return false;
+        }
+
+        const occupiedByObject = session.match.objects.some(
+            (object) => object.position.x === position.x && object.position.y === position.y,
+        );
+        if (occupiedByObject) {
+            return false;
+        }
+
+        session.match = {
+            ...session.match,
+            players: session.match.players.map((candidate) =>
+                candidate.id === playerId ? { ...candidate, position: { ...position } } : candidate,
+            ),
+        };
+        this.emitSnapshot(session);
+        return true;
+    }
+
+    addChatMessage(sessionId: string, message: ChatMessage): ChatMessage | null {
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return null;
+        }
+
+        session.messages.push(message);
+        this.emitSnapshot(session);
+        return message;
     }
 
     movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
@@ -376,6 +466,7 @@ export class GameSessionService {
             sessionId: session.sessionId,
             match: session.match,
             turnState: session.turnState,
+            messages: session.messages,
         });
     }
 

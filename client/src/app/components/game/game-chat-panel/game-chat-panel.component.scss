@@ -33,8 +33,8 @@ h3 {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  padding-right: 2px;
+  gap: 10px;
+  padding-right: 4px;
 }
 
 .messages__feed-wrap {
@@ -47,7 +47,7 @@ h3 {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--bg-main) 28%, transparent), transparent 28px),
     color-mix(in srgb, var(--bg-main) 42%, transparent);
-  padding: 10px;
+  padding: 12px;
 }
 
 .messages__notification {
@@ -61,11 +61,11 @@ h3 {
 
 .message {
   width: fit-content;
-  max-width: 86%;
+  max-width: 92%;
   align-self: flex-start;
   border: 1px solid var(--border-soft);
   border-radius: 10px;
-  padding: 7px 9px;
+  padding: 9px 11px;
   background: color-mix(in srgb, var(--bg-main) 75%, transparent);
 }
 
@@ -93,18 +93,19 @@ h3 {
 }
 
 .message__author {
-  font-size: 0.83rem;
+  font-size: 0.9rem;
 }
 
 .message__time {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
 .message__content {
   margin: 0;
-  line-height: 1.3;
+  font-size: 0.95rem;
+  line-height: 1.45;
   word-break: break-word;
 }
 

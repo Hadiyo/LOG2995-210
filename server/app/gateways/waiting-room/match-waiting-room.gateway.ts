@@ -70,6 +70,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
             this.server.to(room).emit(SocketEvents.WaitingRoomGameStarted, {
                 accessCode: event.accessCode,
                 sessionId: event.sessionId,
+                messages: event.messages,
             });
             this.server.in(room).socketsLeave(room);
         };

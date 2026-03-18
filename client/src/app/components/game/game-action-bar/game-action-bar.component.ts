@@ -10,6 +10,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 export class GameActionBarComponent {
   @Input() actionModeEnabled = false;
   @Input() canAct = true;
+  @Input() canEndTurn = true;
   @Input() canUseActionMode = true;
   @Output() endTurn = new EventEmitter<void>();
   @Output() toggleActionMode = new EventEmitter<void>();

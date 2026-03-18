@@ -29,6 +29,7 @@
           [avatarId]="currentPlayer()?.information?.avatarId ?? 0"
           [avatarSpriteSize]="constants.avatarSpriteSize"
           [defaultPanelTitle]="constants.defaultPanelTitle"
+          [debugModeEnabled]="debugModeEnabled()"
         />
       </section>
 
@@ -142,6 +143,7 @@
         <app-game-action-bar
           [actionModeEnabled]="actionModeEnabled()"
           [canAct]="canAct()"
+          [canEndTurn]="canEndTurn()"
           [canUseActionMode]="canUseActionMode()"
           (endTurn)="onEndTurn()"
           (toggleActionMode)="onToggleActionMode()"
