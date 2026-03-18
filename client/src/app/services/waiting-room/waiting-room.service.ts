@@ -15,6 +15,10 @@ import {
 } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
 
+type PendingWaitingRoomRequest =
+  | { type: 'organizer'; mapId: string; player: MatchLobbyPlayer }
+  | { type: 'player'; accessCode: string; player: MatchLobbyPlayer };
+
 @Injectable({ providedIn: 'root' })
 export class WaitingRoomService {
   code = '';
@@ -23,6 +27,8 @@ export class WaitingRoomService {
   private mePlayer: MatchLobbyPlayer | null = null;
   private roomPlayers: MatchLobbyPlayer[] = [];
   private listenersRegistered = false;
+  private pendingRequest: PendingWaitingRoomRequest | null = null;
+  private pendingRequestDispatched = false;
 
   private readonly playersSubject = new BehaviorSubject<MatchLobbyPlayer[]>([]);
   readonly players$ = this.playersSubject.asObservable();
@@ -55,42 +61,39 @@ export class WaitingRoomService {
   }
 
   initAsOrganizer(mapId: string, player: MatchLobbyPlayer): void {
-    this.ensureConnected();
-    this.registerListeners();
-
     this.currentMapId = mapId;
     this.mePlayer = {
       ...player,
       isOrganizer: true,
       controller: 'human',
     };
-
-    this.socketManager.send<CreateWaitingRoomPayload>(SocketEvents.CreateWaitingRoom, {
+    this.pendingRequest = {
+      type: 'organizer',
       mapId,
       player: this.mePlayer,
-    });
+    };
+    this.pendingRequestDispatched = false;
   }
 
   initAsPlayer(accessCode: string, player: MatchLobbyPlayer): void {
-    this.ensureConnected();
-    this.registerListeners();
-
     this.code = accessCode;
     this.mePlayer = {
       ...player,
       isOrganizer: false,
       controller: 'human',
     };
-
-    this.socketManager.send<JoinWaitingRoomPayload>(SocketEvents.JoinWaitingRoom, {
+    this.pendingRequest = {
+      type: 'player',
       accessCode,
       player: this.mePlayer,
-    });
+    };
+    this.pendingRequestDispatched = false;
   }
 
   initWaitingRoom(): void {
     this.ensureConnected();
     this.registerListeners();
+    this.dispatchPendingRequest();
   }
 
   unsubscribeSocketEvents(): void {
@@ -176,6 +179,27 @@ export class WaitingRoomService {
     this.socketManager.on<WaitingRoomGameStartedPayload>(SocketEvents.WaitingRoomGameStarted, this.handleGameStarted);
   }
 
+  private dispatchPendingRequest(): void {
+    if (!this.pendingRequest || this.pendingRequestDispatched) {
+      return;
+    }
+
+    this.pendingRequestDispatched = true;
+
+    if (this.pendingRequest.type === 'organizer') {
+      this.socketManager.send<CreateWaitingRoomPayload>(SocketEvents.CreateWaitingRoom, {
+        mapId: this.pendingRequest.mapId,
+        player: this.pendingRequest.player,
+      });
+      return;
+    }
+
+    this.socketManager.send<JoinWaitingRoomPayload>(SocketEvents.JoinWaitingRoom, {
+      accessCode: this.pendingRequest.accessCode,
+      player: this.pendingRequest.player,
+    });
+  }
+
   private readonly handleWaitingRoomUpdated = (payload: WaitingRoomStatePayload): void => {
     this.code = payload.accessCode;
     this.currentMapId = payload.mapId;
@@ -186,6 +210,8 @@ export class WaitingRoomService {
     this.maxPlayersSubject.next(payload.maxPlayers);
     this.minPlayersToStartSubject.next(payload.minPlayersToStart);
     this.errorSubject.next('');
+    this.pendingRequest = null;
+    this.pendingRequestDispatched = false;
 
     const currentPlayerId = this.mePlayer?.id ?? null;
     this.mePlayer = currentPlayerId ? payload.players.find((player) => player.id === currentPlayerId) ?? this.mePlayer : this.mePlayer;
@@ -198,6 +224,7 @@ export class WaitingRoomService {
   private readonly handleWaitingRoomError = (payload: WaitingRoomErrorPayload): void => {
     this.errorSubject.next(payload.message);
     this.statusMessageSubject.next('');
+    this.pendingRequestDispatched = false;
   };
 
   private readonly handleWaitingRoomCancelled = (payload: { message: string }): void => {
@@ -231,6 +258,8 @@ export class WaitingRoomService {
     this.roomPlayers = [];
     this.code = '';
     this.currentMapId = '';
+    this.pendingRequest = null;
+    this.pendingRequestDispatched = false;
     this.playersSubject.next([]);
     this.messagesSubject.next([]);
     this.isLockedSubject.next(false);

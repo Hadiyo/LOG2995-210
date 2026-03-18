@@ -22,6 +22,12 @@
     }
   }
 
+  @if (errorMessage$ | async; as errorMessage) {
+    @if (errorMessage) {
+      <div class="status-banner" role="alert">{{ errorMessage }}</div>
+    }
+  }
+
   <div class="content-grid">
     <section class="panel players-panel">
       <h2 class="panel-title">

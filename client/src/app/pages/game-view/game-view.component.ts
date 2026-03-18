@@ -26,6 +26,7 @@ export class GameViewComponent implements OnInit, OnDestroy {
   protected isLocked$ = this.waitingRoomService.isLocked$;
   protected maxPlayers$ = this.waitingRoomService.maxPlayers$;
   protected statusMessage$ = this.waitingRoomService.statusMessage$;
+  protected errorMessage$ = this.waitingRoomService.error$;
 
   constructor(
     private readonly router: Router,
