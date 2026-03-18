@@ -1,12 +1,10 @@
 import { Injectable } from '@angular/core';
-import { MAP_DIMENSIONS_BY_SIZE } from '@app/services/editor/constants/editor.constants';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
 import { PreviewImageFormat } from '@common/enum';
-import { MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMap, MapObject } from '@common/maps/map.interface';
 
-type Dim = { cols: number; rows: number };
 // Shared canvas geometry used by all draw steps (cell size + canvas ref)
 type Geom = { canvas: HTMLCanvasElement; cellW: number; cellH: number };
 
@@ -73,7 +71,8 @@ export class MapThumbnailService {
         // Extract canvas from context
         const { canvas } = ctx;
         // Get map dimensions and setup canvas
-        const { cols, rows } = this.getDim(map.size);
+        const cols = map.size; const 
+rows = map.size;
         const geom = this.setupCanvas(canvas, ctx, cols, rows);
 
         // Draw the preview frame
@@ -145,11 +144,6 @@ export class MapThumbnailService {
     /* =========================================================
        Canvas geometry helpers
        ========================================================= */
-
-    private getDim(size: MapSize): Dim {
-        // Return cols/rows for the given map size, fallback to S if unknown
-        return MAP_DIMENSIONS_BY_SIZE[size] ?? MAP_DIMENSIONS_BY_SIZE[MapSize.S];
-    }
 
     /**
      * Sets up a clean drawing surface and returns cell geometry.

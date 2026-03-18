@@ -19,11 +19,20 @@
                     [index]="$index"
                     [tile]="cell"
                     [mapSize]="editorState.editorMap().size"
-                    [object]="editorState.getObjectAtIndex($index)"
+                    [object]="editorState.objectLookUp().get($index) ?? null"
                     (contextmenu)="onContextMenu($event)" 
                     (tileEvent)="handleTileEvent($event)"
                     >
                 </app-editor-tile>
+            }
+
+            @if (tooltipText()) {
+                <div
+                    class="cursor-tooltip"
+                    [style.left.px]="tooltipX()"
+                    [style.top.px]="tooltipY()">
+                    {{ tooltipText() }}
+                </div>
             }
         </div>
     </div>
