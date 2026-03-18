@@ -225,7 +225,7 @@ export class GameSessionService {
         return undefined;
     }
 
-        /**
+    /**
      * Method to create a Waiting Room payload
      * @param session 
      * @param sessionPlayers 
