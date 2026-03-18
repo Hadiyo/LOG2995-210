@@ -9,7 +9,8 @@ import {
     PlayerPayload,
     WaitingRoom,
 } from '@common/game/game-session.interface';
-import { PlayerInformation } from '@common/player/player.interface';
+import { GameMap } from '@common/maps/map.interface';
+import { Player, PlayerInformation } from '@common/player/player.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
@@ -176,8 +177,80 @@ export class GameSessionService {
         }
 
         const players = this.playerService.createRuntimePlayers(session.players, gameMap);
-        const activePlayerId = players[0]?.id ?? '';
-        const snapshot: GameSessionSnapshot = {
+        if(!players)
+            return undefined;
+        const activePlayerId = players[0].id;
+        const snapshot = this.generateGameSessionSnapshot(gameMap, players, session, activePlayerId);
+        session.hasStarted = true;
+        return { snapshot };
+    }
+
+    /**
+     * Requests deletion of gameMap, map preview and deletes game session reference
+     */
+    deleteGameSession(sessionPreviewId: string): void {
+        const session = this.findSessionByPreview(sessionPreviewId);
+        if (!session) {
+            return;
+        }
+
+        // Only delete players and session, keep the map for reuse
+        this.gameSessions.get(session.id).players.forEach((playerId) => this.playerService.removePlayer(playerId));
+        this.gameSessions.delete(session.id);
+    }
+
+    /**
+     * Finds a session id by the preview template (only non-started sessions)
+     */
+    findSessionByPreview(previewId: string): GameSession | undefined {
+        for (const session of this.gameSessions.values()) {
+            if (session.mapTemplateId === previewId && !session.hasStarted) {
+                return session;
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Retreives the game sessionId win which the player is into
+     * @returns the session id of the game in which the player is in
+     */
+    findPlayerInGameSession(playerId: string): string | undefined {
+        for (const session of this.gameSessions.values()) {
+            if (session.players.includes(playerId)) {
+                return session.id;
+            }
+        }
+        return undefined;
+    }
+
+        /**
+     * Method to create a Waiting Room payload
+     * @param session 
+     * @param sessionPlayers 
+     * @param player 
+     * @param preview 
+     * @returns Waiting Room
+     */
+    private generateWaitingRoomPayload(session: GameSession, 
+        sessionPlayers: PlayerInformation[], 
+        player: PlayerInformation, preview: GameSessionPreview): WaitingRoom {
+        return {
+            players: sessionPlayers,
+            clientPlayer: player,
+            sessionId: session.id,
+            mapPreviewId: session.mapTemplateId,
+            messages: session.messages ?? [],
+            isLocked: session.isLocked ?? false,
+            maxPlayers: session.maxPlayers ?? preview.maxPlayers,
+      };
+    }
+
+    private generateGameSessionSnapshot(gameMap: GameMap, 
+        players: Player[], 
+        session: GameSession,
+        activePlayerId: string): GameSessionSnapshot {
+        return {
             id: session.id,
             map: {
                 ...gameMap,
@@ -197,83 +270,6 @@ export class GameSessionService {
             debugMode: session.debugMode ?? false,
             createdAt: new Date().toISOString(),
         };
-
-        session.hasStarted = true;
-        return { snapshot };
-    }
-
-    /**
-     * Requests deletion of gameMap, map preview and deletes game session reference
-     */
-    deleteGameSession(sessionPreviewId: string): void {
-        const session = this.findSessionByPreviewForDeletion(sessionPreviewId);
-        if (!session) {
-            return;
-        }
-
-        // Only delete players and session, keep the map for reuse
-        this.gameSessions.get(session.id).players.forEach((playerId) => this.playerService.removePlayer(playerId));
-        this.gameSessions.delete(session.id);
-    }
-
-    /**
-     * Method to create a Waiting Room payload
-     * @param session 
-     * @param sessionPlayers 
-     * @param player 
-     * @param preview 
-     * @returns 
-     */
-    private generateWaitingRoomPayload(session: GameSession, 
-        sessionPlayers: PlayerInformation[], 
-        player: PlayerInformation, preview: GameSessionPreview): WaitingRoom {
-        return {
-            players: sessionPlayers,
-            clientPlayer: player,
-            sessionId: session.id,
-            mapPreviewId: session.mapTemplateId,
-            messages: session.messages ?? [],
-            isLocked: session.isLocked ?? false,
-            maxPlayers: session.maxPlayers ?? preview.maxPlayers,
-      };
-
-    }
-
-    /**
-     * Finds a session id by the preview template (only non-started sessions)
-     */
-    findSessionByPreview(previewId: string): GameSession | undefined {
-        for (const session of this.gameSessions.values()) {
-            if (session.mapTemplateId === previewId && !session.hasStarted) {
-                return session;
-            }
-        }
-        return undefined;
-    }
-
-    /**
-     * Finds a session by preview template for deletion (includes started sessions)
-     */
-    private findSessionByPreviewForDeletion(previewId: string): GameSession | undefined {
-        for (const session of this.gameSessions.values()) {
-            if (session.mapTemplateId === previewId) {
-                return session;
-            }
-        }
-        return undefined;
-    }
-
-    /**
-     * Retreives the game sessionId win which the player is into
-     * @returns the session id of the game in which the player is in
-     */
-    findPlayerInGameSession(playerId: string): string | undefined {
-        for (const session of this.gameSessions.values()) {
-            if (session.players.includes(playerId)) {
-                return session.id;
-            }
-        }
-        return undefined;
     }
 
     /**

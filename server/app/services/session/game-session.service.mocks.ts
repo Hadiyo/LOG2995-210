@@ -1,7 +1,9 @@
 import { InternalPlayer } from '@app/interface/player.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
+import { TurnPhase, TurnState } from '@common/game-session';
 import { GameSession, GameSessionPreview, WaitingRoom } from '@common/game/game-session.interface';
-import { GameMode, MapSize } from '@common/maps/map.enums';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { GameMap } from '@common/maps/map.interface';
 import { Player, PlayerInformation, PlayerStatus } from '@common/player/player.interface';
 
 export function createMockSessionPlayers(): PlayerInformation[] {
@@ -118,17 +120,18 @@ export function mockGameSession1(): GameSession {
     };
 }
 
-export function mockGameSession2(): GameSession {
-    return {
-        id: 'session2',
-        players: ['playerId1'],
-        mapTemplateId: 'map2',
-        debugMode: true,
-        isLocked: true,
-        maxPlayers: 6,
-        messages: [],
-        hasStarted: true,
-    };
+export function mockGameSession2(overrides: Partial<GameSession> = {}): GameSession {
+  return {
+    id: 'session1',
+    players: ['player1Id', 'player2Id'],
+    mapTemplateId: 'map1',
+    debugMode: false,
+    isLocked: false,
+    maxPlayers: 4,
+    messages: mockChatMessages(),
+    hasStarted: false,
+    ...overrides,
+  };
 }
 
 // -------------------- Game Session Preview --------------------
@@ -168,4 +171,37 @@ export function mockWaitingRoom2(): WaitingRoom {
         isLocked: true,
         maxPlayers: 6,
     };
+}
+
+export function createMockGameMap(): GameMap {
+    return {
+        id: 'map1',
+        name: 'Forest',
+        mode: GameMode.CLASSIC,
+        size: MapSize.M,
+        map: [{
+            position: {x: 0, y: 0},
+            tileType: TileType.DIRT,
+            isWalkable: true,
+            isOccupied: false,
+        }],
+        objects: [{
+            id: 0,
+            type:ObjectType.START,
+            position: {x: 1, y: 1},
+            size: ObjectSize.S,
+        }],
+    };
+}
+
+export function createTurnState(overrides: Partial<TurnState> = {}): TurnState {
+  return {
+    order: [],
+    activePlayerId: '',
+    turnNumber: 1,
+    remainingSeconds: 60,
+    totalSeconds: 60,
+    phase: TurnPhase.Turn,
+    ...overrides,
+  };
 }

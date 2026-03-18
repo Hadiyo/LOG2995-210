@@ -248,7 +248,7 @@ describe('SessionService', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const spy = spyOn<any>(service, 'clearCurrentIds');
         service['currentPreviewId'] = 'id1234';
-        const payload = service['setJoinSessionPayload'](mockPlayer);
+        const payload = service['setJoinSessionPayload'](mockPlayer, service['currentPreviewId']);
         expect(payload).toEqual({id: 'id1234', character: mockPlayer});
         expect(spy).toHaveBeenCalled();
         expect(service.errorMessage()).toBe('');
