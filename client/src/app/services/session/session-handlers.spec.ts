@@ -197,7 +197,7 @@ describe('SessionService - Handlers', () => {
         const mockGameSessionPreview2 = createMockGameSessionPreview2();
         service['sessionPreviewSubjects'].next([mockGameSessionPreview, mockGameSessionPreview2]);
         const nextSpy = spyOn(service['sessionPreviewSubjects'], 'next').and.callThrough();
-        service['onDeleteSession']({sessionId: 'id8965', reason: 'noreason'});
+        service['onDeleteSession']({ sessionId: 'id8965', reason: 'Session deleted' });
         expect(nextSpy).toHaveBeenCalled();
         expect(service['sessionPreviewSubjects'].value).toEqual([mockGameSessionPreview]);
     });
