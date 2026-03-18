@@ -8,15 +8,11 @@ import {
     START_LIMITS_BY_SIZE,
 } from './constants/editor.constants';
 
-import { EditorMapFactoryService } from './editor-map-factory.service';
 import { getCoveredPositions, positionsIntersect } from './utils/editor-geometry.util';
 
 
 @Injectable({ providedIn: 'root' })
 export class EditorPlacementRulesService {
-
-    constructor(private mapFactory: EditorMapFactoryService) {}
-
     /**
      * Default walkability by tile type.
      * Door special case:
@@ -65,7 +61,8 @@ export class EditorPlacementRulesService {
      * Bounds check for any covered positions (prevents placing outside grid).
      */
     arePositionsInBounds(positions: Vec2[], size: MapSize): boolean {
-        const { cols, rows } = this.mapFactory.getDimensions(size);
+        const cols = size; const 
+rows = size; 
         return positions.every((p) => p.x >= 0 && p.y >= 0 && p.x < cols && p.y < rows);
     }
 

@@ -3,14 +3,8 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
-
-/**
- * Simple UI types for palette rendering
- * - Keeps template clean and strongly typed
- */
-type TilePaletteItem = { id: TileType; label: string; description: string; cssVar: string };
-type ObjectPaletteItem = { id: ObjectType; label: string; description: string; cssVar: string };
+import { OBJECTS, TILES } from '@app/shared/tooltip/tooltip.constants';
+import { GameMode, ObjectType } from '@common/maps/map.enums';
 
 @Component({
   selector: 'app-editor-sidebar',
@@ -52,44 +46,14 @@ export class EditorSidebarComponent {
   }
 
   /* =========================================================
-     Tile palette configuration
-     - Maps TileType enum → labels + theme color variables
-     - Door uses a single enum value (TileType.DOOR):
-       toggling open/closed handled by editor logic
+     Palette data
+     - Expose constants for template rendering
      ========================================================= */
-  tiles: TilePaletteItem[] = [
-    { id: TileType.WALL, label: 'Mur', description: 'Tuile non traversable.', cssVar: '--tile-wall-img' },
-    {
-      id: TileType.DOOR,
-      label: 'Porte',
-      description: 'Une porte doit se situer entre 2 murs. Elle peut être ouverte ou fermée.',
-      cssVar: '--tile-door-closed-img',
-    },
-    { id: TileType.WATER, label: 'Eau', description: 'Tuile traversable qui prend deux points de mouvement.', cssVar: '--tile-water-img' },
-    { id: TileType.ICE, label: 'Glace', description: 'Tuile traversable qui prend aucun point de mouvement.', cssVar: '--tile-ice-img' },
-  ];
+  protected tiles = TILES;
+  protected objects = OBJECTS;
 
-  /* =========================================================
-     Object palette configuration
-     - Maps ObjectType enum → labels + theme color variables
-     ========================================================= */
-  objects: ObjectPaletteItem[] = [
-    {
-      id: ObjectType.START,
-      label: 'Point de départ',
-      description: "Un joueur est assigné aléatoirement un point de départ au début d'une partie.",
-      cssVar: '--object-spawn-img',
-    },
-    { id: ObjectType.FLAG, label: 'Drapeau', description: "L'objectif principal de mode CTF.", cssVar: '--object-flag-img' },
-    {
-      id: ObjectType.REGEN, label: 'Sanctuaire de soin',
-      description: `Activer pour regagner 2 points de vie au joueur.`,
-      cssVar: '--object-heal-img',
-    },
-    {
-      id: ObjectType.ARENA, label: 'Sanctuaire de combat',
-      description: `Activer pour un bonus temporaire de +1 à l'attaque et à la défense. Ce bonus reste jusqu'à la fin de son prochain tour.`,
-      cssVar: '--object-fight-img',
-    },
-  ];
+  protected isDisabled(objectId: ObjectType) : boolean {
+   return this.editorState.getObjectCountAndLimit(objectId).count 
+      === this.editorState.getObjectCountAndLimit(objectId).limit;
+  } 
 }

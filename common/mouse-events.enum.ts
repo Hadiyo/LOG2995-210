@@ -10,5 +10,6 @@ export enum MouseEventType {
     UP = "mouseUp",
     DOWN = "mouseDown",
     ENTER = "mouseEnter",
-    LEAVE = "mouseLeave"
+    LEAVE = "mouseLeave",
+    MOVE = "mouseMove"
 }
