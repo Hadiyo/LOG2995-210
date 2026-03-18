@@ -1,4 +1,5 @@
 import { computed, inject, Injectable } from '@angular/core';
+import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { MatchPlayer, MatchTileInspection } from '@common/game/match.interface';
 import { EditorCell, Vec2 } from '@common/maps/map.interface';
 import { MatchMovementService } from '@app/services/match/match-movement.service';
@@ -38,7 +39,7 @@ export class GameSessionDisplayService {
         );
     });
     avatarUrl(avatarId: string | number): string {
-        return `assets/avatars/thumbs/${avatarId}.png`;
+        return resolveAssetUrl(`assets/avatars/thumbs/${avatarId}.png`);
     }
 
     playerAt(tile: EditorCell): MatchPlayer | null {
