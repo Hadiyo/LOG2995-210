@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, signal } from '@angular/core';
 import { GameNotificationsPanelComponent } from '@app/components/game/game-notifications-panel/game-notifications-panel.component';
-import { ChatMessage } from '@common/chat-message';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { GameNotification } from '@common/game-notification';
 
 @Component({

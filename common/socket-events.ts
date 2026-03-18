@@ -26,6 +26,14 @@ export enum RoomSocketEvents {
     LeaveSession = 'leaveSession',
 }
 
+export enum ChatSocketEvents {
+    SendMessage = 'sendMessage',
+    ReceiveMessage = 'receiveMessage',
+    LoadChatMessages = 'loadChatMessages',
+    ChatValidationError = 'chatValidationError',
+    ChatServerError = 'chatServerError',
+}
+
 export enum WaitingRoomEvents {
     InitPlayers = 'initPlayers',
     LeaveGameRoom = 'leaveGameRoom',
@@ -37,8 +45,6 @@ export enum WaitingRoomEvents {
     KickPlayer = 'kickPlayer',
     KickedFromSession = 'kickedFromSession',
     WaitingRoomState = 'waitingRoomState',
-    SendMessage = 'waitingRoomSendMessage',
-    MessageSent = 'waitingRoomMessageSent',
     StartGame = 'waitingRoomStartGame',
     GameStarted = 'waitingRoomGameStarted',
 }

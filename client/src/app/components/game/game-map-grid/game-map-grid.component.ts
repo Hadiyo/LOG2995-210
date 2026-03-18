@@ -39,6 +39,8 @@ export class GameMapGridComponent {
   @Input() actionModeEnabled = false;
   // Emits tile index when user clicks a cell.
   @Output() cellClick = new EventEmitter<number>();
+  // Emit tile index on right click for debug teleportation.
+  @Output() cellRightClick = new EventEmitter<number>();
 
   // Expose enum to template.
   readonly tileType = TileType;
@@ -49,6 +51,12 @@ export class GameMapGridComponent {
   // Forward clicked cell index to parent.
   onCellClick(index: number): void {
     this.cellClick.emit(index);
+  }
+
+  // Prevent the browser context menu so right click can be used for debug teleportation.
+  onCellRightClick(index: number, event: MouseEvent): void {
+    event.preventDefault();
+    this.cellRightClick.emit(index);
   }
 
   // Find player occupying this exact cell.

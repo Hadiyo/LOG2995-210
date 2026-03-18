@@ -33,7 +33,6 @@ const routes: Routes = [
     { path: 'dev-game-launcher', component: DevGameLauncherComponent },
     { path: 'join-room', component: JoinGameComponent },
     { path: '**', redirectTo: '/home' },
-
 ];
 
 enableProfiling();

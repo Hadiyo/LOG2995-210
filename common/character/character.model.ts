@@ -106,4 +106,3 @@ export const AVATAR_PROFILES: Record<AvatarId, AvatarProfile> = {
   },
 };
 
-
