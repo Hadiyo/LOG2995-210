@@ -3,10 +3,13 @@
     <section class="panel panel--error">
       <p>{{ errorMessage() }}</p>
     </section>
-  } @else if (match(); as currentMatch) {
+  } @else if (match()) {
+    @let currentMatch = match();
     <aside class="side-panel side-panel--left">
       <section class="panel panel--game-title">
-        <h2 class="game-title">{{ currentMatch.mapName }}</h2>
+        @if (currentMatch) {
+          <h2 class="game-title">{{ currentMatch.mapName }}</h2>
+        }
       </section>
 
       <section class="panel">
@@ -24,53 +27,132 @@
       </section>
 
       <section class="panel panel--player-info">
-        <app-game-current-player-panel
-          [player]="currentPlayer()"
-          [avatarId]="currentPlayer()?.information?.avatarId ?? 0"
-          [avatarSpriteSize]="constants.avatarSpriteSize"
-          [defaultPanelTitle]="constants.defaultPanelTitle"
-          [debugModeEnabled]="debugModeEnabled()"
-        />
+        <div class="panel__tabs" role="tablist" aria-label="Panneaux lateraux gauches">
+          <div class="panel__tab-list">
+            <button
+              type="button"
+              class="panel__tab"
+              [class.panel__tab--active]="leftPanelTab() === 'player'"
+              role="tab"
+              [attr.aria-selected]="leftPanelTab() === 'player'"
+              (click)="leftPanelTab.set('player')"
+            >
+              Joueur
+            </button>
+            <button
+              type="button"
+              class="panel__tab"
+              [class.panel__tab--active]="leftPanelTab() === 'turn-order'"
+              role="tab"
+              [attr.aria-selected]="leftPanelTab() === 'turn-order'"
+              (click)="leftPanelTab.set('turn-order')"
+            >
+              Ordre
+            </button>
+          </div>
+        </div>
+
+        <div class="panel--player-info__content">
+          @if (leftPanelTab() === 'player') {
+            <app-game-current-player-panel
+              [player]="currentPlayer()"
+              [avatarId]="panelAvatarId()"
+              [avatarState]="panelAvatarState()"
+              [avatarDirection]="panelAvatarDirection()"
+              [avatarSpriteSize]="constants.avatarSpriteSize"
+              [defaultPanelTitle]="constants.defaultPanelTitle"
+              [debugModeEnabled]="debugModeEnabled()"
+            />
+          } @else {
+            <div class="turn-order-tab">
+              <h3>Ordre et departs</h3>
+              <ul class="turn-order__details turn-order__details--panel">
+                @for (player of turnDetails(); track player.id) {
+                  <li class="turn-order__detail">
+                    <strong class="turn-order__name">{{ player.name }}</strong>
+                    <div class="turn-order__summary">
+                      <span class="turn-order__meta-item">Depart ({{ player.startingPosition.x }}, {{ player.startingPosition.y }})</span>
+                      <span class="turn-order__meta-item">Rapidite {{ player.speed }}</span>
+                      <span class="turn-order__meta-item">Victoires {{ player.combatWins }}</span>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
       </section>
 
-      <section class="panel panel--turn-status">
-        <h3>Etat du tour</h3>
-        <p class="turn-status__headline">{{ phaseHeadline() }}</p>
-        <p class="turn-status__copy">{{ phaseDescription() }}</p>
-        <div class="turn-status__meta">
-          <span>Etat local: {{ display.localPlayerStateLabel() }}</span>
-          <span>Mouvements: {{ display.localMovementCount() }}</span>
-          <span>Action: {{ display.localActionAvailable() ? 'Disponible' : 'Utilisee' }}</span>
-        </div>
-        @if (interaction.movementFeedback()) {
-          <p class="turn-status__feedback">{{ interaction.movementFeedback() }}</p>
-        }
-      </section>
     </aside>
 
     <section class="map-panel panel">
       <div class="map-panel__header">
-        <div>
+        <div class="map-panel__title-block">
           <h3>Carte de la partie</h3>
-          <p class="map-panel__copy">
-            WASD deplace votre personnage a la releve de la touche. Clic droit pour inspecter une tuile ou un joueur.
-          </p>
+          <p class="map-panel__copy">WASD pour bouger. Clic droit pour inspecter.</p>
+          <button
+            type="button"
+            class="panel__toggle-btn map-panel__status-toggle"
+            [class.panel__toggle-btn--active]="showTurnStatusOverlay()"
+            [attr.aria-expanded]="showTurnStatusOverlay()"
+            (click)="onToggleTurnStatusPanel()"
+          >
+            Etat du tour
+          </button>
         </div>
       </div>
 
-      <app-game-map-grid
-        [cols]="cols()"
-        [rows]="rows()"
-        [cells]="mapCells()"
-        [objects]="mapObjects()"
-        [players]="players()"
-        [actionModeEnabled]="actionModeEnabled()"
-        [reachableCellKeys]="reachableCellKeys()"
-        [reachableOriginKey]="reachableOriginKey()"
-        [actionTargetCellKeys]="interaction.actionTargets()"
-        (cellClick)="onCellClick($event)"
-        (cellContextMenu)="onCellContextMenu($event)"
-      />
+      <div class="map-panel__board">
+        <app-game-map-grid
+          [cols]="cols()"
+          [rows]="rows()"
+          [cells]="mapCells()"
+          [objects]="mapObjects()"
+          [players]="players()"
+          [nowMs]="nowMs()"
+          [playerDirections]="playerDirections()"
+          [playerStates]="playerStates()"
+          [actionModeEnabled]="actionModeEnabled()"
+          [reachableCellKeys]="reachableCellKeys()"
+          [reachableOriginKey]="reachableOriginKey()"
+          [actionTargetCellKeys]="interaction.actionTargets()"
+          (cellClick)="onCellClick($event)"
+          (cellContextMenu)="onCellContextMenu($event)"
+        />
+
+        @if (showTurnStatusOverlay() && !selectedTileInfo()) {
+          <section class="map-turn-status panel" role="status" aria-live="polite">
+            <div class="map-turn-status__header">
+              <p class="map-turn-status__eyebrow">Etat du tour</p>
+              <button
+                type="button"
+                class="map-turn-status__close"
+                aria-label="Fermer l etat du tour"
+                (click)="isTurnStatusPanelOpen.set(false)"
+              >
+                X
+              </button>
+            </div>
+            <p class="turn-status__headline">{{ phaseHeadline() }}</p>
+            <p class="turn-status__copy">{{ phaseDescription() }}</p>
+            <div class="turn-status__meta">
+              <span>Etat local: {{ display.localPlayerStateLabel() }}</span>
+              <span>Mouvements: {{ display.localMovementCount() }}</span>
+              <span>Action: {{ display.localActionAvailable() ? 'Disponible' : 'Utilisee' }}</span>
+            </div>
+            @if (interaction.movementFeedback()) {
+              <p class="turn-status__feedback">{{ interaction.movementFeedback() }}</p>
+            }
+          </section>
+        }
+
+        @if (selectedTileInfo(); as tileInfo) {
+          <app-game-tile-info-modal
+            [tileInfo]="tileInfo"
+            (close)="closeTileInfoModal()"
+          />
+        }
+      </div>
 
       @if (interaction.actionSelectionOpen()) {
         <div class="map-panel__action-picker">
@@ -89,29 +171,22 @@
         <p class="map-panel__hint">Les cases surlignees indiquent les deplacements atteignables avec vos points restants.</p>
       }
 
-      <section class="panel panel--turn-order panel--turn-order-inline">
-        <h3>Ordre et departs</h3>
-        <ul class="turn-order__details">
-          @for (player of turnDetails(); track player.id) {
-            <li class="turn-order__detail">
-              <div>
-                <strong>{{ player.name }}</strong>
-                <span>Depart ({{ player.startingPosition.x }}, {{ player.startingPosition.y }})</span>
-              </div>
-              <div>
-                <span>Rapidite {{ player.speed }}</span>
-                <span>Victoires {{ player.combatWins }}</span>
-              </div>
-            </li>
-          }
-        </ul>
-      </section>
     </section>
 
     <aside class="side-panel side-panel--right">
       <section class="panel panel--players">
         <div class="panel__header">
           <h3>Liste des joueurs</h3>
+          @if (players().length > 2) {
+            <button
+              type="button"
+              class="panel__toggle-btn"
+              [attr.aria-expanded]="isPlayerListExpanded()"
+              (click)="onTogglePlayerListExpanded()"
+            >
+              {{ isPlayerListExpanded() ? 'Reduire' : players().length + ' Total' }}
+            </button>
+          }
         </div>
         <app-game-player-list
           [players]="players()"
@@ -119,7 +194,7 @@
           [activePlayerId]="activePlayerId()"
           [currentPlayerId]="localPlayerId()"
           [maxPlayers]="maxPlayers()"
-          [expanded]="true"
+          [expanded]="isPlayerListExpanded()"
         />
       </section>
 
@@ -176,53 +251,5 @@
         <button type="button" class="combat-toast__close" (click)="effects.dismissCombatNotification(notification.id)">Fermer</button>
       </section>
     }
-  </div>
-}
-
-@if (interaction.inspectedTile(); as tileDetails) {
-  <div class="modal-backdrop" (click)="interaction.closeInspection()">
-    <section
-      class="tile-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tile-details-title"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="tile-modal__header">
-        <div>
-          <p class="tile-modal__eyebrow">Coordonnees {{ tileDetails.position.x }}, {{ tileDetails.position.y }}</p>
-          <h2 id="tile-details-title">{{ tileDetails.tileLabel }}</h2>
-        </div>
-
-        <button type="button" class="tile-modal__close" (click)="interaction.closeInspection()">Fermer</button>
-      </div>
-
-      <div class="tile-modal__section">
-        <h3>Caracteristiques</h3>
-        <ul>
-          @for (characteristic of tileDetails.characteristics; track characteristic) {
-            <li>{{ characteristic }}</li>
-          }
-        </ul>
-      </div>
-
-      @if (tileDetails.object; as objectDetails) {
-        <div class="tile-modal__section">
-          <h3>Objet</h3>
-          <p>{{ objectDetails.type }}</p>
-          <p>{{ objectDetails.description }}</p>
-        </div>
-      }
-
-      @if (tileDetails.player; as playerDetails) {
-        <div class="tile-modal__section tile-modal__player">
-          <h3>Joueur</h3>
-          <img [src]="display.avatarUrl(playerDetails.avatarId)" [alt]="playerDetails.name">
-          <div>
-            <p>{{ playerDetails.name }}</p>
-          </div>
-        </div>
-      }
-    </section>
   </div>
 }

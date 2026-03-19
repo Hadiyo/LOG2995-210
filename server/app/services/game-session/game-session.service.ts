@@ -11,6 +11,7 @@ import {
     buildGameSessionVisibleObjects,
     getGameSessionDestination,
     getGameSessionMovementCost,
+    getGameSessionObjectCovering,
 } from './game-session.match';
 import {
     ACTIVE_TURN_DURATION_MS,
@@ -201,6 +202,7 @@ export class GameSessionService {
         const player = session?.match.players.find((candidate) => candidate.id === playerId);
         if (!session ||
             !player ||
+            !player.isOrganizer ||
             !session.match.debugMode ||
             session.turnState.phase !== 'active' ||
             session.turnState.activePlayerId !== playerId ||
@@ -222,9 +224,7 @@ export class GameSessionService {
             return false;
         }
 
-        const occupiedByObject = session.match.objects.some(
-            (object) => object.position.x === position.x && object.position.y === position.y,
-        );
+        const occupiedByObject = !!getGameSessionObjectCovering(session.match.objects, position);
         if (occupiedByObject) {
             return false;
         }

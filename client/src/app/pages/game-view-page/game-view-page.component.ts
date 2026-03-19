@@ -8,6 +8,7 @@ import { GameCurrentPlayerPanelComponent } from '@app/components/game/game-curre
 import { GameMapGridComponent } from '@app/components/game/game-map-grid/game-map-grid.component';
 import { GamePlayerListComponent } from '@app/components/game/game-player-list/game-player-list.component';
 import { GameSessionInfoPanelComponent } from '@app/components/game/game-session-info-panel/game-session-info-panel.component';
+import { GameTileInfoModalComponent } from '@app/components/game/game-tile-info-modal/game-tile-info-modal.component';
 import { MAP_SIZE_CONFIG } from '@app/config/map.config';
 import { GameSessionDisplayService } from '@app/pages/game-view/game-session-display.service';
 import { GameSessionInteractionService } from '@app/pages/game-view/game-session-interaction.service';
@@ -22,16 +23,21 @@ import { GameSessionTargetsService } from '@app/pages/game-view/game-session-tar
 import { GameSessionTurnEffectsService } from '@app/pages/game-view/game-session-turn-effects.service';
 import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
+import { GameVisualFeedbackService } from '@app/services/game/game-visual-feedback.service';
 import { positionKey } from '@app/services/match/match-geometry';
 import { MatchStateService } from '@app/services/match/match-state.service';
-import { CHARACTER_BASE_ATTRIBUTES } from '@common/character/character.model';
+import { LOCAL_POSE_REFRESH_MS } from '@app/shared/game/game-visual.constants';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchEndState, MatchPlayer } from '@common/game/match.interface';
 import { MapSize } from '@common/maps/map.enums';
 import { GameCell } from '@common/maps/map.interface';
 import { Player, PlayerStatus } from '@common/player/player.interface';
+import { createPanelAvatarDirection, createPanelAvatarId, createPanelAvatarState } from './game-view-avatar.utils';
 import { GAME_VIEW_CONSTANTS } from './game-view.constants';
-
+import { getPhaseDescription, getPhaseHeadline } from './game-view-phase.utils';
+import { startLocalPoseRefreshClock, stopLocalPoseRefreshClock } from './game-view-pose-clock.utils';
+import { toGamePlayer } from './game-view-player.utils';
+import { createSelectedTileInfo } from './game-view-tile-info.utils';
 @Component({
     selector: 'app-game-view-page',
     standalone: true,
@@ -43,6 +49,7 @@ import { GAME_VIEW_CONSTANTS } from './game-view.constants';
         GameChatPanelComponent,
         GameSessionInfoPanelComponent,
         GameCurrentPlayerPanelComponent,
+        GameTileInfoModalComponent,
     ],
     templateUrl: './game-view-page.component.html',
     styleUrls: ['./game-view-page.component.scss'],
@@ -56,12 +63,12 @@ import { GAME_VIEW_CONSTANTS } from './game-view.constants';
 export class GameViewPageComponent implements OnInit, OnDestroy {
     private static readonly activeTurnDurationSeconds = ACTIVE_TURN_DURATION_MS / MILLISECONDS_PER_SECOND;
     private static readonly transitionDurationSeconds = TRANSITION_DURATION_MS / MILLISECONDS_PER_SECOND;
-
     protected readonly constants = GAME_VIEW_CONSTANTS;
     protected readonly display = inject(GameSessionDisplayService);
     protected readonly interaction = inject(GameSessionInteractionService);
     protected readonly targets = inject(GameSessionTargetsService);
     protected readonly effects = inject(GameSessionTurnEffectsService);
+    protected readonly visualFeedback = inject(GameVisualFeedbackService);
 
     private readonly matchState = inject(MatchStateService);
     private readonly route = inject(ActivatedRoute);
@@ -73,6 +80,10 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly errorMessage = computed(() => this.gameSessionSocket.errorMessage() || this.display.errorMessage());
     protected readonly match = this.display.match;
     protected readonly localPlayerId = computed(() => this.display.localPlayer()?.id ?? '');
+    protected readonly leftPanelTab = signal<'player' | 'turn-order'>('player');
+    protected readonly isPlayerListExpanded = signal(false);
+    protected readonly isTurnStatusPanelOpen = signal(false);
+    protected readonly nowMs = signal(Date.now());
     protected readonly mapCells = computed<readonly GameCell[]>(() => this.match()?.map ?? []);
     protected readonly mapObjects = computed(() => this.match()?.objects ?? []);
     protected readonly cols = computed<number>(() => this.match()?.mapSize ?? MapSize.S);
@@ -82,10 +93,17 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         return MAP_SIZE_CONFIG.find((config) => config.value === mapSize)?.maxPlayers ?? this.players().length;
     });
     protected readonly turnOrder = computed<readonly string[]>(() => this.display.turnOrderedPlayers().map((player) => player.id));
+    protected readonly playerDirections = this.visualFeedback.playerDirections;
+    protected readonly playerStates = this.visualFeedback.playerStates;
     protected readonly players = computed<readonly Player[]>(() => {
         const currentTurnState = this.display.turnState();
         return (this.match()?.players ?? []).map((player) =>
-            this.toGamePlayer(player, currentTurnState?.activePlayerId ?? null, currentTurnState?.actionTaken ?? true),
+            toGamePlayer(
+                player,
+                currentTurnState?.activePlayerId ?? null,
+                currentTurnState?.actionTaken ?? true,
+                this.display.localMovementPointsRemaining(),
+            ),
         );
     });
     protected readonly activePlayerId = computed<string>(() => this.display.turnState()?.activePlayerId ?? '');
@@ -95,6 +113,9 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly currentPlayer = computed<Player | null>(() =>
         this.players().find((player) => player.id === this.localPlayerId()) ?? null,
     );
+    protected readonly panelAvatarId = createPanelAvatarId(this.currentPlayer);
+    protected readonly panelAvatarState = createPanelAvatarState(this.currentPlayer, this.nowMs, this.playerStates);
+    protected readonly panelAvatarDirection = createPanelAvatarDirection(this.currentPlayer, this.playerDirections);
     protected readonly activePlayersCount = computed<number>(() =>
         this.players().filter((player) => player.state.status === PlayerStatus.Active).length,
     );
@@ -119,6 +140,9 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             : GameViewPageComponent.transitionDurationSeconds,
     );
     protected readonly highlightTimer = computed<boolean>(() => this.display.turnState()?.phase === 'active');
+    protected readonly showTurnStatusOverlay = computed<boolean>(() =>
+        this.isTurnStatusPanelOpen() || this.display.turnState()?.phase === 'transition',
+    );
     protected readonly activePanelName = computed<string | null>(() => {
         const turnState = this.display.turnState();
         if (!turnState) {
@@ -140,11 +164,13 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         return player ? positionKey(player.position) : null;
     });
     protected readonly turnDetails = computed<readonly MatchPlayer[]>(() => this.display.turnOrderedPlayers());
+    protected readonly selectedTileInfo = createSelectedTileInfo(this.interaction.inspectedTile, this.mapCells, this.mapObjects, this.players);
     protected readonly chatMessages = toSignal(this.chatService.chat$, { initialValue: [] as ChatMessage[] });
 
     private matchEndRedirectTimeoutId: number | null = null;
     private matchEndRedirectIntervalId: number | null = null;
     private scheduledMatchEndId: string | null = null;
+    private localPoseIntervalId: number | null = null;
 
     constructor() {
         effect(() => {
@@ -153,6 +179,9 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        this.visualFeedback.resetVisualOverrides();
+        this.localPoseIntervalId = startLocalPoseRefreshClock(this.nowMs, LOCAL_POSE_REFRESH_MS);
+
         const sessionId = this.route.snapshot.queryParamMap.get('sessionId');
         const localPlayer = this.display.localPlayer();
         if (!sessionId || !localPlayer) {
@@ -172,6 +201,8 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void {
         this.chatService.unsubscribeToSocketEvents();
         this.effects.destroy();
+        this.localPoseIntervalId = stopLocalPoseRefreshClock(this.localPoseIntervalId);
+        this.visualFeedback.resetVisualOverrides();
         this.clearMatchEndRedirect();
     }
 
@@ -180,31 +211,21 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     }
 
     protected phaseHeadline(): string {
-        const turnState = this.display.turnState();
-        if (!turnState) {
-            return 'Chargement de la partie';
-        }
-
-        if (turnState.phase === 'transition') {
-            return `Debut du tour dans ${this.display.transitionCountdownSeconds()} s`;
-        }
-
-        return `Tour actif: ${this.display.currentActivePlayer()?.name ?? 'Joueur inconnu'}`;
+        return getPhaseHeadline(
+            this.display.turnState(),
+            this.display.currentActivePlayer()?.name ?? null,
+            this.display.transitionTargetPlayer()?.name ?? null,
+            this.display.transitionCountdownSeconds(),
+        );
     }
 
     protected phaseDescription(): string {
-        const turnState = this.display.turnState();
-        if (!turnState) {
-            return 'Connexion a la session multijoueur.';
-        }
-
-        if (turnState.phase === 'transition') {
-            return `Notification globale avant le tour de ${this.display.transitionTargetPlayer()?.name ?? 'Joueur inconnu'}.`;
-        }
-
-        return `${this.display.localMovementPointsRemaining()} point(s) de mouvement restant(s), action ${
-            this.display.localActionAvailable() ? 'disponible' : 'utilisee'
-        }.`;
+        return getPhaseDescription(
+            this.display.turnState(),
+            this.display.transitionTargetPlayer()?.name ?? null,
+            this.display.localMovementPointsRemaining(),
+            this.display.localActionAvailable(),
+        );
     }
 
     protected onCellClick(index: number): void {
@@ -243,12 +264,21 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.interaction.toggleActionMode();
     }
 
+    protected onTogglePlayerListExpanded(): void {
+        this.isPlayerListExpanded.update((expanded) => !expanded);
+    }
+
+    protected closeTileInfoModal(): void {
+        this.interaction.closeInspection();
+    }
+
+    protected onToggleTurnStatusPanel(): void {
+        this.isTurnStatusPanelOpen.update((open) => !open);
+    }
+
     protected onToggleDebugMode(): void {
         const localPlayerId = this.localPlayerId();
-        if (!localPlayerId) {
-            return;
-        }
-
+        if (!localPlayerId || !this.canToggleDebugMode() || this.display.matchEndState()) return;
         this.gameSessionSocket.toggleDebugMode(localPlayerId);
     }
 
@@ -268,9 +298,15 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             return;
         }
 
-        if (event.key.toLowerCase() !== 'm') {
+        if (event.key === 'Escape') {
+            if (this.selectedTileInfo()) {
+                event.preventDefault();
+                this.closeTileInfoModal();
+            }
             return;
         }
+
+        if (event.key.toLowerCase() !== 'm' || !this.canToggleDebugMode() || this.display.matchEndState()) return;
 
         event.preventDefault();
         this.onToggleDebugMode();
@@ -348,37 +384,5 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         }
 
         this.endRedirectRemainingMs.set(0);
-    }
-
-    private toGamePlayer(player: MatchPlayer, activePlayerId: string | null, actionTaken: boolean): Player {
-        const isActivePlayer = activePlayerId === player.id;
-        return {
-            id: player.id,
-            information: {
-                name: player.name,
-                avatarId: player.avatarId,
-                isOrganizer: player.isOrganizer,
-                dices: {
-                    attack: player.attackDie,
-                    defense: player.defenseDie,
-                },
-                bonus: player.speed > CHARACTER_BASE_ATTRIBUTES.rapidite ? 'speed' : 'life',
-            },
-            state: {
-                position: player.position,
-                status: player.health > 0 ? PlayerStatus.Active : PlayerStatus.Eliminated,
-                attributes: {
-                    health: player.health,
-                    maxHealth: player.maxHealth,
-                    speed: player.speed,
-                    attack: player.baseAttack,
-                    defense: player.baseDefense,
-                },
-                wins: player.combatWins,
-                remainingActions: isActivePlayer && !actionTaken ? 1 : 0,
-                remainingMovements: isActivePlayer ? this.display.localMovementPointsRemaining() : 0,
-            },
-            render: {},
-        };
     }
 }

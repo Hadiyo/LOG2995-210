@@ -1,6 +1,6 @@
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
-import { ObjectType, TileType } from '@common/maps/map.enums';
+import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 
 export function buildInitializedMatchFromEditor(
     map: EditorMapDetails,
@@ -70,6 +70,10 @@ export function buildGameSessionVisibleObjects(
         .map((object) => ({ ...object, position: { ...object.position } }));
 }
 
+export function getGameSessionObjectCovering(objects: MapObject[], position: Vec2): MapObject | null {
+    return objects.find((object) => objectFootprint(object).some((tile) => samePosition(tile, position))) ?? null;
+}
+
 export function shuffle<T>(values: readonly T[], random: () => number): T[] {
     const next = [...values];
     for (let index = next.length - 1; index > 0; index--) {
@@ -81,4 +85,17 @@ export function shuffle<T>(values: readonly T[], random: () => number): T[] {
 
 function samePosition(left: Vec2, right: Vec2): boolean {
     return left.x === right.x && left.y === right.y;
+}
+
+function objectFootprint(object: MapObject): Vec2[] {
+    if (object.size !== ObjectSize.L) {
+        return [{ ...object.position }];
+    }
+
+    return [
+        { x: object.position.x, y: object.position.y },
+        { x: object.position.x + 1, y: object.position.y },
+        { x: object.position.x, y: object.position.y + 1 },
+        { x: object.position.x + 1, y: object.position.y + 1 },
+    ];
 }

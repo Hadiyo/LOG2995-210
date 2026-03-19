@@ -21,6 +21,9 @@ export class EditorTileComponent {
   readonly mouseEvent = MouseEventType;
   private readonly objectDescriptionByType: Record<ObjectType, string> = {
     [ObjectType.START]: "Un joueur est assigne aleatoirement un point de depart au debut d'une partie.",
+    [ObjectType.FLAG]: "L'objectif principal du mode CTF. Pour gagner, un joueur doit revenir sur son point de depart avec le drapeau.",
+    [ObjectType.REGEN]: 'Activer pour regagner 2 points de vie au joueur sans depasser le maximum.',
+    [ObjectType.ARENA]: 'Activer pour obtenir un bonus temporaire de +1 en attaque et +1 en defense.',
   };
 
   protected isHovered = false;

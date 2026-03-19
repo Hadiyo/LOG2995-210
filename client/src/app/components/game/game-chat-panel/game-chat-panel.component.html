@@ -1,5 +1,10 @@
 @if (showTitle) {
-  <h3>{{ title }}</h3>
+  <header class="messages__header">
+    <h3>{{ title }}</h3>
+    @if (currentPlayerName) {
+      <p class="player__name">{{ currentPlayerName }}</p>
+    }
+  </header>
 }
 <div class="messages__feed-wrap">
   <div #messagesFeed class="messages__feed">
