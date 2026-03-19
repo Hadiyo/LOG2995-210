@@ -31,6 +31,9 @@ export enum SocketEvents {
     StartCombat = 'startCombat',
     ToggleDoor = 'toggleDoor',
     SurrenderGame = 'surrenderGame',
+    ToggleDebugMode = 'toggleDebugMode',
+    ForceEndDebugTurn = 'forceEndDebugTurn',
+    DebugTeleportPlayer = 'debugTeleportPlayer',
 
     GameSessionSnapshot = 'gameSessionSnapshot',
     GameSessionError = 'gameSessionError',
@@ -68,8 +71,8 @@ export enum RoomSocketEvents {
     PlayerJoinedGame = 'playerJoinedGame',
     IncrementPlayerCount = 'incrementPlayerCount',
     DecrementPlayerCount = 'decrementPlayerCount',
-    AddPlayerToSession = 'addPlayerToSession',
     LeaveSession = 'leaveSession',
+    AddPlayerToSession = 'addPlayerToSession',
 }
 
 export enum WaitingRoomEvents {
@@ -142,6 +145,7 @@ export interface WaitingRoomStatePayload {
 export interface WaitingRoomGameStartedPayload {
     accessCode: string;
     sessionId: string;
+    messages: ChatMessage[];
 }
 
 export interface WaitingRoomErrorPayload {
@@ -181,10 +185,27 @@ export interface SurrenderGamePayload {
     playerId: string;
 }
 
+export interface ToggleDebugModePayload {
+    sessionId: string;
+    playerId: string;
+}
+
+export interface ForceEndDebugTurnPayload {
+    sessionId: string;
+    playerId: string;
+}
+
+export interface DebugTeleportPlayerPayload {
+    sessionId: string;
+    playerId: string;
+    position: { x: number; y: number };
+}
+
 export interface GameSessionSnapshotPayload {
     sessionId: string;
     match: InitializedMatch;
     turnState: MatchTurnState;
+    messages: ChatMessage[];
 }
 
 export interface GameSessionErrorPayload {

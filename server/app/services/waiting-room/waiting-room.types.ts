@@ -30,6 +30,7 @@ export interface WaitingRoomCancelledEvent {
 export interface WaitingRoomGameStartedEvent {
     accessCode: string;
     sessionId: string;
+    messages: ChatMessage[];
 }
 
 export interface WaitingRoomDirectoryUpdatedEvent {

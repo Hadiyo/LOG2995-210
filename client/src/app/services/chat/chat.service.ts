@@ -21,6 +21,7 @@ export class ChatService {
         if (!this.socket.isSocketAlive()) {
             this.socket.connect();
         }
+        this.unsubscribeToSocketEvents();
         this.subscribeToSocketEvents();
     }
 
@@ -52,7 +53,14 @@ export class ChatService {
     }
 
     private readonly onReceiveMessage = (message: ChatMessage): void => {
-        this.chatMessages.next([...this.chatMessages.value, message]);
+        const existingMessages = this.chatMessages.value;
+        const messageKey = message.id ?? message.createdAt;
+        const alreadyExists = existingMessages.some((existingMessage) => (existingMessage.id ?? existingMessage.createdAt) === messageKey);
+        if (alreadyExists) {
+            return;
+        }
+
+        this.chatMessages.next([...existingMessages, message]);
     };
 
 }

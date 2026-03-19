@@ -156,15 +156,14 @@ export class CharacterCreationPageComponent implements OnInit {
 
     const name = this.validateName(this.form.controls.name.value);
     const character = this.buildCharacterFromForm(name);
-
-    this.matchStateService.registerLocalPlayer(character);
+    const accessCode = this.route.snapshot.queryParamMap.get('accessCode');
+    this.matchStateService.registerLocalPlayer(character, !accessCode);
     const localPlayer = this.matchStateService.localPlayer();
     if (!localPlayer) {
       this.matchStateService.errorMessage.set('Impossible de preparer la salle d attente.');
       return;
     }
 
-    const accessCode = this.route.snapshot.queryParamMap.get('accessCode');
     if (accessCode) {
       this.waitingRoomService.initAsPlayer(accessCode, localPlayer);
     } else {

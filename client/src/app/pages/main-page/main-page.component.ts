@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 import { NameSliderComponent } from '@app/components/name-slider/name-slider.component';
 import { MatchStateService } from '@app/services/match/match-state.service';
+import { resolveAssetUrl } from '@app/utils/asset-url.util';
 
 @Component({
   selector: 'app-main-page',
@@ -13,6 +14,8 @@ import { MatchStateService } from '@app/services/match/match-state.service';
 export class MainPageComponent implements AfterViewInit {
   @ViewChild('backgroundVideo') backgroundVideo?: ElementRef<HTMLVideoElement>;
   readonly flashMessage = signal('');
+  readonly backgroundVideoUrl = resolveAssetUrl('assets/videos/video.mp4');
+  readonly heroLogoUrl = resolveAssetUrl('assets/images/logo.png');
 
   readonly title: string = 'LOG2995';
   readonly actions: readonly {

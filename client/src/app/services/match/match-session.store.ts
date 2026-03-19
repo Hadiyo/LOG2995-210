@@ -33,8 +33,8 @@ export abstract class MatchSessionStore {
         this.writeStoredJson(SELECTED_MAP_STORAGE_KEY, map);
     }
 
-    registerLocalPlayer(character: Character): void {
-        const localPlayer = this.matchSetupService.buildLocalPlayer(character, this.localPlayer());
+    registerLocalPlayer(character: Character, isOrganizer: boolean): void {
+        const localPlayer = this.matchSetupService.buildLocalPlayer(character, this.localPlayer(), isOrganizer);
 
         this.localPlayer.set(localPlayer);
         this.resetMatchState();

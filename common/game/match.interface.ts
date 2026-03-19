@@ -59,6 +59,7 @@ export interface InitializedMatch {
     mapName: string;
     mode: GameMode;
     mapSize: MapSize;
+    debugMode: boolean;
     map: EditorCell[];
     objects: MapObject[];
     allObjects: MapObject[];

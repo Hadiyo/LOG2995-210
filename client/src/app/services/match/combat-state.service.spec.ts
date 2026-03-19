@@ -57,6 +57,7 @@ const createMatch = (mode: GameMode = GameMode.CLASSIC): InitializedMatch => ({
     mapName: 'Arena',
     mode,
     mapSize: MapSize.S,
+    debugMode: false,
     map: createGrid(),
     objects: [],
     allObjects: [],

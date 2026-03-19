@@ -116,16 +116,16 @@ export class WaitingRoomGateway {
         // Notify the kicked player individually
         this.server.in(target.socketId).socketsLeave(sessionId);
 
-        const redirectPayload: WaitingRoomRedirectPayload = {
-            sessionId: removedSessionId,
-            reason: `Vous avez ete exclu de la salle d'attente par l'organisateur.`,
-        };
-        this.server.to(target.socketId).emit(WaitingRoomEvents.KickedFromSession, redirectPayload);
         // Notify the rest of the room
         this.server.to(sessionId).emit(WaitingRoomEvents.PlayerLeftSession, target.player.information);
 
         const session = this.sessionService.getGameSessionById(sessionId);
         if (session) {
+            const redirectPayload: WaitingRoomRedirectPayload = {
+                sessionId: session.mapTemplateId,
+                reason: `Vous avez ete exclu de la salle d'attente par l'organisateur.`,
+            };
+            this.server.to(target.socketId).emit(WaitingRoomEvents.KickedFromSession, redirectPayload);
             this.server.to(sessionId).emit(WaitingRoomEvents.WaitingRoomState, this.sessionService.getWaitingRoomState(sessionId));
             this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.DecrementPlayerCount, session.mapTemplateId);
         }

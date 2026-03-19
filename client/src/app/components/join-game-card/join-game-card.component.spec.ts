@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { JoinGameCardComponent } from './join-game-card.component';
-import { WaitingRoomPreview } from '@common/game/waiting-room-preview.interface';
 import { PreviewImageFormat } from '@common/enum';
+import { WaitingRoomPreview } from '@common/game/waiting-room-preview.interface';
 import { GameMode, MapSize } from '@common/maps/map.enums';
+import { JoinGameCardComponent } from './join-game-card.component';
 
 describe('JoinGameCardComponent', () => {
   let component: JoinGameCardComponent;

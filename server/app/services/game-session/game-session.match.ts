@@ -25,6 +25,7 @@ export function buildInitializedMatchFromEditor(
         mapName: map.name,
         mode: map.mode,
         mapSize: map.mapsize,
+        debugMode: false,
         map: map.map.map((cell) => ({ ...cell, position: { ...cell.position } })),
         objects: buildGameSessionVisibleObjects(map.objects, initializedPlayers),
         allObjects: map.objects.map((object) => ({ ...object, position: { ...object.position } })),

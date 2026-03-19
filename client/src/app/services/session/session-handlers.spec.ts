@@ -176,7 +176,6 @@ describe('SessionService - Handlers', () => {
 
     it(' should call updatePlayerCount with +1 - onClientAddedToSession', () => {
         // To spy on private method
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const updatePlayerCountSpy = spyOn<any>(service, 'updatePlayerCount');
         const previewId = 'session123';
         service['onClientAddedToSession'](previewId);
@@ -185,7 +184,6 @@ describe('SessionService - Handlers', () => {
 
     it(' should call updatePlayerCount with -1 - onPlayerLeft', () => {
         // To spy on private method
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const updatePlayerCountSpy = spyOn<any>(service, 'updatePlayerCount');
         const previewId = 'session123';
         service['onPlayerLeft'](previewId);

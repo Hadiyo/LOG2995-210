@@ -98,6 +98,11 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly activePlayersCount = computed<number>(() =>
         this.players().filter((player) => player.state.status === PlayerStatus.Active).length,
     );
+    protected readonly debugModeEnabled = computed<boolean>(() => this.match()?.debugMode ?? false);
+    protected readonly canToggleDebugMode = computed<boolean>(() => this.currentPlayer()?.information.isOrganizer ?? false);
+    protected readonly canEndTurn = computed<boolean>(() =>
+        this.canAct() || (this.debugModeEnabled() && (this.currentPlayer()?.information.isOrganizer ?? false)),
+    );
     protected readonly canAct = computed<boolean>(() => this.targets.isLocalPlayerTurn() && !this.display.matchEndState());
     protected readonly canUseActionMode = computed<boolean>(() => this.interaction.canToggleActionMode());
     protected readonly actionModeEnabled = computed<boolean>(() =>
@@ -157,6 +162,9 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         }
 
         this.matchState.state.set('loading');
+        this.chatService.clearChat();
+        const navigationMessages = (history.state?.messages ?? []) as ChatMessage[];
+        this.chatService.loadChatMessages(navigationMessages);
         this.gameSessionSocket.joinSession(sessionId, localPlayer.id);
         this.chatService.initChat();
     }
@@ -235,9 +243,37 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.interaction.toggleActionMode();
     }
 
+    protected onToggleDebugMode(): void {
+        const localPlayerId = this.localPlayerId();
+        if (!localPlayerId) {
+            return;
+        }
+
+        this.gameSessionSocket.toggleDebugMode(localPlayerId);
+    }
+
     @HostListener('window:keyup', ['$event'])
     protected handleMovementKeyup(event: KeyboardEvent): void {
         this.interaction.handleMovementKeyup(event);
+    }
+
+    @HostListener('window:keydown', ['$event'])
+    protected handleDebugShortcut(event: KeyboardEvent): void {
+        if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) {
+            return;
+        }
+
+        const target = event.target;
+        if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) {
+            return;
+        }
+
+        if (event.key.toLowerCase() !== 'm') {
+            return;
+        }
+
+        event.preventDefault();
+        this.onToggleDebugMode();
     }
 
     @HostListener('window:beforeunload')

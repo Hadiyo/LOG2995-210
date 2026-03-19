@@ -25,6 +25,6 @@ export class ChatService {
             return null;
         }
 
-        return message;
+        return this.gameSessionService.addChatMessage(sessionId, message);
     }
 }

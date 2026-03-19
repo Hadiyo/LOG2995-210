@@ -10,7 +10,9 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import {
+    DebugTeleportPlayerPayload,
     EndGameTurnPayload,
+    ForceEndDebugTurnPayload,
     GameSessionErrorPayload,
     GameSessionSnapshotPayload,
     getGameSessionRoom,
@@ -18,6 +20,7 @@ import {
     MoveGamePlayerPayload,
     SocketEvents,
     StartCombatPayload,
+    ToggleDebugModePayload,
     ToggleDoorPayload,
     SurrenderGamePayload,
 } from '@common/socket-events';
@@ -62,11 +65,57 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
                 sessionId: payload.sessionId,
                 match: snapshot.match,
                 turnState: snapshot.turnState,
+                messages: snapshot.messages,
             } satisfies GameSessionSnapshotPayload);
         } catch {
             client.emit(SocketEvents.GameSessionError, {
                 message: 'Impossible de joindre la session de jeu.',
             } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(SocketEvents.ToggleDebugMode)
+    toggleDebugMode(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: ToggleDebugModePayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SocketEvents.GameSessionError, { message: 'Mode debug refuse.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.toggleDebugMode(payload.sessionId, payload.playerId)) {
+            client.emit(SocketEvents.GameSessionError, { message: 'Mode debug refuse.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(SocketEvents.ForceEndDebugTurn)
+    forceEndDebugTurn(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: ForceEndDebugTurnPayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SocketEvents.GameSessionError, { message: 'Fin de tour debug refusee.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.forceEndDebugTurn(payload.sessionId, payload.playerId)) {
+            client.emit(SocketEvents.GameSessionError, { message: 'Fin de tour debug refusee.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(SocketEvents.DebugTeleportPlayer)
+    debugTeleportPlayer(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: DebugTeleportPlayerPayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SocketEvents.GameSessionError, { message: 'Teleportation debug refusee.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.debugTeleportPlayer(payload.sessionId, payload.playerId, payload.position)) {
+            client.emit(SocketEvents.GameSessionError, { message: 'Teleportation debug refusee.' } satisfies GameSessionErrorPayload);
         }
     }
 
