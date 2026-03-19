@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
@@ -14,6 +15,7 @@ import {
   WaitingRoomStatePayload,
 } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class WaitingRoomService {
@@ -44,8 +46,10 @@ export class WaitingRoomService {
 
   private readonly errorSubject = new BehaviorSubject('');
   readonly error$ = this.errorSubject.asObservable();
+  private readonly waitingRoomUrl = `${environment.serverUrl}/waiting-rooms`;
 
   constructor(
+    private readonly http: HttpClient,
     private readonly socketManager: SocketManagerService,
     private readonly router: Router,
   ) {}
@@ -54,7 +58,29 @@ export class WaitingRoomService {
     return this.mePlayer;
   }
 
+  getPlayerSnapshot(): MatchLobbyPlayer[] {
+    return this.playersSubject.value;
+  }
+
+  clearPreviewState(): void {
+    this.resetState();
+  }
+
+  preloadWaitingRoom(accessCode: string): void {
+    this.resetState();
+    this.http.get<WaitingRoomStatePayload>(`${this.waitingRoomUrl}/${accessCode}`).subscribe({
+      next: (payload) => {
+        this.handleWaitingRoomUpdated(payload);
+      },
+      error: () => {
+        this.resetState();
+        this.errorSubject.next('Impossible de charger la salle d attente.');
+      },
+    });
+  }
+
   initAsOrganizer(mapId: string, player: MatchLobbyPlayer): void {
+    this.resetState();
     this.ensureConnected();
     this.registerListeners();
 
@@ -239,5 +265,4 @@ export class WaitingRoomService {
     this.statusMessageSubject.next('');
     this.errorSubject.next('');
   }
-
 }
