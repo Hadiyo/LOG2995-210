@@ -3,8 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 
 import { MapApiService } from '@app/services/map/map-api.service';
-import { GameMode, MapSize } from '@common/enum';
-import type { EditorMap } from '@common/interface';
+import { GameMode, MapSize } from '@common/maps/map.enums';
+import type { EditorMap, EditorMapDetails, MapSummary } from '@common/maps/map.interface';
 
 /**
  * Testing Strategy:
@@ -33,6 +33,28 @@ describe('MapApiService', () => {
     map: [],
     objects: [],
     visibility: true,
+    ...overrides,
+  });
+
+  const makeMapSummary = (overrides: Partial<MapSummary> = {}): MapSummary => ({
+    id: '',
+    name: 'Map',
+    description: 'Desc',
+    mode: GameMode.CLASSIC,
+    size: MapSize.S,
+    date: SAMPLE_DATE_ISO,
+    visibility: true,
+    ...overrides,
+  });
+
+  const makeEditorMapDetails = (overrides: Partial<EditorMapDetails> = {}): EditorMapDetails => ({
+    id: '',
+    name: 'Map',
+    description: 'Desc',
+    mode: GameMode.CLASSIC,
+    mapsize: MapSize.S,
+    map: [],
+    objects: [],
     ...overrides,
   });
 
@@ -69,12 +91,22 @@ describe('MapApiService', () => {
     req.flush(expected);
   });
 
+  it('getAllMapsSummary() should GET /maps/summary', () => {
+    const expected = [makeMapSummary({ id: '1' })];
+
+    service.getAllMapsSummary().subscribe((maps) => expect(maps).toEqual(expected));
+
+    const req = httpMock.expectOne((request) => request.method === 'GET' && request.url.endsWith('/maps/summary'));
+    expect(req.request.method).toBe('GET');
+    req.flush(expected);
+  });
+
   it('getMapById() should GET /maps/:id', () => {
-    const expected = makeMap({ id: 'abc' });
+    const expected = makeEditorMapDetails({ id: 'abc' });
 
     service.getMapById('abc').subscribe((map) => expect(map).toEqual(expected));
 
-    const req = httpMock.expectOne((request) => request.method === 'GET' && request.url.endsWith('/maps/abc'));
+    const req = httpMock.expectOne((request) => request.method === 'GET' && request.url.endsWith('/maps/abc/editor'));
     expect(req.request.method).toBe('GET');
     req.flush(expected);
   });

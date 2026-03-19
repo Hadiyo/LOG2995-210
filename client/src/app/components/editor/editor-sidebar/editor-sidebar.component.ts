@@ -2,22 +2,16 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { GameMode, ObjectType, TileType } from '@common/enum';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-
-/**
- * Simple UI types for palette rendering
- * - Keeps template clean and strongly typed
- */
-type TilePaletteItem = { id: TileType; label: string; description: string; cssVar: string };
-type ObjectPaletteItem = { id: ObjectType; label: string; description: string; cssVar: string };
+import { ObjectType, TileType } from '@common/maps/map.enums';
+import { ObjectPaletteItem, TilePaletteItem } from './editor-sidebar.types';
 
 @Component({
   selector: 'app-editor-sidebar',
 
   /**
    * Standalone component imports:
-   * - CommonModule: *ngIf, ngClass, etc. 
+   * - CommonModule: *ngIf, ngClass, etc.
    * - FormsModule: ngModel bindings used in the template inputs
    * - MatTooltipModule: tooltips for the buttons
    */
@@ -31,7 +25,6 @@ export class EditorSidebarComponent {
      Template helpers
      - Expose enums so HTML can compare modes/types safely
      ========================================================= */
-  readonly gameMode = GameMode;
   readonly objectType = ObjectType;
 
   /* =========================================================
@@ -42,14 +35,9 @@ export class EditorSidebarComponent {
 
   /* =========================================================
      Dependency
-     - readonly in constructor auto-creates a property
      - used directly in the template (editorState.xxx)
      ========================================================= */
   readonly editorState: EditorStateService;
-
-  constructor(editorState: EditorStateService) {
-    this.editorState = editorState;
-  }
 
   /* =========================================================
      Tile palette configuration
@@ -57,7 +45,7 @@ export class EditorSidebarComponent {
      - Door uses a single enum value (TileType.DOOR):
        toggling open/closed handled by editor logic
      ========================================================= */
-  tiles: TilePaletteItem[] = [
+  protected readonly tiles: TilePaletteItem[] = [
     { id: TileType.WALL, label: 'Mur', description: 'Tuile non traversable.', cssVar: '--tile-wall-img' },
     {
       id: TileType.DOOR,
@@ -73,23 +61,16 @@ export class EditorSidebarComponent {
      Object palette configuration
      - Maps ObjectType enum → labels + theme color variables
      ========================================================= */
-  objects: ObjectPaletteItem[] = [
+  protected readonly objects: ObjectPaletteItem[] = [
     {
       id: ObjectType.START,
       label: 'Point de départ',
       description: "Un joueur est assigné aléatoirement un point de départ au début d'une partie.",
       cssVar: '--object-spawn-img',
     },
-    { id: ObjectType.FLAG, label: 'Drapeau', description: "L'objectif principal de mode CTF.", cssVar: '--object-flag-img' },
-    {
-      id: ObjectType.REGEN, label: 'Sanctuaire de soin',
-      description: `Activer pour regagner 2 points de vie au joueur.`,
-      cssVar: '--object-heal-img',
-    },
-    {
-      id: ObjectType.ARENA, label: 'Sanctuaire de combat',
-      description: `Activer pour un bonus temporaire de +1 à l'attaque et à la défense. Ce bonus reste jusqu'à la fin de son prochain tour.`,
-      cssVar: '--object-fight-img',
-    },
   ];
+
+  constructor(editorState: EditorStateService) {
+    this.editorState = editorState;
+  }
 }

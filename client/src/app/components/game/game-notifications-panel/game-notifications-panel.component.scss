@@ -1,0 +1,84 @@
+:host {
+  display: block;
+  pointer-events: none;
+  width: 100%;
+}
+
+.notification-popup {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  border: 2px solid color-mix(in srgb, var(--accent-primary) 58%, var(--border-soft));
+  border-radius: 10px;
+  padding: 10px 16px 12px;
+  background: color-mix(in srgb, var(--bg-main) 86%, var(--bg-panel));
+  color: var(--text-main);
+  box-shadow:
+    0 10px 26px color-mix(in srgb, var(--bg-main) 55%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--accent-primary) 45%, transparent);
+  animation: notification-fade 2400ms ease-out both;
+}
+
+.notification-popup--warning {
+  border-color: color-mix(in srgb, var(--border-warning) 75%, var(--border-soft));
+  box-shadow:
+    0 10px 26px color-mix(in srgb, var(--bg-main) 55%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--border-warning) 45%, transparent);
+}
+
+.notification-popup--critical {
+  border-color: color-mix(in srgb, var(--border-critical) 78%, var(--border-soft));
+  box-shadow:
+    0 10px 26px color-mix(in srgb, var(--bg-main) 55%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--border-critical) 48%, transparent);
+}
+
+.notification-popup__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.notification-popup__title {
+  color: color-mix(in srgb, var(--text-main) 92%, var(--notification-header));
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.notification-popup__content {
+  margin: 0;
+  white-space: pre-line;
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.35;
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--bg-main) 35%, transparent);
+}
+
+.notification-popup__time {
+  display: block;
+  text-align: right;
+  font-size: 0.8rem;
+  color: color-mix(in srgb, var(--text-main) 82%, var(--text-muted));
+}
+
+@keyframes notification-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}

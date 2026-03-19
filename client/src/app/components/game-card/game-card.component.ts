@@ -1,8 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-import type { EditorMap } from '@common/interface';
-import { GameMode } from '@common/enum';
+import { GameMode } from '@common/maps/map.enums';
+import type { MapSummary } from '@common/maps/map.interface';
 
 @Component({
   selector: 'app-game-card',
@@ -11,36 +11,34 @@ import { GameMode } from '@common/enum';
   styleUrl: './game-card.component.scss',
 })
 export class GameCardComponent {
-  @Input({ required: true }) map!: EditorMap;
-  @Input() thumbnailUrl?: string;
+  @Input({ required: true }) map!: MapSummary;
   @Input() showActions = true;
-  @Output() select = new EventEmitter<EditorMap>();
-  @Output() edit = new EventEmitter<EditorMap>();
-  @Output() remove = new EventEmitter<EditorMap>();
-  @Output() toggleVisibility = new EventEmitter<EditorMap>();
+  @Output() select = new EventEmitter<string>();
+  @Output() edit = new EventEmitter<MapSummary>();
+  @Output() remove = new EventEmitter<MapSummary>();
+  @Output() toggleVisibility = new EventEmitter<MapSummary>();
 
-  readonly modeLabels: Record<GameMode, string> = {
+  protected readonly modeLabels: Record<GameMode, string> = {
     [GameMode.CLASSIC]: 'Classique',
-    [GameMode.CTF]: 'CTF',
   };
 
-  get modeLabel(): string {
+  protected get modeLabel(): string {
     return this.modeLabels[this.map.mode] ?? this.map.mode;
   }
 
-  onEdit(): void {
+  protected onEdit(): void {
     this.edit.emit(this.map);
   }
 
-  onSelect(): void {
-    this.select.emit(this.map);
+  protected onSelect(): void {
+    this.select.emit(this.map.id);
   }
 
-  onRemove(): void {
+  protected onRemove(): void {
     this.remove.emit(this.map);
   }
 
-  onToggleVisibility(): void {
+  protected onToggleVisibility(): void {
     this.toggleVisibility.emit(this.map);
   }
 }

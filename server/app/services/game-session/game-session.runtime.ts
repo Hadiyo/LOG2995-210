@@ -1,0 +1,156 @@
+import { ChatMessage } from '@common/chat/chat.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { MatchTurnState } from '@common/game/turn.interface';
+import { TileType } from '@common/maps/map.enums';
+import { EditorMapDetails, Vec2 } from '@common/maps/map.interface';
+import { buildTurnOrderFromPlayers } from '@app/services/game-session/game-session.turn';
+import { buildInitializedMatchFromEditor } from './game-session.match';
+
+export const TRANSITION_DURATION_MS = 3000;
+export const ACTIVE_TURN_DURATION_MS = 30000;
+export const SNAPSHOT_TICK_MS = 1000;
+export const CLASSIC_WIN_THRESHOLD = 3;
+
+export interface GameSessionRuntime {
+    sessionId: string;
+    match: InitializedMatch;
+    turnState: MatchTurnState;
+    messages: ChatMessage[];
+    socketToPlayerId: Map<string, string>;
+    transitionTimeoutId: NodeJS.Timeout | null;
+    activeTurnTimeoutId: NodeJS.Timeout | null;
+    timerIntervalId: NodeJS.Timeout | null;
+}
+
+export function buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[], messages: ChatMessage[] = []): GameSessionRuntime {
+    const sessionId = crypto.randomUUID();
+    const match = buildInitializedMatchFromEditor(map, players, Math.random);
+    const order = buildTurnOrderFromPlayers(match.players, Math.random);
+    const firstPlayerId = order[0]?.playerId ?? null;
+    const turnState: MatchTurnState = {
+        matchId: match.mapId,
+        hasStarted: false,
+        order,
+        currentTurnIndex: 0,
+        phase: 'transition',
+        activePlayerId: null,
+        transitionTargetPlayerId: firstPlayerId,
+        transitionEndsAt: Date.now() + TRANSITION_DURATION_MS,
+        transitionRemainingMs: TRANSITION_DURATION_MS,
+        activeTurnEndsAt: null,
+        activeTurnRemainingMs: 0,
+        movementPointsRemaining: 0,
+        actionTaken: false,
+        movementCount: 0,
+        playerStates: order.map((entry) => ({ playerId: entry.playerId, state: 'waiting' })),
+    };
+
+    return {
+        sessionId,
+        match,
+        turnState,
+        messages: messages.map((message) => ({ ...message })),
+        socketToPlayerId: new Map(),
+        transitionTimeoutId: null,
+        activeTurnTimeoutId: null,
+        timerIntervalId: null,
+    };
+}
+
+export function createTransitionTurnState(current: MatchTurnState): MatchTurnState {
+    return {
+        ...current,
+        phase: 'transition',
+        hasStarted: current.hasStarted,
+        activePlayerId: null,
+        transitionTargetPlayerId: current.order[current.currentTurnIndex]?.playerId ?? null,
+        transitionEndsAt: Date.now() + TRANSITION_DURATION_MS,
+        transitionRemainingMs: TRANSITION_DURATION_MS,
+        activeTurnEndsAt: null,
+        activeTurnRemainingMs: 0,
+        movementPointsRemaining: 0,
+        actionTaken: false,
+        movementCount: 0,
+        playerStates: current.order.map((entry) => ({ playerId: entry.playerId, state: 'waiting' })),
+    };
+}
+
+export function createActiveTurnState(current: MatchTurnState, activePlayer: MatchPlayer): MatchTurnState {
+    const activePlayerId = current.order[current.currentTurnIndex]?.playerId ?? null;
+    return {
+        ...current,
+        hasStarted: true,
+        phase: 'active',
+        activePlayerId,
+        transitionTargetPlayerId: null,
+        transitionEndsAt: null,
+        transitionRemainingMs: 0,
+        activeTurnEndsAt: Date.now() + ACTIVE_TURN_DURATION_MS,
+        activeTurnRemainingMs: ACTIVE_TURN_DURATION_MS,
+        movementPointsRemaining: activePlayer.speed,
+        actionTaken: false,
+        movementCount: 0,
+        playerStates: current.order.map((entry) => ({
+            playerId: entry.playerId,
+            state: entry.playerId === activePlayerId ? 'active' : 'waiting',
+        })),
+    };
+}
+
+export function canStartCombat(attacker: MatchPlayer, defender: MatchPlayer): boolean {
+    return Math.abs(attacker.position.x - defender.position.x) + Math.abs(attacker.position.y - defender.position.y) === 1;
+}
+
+export function resolveRespawnPosition(match: InitializedMatch, defeatedPlayerId: string): Vec2 {
+    const defeatedPlayer = match.players.find((player) => player.id === defeatedPlayerId);
+    if (!defeatedPlayer) {
+        return { x: 0, y: 0 };
+    }
+
+    const occupiedKeys = new Set(
+        match.players
+            .filter((player) => player.id !== defeatedPlayerId)
+            .map((player) => `${player.position.x}:${player.position.y}`),
+    );
+
+    const origin = defeatedPlayer.startingPosition;
+    const isFree = (pos: Vec2): boolean => !occupiedKeys.has(`${pos.x}:${pos.y}`);
+
+    if (isFree(origin)) {
+        return { ...origin };
+    }
+
+    const candidates = match.map
+        .filter((cell) => cell.tileType !== TileType.WALL && cell.tileType !== TileType.DOOR && isFree(cell.position))
+        .sort((left, right) => {
+            const distanceDelta =
+                (Math.abs(left.position.x - origin.x) + Math.abs(left.position.y - origin.y)) -
+                (Math.abs(right.position.x - origin.x) + Math.abs(right.position.y - origin.y));
+            if (distanceDelta !== 0) return distanceDelta;
+            if (left.position.y !== right.position.y) return left.position.y - right.position.y;
+            return left.position.x - right.position.x;
+        });
+
+    return candidates[0] ? { ...candidates[0].position } : { ...origin };
+}
+
+export function rebuildTurnStateAfterRosterChange(current: MatchTurnState, players: MatchPlayer[]): MatchTurnState {
+    const playerIds = new Set(players.map((player) => player.id));
+    const order = current.order.filter((entry) => playerIds.has(entry.playerId));
+    const removedBeforeCurrent = current.order
+        .slice(0, current.currentTurnIndex)
+        .filter((entry) => !playerIds.has(entry.playerId)).length;
+    const currentTurnIndex = order.length === 0 ? 0 : (current.currentTurnIndex - removedBeforeCurrent) % order.length;
+    const activePlayerId = order[currentTurnIndex]?.playerId ?? null;
+    return {
+        ...current,
+        order,
+        currentTurnIndex,
+        activePlayerId,
+        transitionTargetPlayerId: current.phase === 'transition' ? activePlayerId : null,
+        playerStates: order.map((entry) => ({
+            playerId: entry.playerId,
+            state: current.phase === 'active' && entry.playerId === activePlayerId ? 'active' : 'waiting',
+        })),
+    };
+}

@@ -1,9 +1,9 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { MapApiService } from '@app/services/map/map-api.service';
-import { MapLoadState } from '@app/services/map/map-state.enum';
+import { ServiceState } from '@app/services/service-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { EditorMap } from '@common/interface';
-import { BEFORE_UNLOAD, MapVisibilityEventPayload, SocketEvents, SocketRoom } from '@common/socket-events';
+import type { EditorMap, MapSummary } from '@common/maps/map.interface';
+import { MapSocketEvents, MapVisibilityEventPayload, PageContext, PageSocketEvents } from '@common/socket-events';
 import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
 
 /** Single source of truth for the available collection of maps
@@ -15,27 +15,25 @@ import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
 export class MapStateService {
     constructor(private socket: SocketManagerService) {
         this.socket.connect();
-
-        this.subscribeToWindowEvent();
-
+        this.socket.subscribeToWindowEvent();
         this.loadMaps();
     }
 
-    private mapsSubject = new BehaviorSubject<EditorMap[]>([]);
+    private mapsSubject = new BehaviorSubject<MapSummary[]>([]);
     maps$ = this.mapsSubject.asObservable();
 
-    readonly state = signal<MapLoadState>(MapLoadState.Idle);
+    readonly state = signal<ServiceState>(ServiceState.Idle);
     private readonly mapApiService = inject(MapApiService);
 
     /** MAPS API METHODS */
     loadMaps(): void {
-        this.state.set(MapLoadState.Loading);
-        this.mapApiService.getAllMaps().subscribe({
+        this.state.set(ServiceState.Loading);
+        this.mapApiService.getAllMapsSummary().subscribe({
             next: maps => {
                 this.mapsSubject.next(maps);
-                this.state.set(MapLoadState.Loaded);
+                this.state.set(ServiceState.Loaded);
             },
-            error: () => this.state.set(MapLoadState.Error),
+            error: () => this.state.set(ServiceState.Error),
         });
     }
 
@@ -43,48 +41,48 @@ export class MapStateService {
         await firstValueFrom(this.mapApiService.saveMap(map));
     }
 
-    deleteMap(map: EditorMap): Observable<void> {
+    deleteMap(map: MapSummary): Observable<void> {
         return this.mapApiService.deleteMap(map.id);
     }
 
-    toggleMapVisibility(map: EditorMap): void {
+    toggleMapVisibility(map: MapSummary): void {
         this.mapApiService.updateMapVisibility(map.id, !map.visibility).subscribe({
-            error: () => this.state.set(MapLoadState.Error),
+            error: () => this.state.set(ServiceState.Error),
         });
     }
 
 
     /** SOCKET SERVICE FOR MAP */
-    subscribeToMapEvents() {
-        this.socket.send(SocketEvents.JoinRoom, SocketRoom.MapManagementRoom);
-        this.socket.on<EditorMap>(SocketEvents.MapCreated, this.onMapCreated);
-        this.socket.on<EditorMap>(SocketEvents.MapUpdated, this.onMapUpdated);
-        this.socket.on<string>(SocketEvents.MapDeleted, this.onMapDeleted);
-        this.socket.on<MapVisibilityEventPayload>(SocketEvents.ToogleMapVisibility, this.onToggleVisibility);
+    subscribeToMapEvents(): void {
+        this.socket.send(PageSocketEvents.JoinPage, { page: PageContext.MapManagement });
+        this.socket.on<MapSummary>(MapSocketEvents.MapCreated, this.onMapCreated);
+        this.socket.on<MapSummary>(MapSocketEvents.MapUpdated, this.onMapUpdated);
+        this.socket.on<string>(MapSocketEvents.MapDeleted, this.onMapDeleted);
+        this.socket.on<MapVisibilityEventPayload>(MapSocketEvents.ToggleMapVisibility, this.onToggleVisibility);
         this.loadMaps();
     }
 
-    unsubscribeFromMapEvents() {
-        this.socket.send<SocketRoom>(SocketEvents.LeaveRoom, SocketRoom.MapManagementRoom);
-        this.socket.off(SocketEvents.MapCreated, this.onMapCreated);
-        this.socket.off(SocketEvents.MapUpdated, this.onMapUpdated);
-        this.socket.off(SocketEvents.MapDeleted, this.onMapDeleted);
-        this.socket.off(SocketEvents.ToogleMapVisibility, this.onToggleVisibility);
+    unsubscribeFromMapEvents(): void {
+        this.socket.send(PageSocketEvents.LeavePage, { page: PageContext.MapManagement });
+        this.socket.off(MapSocketEvents.MapCreated, this.onMapCreated);
+        this.socket.off(MapSocketEvents.MapUpdated, this.onMapUpdated);
+        this.socket.off(MapSocketEvents.MapDeleted, this.onMapDeleted);
+        this.socket.off(MapSocketEvents.ToggleMapVisibility, this.onToggleVisibility);
     }
 
-    private onMapCreated = (map: EditorMap) => {
+    private onMapCreated = (map: MapSummary): void => {
         this.mapsSubject.next([...this.mapsSubject.value, map]);
     };
 
-    private onMapUpdated = (updatedMap: EditorMap) => {
+    private onMapUpdated = (updatedMap: MapSummary): void => {
         this.mapsSubject.next(this.mapsSubject.value.map(map => map.id === updatedMap.id ? { ...updatedMap } : map));
     };
 
-    private onMapDeleted = (mapId: string) => {
+    private onMapDeleted = (mapId: string): void => {
         this.deleteSubjectMap(mapId);
     };
 
-    private onToggleVisibility = (payload: MapVisibilityEventPayload) => {
+    private onToggleVisibility = (payload: MapVisibilityEventPayload): void => {
         this.setVisibility(payload.id, payload.isVisible);
     };
 
@@ -97,13 +95,4 @@ export class MapStateService {
         this.mapsSubject.next(this.mapsSubject.value.map((item) =>
             (item.id === id ? { ...item, visibility: newVisibility } : item)));
     }
-
-    private subscribeToWindowEvent(): void {
-        // Adds event listener to disconnects the client socket when the application is closed
-        window.addEventListener(BEFORE_UNLOAD, () => {
-            this.socket.disconnect();
-        });
-    }
-
-
 }

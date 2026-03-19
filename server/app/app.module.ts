@@ -1,10 +1,20 @@
 import { MapController } from '@app/controllers/map/map.controller';
+import { WaitingRoomController } from '@app/controllers/waiting-room/waiting-room.controller';
+import { ChatGateway } from '@app/gateways/chat/chat.gateway';
+import { GameSessionGateway } from '@app/gateways/game-session/game-session.gateway';
 import { Map, mapSchema } from '@app/model/database/map';
+import { GameSessionService as MatchGameSessionService } from '@app/services/game-session/game-session.service';
 import { MapService } from '@app/services/map/map.service';
+import { WaitingRoomService as MatchWaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { GameMapController } from './controllers/game-map/game-map.controller';
 import { MapGateway } from './gateways/map/map.gateway';
+import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
+import { MatchWaitingRoomGateway } from './gateways/waiting-room/match-waiting-room.gateway';
+import { ChatService } from './services/chat/chat.service';
+import { GameMapService } from './services/game-map/game-map.service';
 
 @Module({
     imports: [
@@ -20,7 +30,18 @@ import { MapGateway } from './gateways/map/map.gateway';
             { name: Map.name, schema: mapSchema },
         ]),
     ],
-    controllers: [MapController],
-    providers: [MapService, Logger, MapGateway],
+    controllers: [MapController, GameMapController, WaitingRoomController],
+    providers: [
+        Logger,
+        MapGateway,
+        PageRoomGateway,
+        MapService,
+        GameMapService,
+        MatchWaitingRoomGateway,
+        MatchGameSessionService,
+        MatchWaitingRoomService,
+        GameSessionGateway,
+        ChatGateway,
+        ChatService],
 })
 export class AppModule {}

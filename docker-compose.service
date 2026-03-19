@@ -1,0 +1,13 @@
+[Unit]
+Description=Docker Compose Application Service
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/hadi/Documents/UNI/LOG2995/LOG2995-210
+ExecStart=/usr/bin/docker compose up -d
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

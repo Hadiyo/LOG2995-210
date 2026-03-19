@@ -1,7 +1,9 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, signal } from '@angular/core';
 import { EditorTileComponent } from '@app/components/editor/editor-tile/editor-tile.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-import { MouseButton, MouseEventType } from '@common/enum';
+import { CURSOR_OFFSET, OBJECTS } from '@app/shared/tooltip/tooltip.constants';
+import { ObjectType } from '@common/maps/map.enums';
+import { MouseButton, MouseEventType } from '@common/mouse-events.enum';
 import { TileEvent } from '@common/types';
 
 @Component({
@@ -16,6 +18,17 @@ export class EditorCanvasComponent {
      ========================================================= */
   // Drag-paint state (true while mouse is held down and tile tool is active)
   private isPainting = false;
+
+  // Current tooltip text and position
+  tooltipText = signal<string | null>(null);
+  tooltipX = signal(0);
+  tooltipY = signal(0);
+
+  // Tooltip text getter
+  protected getDescription(objectId: ObjectType): string {
+    if (!objectId) return '';
+    return OBJECTS.find((object) => object.id === objectId)?.description ?? '';
+  }
 
   // Track state of shift key
   @HostListener('document:keydown.shift')
@@ -67,6 +80,9 @@ export class EditorCanvasComponent {
           this.editorState.eraseTileAtIndex(index);
           break;
       }
+    } else {
+      // Show tooltip on hover when not painting
+      this.updateTooltip(index);
     }
   }
 
@@ -80,6 +96,12 @@ export class EditorCanvasComponent {
         break;
       case MouseEventType.ENTER:
         this.onCellMouseEnter(event.index);
+        break;
+      case MouseEventType.MOVE:
+        this.onCellMouseMove(event.index, event.originalEvent);
+        break;
+      case MouseEventType.LEAVE:
+        this.onCellMouseLeave();
         break;
     }
   }
@@ -142,6 +164,28 @@ export class EditorCanvasComponent {
 
     // Reset active button
     this.editorState.activeButton.set(null);
+  }
+
+  protected onCellMouseMove(index: number, event: MouseEvent): void {
+    if (this.isPainting) return;
+
+    this.updateTooltip(index);
+    this.tooltipX.set(event.clientX + CURSOR_OFFSET);
+    this.tooltipY.set(event.clientY + CURSOR_OFFSET);
+  }
+
+  protected onCellMouseLeave(): void {
+    this.tooltipText.set(null);
+  }
+
+  private updateTooltip(index: number) {
+    const object = this.editorState.getObjectAtIndex(index);
+    if (!object) {
+      this.tooltipText.set(null);
+      return;
+    }
+  
+    this.tooltipText.set(this.getDescription(object.type));
   }
 
   // Global mouseup listener to catch releases outside the grid

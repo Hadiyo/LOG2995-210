@@ -1,12 +1,10 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { getPlayersLabel, MAP_SIZE_CONFIG, MapSizeOption } from '@app/config/map-size.config';
-import { MapConfig } from '@app/interfaces/create-map-dialog';
-import { GameMode, MapSize } from '@common/enum';
+import { getPlayersLabel, MAP_SIZE_CONFIG, MapConfig } from '@app/config/map.config';
+import { GameMode, MapSize } from '@common/maps/map.enums';
 
 const MODE_OPTIONS = [
   { value: GameMode.CLASSIC, label: 'Classique' },
-  { value: GameMode.CTF, label: 'CTF' },
 ] as const;
 
 @Component({
@@ -16,28 +14,22 @@ const MODE_OPTIONS = [
   styleUrl: './create-map-dialog.component.scss',
 })
 export class CreateMapDialogComponent {
-  readonly sizeOptions = MAP_SIZE_CONFIG;
-  readonly modeOptions = MODE_OPTIONS;
+  protected readonly sizeOptions = MAP_SIZE_CONFIG;
+  protected readonly modeOptions = MODE_OPTIONS;
 
-  selectedSize?: MapSize;
-  selectedMode?: GameMode;
+  protected selectedSize: MapSize = MAP_SIZE_CONFIG[0].value;
+  protected selectedMode: GameMode = MODE_OPTIONS[0].value;
 
   @Output() cancel = new EventEmitter<void>();
   @Output() confirm = new EventEmitter<MapConfig>();
 
-  getPlayersLabel(option: MapSizeOption): string {
-    return getPlayersLabel(option);
-  }
+  protected readonly getPlayersLabel = getPlayersLabel;
 
-  onCancel(): void {
+  protected onCancel(): void {
     this.cancel.emit();
   }
 
-  onConfirm(): void {
-    if (!this.selectedSize || !this.selectedMode) {
-      return;
-    }
-
+  protected onConfirm(): void {
     this.confirm.emit({
       size: this.selectedSize,
       mode: this.selectedMode,

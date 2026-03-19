@@ -1,5 +1,5 @@
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/enum';
-import type { EditorCell, EditorMap, MapObject } from '@common/interface';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import type { EditorCell, EditorMap, MapObject } from '@common/maps/map.interface';
 
 export type QueryLike<T> = { sort: jest.Mock; exec: jest.Mock<Promise<T>> };
 
@@ -58,4 +58,3 @@ export const makeObject = (overrides: Partial<MapObject> = {}): MapObject => ({
     size: ObjectSize.S,
     ...overrides,
 });
-

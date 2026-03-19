@@ -1,11 +1,10 @@
-import type { FilterQuery, Model } from 'mongoose';
-
-import type { EditorMap } from '@common/interface';
 import {
     type MapValidationIssue,
     type MapValidationResult,
     validateMap,
-} from '@common/map-validation';
+} from '@common/maps/map-validation';
+import type { EditorMap } from '@common/maps/map.interface';
+import type { FilterQuery, Model } from 'mongoose';
 
 export type MapNameUniquenessChecker = (name: string) => Promise<boolean>;
 

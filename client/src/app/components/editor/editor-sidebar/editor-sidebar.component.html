@@ -72,19 +72,11 @@
 
     <div class="palette">
       @for (obj of objects; track obj.id) {
-
       <!-- Object selection button -->
-      <!-- CTF rule enforcement:
-            - Flag can only be placed in CTF mode -->
       <button class="palette-item" type="button" (click)="editorState.selectObject(obj.id)"
-        [class.active]="editorState.selectedObjectType() === obj.id" [disabled]="
-          obj.id === objectType.FLAG &&
-          editorState.editorMap().mode !== gameMode.CTF
-        " [class.disabled]="
-          (obj.id === objectType.FLAG &&
-          editorState.editorMap().mode !== gameMode.CTF) ||
-          (this.editorState.getObjectCountAndLimit(obj.id).count 
-          === this.editorState.getObjectCountAndLimit(obj.id).limit)
+        [class.active]="editorState.selectedObjectType() === obj.id" [class.disabled]="
+          this.editorState.getObjectCountAndLimit(obj.id).count 
+          === this.editorState.getObjectCountAndLimit(obj.id).limit
         " matTooltip="{{ obj.description }}" matTooltipClass="tooltip">
         <!-- Object color swatch -->
         <span class="swatch" [style.backgroundImage]="'var(' + obj.cssVar + ')'"></span>
@@ -99,7 +91,6 @@
           editorState.getObjectCountAndLimit(obj.id).limit }}</span>
         }
       </button>
-
       }
     </div>
   </section>

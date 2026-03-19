@@ -1,0 +1,21 @@
+<h3>Informations de la partie</h3>
+<div class="info-grid">
+  <div class="info-row">
+    <span class="info-label">Taille</span>
+    <span class="info-value">{{ cols }}x{{ rows }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Joueurs actuels</span>
+    <span class="info-value">{{ currentPlayers }} / {{ maxPlayers }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Joueur actif</span>
+    <span class="info-value">{{ activePlayerName ?? defaultPanelTitle }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Temps restant</span>
+    <span class="info-value timer-value" [class.timer-value--dim]="!highlightTimer" [style.color]="highlightTimer ? timerColor : null">
+      {{ remainingSeconds }}s
+    </span>
+  </div>
+</div>

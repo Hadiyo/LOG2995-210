@@ -1,0 +1,388 @@
+import { CommonModule } from '@angular/common';
+import { Component, HostListener, computed, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
+import { GameActionBarComponent } from '@app/components/game/game-action-bar/game-action-bar.component';
+import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
+import { GameCurrentPlayerPanelComponent } from '@app/components/game/game-current-player-panel/game-current-player-panel.component';
+import { GameMapGridComponent } from '@app/components/game/game-map-grid/game-map-grid.component';
+import { GamePlayerListComponent } from '@app/components/game/game-player-list/game-player-list.component';
+import { GameSessionInfoPanelComponent } from '@app/components/game/game-session-info-panel/game-session-info-panel.component';
+import { GameTileInfoModalComponent } from '@app/components/game/game-tile-info-modal/game-tile-info-modal.component';
+import { MAP_SIZE_CONFIG } from '@app/config/map.config';
+import { GameSessionDisplayService } from '@app/pages/game-view/game-session-display.service';
+import { GameSessionInteractionService } from '@app/pages/game-view/game-session-interaction.service';
+import {
+    ACTIVE_TURN_DURATION_MS,
+    CLOCK_TICK_MS,
+    MATCH_END_REDIRECT_DURATION_MS,
+    MILLISECONDS_PER_SECOND,
+    TRANSITION_DURATION_MS,
+} from '@app/pages/game-view/game-session.constants';
+import { GameSessionTargetsService } from '@app/pages/game-view/game-session-targets.service';
+import { GameSessionTurnEffectsService } from '@app/pages/game-view/game-session-turn-effects.service';
+import { ChatService } from '@app/services/chat/chat.service';
+import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
+import { GameVisualFeedbackService } from '@app/services/game/game-visual-feedback.service';
+import { positionKey } from '@app/services/match/match-geometry';
+import { MatchStateService } from '@app/services/match/match-state.service';
+import { LOCAL_POSE_REFRESH_MS } from '@app/shared/game/game-visual.constants';
+import { ChatMessage } from '@common/chat/chat.interface';
+import { MatchEndState, MatchPlayer } from '@common/game/match.interface';
+import { MapSize } from '@common/maps/map.enums';
+import { GameCell } from '@common/maps/map.interface';
+import { Player, PlayerStatus } from '@common/player/player.interface';
+import { createPanelAvatarDirection, createPanelAvatarId, createPanelAvatarState } from './game-view-avatar.utils';
+import { GAME_VIEW_CONSTANTS } from './game-view.constants';
+import { getPhaseDescription, getPhaseHeadline } from './game-view-phase.utils';
+import { startLocalPoseRefreshClock, stopLocalPoseRefreshClock } from './game-view-pose-clock.utils';
+import { toGamePlayer } from './game-view-player.utils';
+import { createSelectedTileInfo } from './game-view-tile-info.utils';
+@Component({
+    selector: 'app-game-view-page',
+    standalone: true,
+    imports: [
+        CommonModule,
+        GameMapGridComponent,
+        GamePlayerListComponent,
+        GameActionBarComponent,
+        GameChatPanelComponent,
+        GameSessionInfoPanelComponent,
+        GameCurrentPlayerPanelComponent,
+        GameTileInfoModalComponent,
+    ],
+    templateUrl: './game-view-page.component.html',
+    styleUrls: ['./game-view-page.component.scss'],
+    providers: [
+        GameSessionDisplayService,
+        GameSessionInteractionService,
+        GameSessionTargetsService,
+        GameSessionTurnEffectsService,
+    ],
+})
+export class GameViewPageComponent implements OnInit, OnDestroy {
+    private static readonly activeTurnDurationSeconds = ACTIVE_TURN_DURATION_MS / MILLISECONDS_PER_SECOND;
+    private static readonly transitionDurationSeconds = TRANSITION_DURATION_MS / MILLISECONDS_PER_SECOND;
+    protected readonly constants = GAME_VIEW_CONSTANTS;
+    protected readonly display = inject(GameSessionDisplayService);
+    protected readonly interaction = inject(GameSessionInteractionService);
+    protected readonly targets = inject(GameSessionTargetsService);
+    protected readonly effects = inject(GameSessionTurnEffectsService);
+    protected readonly visualFeedback = inject(GameVisualFeedbackService);
+
+    private readonly matchState = inject(MatchStateService);
+    private readonly route = inject(ActivatedRoute);
+    private readonly router = inject(Router);
+    private readonly gameSessionSocket = inject(GameSessionSocketService);
+    private readonly chatService = inject(ChatService);
+
+    protected readonly endRedirectRemainingMs = signal(0);
+    protected readonly errorMessage = computed(() => this.gameSessionSocket.errorMessage() || this.display.errorMessage());
+    protected readonly match = this.display.match;
+    protected readonly localPlayerId = computed(() => this.display.localPlayer()?.id ?? '');
+    protected readonly leftPanelTab = signal<'player' | 'turn-order'>('player');
+    protected readonly isPlayerListExpanded = signal(false);
+    protected readonly isTurnStatusPanelOpen = signal(false);
+    protected readonly nowMs = signal(Date.now());
+    protected readonly mapCells = computed<readonly GameCell[]>(() => this.match()?.map ?? []);
+    protected readonly mapObjects = computed(() => this.match()?.objects ?? []);
+    protected readonly cols = computed<number>(() => this.match()?.mapSize ?? MapSize.S);
+    protected readonly rows = computed<number>(() => this.match()?.mapSize ?? MapSize.S);
+    protected readonly maxPlayers = computed<number>(() => {
+        const mapSize = this.match()?.mapSize;
+        return MAP_SIZE_CONFIG.find((config) => config.value === mapSize)?.maxPlayers ?? this.players().length;
+    });
+    protected readonly turnOrder = computed<readonly string[]>(() => this.display.turnOrderedPlayers().map((player) => player.id));
+    protected readonly playerDirections = this.visualFeedback.playerDirections;
+    protected readonly playerStates = this.visualFeedback.playerStates;
+    protected readonly players = computed<readonly Player[]>(() => {
+        const currentTurnState = this.display.turnState();
+        return (this.match()?.players ?? []).map((player) =>
+            toGamePlayer(
+                player,
+                currentTurnState?.activePlayerId ?? null,
+                currentTurnState?.actionTaken ?? true,
+                this.display.localMovementPointsRemaining(),
+            ),
+        );
+    });
+    protected readonly activePlayerId = computed<string>(() => this.display.turnState()?.activePlayerId ?? '');
+    protected readonly activePlayer = computed<Player | null>(() =>
+        this.players().find((player) => player.id === this.activePlayerId()) ?? null,
+    );
+    protected readonly currentPlayer = computed<Player | null>(() =>
+        this.players().find((player) => player.id === this.localPlayerId()) ?? null,
+    );
+    protected readonly panelAvatarId = createPanelAvatarId(this.currentPlayer);
+    protected readonly panelAvatarState = createPanelAvatarState(this.currentPlayer, this.nowMs, this.playerStates);
+    protected readonly panelAvatarDirection = createPanelAvatarDirection(this.currentPlayer, this.playerDirections);
+    protected readonly activePlayersCount = computed<number>(() =>
+        this.players().filter((player) => player.state.status === PlayerStatus.Active).length,
+    );
+    protected readonly debugModeEnabled = computed<boolean>(() => this.match()?.debugMode ?? false);
+    protected readonly canToggleDebugMode = computed<boolean>(() => this.currentPlayer()?.information.isOrganizer ?? false);
+    protected readonly canEndTurn = computed<boolean>(() =>
+        this.canAct() || (this.debugModeEnabled() && (this.currentPlayer()?.information.isOrganizer ?? false)),
+    );
+    protected readonly canAct = computed<boolean>(() => this.targets.isLocalPlayerTurn() && !this.display.matchEndState());
+    protected readonly canUseActionMode = computed<boolean>(() => this.interaction.canToggleActionMode());
+    protected readonly actionModeEnabled = computed<boolean>(() =>
+        this.interaction.actionSelectionOpen() || !!this.interaction.actionContext(),
+    );
+    protected readonly remainingSeconds = computed<number>(() =>
+        this.display.turnState()?.phase === 'active'
+            ? this.display.activeTurnCountdownSeconds()
+            : this.display.transitionCountdownSeconds(),
+    );
+    protected readonly totalSeconds = computed<number>(() =>
+        this.display.turnState()?.phase === 'active'
+            ? GameViewPageComponent.activeTurnDurationSeconds
+            : GameViewPageComponent.transitionDurationSeconds,
+    );
+    protected readonly highlightTimer = computed<boolean>(() => this.display.turnState()?.phase === 'active');
+    protected readonly showTurnStatusOverlay = computed<boolean>(() =>
+        this.isTurnStatusPanelOpen() || this.display.turnState()?.phase === 'transition',
+    );
+    protected readonly activePanelName = computed<string | null>(() => {
+        const turnState = this.display.turnState();
+        if (!turnState) {
+            return null;
+        }
+
+        if (turnState.phase === 'active') {
+            return this.display.currentActivePlayer()?.name ?? null;
+        }
+
+        return this.display.transitionTargetPlayer()?.name ?? null;
+    });
+    protected readonly reachableCellKeys = computed<ReadonlySet<string>>(
+        () => new Set<string>(this.display.reachableTiles().keys()),
+    );
+    protected readonly reachableOriginKey = computed<string | null>(() => {
+        const localPlayerId = this.display.localPlayer()?.id ?? null;
+        const player = this.match()?.players.find((candidate) => candidate.id === localPlayerId);
+        return player ? positionKey(player.position) : null;
+    });
+    protected readonly turnDetails = computed<readonly MatchPlayer[]>(() => this.display.turnOrderedPlayers());
+    protected readonly selectedTileInfo = createSelectedTileInfo(this.interaction.inspectedTile, this.mapCells, this.mapObjects, this.players);
+    protected readonly chatMessages = toSignal(this.chatService.chat$, { initialValue: [] as ChatMessage[] });
+
+    private matchEndRedirectTimeoutId: number | null = null;
+    private matchEndRedirectIntervalId: number | null = null;
+    private scheduledMatchEndId: string | null = null;
+    private localPoseIntervalId: number | null = null;
+
+    constructor() {
+        effect(() => {
+            this.syncMatchEndRedirect(this.display.matchEndState());
+        });
+    }
+
+    ngOnInit(): void {
+        this.visualFeedback.resetVisualOverrides();
+        this.localPoseIntervalId = startLocalPoseRefreshClock(this.nowMs, LOCAL_POSE_REFRESH_MS);
+
+        const sessionId = this.route.snapshot.queryParamMap.get('sessionId');
+        const localPlayer = this.display.localPlayer();
+        if (!sessionId || !localPlayer) {
+            this.matchState.errorMessage.set('Impossible de joindre la session multijoueur.');
+            this.matchState.state.set('error');
+            return;
+        }
+
+        this.matchState.state.set('loading');
+        this.chatService.clearChat();
+        const navigationMessages = (history.state?.messages ?? []) as ChatMessage[];
+        this.chatService.loadChatMessages(navigationMessages);
+        this.gameSessionSocket.joinSession(sessionId, localPlayer.id);
+        this.chatService.initChat();
+    }
+
+    ngOnDestroy(): void {
+        this.chatService.unsubscribeToSocketEvents();
+        this.effects.destroy();
+        this.localPoseIntervalId = stopLocalPoseRefreshClock(this.localPoseIntervalId);
+        this.visualFeedback.resetVisualOverrides();
+        this.clearMatchEndRedirect();
+    }
+
+    protected endRedirectCountdownSeconds(): number {
+        return Math.max(0, Math.ceil(this.endRedirectRemainingMs() / MILLISECONDS_PER_SECOND));
+    }
+
+    protected phaseHeadline(): string {
+        return getPhaseHeadline(
+            this.display.turnState(),
+            this.display.currentActivePlayer()?.name ?? null,
+            this.display.transitionTargetPlayer()?.name ?? null,
+            this.display.transitionCountdownSeconds(),
+        );
+    }
+
+    protected phaseDescription(): string {
+        return getPhaseDescription(
+            this.display.turnState(),
+            this.display.transitionTargetPlayer()?.name ?? null,
+            this.display.localMovementPointsRemaining(),
+            this.display.localActionAvailable(),
+        );
+    }
+
+    protected onCellClick(index: number): void {
+        const tile = this.mapCells()[index];
+        if (tile) {
+            this.interaction.handleCellPrimaryAction(tile);
+        }
+    }
+
+    protected onCellContextMenu(payload: { event: MouseEvent; index: number }): void {
+        const tile = this.mapCells()[payload.index];
+        if (tile) {
+            this.interaction.inspectTile(payload.event, tile);
+        }
+    }
+
+    protected onEndTurn(): void {
+        this.interaction.endCurrentTurn();
+    }
+
+    protected onChatMessageSubmit(content: string): void {
+        const author = this.currentPlayer()?.information?.name;
+        if (!author) {
+            return;
+        }
+
+        const message: ChatMessage = {
+            author,
+            content,
+            createdAt: new Date().toISOString(),
+        };
+        this.chatService.sendMessage(message);
+    }
+
+    protected onToggleActionMode(): void {
+        this.interaction.toggleActionMode();
+    }
+
+    protected onTogglePlayerListExpanded(): void {
+        this.isPlayerListExpanded.update((expanded) => !expanded);
+    }
+
+    protected closeTileInfoModal(): void {
+        this.interaction.closeInspection();
+    }
+
+    protected onToggleTurnStatusPanel(): void {
+        this.isTurnStatusPanelOpen.update((open) => !open);
+    }
+
+    protected onToggleDebugMode(): void {
+        const localPlayerId = this.localPlayerId();
+        if (!localPlayerId || !this.canToggleDebugMode() || this.display.matchEndState()) return;
+        this.gameSessionSocket.toggleDebugMode(localPlayerId);
+    }
+
+    @HostListener('window:keyup', ['$event'])
+    protected handleMovementKeyup(event: KeyboardEvent): void {
+        this.interaction.handleMovementKeyup(event);
+    }
+
+    @HostListener('window:keydown', ['$event'])
+    protected handleDebugShortcut(event: KeyboardEvent): void {
+        if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) {
+            return;
+        }
+
+        const target = event.target;
+        if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) {
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            if (this.selectedTileInfo()) {
+                event.preventDefault();
+                this.closeTileInfoModal();
+            }
+            return;
+        }
+
+        if (event.key.toLowerCase() !== 'm' || !this.canToggleDebugMode() || this.display.matchEndState()) return;
+
+        event.preventDefault();
+        this.onToggleDebugMode();
+    }
+
+    @HostListener('window:beforeunload')
+    protected handleBrowserRefresh(): void {
+        if (!this.display.localPlayer()) {
+            return;
+        }
+
+        const message = this.display.matchEndState()?.message ??
+            'Rafraichissement detecte: la partie a ete consideree comme un abandon.';
+        this.leaveMatch(message);
+    }
+
+    protected quitGame(): void {
+        this.clearMatchEndRedirect();
+        this.interaction.clearActionSelection();
+        this.leaveMatch('Vous avez abandonne la partie. Retour a l accueil.');
+        void this.router.navigate(['/home']);
+    }
+
+    private leaveMatch(message: string): void {
+        const localPlayer = this.display.localPlayer();
+        if (localPlayer) {
+            this.gameSessionSocket.surrender(localPlayer.id);
+        }
+
+        if (this.display.matchEndState()) {
+            this.matchState.endLocalSession(message);
+            return;
+        }
+
+        this.matchState.abandonLocalPlayer(message);
+    }
+
+    private syncMatchEndRedirect(endState: MatchEndState | null): void {
+        if (!endState) {
+            this.clearMatchEndRedirect();
+            this.scheduledMatchEndId = null;
+            return;
+        }
+
+        if (this.scheduledMatchEndId === endState.id) {
+            return;
+        }
+
+        this.scheduledMatchEndId = endState.id;
+        this.interaction.clearActionSelection();
+        this.interaction.closeInspection();
+        this.clearMatchEndRedirect();
+
+        const redirectEndsAt = Date.now() + MATCH_END_REDIRECT_DURATION_MS;
+        this.endRedirectRemainingMs.set(MATCH_END_REDIRECT_DURATION_MS);
+        this.matchEndRedirectIntervalId = window.setInterval(() => {
+            this.endRedirectRemainingMs.set(Math.max(0, redirectEndsAt - Date.now()));
+        }, CLOCK_TICK_MS);
+        this.matchEndRedirectTimeoutId = window.setTimeout(() => {
+            this.clearMatchEndRedirect();
+            this.matchState.endLocalSession(endState.message);
+            void this.router.navigate(['/home']);
+        }, MATCH_END_REDIRECT_DURATION_MS);
+    }
+
+    private clearMatchEndRedirect(): void {
+        if (this.matchEndRedirectTimeoutId !== null) {
+            window.clearTimeout(this.matchEndRedirectTimeoutId);
+            this.matchEndRedirectTimeoutId = null;
+        }
+
+        if (this.matchEndRedirectIntervalId !== null) {
+            window.clearInterval(this.matchEndRedirectIntervalId);
+            this.matchEndRedirectIntervalId = null;
+        }
+
+        this.endRedirectRemainingMs.set(0);
+    }
+}

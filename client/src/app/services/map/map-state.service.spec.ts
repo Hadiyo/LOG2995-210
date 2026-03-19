@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { MapApiService } from '@app/services/map/map-api.service';
-import { MapLoadState } from '@app/services/map/map-state.enum';
+import { ServiceState } from '@app/services/service-state.enum';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { GameMode, MapSize } from '@common/enum';
-import { EditorMap } from '@common/interface';
-import { BEFORE_UNLOAD, SocketEvents, SocketRoom } from '@common/socket-events';
+import { GameMode, MapSize } from '@common/maps/map.enums';
+import type { EditorMap, MapSummary } from '@common/maps/map.interface';
+import { MapSocketEvents, PageContext, PageSocketEvents } from '@common/socket-events';
 import { of, throwError } from 'rxjs';
 import { MapStateService } from './map-state.service';
 
@@ -27,9 +27,31 @@ describe('MapStateService', () => {
 
     const SAMPLE_DATE_ISO = '2026-02-08T12:00:00.000Z';
 
-    const makeMap1 = (overrides: Partial<EditorMap> = {}): EditorMap => ({
-        id: '',
+    const makeMap1 = (overrides: Partial<MapSummary> = {}): MapSummary => ({
+        id: '1',
+        name: 'Map1',
+        description: 'Desc',
+        mode: GameMode.CLASSIC,
+        size: MapSize.S,
+        date: SAMPLE_DATE_ISO,
+        visibility: true,
+        ...overrides,
+    });
+
+    const makeMap2 = (overrides: Partial<MapSummary> = {}): MapSummary => ({
+        id: '2',
         name: 'Map2',
+        description: 'Desc',
+        mode: GameMode.CLASSIC,
+        size: MapSize.M,
+        date: SAMPLE_DATE_ISO,
+        visibility: false,
+        ...overrides,
+    });
+
+    const makeEditorMap = (overrides: Partial<EditorMap> = {}): EditorMap => ({
+        id: '',
+        name: 'NewMap',
         description: 'Desc',
         mode: GameMode.CLASSIC,
         size: MapSize.S,
@@ -40,24 +62,11 @@ describe('MapStateService', () => {
         ...overrides,
     });
 
-    const makeMap2 = (overrides: Partial<EditorMap> = {}): EditorMap => ({
-        id: '',
-        name: 'Map2',
-        description: 'Desc',
-        mode: GameMode.CTF,
-        size: MapSize.M,
-        date: SAMPLE_DATE_ISO,
-        map: [],
-        objects: [],
-        visibility: false,
-        ...overrides,
-    });
-
-    const mockMaps = [makeMap1({ id: '1' }), makeMap2({ id: '2' })];
+    const mockMaps = [makeMap1(), makeMap2()];
 
     beforeEach(() => {
         mapApiMock = jasmine.createSpyObj('MapApiService', [
-            'getAllMaps',
+            'getAllMapsSummary',
             'saveMap',
             'deleteMap',
             'updateMapVisibility',
@@ -69,9 +78,10 @@ describe('MapStateService', () => {
             'send',
             'on',
             'off',
+            'subscribeToWindowEvent',
         ]);
 
-        mapApiMock.getAllMaps.and.returnValue(of(mockMaps));
+        mapApiMock.getAllMapsSummary.and.returnValue(of(mockMaps));
 
         TestBed.configureTestingModule({
             providers: [
@@ -91,21 +101,22 @@ describe('MapStateService', () => {
     it('should load maps on init', (done) => {
         service.maps$.subscribe(maps => {
             expect(maps.length).toBe(2);
-            expect(service.state()).toBe(MapLoadState.Loaded);
+            expect(service.state()).toBe(ServiceState.Loaded);
             done();
         });
     });
 
     it('should set error state if loadMaps fails', () => {
-        mapApiMock.getAllMaps.and.returnValue(throwError(() => new Error()));
+        mapApiMock.getAllMapsSummary.and.returnValue(throwError(() => new Error()));
         service.loadMaps();
-        expect(service.state()).toBe(MapLoadState.Error);
+        expect(service.state()).toBe(ServiceState.Error);
     });
 
     it('should call saveMap on createMap', async () => {
-        mapApiMock.saveMap.and.returnValue(of(mockMaps[0]));
-        await service.createMap(mockMaps[0]);
-        expect(mapApiMock.saveMap).toHaveBeenCalledWith(mockMaps[0]);
+        const newMap = makeEditorMap();
+        mapApiMock.saveMap.and.returnValue(of(newMap));
+        await service.createMap(newMap);
+        expect(mapApiMock.saveMap).toHaveBeenCalledWith(newMap);
     });
 
     it('should call deleteMap api', () => {
@@ -121,25 +132,33 @@ describe('MapStateService', () => {
     });
 
     it('should subscribe to socket events', () => {
-        const spy = spyOn(service, 'loadMaps');
+        const spy = spyOn(service, 'loadMaps').and.stub();
         service.subscribeToMapEvents();
         expect(socketMock.send).toHaveBeenCalledWith(
-            SocketEvents.JoinRoom,
-            SocketRoom.MapManagementRoom,
+            PageSocketEvents.JoinPage,
+            { page: PageContext.MapManagement },
         );
-        expect(socketMock.on).toHaveBeenCalled();
+        expect(socketMock.on).toHaveBeenCalledWith(MapSocketEvents.MapCreated, jasmine.any(Function));
+        expect(socketMock.on).toHaveBeenCalledWith(MapSocketEvents.MapUpdated, jasmine.any(Function));
+        expect(socketMock.on).toHaveBeenCalledWith(MapSocketEvents.MapDeleted, jasmine.any(Function));
+        expect(socketMock.on).toHaveBeenCalledWith(MapSocketEvents.ToggleMapVisibility, jasmine.any(Function));
         expect(spy).toHaveBeenCalled();
     });
 
     it('should unsubscribe from socket events', () => {
-        const NB_OFF_CALLS = 4;
         service.unsubscribeFromMapEvents();
-        expect(socketMock.send).toHaveBeenCalled();
-        expect(socketMock.off).toHaveBeenCalledTimes(NB_OFF_CALLS);
+        expect(socketMock.send).toHaveBeenCalledWith(
+            PageSocketEvents.LeavePage,
+            { page: PageContext.MapManagement },
+        );
+        expect(socketMock.off).toHaveBeenCalledWith(MapSocketEvents.MapCreated, jasmine.any(Function));
+        expect(socketMock.off).toHaveBeenCalledWith(MapSocketEvents.MapUpdated, jasmine.any(Function));
+        expect(socketMock.off).toHaveBeenCalledWith(MapSocketEvents.MapDeleted, jasmine.any(Function));
+        expect(socketMock.off).toHaveBeenCalledWith(MapSocketEvents.ToggleMapVisibility, jasmine.any(Function));
     });
 
     it('should add map when socket map created fires', (done) => {
-        service['onMapCreated']({ id: '3', name: 'map3', visibility: true } as EditorMap);
+        service['onMapCreated']({ id: '3', name: 'map3', visibility: true } as MapSummary);
 
         service.maps$.subscribe(maps => {
             expect(maps.find(m => m.id === '3')).toBeTruthy();
@@ -148,7 +167,7 @@ describe('MapStateService', () => {
     });
 
     it('should update map when socket map updated fires', (done) => {
-        service['onMapUpdated']({ id: '1', name: 'updated', visibility: true } as EditorMap);
+        service['onMapUpdated']({ id: '1', name: 'updated', visibility: true } as MapSummary);
 
         service.maps$.subscribe(maps => {
             const map = maps.find(m => m.id === '1');
@@ -175,29 +194,13 @@ describe('MapStateService', () => {
         });
     });
 
-    it('should set up a window event listener', () => {
-        spyOn(window, 'addEventListener');
-
-        service['subscribeToWindowEvent']();
-
-        expect(window.addEventListener).toHaveBeenCalledWith('beforeunload', jasmine.any(Function));
-    });
-
-    it('should call socket.disconnect when BEFORE_UNLOAD fires', () => {
-        const addListenerSpy = spyOn(window, 'addEventListener').and.callThrough();
-
-        service['subscribeToWindowEvent']();
-
-        const callback = addListenerSpy.calls.mostRecent().args[1] as EventListener;
-
-        callback(new Event(BEFORE_UNLOAD));
-
-        expect(socketMock.disconnect).toHaveBeenCalled();
+    it('should subscribe to window lifecycle events on init', () => {
+        expect(socketMock.subscribeToWindowEvent).toHaveBeenCalled();
     });
 
     it('should set error state if updateVisibility fails', () => {
         mapApiMock.updateMapVisibility.and.returnValue(throwError(() => new Error()));
         service.toggleMapVisibility(mockMaps[0]);
-        expect(service.state()).toBe(MapLoadState.Error);
+        expect(service.state()).toBe(ServiceState.Error);
     });
 });

@@ -3,6 +3,7 @@
     (mousedown)="onMouseEvent(mouseEvent.DOWN, $event)"
     (mouseenter)="onMouseEvent(mouseEvent.ENTER, $event)"
     (mouseleave)="onMouseEvent(mouseEvent.LEAVE, $event)"
+    (mousemove)="onMouseEvent(mouseEvent.MOVE, $event)"
     [class.hovered]="isHovered">
 
     <!-- Tile visual layer 
@@ -14,13 +15,13 @@
             tile.tileType === tileType.DOOR && !tile.isWalkable ? 'true' : null
         "></span>
 
-    <!-- Object layer (optional) 
-        - Rendered only if an object exists at this exact cell position 
-        - Position check avoids rendering objects on wrong cells -->
-    @if (object && object!.position.x === tile.position.x && object!.position.y === tile.position.y) {
     <!-- Object visual representation 
         - data attributes used for CSS sizing and sprite selection -->
+    @if (shouldRenderObject(object)) {
     <span class="obj" [attr.data-obj]="object!.type"
-        [attr.data-size]="object!.size"></span>
+        [attr.data-size]="object!.size"
+        [attr.title]="objectDescription(object)"
+        [attr.aria-label]="objectDescription(object)"></span>
     }
+
 </button>

@@ -1,0 +1,82 @@
+<div class="dialog-backdrop" (click)="onClose()" (contextmenu)="onBackdropContextMenu($event)">
+  <section
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tile-info-title"
+    (click)="$event.stopPropagation()"
+    (contextmenu)="onPanelContextMenu($event)"
+  >
+    <header class="dialog-header">
+      <div>
+        <p class="dialog-kicker">{{ tileInfo.positionLabel }}</p>
+        <h2 id="tile-info-title" class="dialog-title">Informations de la tuile</h2>
+      </div>
+      <button type="button" class="dialog-close" aria-label="Fermer" (click)="onClose()">×</button>
+    </header>
+
+    <section class="dialog-section">
+      <div class="section-layout">
+        <span
+          class="section-preview section-preview--tile"
+          [attr.data-tile]="tileInfo.tileType"
+          [attr.data-door-open]="tileInfo.tileType === tileType.DOOR && tileInfo.isDoorOpen ? 'true' : null"
+          [attr.data-door-closed]="tileInfo.tileType === tileType.DOOR && !tileInfo.isDoorOpen ? 'true' : null"
+        ></span>
+        <div class="section-content">
+          <h3>Terrain</h3>
+          <p class="primary-value">{{ tileInfo.tileLabel }}</p>
+        </div>
+      </div>
+      <ul class="detail-list detail-list--indented">
+        @for (detail of tileInfo.tileCharacteristics; track detail) {
+          <li>
+            {{ detail }}
+            @if (detail === 'Tuile non traversable.' && tileInfo.tileBlockingReason) {
+              <span class="tile-warning">{{ tileInfo.tileBlockingReason }}</span>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="dialog-section">
+      <div class="section-layout" [class.section-layout--text-only]="!tileInfo.objectType">
+        @if (tileInfo.objectType) {
+          <span class="section-preview section-preview--object" [attr.data-obj]="tileInfo.objectType"></span>
+        }
+        <div class="section-content">
+          <h3>Objet</h3>
+          @if (tileInfo.objectLabel) {
+            <p class="primary-value">{{ tileInfo.objectLabel }}</p>
+          } @else {
+            <p class="secondary-value">Aucun objet sur cette tuile.</p>
+          }
+        </div>
+      </div>
+      @if (tileInfo.objectLabel && tileInfo.objectDescription) {
+        <p class="object-description">{{ tileInfo.objectDescription }}</p>
+      }
+    </section>
+
+    <section class="dialog-section">
+      <div class="section-layout" [class.section-layout--text-only]="!tileInfo.playerName || tileInfo.playerAvatarId === null">
+        @if (tileInfo.playerName && tileInfo.playerAvatarId !== null) {
+          <img
+            class="player-avatar"
+            [src]="getAvatarThumbPath(tileInfo.playerAvatarId)"
+            [alt]="'Avatar de ' + tileInfo.playerName"
+          />
+        }
+        <div class="section-content">
+          <h3>Joueur</h3>
+          @if (tileInfo.playerName && tileInfo.playerAvatarId !== null) {
+            <p class="primary-value">{{ tileInfo.playerName }}</p>
+          } @else {
+            <p class="secondary-value">Aucun joueur sur cette tuile.</p>
+          }
+        </div>
+      </div>
+    </section>
+  </section>
+</div>

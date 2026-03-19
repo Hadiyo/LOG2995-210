@@ -7,15 +7,19 @@
   preload="auto"
   aria-hidden="true"
 >
-  <source src="/assets/videos/video.mp4" type="video/mp4" />
+  <source [src]="backgroundVideoUrl" type="video/mp4" />
 </video>
 
 <main class="page">
   <header class="hero">
     <div class="hero-row">
-      <img class="hero-logo" src="assets/images/logo.png" alt="Logo Equipe 210" />
+      <img class="hero-logo" [src]="heroLogoUrl" alt="Logo Equipe 210" />
     </div>
   </header>
+
+  @if (flashMessage()) {
+    <div class="flash-message" role="status">{{ flashMessage() }}</div>
+  }
 
   <div class="main-actions">
     @for (action of actions; track action.id) {

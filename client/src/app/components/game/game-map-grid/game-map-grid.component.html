@@ -1,0 +1,43 @@
+<div class="grid" [class.grid--action-mode]="actionModeEnabled" [style.--cols]="cols" [style.--rows]="rows">
+   <!-- Angular @for over all cells; $index used as click target index -->
+  @for (cell of cells; track $index) {
+    <button
+      type="button"
+      class="cell"
+      [class.cell--reachable]="isReachableCell(cell)"
+      [class.cell--reachable-origin]="isReachableOrigin(cell)"
+      [class.cell--action-target]="isActionTarget(cell)"
+      (click)="onCellClick($index)"
+      (contextmenu)="onCellContextMenu($event, $index)"
+    >
+       <!-- Base tile layer with tile type and door-open/closed flags -->
+      <span
+        class="tile"
+        [attr.data-tile]="cell.tileType"
+        [attr.data-door-open]="cell.tileType === tileType.DOOR && cell.isWalkable ? 'true' : null"
+        [attr.data-door-closed]="cell.tileType === tileType.DOOR && !cell.isWalkable ? 'true' : null"
+      ></span>
+
+      <!-- Optional object layer if object exists on this cell -->
+      @if (getObjectAtCell(cell); as object) {
+        <span class="obj" [attr.data-obj]="object.type" [attr.data-size]="object.size"></span>
+      }
+
+      <!-- Optional player layer if a player occupies this cell -->
+      @if (getPlayerAtCell(cell); as player) {
+        <span class="player-layer">
+          <app-character-sprite
+            [avatarId]="getAvatarId(player)"
+            [class.is-idle]="getPlayerState(player) === 'idle'"
+            [style.animationDelay]="getBreathingDelay(player.id)"
+            [state]="getPlayerState(player)"
+            [direction]="getPlayerDirection(player)"
+            [fitToHost]="true"
+            [smoothingEnabled]="true"
+            [ariaLabel]="'Avatar de ' + player.information.name"
+          />
+        </span>
+      }
+    </button>
+  }
+</div>

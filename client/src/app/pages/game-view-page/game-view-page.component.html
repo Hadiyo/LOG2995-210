@@ -1,0 +1,255 @@
+<main class="game-view">
+  @if (errorMessage()) {
+    <section class="panel panel--error">
+      <p>{{ errorMessage() }}</p>
+    </section>
+  } @else if (match()) {
+    @let currentMatch = match();
+    <aside class="side-panel side-panel--left">
+      <section class="panel panel--game-title">
+        @if (currentMatch) {
+          <h2 class="game-title">{{ currentMatch.mapName }}</h2>
+        }
+      </section>
+
+      <section class="panel">
+        <app-game-session-info-panel
+          [cols]="cols()"
+          [rows]="rows()"
+          [currentPlayers]="activePlayersCount()"
+          [maxPlayers]="maxPlayers()"
+          [activePlayerName]="activePanelName()"
+          [remainingSeconds]="remainingSeconds()"
+          [totalSeconds]="totalSeconds()"
+          [highlightTimer]="highlightTimer()"
+          [defaultPanelTitle]="constants.defaultPanelTitle"
+        />
+      </section>
+
+      <section class="panel panel--player-info">
+        <div class="panel__tabs" role="tablist" aria-label="Panneaux lateraux gauches">
+          <div class="panel__tab-list">
+            <button
+              type="button"
+              class="panel__tab"
+              [class.panel__tab--active]="leftPanelTab() === 'player'"
+              role="tab"
+              [attr.aria-selected]="leftPanelTab() === 'player'"
+              (click)="leftPanelTab.set('player')"
+            >
+              Joueur
+            </button>
+            <button
+              type="button"
+              class="panel__tab"
+              [class.panel__tab--active]="leftPanelTab() === 'turn-order'"
+              role="tab"
+              [attr.aria-selected]="leftPanelTab() === 'turn-order'"
+              (click)="leftPanelTab.set('turn-order')"
+            >
+              Ordre
+            </button>
+          </div>
+        </div>
+
+        <div class="panel--player-info__content">
+          @if (leftPanelTab() === 'player') {
+            <app-game-current-player-panel
+              [player]="currentPlayer()"
+              [avatarId]="panelAvatarId()"
+              [avatarState]="panelAvatarState()"
+              [avatarDirection]="panelAvatarDirection()"
+              [avatarSpriteSize]="constants.avatarSpriteSize"
+              [defaultPanelTitle]="constants.defaultPanelTitle"
+              [debugModeEnabled]="debugModeEnabled()"
+            />
+          } @else {
+            <div class="turn-order-tab">
+              <h3>Ordre et departs</h3>
+              <ul class="turn-order__details turn-order__details--panel">
+                @for (player of turnDetails(); track player.id) {
+                  <li class="turn-order__detail">
+                    <strong class="turn-order__name">{{ player.name }}</strong>
+                    <div class="turn-order__summary">
+                      <span class="turn-order__meta-item">Depart ({{ player.startingPosition.x }}, {{ player.startingPosition.y }})</span>
+                      <span class="turn-order__meta-item">Rapidite {{ player.speed }}</span>
+                      <span class="turn-order__meta-item">Victoires {{ player.combatWins }}</span>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+      </section>
+
+    </aside>
+
+    <section class="map-panel panel">
+      <div class="map-panel__header">
+        <div class="map-panel__title-block">
+          <h3>Carte de la partie</h3>
+          <p class="map-panel__copy">WASD pour bouger. Clic droit pour inspecter.</p>
+          <button
+            type="button"
+            class="panel__toggle-btn map-panel__status-toggle"
+            [class.panel__toggle-btn--active]="showTurnStatusOverlay()"
+            [attr.aria-expanded]="showTurnStatusOverlay()"
+            (click)="onToggleTurnStatusPanel()"
+          >
+            Etat du tour
+          </button>
+        </div>
+      </div>
+
+      <div class="map-panel__board">
+        <app-game-map-grid
+          [cols]="cols()"
+          [rows]="rows()"
+          [cells]="mapCells()"
+          [objects]="mapObjects()"
+          [players]="players()"
+          [nowMs]="nowMs()"
+          [playerDirections]="playerDirections()"
+          [playerStates]="playerStates()"
+          [actionModeEnabled]="actionModeEnabled()"
+          [reachableCellKeys]="reachableCellKeys()"
+          [reachableOriginKey]="reachableOriginKey()"
+          [actionTargetCellKeys]="interaction.actionTargets()"
+          (cellClick)="onCellClick($event)"
+          (cellContextMenu)="onCellContextMenu($event)"
+        />
+
+        @if (showTurnStatusOverlay() && !selectedTileInfo()) {
+          <section class="map-turn-status panel" role="status" aria-live="polite">
+            <div class="map-turn-status__header">
+              <p class="map-turn-status__eyebrow">Etat du tour</p>
+              <button
+                type="button"
+                class="map-turn-status__close"
+                aria-label="Fermer l etat du tour"
+                (click)="isTurnStatusPanelOpen.set(false)"
+              >
+                X
+              </button>
+            </div>
+            <p class="turn-status__headline">{{ phaseHeadline() }}</p>
+            <p class="turn-status__copy">{{ phaseDescription() }}</p>
+            <div class="turn-status__meta">
+              <span>Etat local: {{ display.localPlayerStateLabel() }}</span>
+              <span>Mouvements: {{ display.localMovementCount() }}</span>
+              <span>Action: {{ display.localActionAvailable() ? 'Disponible' : 'Utilisee' }}</span>
+            </div>
+            @if (interaction.movementFeedback()) {
+              <p class="turn-status__feedback">{{ interaction.movementFeedback() }}</p>
+            }
+          </section>
+        }
+
+        @if (selectedTileInfo(); as tileInfo) {
+          <app-game-tile-info-modal
+            [tileInfo]="tileInfo"
+            (close)="closeTileInfoModal()"
+          />
+        }
+      </div>
+
+      @if (interaction.actionSelectionOpen()) {
+        <div class="map-panel__action-picker">
+          <p>Choisissez une action pour ce tour.</p>
+          <div class="map-panel__action-buttons">
+            @for (option of interaction.availableActionContexts(); track option.context) {
+              <button type="button" class="panel__toggle-btn" (click)="interaction.selectActionContext(option.context)">
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        </div>
+      } @else if (interaction.actionContext()) {
+        <p class="map-panel__hint">{{ interaction.actionHelperText() }}</p>
+      } @else {
+        <p class="map-panel__hint">Les cases surlignees indiquent les deplacements atteignables avec vos points restants.</p>
+      }
+
+    </section>
+
+    <aside class="side-panel side-panel--right">
+      <section class="panel panel--players">
+        <div class="panel__header">
+          <h3>Liste des joueurs</h3>
+          @if (players().length > 2) {
+            <button
+              type="button"
+              class="panel__toggle-btn"
+              [attr.aria-expanded]="isPlayerListExpanded()"
+              (click)="onTogglePlayerListExpanded()"
+            >
+              {{ isPlayerListExpanded() ? 'Reduire' : players().length + ' Total' }}
+            </button>
+          }
+        </div>
+        <app-game-player-list
+          [players]="players()"
+          [turnOrder]="turnOrder()"
+          [activePlayerId]="activePlayerId()"
+          [currentPlayerId]="localPlayerId()"
+          [maxPlayers]="maxPlayers()"
+          [expanded]="isPlayerListExpanded()"
+        />
+      </section>
+
+      <section class="panel messages">
+        <div class="panel__header">
+          <h3>Clavardage</h3>
+        </div>
+        <app-game-chat-panel
+          [messages]="chatMessages()"
+          [notification]="null"
+          [currentPlayerName]="currentPlayer()?.information?.name ?? null"
+          [messageMaxLength]="constants.messageMaxLength"
+          [title]="'Clavardage'"
+          [showTitle]="false"
+          [readOnly]="false"
+          (messageSubmit)="onChatMessageSubmit($event)"
+        />
+      </section>
+
+      <section class="panel panel--action-bar">
+        <app-game-action-bar
+          [actionModeEnabled]="actionModeEnabled()"
+          [canAct]="canAct()"
+          [canEndTurn]="canEndTurn()"
+          [canUseActionMode]="canUseActionMode()"
+          (endTurn)="onEndTurn()"
+          (toggleActionMode)="onToggleActionMode()"
+          (surrender)="quitGame()"
+        />
+      </section>
+    </aside>
+  } @else {
+    <section class="panel">
+      <p>Chargement de la session de jeu...</p>
+    </section>
+  }
+</main>
+
+@if (display.matchEndState(); as endState) {
+  <div class="match-end-overlay">
+    <section class="match-end-modal" role="dialog" aria-modal="true">
+      <p class="match-end-modal__eyebrow">Partie terminee</p>
+      <h2>{{ endState.message }}</h2>
+      <p>Retour a l accueil dans {{ endRedirectCountdownSeconds() }} secondes.</p>
+    </section>
+  </div>
+}
+
+@if (effects.combatNotifications().length > 0) {
+  <div class="combat-toast-stack" aria-live="polite" aria-atomic="false">
+    @for (notification of effects.combatNotifications(); track notification.id) {
+      <section class="combat-toast" role="status">
+        <p>{{ notification.message }}</p>
+        <button type="button" class="combat-toast__close" (click)="effects.dismissCombatNotification(notification.id)">Fermer</button>
+      </section>
+    }
+  </div>
+}

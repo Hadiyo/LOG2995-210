@@ -1,18 +1,17 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import type { Model } from 'mongoose';
-
 import { Map, MapDocument } from '@app/model/database/map';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
-import { ObjectSize, TileType } from '@common/enum';
-import { EditorCell, EditorMap, MapObject, PreviewImageFormat, Vec2 } from '@common/interface';
-
-// Constants
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
-import { SocketEvents } from '@common/socket-events';
+import { PreviewImageFormat } from '@common/enum';
+import { getCellPositionAtIndex } from '@common/maps/map-utils';
+import { ObjectSize, TileType } from '@common/maps/map.enums';
+import type { EditorCell, EditorMap, EditorMapDetails, MapObject, MapSummary, Vec2 } from '@common/maps/map.interface';
+import { MapSocketEvents } from '@common/socket-events';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { EventEmitter } from 'events';
+import type { Model } from 'mongoose';
 
-type PersistedCell = Omit<EditorCell, 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean };
+type PersistedCell = Omit<EditorCell, 'position' | 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean };
 type PersistedMap = Omit<EditorMap, 'id' | 'map'> & { map: PersistedCell[] };
 
 type PersistedMapRecord = Omit<EditorMap, 'id' | 'map'> & {
@@ -34,6 +33,11 @@ export class MapService {
         return maps.map((map) => this.toEditorMap(map));
     }
 
+    async getAllMapsSummary(): Promise<MapSummary[]> {
+        const maps = await this.mapModel.find().sort({ createdAt: 1 }).exec();
+        return maps.map((map) => this.toMapSummary(map));
+    }
+
     async getVisibleMaps(): Promise<EditorMap[]> {
         const maps = await this.mapModel.find({ visibility: true }).sort({ createdAt: 1 }).exec();
         return maps.map((map) => this.toEditorMap(map));
@@ -47,11 +51,19 @@ export class MapService {
         return this.toEditorMap(map);
     }
 
+    async getMapByIdForEditor(id: string): Promise<EditorMapDetails> {
+        const map = await this.mapModel.findById(id).exec();
+        if (!map) {
+            throw new NotFoundException('Map not found');
+        }
+        return this.toEditorMapDetails(this.toEditorMap(map));
+    }
+
     async createMap(map: EditorMap): Promise<EditorMap> {
         await this.ensureMapIsValid(map);
         const created = await this.insertMap(map);
         const editorMap = this.toEditorMap(created);
-        this.mapEventEmitter.emit(SocketEvents.MapCreated, editorMap);
+        this.mapEventEmitter.emit(MapSocketEvents.MapCreated, editorMap);
         return editorMap;
     }
 
@@ -61,13 +73,13 @@ export class MapService {
         const updated = await this.mapModel.findByIdAndUpdate(id, this.buildMapPayload(map), { new: true }).exec();
         if (updated) {
             const oldMap = this.toEditorMap(updated);
-            this.mapEventEmitter.emit(SocketEvents.MapUpdated, oldMap);
+            this.mapEventEmitter.emit(MapSocketEvents.MapUpdated, oldMap);
             return oldMap;
         }
 
         const created = await this.insertMap(map);
         const newMap = this.toEditorMap(created);
-        this.mapEventEmitter.emit(SocketEvents.MapCreated, newMap);
+        this.mapEventEmitter.emit(MapSocketEvents.MapCreated, newMap);
         return newMap;
     }
 
@@ -81,7 +93,7 @@ export class MapService {
             id: updatedMap.id,
             isVisible: updatedMap.visibility,
         };
-        this.mapEventEmitter.emit(SocketEvents.ToogleMapVisibility, payload);
+        this.mapEventEmitter.emit(MapSocketEvents.ToggleMapVisibility, payload);
     }
 
     async deleteMap(id: string): Promise<void> {
@@ -89,7 +101,7 @@ export class MapService {
         if (result.deletedCount === 0) {
             throw new NotFoundException('Map already deleted or missing');
         } else {
-            this.mapEventEmitter.emit(SocketEvents.MapDeleted, id);
+            this.mapEventEmitter.emit(MapSocketEvents.MapDeleted, id);
         }
     }
 
@@ -121,7 +133,6 @@ export class MapService {
             size: map.size,
             date: now,
             map: map.map.map((cell) => ({
-                position: cell.position,
                 tileType: cell.tileType,
                 ...(cell.tileType === TileType.DOOR ? { doorOpen: cell.isWalkable === true } : {}),
             })),
@@ -161,11 +172,12 @@ export class MapService {
         delete (rest as { createdAt?: Date }).createdAt;
         delete (rest as { updatedAt?: Date }).updatedAt;
         const occupied = this.buildOccupiedKeySet(objects);
-        const hydratedMap: EditorCell[] = persistedMap.map((cell) => {
+        const hydratedMap: EditorCell[] = persistedMap.map((cell, index) => {
+            const position = getCellPositionAtIndex(index, rest.size);
             const isWalkable = this.isTileWalkable(cell.tileType, cell.doorOpen);
-            const key = `${cell.position.x},${cell.position.y}`;
+            const key = `${position.x},${position.y}`;
             return {
-                position: cell.position,
+                position,
                 tileType: cell.tileType,
                 isWalkable,
                 isOccupied: occupied.has(key),
@@ -176,9 +188,38 @@ export class MapService {
             map: hydratedMap,
             objects,
             id: idValue.toString(),
-            // Preview image and format
             previewImage: mapObject.previewImage,
             previewImageFormat: mapObject.previewImageFormat,
+        };
+    }
+
+    private toMapSummary(mapDocument: MapDocument): MapSummary {
+        const mapObject = mapDocument.toObject({ versionKey: false }) as PersistedMapRecord;
+        const { _id: idValue, ...rest } = mapObject;
+        delete (rest as { createdAt?: Date }).createdAt;
+        delete (rest as { updatedAt?: Date }).updatedAt;
+        return {
+            id: idValue.toString(),
+            name: rest.name,
+            description: rest.description,
+            mode: rest.mode,
+            size: rest.size,
+            date: rest.date,
+            visibility: rest.visibility,
+            previewImage: rest.previewImage,
+            previewImageFormat: rest.previewImageFormat,
+        };
+    }
+
+    private toEditorMapDetails(map: EditorMap): EditorMapDetails {
+        return {
+            id: map.id,
+            name: map.name,
+            description: map.description,
+            mode: map.mode,
+            mapsize: map.size,
+            map: map.map,
+            objects: map.objects,
         };
     }
 
@@ -211,11 +252,11 @@ export class MapService {
     }
 
     // Event emitter utility functions
-    on<T>(event: SocketEvents, callback: (payload: T) => void) {
+    on<T>(event: MapSocketEvents, callback: (payload: T) => void) {
         this.mapEventEmitter.on(event, callback);
     }
 
-    off<T>(event: SocketEvents, callback: (payload: T) => void) {
+    off<T>(event: MapSocketEvents, callback: (payload: T) => void) {
         this.mapEventEmitter.off(event, callback);
     }
 }

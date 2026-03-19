@@ -1,6 +1,9 @@
-import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 import { NameSliderComponent } from '@app/components/name-slider/name-slider.component';
+import { MatchStateService } from '@app/services/match/match-state.service';
+import { resolveAssetUrl } from '@app/utils/asset-url.util';
 
 @Component({
   selector: 'app-main-page',
@@ -10,6 +13,9 @@ import { NameSliderComponent } from '@app/components/name-slider/name-slider.com
 })
 export class MainPageComponent implements AfterViewInit {
   @ViewChild('backgroundVideo') backgroundVideo?: ElementRef<HTMLVideoElement>;
+  readonly flashMessage = signal('');
+  readonly backgroundVideoUrl = resolveAssetUrl('assets/videos/video.mp4');
+  readonly heroLogoUrl = resolveAssetUrl('assets/images/logo.png');
 
   readonly title: string = 'LOG2995';
   readonly actions: readonly {
@@ -27,6 +33,7 @@ export class MainPageComponent implements AfterViewInit {
       {
         id: 'join-game',
         label: 'JOINDRE UNE PARTIE',
+        link: '/join-room',
         variant: 'secondary',
       },
       {
@@ -45,6 +52,17 @@ export class MainPageComponent implements AfterViewInit {
     'Thong',
     'Fallou',
   ];
+
+  constructor(
+    private readonly router: Router,
+    private readonly matchState: MatchStateService,
+  ) {
+    const navigation = this.router.getCurrentNavigation();
+    const message = this.matchState.consumeHomeReturnMessage() ?? navigation?.extras?.state?.message as string | undefined;
+    if (message) {
+      this.flashMessage.set(message);
+    }
+  }
 
   ngAfterViewInit(): void {
     this.tryPlayVideo();

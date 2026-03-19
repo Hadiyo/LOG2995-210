@@ -16,7 +16,7 @@ export const CHARACTER_BASE_ATTRIBUTES = {
 } as const;
 
 // The maximum length for character names
-export const CHARACTER_NAME_MAX_LENGTH = 20 as const;
+export const CHARACTER_NAME_MAX_LENGTH = 25 as const;
 
 // The value added to the chosen attribute when applying the +2 bonus
 export const CHARACTER_PLUS_TWO_VALUE = 2 as const;
@@ -105,5 +105,4 @@ export const AVATAR_PROFILES: Record<AvatarId, AvatarProfile> = {
     description: 'Chasseur de fragments d’astrolabe. Veille aux frontières du royaume céleste.',
   },
 };
-
 

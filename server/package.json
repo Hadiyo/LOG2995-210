@@ -33,6 +33,7 @@
         "rxjs": "^7.8.2"
     },
     "devDependencies": {
+        "@eslint/js": "9.39.1",
         "@nestjs/cli": "^11.0.10",
         "@nestjs/schematics": "^11.0.7",
         "@nestjs/testing": "^11.1.6",
@@ -41,7 +42,6 @@
         "@types/node": "^24.2.1",
         "@types/sinon": "^17.0.4",
         "@types/supertest": "^6.0.3",
-        "@eslint/js": "9.39.1",
         "@typescript-eslint/eslint-plugin": "8.49.0",
         "@typescript-eslint/parser": "8.49.0",
         "eslint": "9.39.1",
@@ -76,7 +76,9 @@
             "app/controllers/map/map.controller.ts",
             "app/services/map/map.service.ts",
             "app/validators/server-map-validation.ts",
-            "app/gateways/map/map.gateway.ts"
+            "app/gateways/map/map.gateway.ts",
+            "app/services/session/game-session.service.ts",
+            "app/services/gateways/session/session.gateway.ts"
         ],
         "coverageThreshold": {
             "global": {

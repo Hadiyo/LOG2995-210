@@ -1,0 +1,38 @@
+<article
+  class="card"
+  [class.card--locked]="isLocked"
+  tabindex="0"
+  (click)="onSelect()"
+  (keydown.enter)="onSelect()"
+  (keydown.space)="onSelect(); $event.preventDefault()"
+>
+  @if(session){
+  <div class="thumbnail">
+    @if (session.previewImage) {
+      <img
+        class="thumbnail-img"
+        [src]="'data:image/' + (session.previewImageFormat ?? 'webp') + ';base64,' + session.previewImage"
+        [attr.alt]="'Apercu de ' + session.name"
+      />
+    } @else {
+      <div class="thumbnail-placeholder">
+        <span>Apercu indisponible</span>
+      </div>
+    }
+  </div>
+
+  <div class="content">
+    <h3 class="name">{{ session.name }}</h3>
+    <div class="meta">
+      <span class="chip" [class.chip--locked]="isLocked">
+        {{ isLocked ? 'Verrouillee' : 'Ouverte' }}
+      </span>
+      <span class="chip">Taille: {{ session.size }}</span>
+      <span class="chip">Mode: {{ session.mode }}</span>
+      <span class="chip">Description: {{ session.description }}</span>
+      <span class="chip">Joueurs: {{ session.playerCount }}/{{ session.maxPlayers }}</span>
+      <span class="chip">Code: {{ session.accessCode }}</span>
+    </div>
+  </div>
+  }
+</article>

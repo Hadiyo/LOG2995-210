@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
-import { MAP_DIMENSIONS_BY_SIZE } from '@app/services/editor/constants/editor.constants';
-import { EditorMap, MapObject, PreviewImageFormat } from '@common/interface';
-import { MapSize, TileType, ObjectSize, ObjectType } from '@common/enum';
+import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
+import { PreviewImageFormat } from '@common/enum';
+import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { EditorMap, MapObject } from '@common/maps/map.interface';
 
-type Dim = { cols: number; rows: number };
 // Shared canvas geometry used by all draw steps (cell size + canvas ref)
 type Geom = { canvas: HTMLCanvasElement; cellW: number; cellH: number };
 
@@ -50,10 +50,9 @@ export class MapThumbnailService {
      * - START is slightly inset to avoid touching grid lines
      */
     private readonly objectPaddingByType: Partial<Record<ObjectType, number>> = {
-        [ObjectType.FLAG]: 0.15,
         [ObjectType.START]: 0.05,
     };
-    
+
     /* =========================================================
        Public API
        ========================================================= */
@@ -71,7 +70,8 @@ export class MapThumbnailService {
         // Extract canvas from context
         const { canvas } = ctx;
         // Get map dimensions and setup canvas
-        const { cols, rows } = this.getDim(map.size);
+        const cols = map.size; const 
+rows = map.size;
         const geom = this.setupCanvas(canvas, ctx, cols, rows);
 
         // Draw the preview frame
@@ -143,11 +143,6 @@ export class MapThumbnailService {
     /* =========================================================
        Canvas geometry helpers
        ========================================================= */
-
-    private getDim(size: MapSize): Dim {
-        // Return cols/rows for the given map size, fallback to S if unknown
-        return MAP_DIMENSIONS_BY_SIZE[size] ?? MAP_DIMENSIONS_BY_SIZE[MapSize.S];
-    }
 
     /**
      * Sets up a clean drawing surface and returns cell geometry.
@@ -298,9 +293,15 @@ export class MapThumbnailService {
 
         // url("...") -> ...
         const value = raw.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+        const resolved = this.resolveImageUrl(value);
         // Cache and return the value
-        this.cssImageVarCache.set(varName, value);
-        return value;
+        this.cssImageVarCache.set(varName, resolved);
+        return resolved;
+    }
+
+    private resolveImageUrl(url: string): string {
+        if (!url || /^(data:|https?:|blob:)/.test(url)) return url;
+        return resolveAssetUrl(url);
     }
 
     /**
@@ -335,12 +336,6 @@ export class MapThumbnailService {
         switch (type) {
             case ObjectType.START:
                 return this.getCssImageVar('--object-spawn-img');
-            case ObjectType.FLAG:
-                return this.getCssImageVar('--object-flag-img');
-            case ObjectType.REGEN:
-                return this.getCssImageVar('--object-heal-img');
-            case ObjectType.ARENA:
-                return this.getCssImageVar('--object-fight-img');
             default:
                 return '';
         }
@@ -376,9 +371,9 @@ export class MapThumbnailService {
         }
 
         // Object sprites used by placed objects
-        for (const o of objects ?? []) {
-            const u = this.objectUrl(o.type);
-            if (u) urls.add(u);
+        for (const object of objects ?? []) {
+            const objectImageUrl = this.objectUrl(object.type);
+            if (objectImageUrl) urls.add(objectImageUrl);
         }
 
         return Array.from(urls);
@@ -402,14 +397,14 @@ export class MapThumbnailService {
     ): Promise<Map<string, HTMLImageElement>> {
         // Gather required URLs
         const urls = this.collectUrls(cols, rows, tiles, walkables, objects);
-        const loaded = await Promise.allSettled(urls.map((u) => this.loadImage(u)));
+        const loaded = await Promise.allSettled(urls.map((url) => this.loadImage(url)));
 
         // Build lookup map of successfully loaded images
         const imgByUrl = new Map<string, HTMLImageElement>();
         for (let i = 0; i < urls.length; i++) {
-            const r = loaded[i];
-            if (r.status === 'fulfilled') {
-                imgByUrl.set(urls[i], r.value);
+            const result = loaded[i];
+            if (result.status === 'fulfilled') {
+                imgByUrl.set(urls[i], result.value);
             }
         }
 
@@ -438,7 +433,7 @@ export class MapThumbnailService {
         if (cached) return cached;
 
         // Start loading the image
-        const p = new Promise<HTMLImageElement>((resolve, reject) => {
+        const loadPromise = new Promise<HTMLImageElement>((resolve, reject) => {
             const img = new Image();
             img.onload = () => resolve(img);
             img.onerror = () => reject(new Error(`Failed to load ${url}`));
@@ -446,7 +441,7 @@ export class MapThumbnailService {
         });
 
         // Cache the loading Promise
-        MapThumbnailService.cache.set(url, p);
-        return p;
+        MapThumbnailService.cache.set(url, loadPromise);
+        return loadPromise;
     }
 }

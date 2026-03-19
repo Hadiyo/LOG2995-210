@@ -8,10 +8,10 @@ import { CreateMapDialogComponent } from '@app/components/create-map-dialog/crea
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
 import { AdminPageComponent } from '@app/pages/admin-page/admin-page.component';
 import { AdminService } from '@app/services/admin.service';
-import { MapLoadState } from '@app/services/map/map-state.enum';
 import { MapStateService } from '@app/services/map/map-state.service';
-import { GameMode, MapSize } from '@common/enum';
-import type { EditorMap } from '@common/interface';
+import { ServiceState } from '@app/services/service-state.enum';
+import { GameMode, MapSize } from '@common/maps/map.enums';
+import type { EditorMap } from '@common/maps/map.interface';
 
 /**
  * Testing Strategy:
@@ -56,10 +56,10 @@ describe('AdminPageComponent', () => {
   });
 
   let mapsSubject: BehaviorSubject<EditorMap[]>;
-  let stateSignal: WritableSignal<MapLoadState>;
+  let stateSignal: WritableSignal<ServiceState>;
 
   beforeEach(async () => {
-    stateSignal = signal(MapLoadState.Idle);
+    stateSignal = signal(ServiceState.Idle);
 
     adminServiceSpy = jasmine.createSpyObj<AdminService>('AdminService', ['setMapProperties', 'fetchExistingMapForEditor']);
     mapStateServiceSpy = jasmine.createSpyObj<MapStateService>('MapStateService', [
@@ -361,7 +361,7 @@ describe('AdminPageComponent', () => {
       mapsSubject.next([map]);
     });
     mapStateServiceSpy.toggleMapVisibility.and.callFake(() => {
-      stateSignal.set(MapLoadState.Error);
+      stateSignal.set(ServiceState.Error);
     });
 
     create();

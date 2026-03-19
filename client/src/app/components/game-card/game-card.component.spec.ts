@@ -1,8 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
-import { GameMode, MapSize, ObjectSize, ObjectType } from '@common/enum';
-import { PreviewImageFormat, type EditorMap } from '@common/interface';
+import { PreviewImageFormat } from '@common/enum';
+import { GameMode, MapSize } from '@common/maps/map.enums';
+import type { MapSummary } from '@common/maps/map.interface';
 
 /**
  * Testing Strategy:
@@ -22,15 +23,13 @@ describe('GameCardComponent', () => {
 
   const SAMPLE_DATE_ISO = '2026-02-08T12:00:00.000Z';
 
-  const makeMap = (overrides: Partial<EditorMap> = {}): EditorMap => ({
+  const makeMap = (overrides: Partial<MapSummary> = {}): MapSummary => ({
     id: 'id-1',
     name: 'My map',
     description: 'My description',
     mode: GameMode.CLASSIC,
     size: MapSize.S,
     date: SAMPLE_DATE_ISO,
-    map: [],
-    objects: [{ id: 1, type: ObjectType.START, position: { x: 0, y: 0 }, size: ObjectSize.S }],
     visibility: true,
     ...overrides,
   });
@@ -45,7 +44,7 @@ describe('GameCardComponent', () => {
   });
 
   it('should display name/size/mode/date and set description tooltip', () => {
-    component.map = makeMap({ mode: GameMode.CTF });
+    component.map = makeMap({ mode: GameMode.CLASSIC });
     fixture.detectChanges();
 
     const el: HTMLElement = fixture.nativeElement;
@@ -54,9 +53,9 @@ describe('GameCardComponent', () => {
 
     expect(el.querySelector('.name')?.textContent).toContain('My map');
     expect(el.textContent).toContain('Taille:');
-    expect(el.textContent).toContain('10x10');
+    expect(el.textContent).toContain('10');
     expect(el.textContent).toContain('Mode:');
-    expect(el.textContent).toContain('CTF');
+    expect(el.textContent).toContain('Classique');
 
     const time = el.querySelector('time') as HTMLTimeElement;
     expect(time.getAttribute('datetime')).toBe(SAMPLE_DATE_ISO);
@@ -64,8 +63,7 @@ describe('GameCardComponent', () => {
   });
 
   it('should show a placeholder when thumbnailUrl is missing', () => {
-    component.map = makeMap();
-    component.thumbnailUrl = undefined;
+    component.map = makeMap({ previewImage: undefined });
     fixture.detectChanges();
 
     const el: HTMLElement = fixture.nativeElement;
@@ -74,8 +72,7 @@ describe('GameCardComponent', () => {
   });
 
   it('should render thumbnail using previewImageFormat (defaults to webp)', () => {
-    component.map = makeMap({ previewImageFormat: PreviewImageFormat.PNG });
-    component.thumbnailUrl = 'QUJDRA==';
+    component.map = makeMap({ previewImage: 'QUJDRA==', previewImageFormat: PreviewImageFormat.PNG });
     fixture.detectChanges();
 
     const el: HTMLElement = fixture.nativeElement;
@@ -95,7 +92,7 @@ describe('GameCardComponent', () => {
 
   it('modeLabel should fall back to the raw value when unknown', () => {
     component.map = makeMap({ mode: 'UNKNOWN' as unknown as GameMode });
-    expect(component.modeLabel).toBe('UNKNOWN');
+    expect((component as any).modeLabel).toBe('UNKNOWN');
   });
 
   it('should emit edit/remove/toggleVisibility events', () => {
@@ -115,7 +112,7 @@ describe('GameCardComponent', () => {
     const el: HTMLElement = fixture.nativeElement;
     const card = el.querySelector('article.card') as HTMLElement;
     card.click();
-    expect(selectSpy).toHaveBeenCalledOnceWith(map);
+    expect(selectSpy).toHaveBeenCalledOnceWith(map.id);
 
     const editBtn = el.querySelector('button[aria-label=\"Modifier\"]') as HTMLButtonElement;
     editBtn.click();
@@ -142,6 +139,6 @@ describe('GameCardComponent', () => {
     const card = (fixture.nativeElement as HTMLElement).querySelector('article.card') as HTMLElement;
     card.click();
 
-    expect(selectSpy).toHaveBeenCalledOnceWith(map);
+    expect(selectSpy).toHaveBeenCalledOnceWith(map.id);
   });
 });

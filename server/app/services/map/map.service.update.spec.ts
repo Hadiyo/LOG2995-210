@@ -2,9 +2,9 @@ import { NotFoundException } from '@nestjs/common';
 
 import { MapService } from '@app/services/map/map.service';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
-import { GameMode, MapSize, TileType } from '@common/enum';
-import { SocketEvents } from '@common/socket-events';
+import { GameMode, MapSize, TileType } from '@common/maps/map.enums';
 import { makeDoc, makeEditorMap, makeMapModelMock, makeObject, makeQuery } from './map.service.spec-utils';
+import { MapSocketEvents } from '@common/socket-events';
 
 /**
  * Testing Strategy:
@@ -97,18 +97,18 @@ describe('MapService (update)', () => {
         const callback = jest.fn();
         const emitterSpy = jest.spyOn(service['mapEventEmitter'], 'on');
 
-        service.on(SocketEvents.MapCreated, callback);
+        service.on(MapSocketEvents.MapCreated, callback);
 
-        expect(emitterSpy).toHaveBeenCalledWith(SocketEvents.MapCreated, callback);
+        expect(emitterSpy).toHaveBeenCalledWith(MapSocketEvents.MapCreated, callback);
     });
 
     it('off() should unregister callback from mapEventEmitter', () => {
         const callback = jest.fn();
         const emitterSpy = jest.spyOn(service['mapEventEmitter'], 'off');
 
-        service.off(SocketEvents.MapCreated, callback);
+        service.off(MapSocketEvents.MapCreated, callback);
 
-        expect(emitterSpy).toHaveBeenCalledWith(SocketEvents.MapCreated, callback);
+        expect(emitterSpy).toHaveBeenCalledWith(MapSocketEvents.MapCreated, callback);
     });
 
     it.each([true, false])('updateMapVisibility() should update visibility when found (%s)', async (nextVisibility) => {
@@ -136,7 +136,7 @@ describe('MapService (update)', () => {
         );
 
         // Check that the event was emitted correctly
-        expect(emitSpy).toHaveBeenCalledWith(SocketEvents.ToogleMapVisibility, {
+        expect(emitSpy).toHaveBeenCalledWith(MapSocketEvents.ToggleMapVisibility, {
             id: 'id-vis',
             isVisible: nextVisibility,
         });

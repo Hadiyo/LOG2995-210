@@ -3,8 +3,8 @@ import { BadRequestException } from '@nestjs/common';
 import { MapService } from '@app/services/map/map.service';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
-import { TileType } from '@common/enum';
-import { PreviewImageFormat } from '@common/interface';
+import { PreviewImageFormat } from '@common/enum';
+import { TileType } from '@common/maps/map.enums';
 import { makeCell, makeDoc, makeEditorMap, makeMapModelMock, makeObject } from './map.service.spec-utils';
 
 /**
@@ -52,9 +52,9 @@ describe('MapService (create)', () => {
             previewImage: 'QUJDRA==',
             previewImageFormat: PreviewImageFormat.WEBP,
             map: [
-                makeCell({ position: { x: 0, y: 0 }, tileType: TileType.DIRT }),
-                makeCell({ position: { x: 1, y: 0 }, tileType: TileType.DOOR, isWalkable: true }),
-                makeCell({ position: { x: 2, y: 0 }, tileType: TileType.DOOR, isWalkable: false }),
+                makeCell({ tileType: TileType.DIRT }),
+                makeCell({ tileType: TileType.DOOR, isWalkable: true }),
+                makeCell({ tileType: TileType.DOOR, isWalkable: false }),
             ],
             objects: [makeObject({ id: 1, position: { x: 0, y: 0 } })],
         });
@@ -81,12 +81,10 @@ describe('MapService (create)', () => {
         expect(createdPayload.date).toBe(FIXED_NOW_ISO);
         expect((createdPayload.map as Record<string, unknown>[])[0]).not.toHaveProperty('doorOpen');
         expect((createdPayload.map as Record<string, unknown>[])[1]).toEqual({
-            position: { x: 1, y: 0 },
             tileType: TileType.DOOR,
             doorOpen: true,
         });
         expect((createdPayload.map as Record<string, unknown>[])[2]).toEqual({
-            position: { x: 2, y: 0 },
             tileType: TileType.DOOR,
             doorOpen: false,
         });

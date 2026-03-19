@@ -5,11 +5,11 @@ import { BackButtonComponent } from '@app/components/back-button/back-button.com
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 import { CreateMapDialogComponent } from '@app/components/create-map-dialog/create-map-dialog.component';
 import { GameCardComponent } from '@app/components/game-card/game-card.component';
-import { MapConfig } from '@app/interfaces/create-map-dialog';
+import { MapConfig } from '@app/config/map.config';
 import { AdminService } from '@app/services/admin.service';
-import { MapLoadState } from '@app/services/map/map-state.enum';
 import { MapStateService } from '@app/services/map/map-state.service';
-import type { EditorMap } from '@common/interface';
+import type { MapSummary } from '@common/maps/map.interface';
+import { ServiceState } from '@app/services/service-state.enum';
 import { Observable, take } from 'rxjs';
 
 @Component({
@@ -19,12 +19,12 @@ import { Observable, take } from 'rxjs';
   styleUrl: './admin-page.component.scss',
 })
 export class AdminPageComponent implements OnInit, OnDestroy {
-  protected maps$: Observable<EditorMap[]> = this.mapStateService.maps$;
+  protected maps$: Observable<MapSummary[]> = this.mapStateService.maps$;
   protected errorMessage: string = '';
   protected isCreateDialogOpen: boolean = false;
-  protected isDeleteDialogOpen = false; // Delete map popup state
-  protected isDeleting = false;  // Delete button state
-  protected mapPendingDeletion?: EditorMap;
+  protected isDeleteDialogOpen = false;
+  protected isDeleting = false;
+  protected mapPendingDeletion?: MapSummary;
 
   constructor(
     private readonly mapStateService: MapStateService,
@@ -44,7 +44,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.isCreateDialogOpen = !this.isCreateDialogOpen;
   }
 
-  protected mapState(): MapLoadState {
+  protected mapState(): ServiceState {
     return this.mapStateService.state();
   }
 
@@ -67,8 +67,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
    * to retrieve the given map for edition
    * @param mapId id of the map to retrieve for the editor view
    */
-  protected onEditExistingMap(map: EditorMap): void {
-
+  protected onEditExistingMap(map: MapSummary): void {
     this.adminService
       .fetchExistingMapForEditor(map.id)
       .pipe(take(1))
@@ -78,8 +77,7 @@ export class AdminPageComponent implements OnInit, OnDestroy {
       });
   }
 
-
-  protected onDeleteMap(map: EditorMap): void {
+  protected onDeleteMap(map: MapSummary): void {
     this.mapPendingDeletion = map;
     this.isDeleteDialogOpen = true;
   }
@@ -104,9 +102,9 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.resetDeleteDialog();
   }
 
-  protected onToggleVisibility(map: EditorMap): void {
+  protected onToggleVisibility(map: MapSummary): void {
     this.mapStateService.toggleMapVisibility(map);
-    if (this.mapStateService.state() === MapLoadState.Error)
+    if (this.mapStateService.state() === ServiceState.Error)
       this.errorMessage = 'Impossible de modifier la visibilite pour le moment.';
   }
 
