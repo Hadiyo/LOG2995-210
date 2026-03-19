@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { generateClientId } from '@app/utils/id.util';
 import { MatchPlayer } from '@common/game/match.interface';
 import { manhattanDistance } from './match-geometry';
 import { MatchStateService } from './match-state.service';
@@ -61,7 +62,7 @@ export class CombatStateService {
             : '';
 
         return {
-            id: crypto.randomUUID(),
+            id: generateClientId(),
             attackerId: attacker.id,
             defenderId: defender.id,
             attackerMessage: `Victoire contre ${defender.name}.`,
