@@ -19,12 +19,16 @@ import { cloneVec2, shuffle } from './match-geometry';
 export class MatchSetupService {
     private readonly matchBoardService = inject(MatchBoardService);
 
-    buildLocalPlayer(character: Character, existingLocalPlayer: MatchLobbyPlayer | null): MatchLobbyPlayer {
+    buildLocalPlayer(
+        character: Character,
+        existingLocalPlayer: MatchLobbyPlayer | null,
+        isOrganizer: boolean,
+    ): MatchLobbyPlayer {
         return {
             id: existingLocalPlayer?.id ?? crypto.randomUUID(),
             name: character.name,
             avatarId: character.avatarId,
-            isOrganizer: true,
+            isOrganizer,
             speed: this.getCharacterSpeed(character),
             maxHealth: this.getCharacterMaxHealth(character),
             baseAttack: DEFAULT_PLAYER_ATTACK,
