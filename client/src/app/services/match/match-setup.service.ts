@@ -22,11 +22,11 @@ export class MatchSetupService {
 
     buildLocalPlayer(
         character: Character,
-        existingLocalPlayer: MatchLobbyPlayer | null,
+        _existingLocalPlayer: MatchLobbyPlayer | null,
         isOrganizer: boolean,
     ): MatchLobbyPlayer {
         return {
-            id: existingLocalPlayer?.id ?? generateClientId(),
+            id: generateClientId(),
             name: character.name,
             avatarId: character.avatarId,
             isOrganizer,
