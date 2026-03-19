@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import { createMockGameSessionPreview, createMockGameSessionPreview2, createPlayerPayload } from '@app/services/session/mock-values';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { ErrorSocketEvents, PageContext, PageSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
-import { createMockGameSessionPreview, createMockGameSessionPreview2, createPlayerPayload } from './mock-values';
 import { SessionApiService } from './session-api.service';
 import { SessionService } from './session.service';
 
@@ -176,7 +176,6 @@ describe('SessionService - Handlers', () => {
 
     it(' should call updatePlayerCount with +1 - onClientAddedToSession', () => {
         // To spy on private method
-         
         const updatePlayerCountSpy = spyOn<any>(service, 'updatePlayerCount');
         const previewId = 'session123';
         service['onClientAddedToSession'](previewId);
@@ -185,7 +184,6 @@ describe('SessionService - Handlers', () => {
 
     it(' should call updatePlayerCount with -1 - onPlayerLeft', () => {
         // To spy on private method
-         
         const updatePlayerCountSpy = spyOn<any>(service, 'updatePlayerCount');
         const previewId = 'session123';
         service['onPlayerLeft'](previewId);

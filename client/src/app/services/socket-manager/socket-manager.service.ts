@@ -100,11 +100,12 @@ export class SocketManagerService {
   }
 
   unsubscribeFromWindowEvent(): void {
-      window.removeEventListener(BEFORE_UNLOAD, this.beforeUnloadHandler);
-    } 
+    this.beforeUnloadSubscribed = false;
+    window.removeEventListener(BEFORE_UNLOAD, this.beforeUnloadHandler);
+  } 
 
   private beforeUnloadHandler = () => {
-    this.socket.disconnect();
+    this.socket?.disconnect();
   };
 
 
