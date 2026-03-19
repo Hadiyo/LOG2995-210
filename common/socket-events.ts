@@ -72,6 +72,8 @@ export enum RoomSocketEvents {
     IncrementPlayerCount = 'incrementPlayerCount',
     DecrementPlayerCount = 'decrementPlayerCount',
     AddClientToSession = 'addClientToSession',
+    LeaveSession = 'leaveSession',
+    AddPlayerToSession = 'addPlayerToSession',
 }
 
 export enum WaitingRoomEvents {
@@ -86,6 +88,7 @@ export enum WaitingRoomEvents {
     WaitingRoomState = 'waitingRoomState',
     StartGame = 'waitingRoomStartGame',
     GameStarted = 'waitingRoomGameStarted',
+    InitPlayers = 'InitPlayers',
 }
 
 export enum ErrorSocketEvents {

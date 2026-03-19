@@ -10,6 +10,7 @@ export interface WaitingRoomPreview {
     size: MapSize;
     playerCount: number;
     maxPlayers: number;
+    isLocked?: boolean;
     previewImage?: string;
     previewImageFormat?: PreviewImageFormat;
 }
