@@ -58,7 +58,7 @@ export interface WaitingRoomMessagePayload {
 }
 
 export interface WaitingRoomRedirectPayload {
-    sessionId: string,
+    sessionId: string;
     reason: string;
 }
 

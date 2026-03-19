@@ -4,31 +4,19 @@ import { WaitingRoomPreview } from '@common/game/waiting-room-preview.interface'
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import { JoinGameCardComponent } from './join-game-card.component';
 
-/**
- * Testing Strategy:
- * We verify interaction logic: onSelect() emits the session id when the session is
- * unlocked, and emits nothing when it is locked. We also confirm this via a click
- * on the card element.
- *
- * Finally, we verify thumbnail rendering: an <img> is shown when previewImage is set
- * and a placeholder is shown otherwise.
- */
 describe('JoinGameCardComponent', () => {
   let component: JoinGameCardComponent;
   let fixture: ComponentFixture<JoinGameCardComponent>;
 
   const makeSession = (overrides: Partial<WaitingRoomPreview> = {}): WaitingRoomPreview => ({
-    accessCode: 'session-1',
-    mapId: 'hello',
+    accessCode: 'ABCD',
+    mapId: 'map-1',
     name: 'Partie test',
     description: 'Une belle partie',
     mode: GameMode.CLASSIC,
     size: MapSize.S,
     playerCount: 2,
     maxPlayers: 4,
-    isLocked: false,
-    previewImage: 'QUJDRA==',
-    previewImageFormat: PreviewImageFormat.PNG,
     ...overrides,
   });
 
@@ -47,27 +35,70 @@ describe('JoinGameCardComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should emit session id via onSelect() when session is not locked', () => {
-    component.session = makeSession({ accessCode: 'session-1', isLocked: false });
+  it('should display session name, mode, size, description and player count', () => {
+    component.session = makeSession({
+      name: 'Partie CTF',
+      mode: GameMode.CLASSIC,
+      size: MapSize.M,
+      description: 'Description test',
+      playerCount: 1,
+      maxPlayers: 3,
+    });
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.name')?.textContent).toContain('Partie CTF');
+    expect(el.textContent).toContain(`Mode: ${GameMode.CLASSIC}`);
+    expect(el.textContent).toContain(`Taille: ${MapSize.M}`);
+    expect(el.textContent).toContain('Description: Description test');
+    expect(el.textContent).toContain('Joueurs: 1/3');
+    expect(el.textContent).toContain('Code: ABCD');
+  });
+
+  it('should show "Ouverte" chip and no card--locked class when session is unlocked', () => {
+    component.session = makeSession({ playerCount: 1, maxPlayers: 4 });
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    const chip = el.querySelector('.chip') as HTMLElement;
+    expect(chip.textContent?.trim()).toBe('Ouverte');
+    expect(el.querySelector('.card--locked')).toBeNull();
+  });
+
+  it('should show "Verrouillee" chip and card--locked class when session is full', () => {
+    component.session = makeSession({ playerCount: 4, maxPlayers: 4 });
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    const chip = el.querySelector('.chip') as HTMLElement;
+    expect(chip.textContent?.trim()).toBe('Verrouillee');
+    expect(el.querySelector('.card--locked')).not.toBeNull();
+  });
+
+  it('should emit access code via onSelect() when session is open', () => {
+    component.session = makeSession({ accessCode: 'ROOM42', playerCount: 1, maxPlayers: 4 });
     fixture.detectChanges();
 
     const selectSpy = jasmine.createSpy('select');
     component.select.subscribe(selectSpy);
 
     component.onSelect();
-    expect(selectSpy).toHaveBeenCalledOnceWith('session-1');
+    expect(selectSpy).toHaveBeenCalledOnceWith('ROOM42');
   });
 
-  it('should NOT emit via onSelect() when session is locked', () => {
-    const selectSpy = spyOn(component.select, 'emit');
+  it('should not emit via onSelect() when session is locked', () => {
     component.session = makeSession({ playerCount: 4, maxPlayers: 4 });
     fixture.detectChanges();
+
+    const selectSpy = jasmine.createSpy('select');
+    component.select.subscribe(selectSpy);
+
     component.onSelect();
     expect(selectSpy).not.toHaveBeenCalled();
   });
 
-  it('should emit session id when the card is clicked and session is unlocked', () => {
-    component.session = makeSession({ accessCode: 'session-1', isLocked: false });
+  it('should emit access code when the card is clicked and session is open', () => {
+    component.session = makeSession({ accessCode: 'ROOM42', playerCount: 1, maxPlayers: 4 });
     fixture.detectChanges();
 
     const selectSpy = jasmine.createSpy('select');
@@ -75,7 +106,7 @@ describe('JoinGameCardComponent', () => {
 
     const card = fixture.nativeElement.querySelector('article.card') as HTMLElement;
     card.click();
-    expect(selectSpy).toHaveBeenCalledOnceWith('session-1');
+    expect(selectSpy).toHaveBeenCalledOnceWith('ROOM42');
   });
 
   it('should show placeholder when previewImage is not set', () => {

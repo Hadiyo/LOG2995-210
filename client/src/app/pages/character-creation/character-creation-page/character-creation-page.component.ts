@@ -1,16 +1,18 @@
-import { CommonModule } from '@angular/common';
-import { Component, computed } from '@angular/core';
+import { AsyncPipe, CommonModule } from '@angular/common';
+import { Component, computed, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
-import { MatchStateService } from '@app/services/match/match-state.service';
-import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import {
   generateCharacterFormValues,
+  makeFullName,
   normalizeCharacterName,
   sanitizeCharacterName,
+  validatePlayerName,
 } from '@app/services/character/character-generator';
+import { MatchStateService } from '@app/services/match/match-state.service';
+import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { Character } from '@common/character/character.interface';
 import {
@@ -26,7 +28,7 @@ import {
   PLUS_TWO_ATTRIBUTE_NAMES,
   PlusTwoAttributeName,
 } from '@common/character/character.model';
-import { startWith } from 'rxjs';
+import { map, startWith } from 'rxjs';
 
 const DEFAULT_PLUS_TWO: PlusTwoAttributeName = PLUS_TWO_ATTRIBUTE_NAMES[0];
 const DEFAULT_D6_TARGET: DieTargetAttributeName = DIE_TARGET_ATTRIBUTE_NAMES[0];
@@ -34,13 +36,19 @@ type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
 
 @Component({
   selector: 'app-character-creation-page',
-  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent, AsyncPipe, RouterModule],
   templateUrl: './character-creation-page.component.html',
   styleUrls: ['./character-creation-page.component.scss'],
 })
-export class CharacterCreationPageComponent {
+export class CharacterCreationPageComponent implements OnInit {
   readonly avatars = AVATAR_IDS;
   readonly nameMaxLength = CHARACTER_NAME_MAX_LENGTH;
+
+  protected readonly isLocked$ = this.waitingRoomService.isLocked$;
+  protected readonly takenAvatars$ = this.waitingRoomService.players$.pipe(
+    map((players) => players.map((player) => player.avatarId)),
+  );
+  private readonly waitingRoomError = toSignal(this.waitingRoomService.error$, { initialValue: '' });
 
   constructor(
     private readonly fb: FormBuilder,
@@ -51,14 +59,24 @@ export class CharacterCreationPageComponent {
   ) {}
 
   get errorMessage(): string {
-    return this.matchStateService.errorMessage();
+    return this.matchStateService.errorMessage() || this.waitingRoomError();
+  }
+
+  ngOnInit(): void {
+    const accessCode = this.route.snapshot.queryParamMap.get('accessCode');
+    if (accessCode) {
+      this.waitingRoomService.preloadWaitingRoom(accessCode);
+      return;
+    }
+
+    this.waitingRoomService.clearPreviewState();
   }
 
   readonly form = this.fb.group({
     name: ['', [
       Validators.required,
       Validators.maxLength(CHARACTER_NAME_MAX_LENGTH),
-      Validators.pattern(/^[A-Za-zÀ-ÖØ-öø-ÿ'’ -]+$/),
+      Validators.pattern(/^[A-Za-zÀ-ÖØ-öø-ÿ0-9'’ -]+$/),
     ]],
     avatarId: [null as AvatarId | null, Validators.required],
     plusTwo: [DEFAULT_PLUS_TWO as PlusTwoAttributeName, Validators.required],
@@ -101,17 +119,23 @@ export class CharacterCreationPageComponent {
   );
 
   onSelectAvatar(id: AvatarId): void {
+    if (this.waitingRoomService.getPlayerSnapshot().some((player) => player.avatarId === id)) {
+      return;
+    }
     this.form.controls.avatarId.setValue(id);
   }
 
   onGenerate(): void {
-    const generated = generateCharacterFormValues();
+    const players = this.waitingRoomService.getPlayerSnapshot();
+    const availableAvatars = AVATAR_IDS.filter((avatar) => !players.some((player) => player.avatarId === avatar));
+    const takenNames = players.map((player) => player.name);
+    const generated = generateCharacterFormValues(takenNames, availableAvatars.length > 0 ? availableAvatars : [...AVATAR_IDS]);
     this.form.patchValue(generated);
   }
 
   onRandomName(): void {
-    const generated = generateCharacterFormValues();
-    this.form.controls.name.setValue(generated.name);
+    const takenNames = this.waitingRoomService.getPlayerSnapshot().map((player) => player.name);
+    this.form.controls.name.setValue(makeFullName(takenNames));
   }
 
   onNameInput(event: Event): void {
@@ -130,8 +154,9 @@ export class CharacterCreationPageComponent {
       return;
     }
 
+    const name = this.validateName(this.form.controls.name.value);
+    const character = this.buildCharacterFromForm(name);
     const accessCode = this.route.snapshot.queryParamMap.get('accessCode');
-    const character = this.buildCharacterFromForm();
     this.matchStateService.registerLocalPlayer(character, !accessCode);
     const localPlayer = this.matchStateService.localPlayer();
     if (!localPlayer) {
@@ -155,12 +180,16 @@ export class CharacterCreationPageComponent {
     });
   }
 
+  onLeavingCharacterCreation(): void {
+    void this.router.navigate(['/home']);
+  }
+
   protected getAvatarThumbPath(avatarId: number): string {
     return resolveAssetUrl(`assets/avatars/thumbs/${avatarId}.png`);
   }
 
-  private buildCharacterFromForm(): Character {
-    const { name, avatarId, plusTwo, d6GoesTo } = this.form.getRawValue();
+  private buildCharacterFromForm(name: string): Character {
+    const { avatarId, plusTwo, d6GoesTo } = this.form.getRawValue();
 
     if (!name || avatarId === null || !plusTwo || !d6GoesTo) {
       throw new Error('Form invalid: missing required fields');
@@ -178,5 +207,13 @@ export class CharacterCreationPageComponent {
         defenseDie,
       },
     };
+  }
+
+  private validateName(name: string | null): string {
+    const takenNames = this.waitingRoomService.getPlayerSnapshot().map((player) => player.name);
+    if (!name) {
+      return validatePlayerName(makeFullName(takenNames), takenNames);
+    }
+    return validatePlayerName(name, takenNames);
   }
 }
