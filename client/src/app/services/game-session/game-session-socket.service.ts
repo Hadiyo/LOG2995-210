@@ -20,10 +20,13 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class GameSessionSocketService {
+    private static readonly debugToggleGuardMs = 400;
     readonly sessionId = signal<string | null>(null);
     readonly errorMessage = signal('');
 
     private listenersRegistered = false;
+    private debugTogglePending = false;
+    private debugToggleTimeoutId: number | null = null;
 
     constructor(
         private readonly socketManager: SocketManagerService,
@@ -113,9 +116,15 @@ export class GameSessionSocketService {
 
     toggleDebugMode(playerId: string): void {
         const sessionId = this.sessionId();
-        if (!sessionId) {
+        if (!sessionId || this.debugTogglePending) {
             return;
         }
+
+        this.debugTogglePending = true;
+        this.debugToggleTimeoutId = window.setTimeout(() => {
+            this.debugTogglePending = false;
+            this.debugToggleTimeoutId = null;
+        }, GameSessionSocketService.debugToggleGuardMs);
 
         this.socketManager.send(SocketEvents.ToggleDebugMode, {
             sessionId,
@@ -150,6 +159,7 @@ export class GameSessionSocketService {
 
     private registerListeners(): void {
         this.socketManager.on<GameSessionSnapshotPayload>(SocketEvents.GameSessionSnapshot, (payload) => {
+            this.clearDebugToggleGuard();
             this.sessionId.set(payload.sessionId);
             this.matchState.hydrateSnapshot(payload.match);
             this.turnState.hydrateSnapshot(payload.turnState);
@@ -158,7 +168,16 @@ export class GameSessionSocketService {
         });
 
         this.socketManager.on<GameSessionErrorPayload>(SocketEvents.GameSessionError, (payload) => {
+            this.clearDebugToggleGuard();
             this.errorMessage.set(payload.message);
         });
+    }
+
+    private clearDebugToggleGuard(): void {
+        this.debugTogglePending = false;
+        if (this.debugToggleTimeoutId !== null) {
+            window.clearTimeout(this.debugToggleTimeoutId);
+            this.debugToggleTimeoutId = null;
+        }
     }
 }

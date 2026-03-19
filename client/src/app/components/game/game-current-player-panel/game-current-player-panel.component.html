@@ -36,7 +36,7 @@
     <div class="player-stat-row">
       <span class="player-stat-label">Attaque</span>
       <span class="player-stat-value">
-        {{ player?.information?.dices?.attack ?? 0 }} +
+        {{ player?.state?.attributes?.attack ?? 0 }} +
         <span class="stat-hint" [class.hint-d6]="player?.information?.dices?.attack  === 'D6'" [class.hint-d4]="player?.information?.dices?.attack === 'D4'">
           {{ player?.information?.dices?.attack ?? defaultPanelTitle }}
         </span>
@@ -45,7 +45,7 @@
     <div class="player-stat-row">
       <span class="player-stat-label">Défense</span>
       <span class="player-stat-value">
-        {{ player?.information?.dices?.defense  ?? 0 }} +
+        {{ player?.state?.attributes?.defense ?? 0 }} +
         <span class="stat-hint" [class.hint-d6]="player?.information?.dices?.defense === 'D6'" [class.hint-d4]="player?.information?.dices?.defense === 'D4'">
           {{ player?.information?.dices?.defense ?? defaultPanelTitle }}
         </span>

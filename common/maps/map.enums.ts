@@ -17,7 +17,10 @@ export enum TileType {
 }
 
 export enum ObjectType {
-    START = 'START'
+    START = 'START',
+    FLAG = 'FLAG',
+    REGEN = 'REGEN',
+    ARENA = 'ARENA'
 }
 
 export enum ObjectSize {
