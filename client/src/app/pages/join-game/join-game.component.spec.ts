@@ -59,4 +59,16 @@ describe('JoinGameComponent', () => {
       { queryParams: { accessCode } },
     );
   });
+
+  it('should compute isLoading correctly when state is loading', () => {
+    mockWaitingRoomDirectory.state.set('loading');
+
+    expect(component['isLoading']()).toBeTrue();
+  });
+
+  it('should compute isLoading correctly when state is not loading', () => {
+    mockWaitingRoomDirectory.state.set('idle');
+
+    expect(component['isLoading']()).toBeFalse();
+  });
 });
