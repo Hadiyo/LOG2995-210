@@ -3,14 +3,14 @@ import { Router } from '@angular/router';
 import { ServiceState } from '@app/services/service-state.enum';
 import { SessionApiService } from '@app/services/session/session-api.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { GameSessionPreview, JoinSessionPayload, PlayerPayload } from '@common/game/game-session.interface';
+import { GameSessionPreview, JoinSessionPayload, PlayerPayload, WaitingRoomRedirectPayload } from '@common/game/game-session.interface';
 import { PlayerInformation } from '@common/player/player.interface';
 import { ErrorSocketEvents, PageContext, PageSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
 
 /**
- * This services allows a client to join, leave, create and delete game sessions which will later
- * be used for further real-time multiplayer gaming
+ * This services allows a client to join and create a game sessions and provides dynamic UI features 
+ * (ex. player count in join-game page)
  */
 
 @Injectable({
@@ -55,11 +55,6 @@ export class SessionService {
     this.errorMessage.set('');
   }
 
-  clearCurrentIds() {
-    this.currentMapId = undefined;
-    this.currentPreviewId = undefined;
-  }
-
   consumeJoinedSessionPayload(): PlayerPayload | undefined {
     const payload = this.joinedSessionPayload;
     this.joinedSessionPayload = undefined;
@@ -100,7 +95,7 @@ export class SessionService {
     this.socket.on<string>(RoomSocketEvents.IncrementPlayerCount, this.onClientAddedToSession);
     this.socket.on<void>(RoomSocketEvents.PlayerJoinedGame, this.onJoinedSession);
     this.socket.on<string>(RoomSocketEvents.DecrementPlayerCount, this.onPlayerLeft);
-    this.socket.on<string>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
+    this.socket.on<WaitingRoomRedirectPayload>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
     this.socket.on<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
     this.socket.on<GameSessionPreview>(RoomSocketEvents.NewAvailableSession, this.onNewAvailableSession);
     this.socket.on<string>(ErrorSocketEvents.FailedJoinSession, this.onFailedJoinSession);
@@ -110,11 +105,12 @@ export class SessionService {
   * Unsubscribes to all real-time socket events related to JoinPage
   */
   unsubscribeToSessionEvents() {
+    this.socket.unsubscribeFromWindowEvent();
     this.socket.send(PageSocketEvents.LeavePage, { page: PageContext.JoinGame });
     this.socket.off<string>(RoomSocketEvents.IncrementPlayerCount, this.onClientAddedToSession);
     this.socket.off<void>(RoomSocketEvents.PlayerJoinedGame, this.onJoinedSession);
     this.socket.off<string>(RoomSocketEvents.DecrementPlayerCount, this.onPlayerLeft);
-    this.socket.off<string>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
+    this.socket.off<WaitingRoomRedirectPayload>(WaitingRoomEvents.GameSessionDeleted, this.onDeleteSession);
     this.socket.off<PlayerPayload>(WaitingRoomEvents.ClientJoinedSession, this.onClientJoinedSession);
     this.socket.off<GameSessionPreview>(RoomSocketEvents.NewAvailableSession, this.onNewAvailableSession);
     this.socket.off<string>(ErrorSocketEvents.FailedJoinSession, this.onFailedJoinSession);
@@ -127,28 +123,30 @@ export class SessionService {
    * corresponding to its sessionId. Requires the client socket id
    * @param payload 
    */
-  createGameSession(character: PlayerInformation): void {
-    this.errorMessage.set('');
-    const payload: JoinSessionPayload = {
-      id: this.currentMapId,
-      character,
-    };
+  createGameSession(character: PlayerInformation | undefined): void {
+    if (!this.currentMapId || !character) {
+      this.errorMessage.set('MapId ou personnage invalid.');
+      return;
+    } 
+    const payload = this.setJoinSessionPayload(character, this.currentMapId);
     this.socket.send(RoomSocketEvents.CreateGameSession, payload);
-    this.clearCurrentIds();
+  }
+
+  joinSession(previewId: string): void {
+    this.socket.send(RoomSocketEvents.JoinGameRoom, previewId);
+  }
+
+  leaveSession(): void {
+    this.socket.send(RoomSocketEvents.LeaveSession, this.currentPreviewId);
   }
 
   /**
    * Client request to join a game session
    * @param sessionId 
    */
-  joinGameSession(character: PlayerInformation): void {
-    this.errorMessage.set('');
-    const payload: JoinSessionPayload = {
-      id: this.currentPreviewId,
-      character,
-    };
-    this.socket.send(RoomSocketEvents.JoinGameRoom, payload);
-    this.clearCurrentIds();
+  addPlayerToSession(character: PlayerInformation): void {
+    const payload = this.setJoinSessionPayload(character, this.currentPreviewId);
+    this.socket.send(RoomSocketEvents.AddPlayerToSession, payload);
   }
 
   /** HANDLERS */
@@ -200,9 +198,9 @@ export class SessionService {
    * Event: RoomSocketEvents.GameSessionDeleted
    * @param sessionId 
    */
-  private onDeleteSession = (sessionId: string) => {
+  private onDeleteSession = (payload: WaitingRoomRedirectPayload) => {
     const updated = this.sessionPreviewSubjects.value.filter(
-      s => s.id !== sessionId,
+      s => s.id !== payload.sessionId,
     );
     this.sessionPreviewSubjects.next(updated);
   };
@@ -210,6 +208,12 @@ export class SessionService {
   private onFailedJoinSession = (message: string) => {
     this.errorMessage.set(message);
   };
+
+  /** UTILS */
+  private clearCurrentIds() {
+    this.currentMapId = undefined;
+    this.currentPreviewId = undefined;
+  }
 
   private updatePlayerCount(previewId: string, delta: number): void {
     const updated = this.sessionPreviewSubjects.value.map(session =>
@@ -222,5 +226,15 @@ export class SessionService {
         : session,
     );
     this.sessionPreviewSubjects.next(updated);
+  }
+
+  private setJoinSessionPayload(character: PlayerInformation, id: string | undefined): JoinSessionPayload {
+    this.errorMessage.set('');
+    const payload: JoinSessionPayload = {
+      id,
+      character,
+    };
+    this.clearCurrentIds();
+    return payload;
   }
 }

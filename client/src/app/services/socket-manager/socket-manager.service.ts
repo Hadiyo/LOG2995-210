@@ -96,10 +96,16 @@ export class SocketManagerService {
 
     this.beforeUnloadSubscribed = true;
     // Adds event listener to disconnects the client socket when the application is closed
-    window.addEventListener(BEFORE_UNLOAD, () => {
-      this.socket?.disconnect();
-    });
+    window.addEventListener(BEFORE_UNLOAD, this.beforeUnloadHandler);
   }
+
+  unsubscribeFromWindowEvent(): void {
+      window.removeEventListener(BEFORE_UNLOAD, this.beforeUnloadHandler);
+    } 
+
+  private beforeUnloadHandler = () => {
+    this.socket.disconnect();
+  };
 
 
 }

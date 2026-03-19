@@ -79,8 +79,10 @@ export class WaitingRoomGateway {
             this.sessionService.deleteGameSession(session.mapTemplateId);
             // Notify all players in the session room that it was deleted
             const payload: WaitingRoomRedirectPayload = {
+                sessionId: session.mapTemplateId,
                 reason: 'La salle d\'attente a ete fermee parce que l\'organisateur a quitte.',
             };
+
             this.server.to(sessionId).emit(WaitingRoomEvents.GameSessionDeleted, payload);
             // Notify the join-game page to remove the session from the list
             this.server.to(pageRoomMap.joinGame).emit(WaitingRoomEvents.GameSessionDeleted, session.mapTemplateId);
@@ -114,15 +116,16 @@ export class WaitingRoomGateway {
         // Notify the kicked player individually
         this.server.in(target.socketId).socketsLeave(sessionId);
 
-        const redirectPayload: WaitingRoomRedirectPayload = {
-            reason: `Vous avez ete exclu de la salle d'attente par l'organisateur.`,
-        };
-        this.server.to(target.socketId).emit(WaitingRoomEvents.KickedFromSession, redirectPayload);
         // Notify the rest of the room
         this.server.to(sessionId).emit(WaitingRoomEvents.PlayerLeftSession, target.player.information);
 
         const session = this.sessionService.getGameSessionById(sessionId);
         if (session) {
+            const redirectPayload: WaitingRoomRedirectPayload = {
+                sessionId: session.mapTemplateId,
+                reason: `Vous avez ete exclu de la salle d'attente par l'organisateur.`,
+            };
+            this.server.to(target.socketId).emit(WaitingRoomEvents.KickedFromSession, redirectPayload);
             this.server.to(sessionId).emit(WaitingRoomEvents.WaitingRoomState, this.sessionService.getWaitingRoomState(sessionId));
             this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.DecrementPlayerCount, session.mapTemplateId);
         }

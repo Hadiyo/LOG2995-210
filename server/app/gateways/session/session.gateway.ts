@@ -1,5 +1,4 @@
 import { pageRoomMap } from '@app/gateways/rooms.record';
-import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionService } from '@app/services/session/game-session.service';
 import { JoinSessionPayload } from '@common/game/game-session.interface';
 import { ErrorSocketEvents, RoomSocketEvents, WaitingRoomEvents } from '@common/socket-events';
@@ -15,7 +14,7 @@ export class SessionGateway {
   private server: Server;
   private readonly logger: Logger;
 
-  constructor(private readonly sessionService: GameSessionService, private readonly chatService: ChatService) {
+  constructor(private readonly sessionService: GameSessionService) {
     this.logger = new Logger(SessionGateway.name);
   }
 
@@ -48,7 +47,17 @@ export class SessionGateway {
   }
 
   @SubscribeMessage(RoomSocketEvents.JoinGameRoom)
-  joinGameSession(@MessageBody() payload: JoinSessionPayload, @ConnectedSocket() client: Socket) {
+  joinGameSession(@MessageBody() previewId: string, @ConnectedSocket() client: Socket) {
+    const session = this.sessionService.findSessionByPreview(previewId);
+    if(session){
+      client.join(session.id); // Connect client to the room
+      const players = this.sessionService.getPlayersFromGamePreview(previewId);
+      client.emit(WaitingRoomEvents.InitPlayers, players); // Send a copy 
+    }
+  }
+
+  @SubscribeMessage(RoomSocketEvents.AddPlayerToSession)
+  addPlayerToSession(@MessageBody() payload: JoinSessionPayload, @ConnectedSocket() client: Socket) {
     const waitingRoom = this.sessionService.joinGameSession(payload, client.id);
     if (waitingRoom) {
       this.leavePreviousGameRooms(client);
@@ -61,6 +70,13 @@ export class SessionGateway {
         .emit(WaitingRoomEvents.WaitingRoomState, waitingRoom);
       this.server.to(pageRoomMap.joinGame).emit(RoomSocketEvents.IncrementPlayerCount, waitingRoom.mapPreviewId); // increment player count in join-page for that session
     }
+  }
+
+  @SubscribeMessage(RoomSocketEvents.LeaveSession)
+  leaveSession(@MessageBody() previewId: string, @ConnectedSocket() client: Socket) {
+    const session = this.sessionService.findSessionByPreview(previewId);
+    if(session && client.rooms.has(session.id))
+      client.leave(session.id);
   }
 
   private leavePreviousGameRooms(client: Socket): void {
