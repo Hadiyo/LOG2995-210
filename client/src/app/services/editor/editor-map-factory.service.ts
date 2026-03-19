@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { GameMode, MapSize, TileType } from '@common/maps/map.enums';
-import { EditorCell, EditorMap } from '@common/maps/map.interface';
+import { EditorCell, EditorMap, MapDimensions } from '@common/maps/map.interface';
 
 @Injectable({ providedIn: 'root' })
 export class EditorMapFactoryService {
@@ -32,6 +32,7 @@ export class EditorMapFactoryService {
         for (let y = 0; y < rows; y++) {
             for (let x = 0; x < cols; x++) {
                 cells.push({
+                    position: { x, y },
                     tileType: TileType.DIRT,
                     isWalkable: true,
                     isOccupied: false,
@@ -51,6 +52,13 @@ export class EditorMapFactoryService {
             map: cells,
             objects: [],
             visibility: false,
+        };
+    }
+
+    getDimensions(size: MapSize): MapDimensions {
+        return {
+            cols: size,
+            rows: size,
         };
     }
 

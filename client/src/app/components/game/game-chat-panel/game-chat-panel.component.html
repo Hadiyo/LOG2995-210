@@ -1,7 +1,6 @@
-<header class="messages__header">
+@if (showTitle) {
   <h3>{{ title }}</h3>
-  <p class="player__name"> {{ currentPlayerName }} </p>
-</header>
+}
 <div class="messages__feed-wrap">
   <div #messagesFeed class="messages__feed">
     @for (message of messages; track message.id) {
@@ -21,15 +20,17 @@
   <!-- Notification panel is rendered within the feed to appear above messages. -->
   <app-game-notifications-panel class="messages__notification" [notification]="notification" />
 </div>
-<div class="messages__input-row">
-  <input
-    type="text"
-    class="messages__input"
-    [value]="messageInput()"
-    [attr.maxlength]="messageMaxLength"
-    placeholder="Envoyer un message..."
-    (input)="onMessageInput($event)"
-    (keydown.enter)="submitMessage()"
-  />
-  <button type="button" class="messages__send-btn" (click)="submitMessage()">Envoyer</button>
-</div>
+@if (!readOnly) {
+  <div class="messages__input-row">
+    <input
+      type="text"
+      class="messages__input"
+      [value]="messageInput()"
+      [attr.maxlength]="messageMaxLength"
+      placeholder="Envoyer un message..."
+      (input)="onMessageInput($event)"
+      (keydown.enter)="submitMessage()"
+    />
+    <button type="button" class="messages__send-btn" (click)="submitMessage()">Envoyer</button>
+  </div>
+}

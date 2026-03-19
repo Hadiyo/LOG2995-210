@@ -17,9 +17,11 @@
 
     <!-- Object visual representation 
         - data attributes used for CSS sizing and sprite selection -->
-    @if (isObjectOnTile()) {
+    @if (shouldRenderObject(object)) {
     <span class="obj" [attr.data-obj]="object!.type"
-        [attr.data-size]="object!.size"></span>
+        [attr.data-size]="object!.size"
+        [attr.title]="objectDescription(object)"
+        [attr.aria-label]="objectDescription(object)"></span>
     }
 
 </button>

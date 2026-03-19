@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import type { EditorMap } from '@common/maps/map.interface';
+import type { EditorMap, EditorMapDetails, MapSummary } from '@common/maps/map.interface';
 import { environment } from 'src/environments/environment';
 
 @Injectable({
@@ -19,14 +19,19 @@ export class MapApiService {
         return this.http.get<EditorMap[]>(`${this.baseUrl}/`);
     }
 
+    // Admin/manage UI: fetch map summaries (without map data) for better performance.
+    getAllMapsSummary(): Observable<MapSummary[]> {
+        return this.http.get<MapSummary[]>(`${this.baseUrl}/summary`);
+    }
+
     // Player/join UI: fetch only visible maps to show in the public list.
     getVisibleMaps(): Observable<EditorMap[]> {
         return this.http.get<EditorMap[]>(`${this.baseUrl}/visible`);
     }
 
-    // Editor/join UI: load a specific map by id when opening an existing map.
-    getMapById(id: string): Observable<EditorMap> {
-        return this.http.get<EditorMap>(`${this.baseUrl}/${id}`);
+    // Editor UI: load a specific map by id with only the fields needed by editor.
+    getMapById(id: string): Observable<EditorMapDetails> {
+        return this.http.get<EditorMapDetails>(`${this.baseUrl}/${id}/editor`);
     }
 
     // Editor UI: save current map; decides between create and update by id.

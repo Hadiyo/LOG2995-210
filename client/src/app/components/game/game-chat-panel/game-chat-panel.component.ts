@@ -1,5 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostBinding,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  ViewChild,
+  signal,
+} from '@angular/core';
 import { GameNotificationsPanelComponent } from '@app/components/game/game-notifications-panel/game-notifications-panel.component';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { GameNotification } from '@common/game-notification';
@@ -17,11 +29,18 @@ export class GameChatPanelComponent implements OnChanges, AfterViewInit {
   @Input() currentPlayerName: string | null = null;
   @Input() messageMaxLength = 200;
   @Input() title = 'Messages de partie';
+  @Input() showTitle = true;
+  @Input() readOnly = false;
   @Output() messageSubmit = new EventEmitter<string>();
   @ViewChild('messagesFeed') private messagesFeedRef?: ElementRef<HTMLDivElement>;
 
   readonly messageInput = signal('');
   private previousMessageCount = 0;
+
+  @HostBinding('class.chat-panel--no-title')
+  protected get noTitleClass(): boolean {
+    return !this.showTitle;
+  }
 
   // Scrolls to bottom when new messages arrive, 
   // but only if message count increased (prevents scroll on edits).
@@ -51,6 +70,7 @@ export class GameChatPanelComponent implements OnChanges, AfterViewInit {
 
   // Emits current message value and clears input.
   submitMessage(): void {
+    if (this.readOnly) return;
     this.messageSubmit.emit(this.messageInput());
     this.messageInput.set('');
   }

@@ -6,6 +6,7 @@ import { MapApiService } from '@app/services/map/map-api.service';
 import { AvatarId } from '@common/character/character.model';
 import { TurnPhase } from '@common/game-session';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { getCellPositionAtIndex } from '@common/maps/map-utils';
 import { EditorCell, EditorMap, MapObject } from '@common/maps/map.interface';
 import { Player, PlayerStatus } from '@common/player/player.interface';
 import { catchError, map, of, take } from 'rxjs';
@@ -241,7 +242,8 @@ export class DevGameLauncherComponent {
   // static mode only. Fallback map for local static mode.
   private createFallbackEditorMap(size: MapSize): EditorMap {
     const cellCount = size * size;
-    const cells: EditorCell[] = Array.from({ length: cellCount }, () => ({
+    const cells: EditorCell[] = Array.from({ length: cellCount }, (_, index) => ({
+      position: getCellPositionAtIndex(index, size),
       tileType: TileType.DIRT,
       isWalkable: true,
       isOccupied: false,

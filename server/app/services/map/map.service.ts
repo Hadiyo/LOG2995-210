@@ -4,14 +4,14 @@ import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
 import { PreviewImageFormat } from '@common/enum';
 import { getCellPositionAtIndex } from '@common/maps/map-utils';
 import { ObjectSize, TileType } from '@common/maps/map.enums';
-import { EditorCell, EditorMap, MapObject, Vec2 } from '@common/maps/map.interface';
+import type { EditorCell, EditorMap, EditorMapDetails, MapObject, MapSummary, Vec2 } from '@common/maps/map.interface';
 import { MapSocketEvents } from '@common/socket-events';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { EventEmitter } from 'events';
 import type { Model } from 'mongoose';
 
-type PersistedCell = Omit<EditorCell, 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean };
+type PersistedCell = Omit<EditorCell, 'position' | 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean };
 type PersistedMap = Omit<EditorMap, 'id' | 'map'> & { map: PersistedCell[] };
 
 type PersistedMapRecord = Omit<EditorMap, 'id' | 'map'> & {
@@ -33,6 +33,11 @@ export class MapService {
         return maps.map((map) => this.toEditorMap(map));
     }
 
+    async getAllMapsSummary(): Promise<MapSummary[]> {
+        const maps = await this.mapModel.find().sort({ createdAt: 1 }).exec();
+        return maps.map((map) => this.toMapSummary(map));
+    }
+
     async getVisibleMaps(): Promise<EditorMap[]> {
         const maps = await this.mapModel.find({ visibility: true }).sort({ createdAt: 1 }).exec();
         return maps.map((map) => this.toEditorMap(map));
@@ -44,6 +49,14 @@ export class MapService {
             throw new NotFoundException('Map not found');
         }
         return this.toEditorMap(map);
+    }
+
+    async getMapByIdForEditor(id: string): Promise<EditorMapDetails> {
+        const map = await this.mapModel.findById(id).exec();
+        if (!map) {
+            throw new NotFoundException('Map not found');
+        }
+        return this.toEditorMapDetails(this.toEditorMap(map));
     }
 
     async createMap(map: EditorMap): Promise<EditorMap> {
@@ -80,7 +93,7 @@ export class MapService {
             id: updatedMap.id,
             isVisible: updatedMap.visibility,
         };
-        this.mapEventEmitter.emit(MapSocketEvents.ToogleMapVisibility, payload);
+        this.mapEventEmitter.emit(MapSocketEvents.ToggleMapVisibility, payload);
     }
 
     async deleteMap(id: string): Promise<void> {
@@ -154,17 +167,17 @@ export class MapService {
 
 
     private toEditorMap(mapDocument: MapDocument): EditorMap {
-        const mapObject = mapDocument.toObject({ versionKey: false });
-        const { _id: idValue, map: persistedMap, objects, ...rest } = mapObject as PersistedMapRecord;
-
+        const mapObject = mapDocument.toObject({ versionKey: false }) as PersistedMapRecord;
+        const { _id: idValue, map: persistedMap, objects, ...rest } = mapObject;
         delete (rest as { createdAt?: Date }).createdAt;
         delete (rest as { updatedAt?: Date }).updatedAt;
         const occupied = this.buildOccupiedKeySet(objects);
         const hydratedMap: EditorCell[] = persistedMap.map((cell, index) => {
+            const position = getCellPositionAtIndex(index, rest.size);
             const isWalkable = this.isTileWalkable(cell.tileType, cell.doorOpen);
-            const position = getCellPositionAtIndex(index, mapDocument.size);
             const key = `${position.x},${position.y}`;
             return {
+                position,
                 tileType: cell.tileType,
                 isWalkable,
                 isOccupied: occupied.has(key),
@@ -175,9 +188,38 @@ export class MapService {
             map: hydratedMap,
             objects,
             id: idValue.toString(),
-            // Preview image and format
             previewImage: mapObject.previewImage,
             previewImageFormat: mapObject.previewImageFormat,
+        };
+    }
+
+    private toMapSummary(mapDocument: MapDocument): MapSummary {
+        const mapObject = mapDocument.toObject({ versionKey: false }) as PersistedMapRecord;
+        const { _id: idValue, ...rest } = mapObject;
+        delete (rest as { createdAt?: Date }).createdAt;
+        delete (rest as { updatedAt?: Date }).updatedAt;
+        return {
+            id: idValue.toString(),
+            name: rest.name,
+            description: rest.description,
+            mode: rest.mode,
+            size: rest.size,
+            date: rest.date,
+            visibility: rest.visibility,
+            previewImage: rest.previewImage,
+            previewImageFormat: rest.previewImageFormat,
+        };
+    }
+
+    private toEditorMapDetails(map: EditorMap): EditorMapDetails {
+        return {
+            id: map.id,
+            name: map.name,
+            description: map.description,
+            mode: map.mode,
+            mapsize: map.size,
+            map: map.map,
+            objects: map.objects,
         };
     }
 

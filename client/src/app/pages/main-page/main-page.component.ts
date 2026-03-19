@@ -2,6 +2,7 @@ import { AfterViewInit, Component, ElementRef, ViewChild, signal } from '@angula
 import { Router } from '@angular/router';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 import { NameSliderComponent } from '@app/components/name-slider/name-slider.component';
+import { MatchStateService } from '@app/services/match/match-state.service';
 
 @Component({
   selector: 'app-main-page',
@@ -49,9 +50,12 @@ export class MainPageComponent implements AfterViewInit {
     'Fallou',
   ];
 
-  constructor(private readonly router: Router) {
+  constructor(
+    private readonly router: Router,
+    private readonly matchState: MatchStateService,
+  ) {
     const navigation = this.router.getCurrentNavigation();
-    const message = navigation?.extras?.state?.message as string | undefined;
+    const message = this.matchState.consumeHomeReturnMessage() ?? navigation?.extras?.state?.message as string | undefined;
     if (message) {
       this.flashMessage.set(message);
     }

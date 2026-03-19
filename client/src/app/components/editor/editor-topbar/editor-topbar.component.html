@@ -80,12 +80,12 @@
     <!-- =========================
        Save action + validation status
        ========================= -->
-  @if (localValidation(); as result) {
+  @if (localValidation()) {
     <button
       type="button"
       class="icon-btn"
-      [class.success]="result.isValid"
-      [class.invalid]="!result.isValid"
+      [class.success]="isSaveActionValid()"
+      [class.invalid]="!isSaveActionValid()"
       (click)="onSave()"
       title="Enregistrer"
       aria-label="Enregistrer"
@@ -112,4 +112,3 @@
     </ul>
   </div>
 }
-

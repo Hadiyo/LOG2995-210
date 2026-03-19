@@ -1,19 +1,20 @@
 import { MapController } from '@app/controllers/map/map.controller';
+import { WaitingRoomController } from '@app/controllers/waiting-room/waiting-room.controller';
+import { ChatGateway } from '@app/gateways/chat/chat.gateway';
+import { GameSessionGateway } from '@app/gateways/game-session/game-session.gateway';
 import { Map, mapSchema } from '@app/model/database/map';
+import { GameSessionService as MatchGameSessionService } from '@app/services/game-session/game-session.service';
 import { MapService } from '@app/services/map/map.service';
+import { WaitingRoomService as MatchWaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GameMapController } from './controllers/game-map/game-map.controller';
-import { ChatGateway } from './gateways/chat/chat.gateway';
 import { MapGateway } from './gateways/map/map.gateway';
 import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
-import { SessionGateway } from './gateways/session/session.gateway';
-import { WaitingRoomGateway } from './gateways/waiting-room/waiting-room.gateway';
+import { MatchWaitingRoomGateway } from './gateways/waiting-room/match-waiting-room.gateway';
 import { ChatService } from './services/chat/chat.service';
 import { GameMapService } from './services/game-map/game-map.service';
-import { PlayerService } from './services/player/player.service';
-import { GameSessionService } from './services/session/game-session.service';
 
 @Module({
     imports: [
@@ -29,19 +30,18 @@ import { GameSessionService } from './services/session/game-session.service';
             { name: Map.name, schema: mapSchema },
         ]),
     ],
-    controllers: [MapController, GameMapController],
+    controllers: [MapController, GameMapController, WaitingRoomController],
     providers: [
         Logger,
         MapGateway,
-        SessionGateway,
         PageRoomGateway,
         MapService,
-        GameSessionService,
-        PlayerService,
         GameMapService,
-        ChatService,
+        MatchWaitingRoomGateway,
+        MatchGameSessionService,
+        MatchWaitingRoomService,
+        GameSessionGateway,
         ChatGateway,
-        WaitingRoomGateway,
-    ],
+        ChatService],
 })
 export class AppModule {}

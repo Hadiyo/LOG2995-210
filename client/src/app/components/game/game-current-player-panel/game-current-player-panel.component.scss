@@ -110,3 +110,26 @@ h3 {
 .stat-hint.hint-d4 {
   color: var(--accent-secondary);
 }
+
+@media (max-height: 920px) {
+  .player-info-content {
+    gap: 8px;
+  }
+
+  .player-avatar {
+    min-height: clamp(72px, 10vh, 120px);
+  }
+
+  .player-avatar app-character-sprite {
+    height: clamp(60px, 52%, 110px);
+  }
+
+  .player-stats-grid {
+    grid-auto-rows: 28px;
+  }
+
+  .player-stat-row {
+    min-height: 28px;
+    gap: 8px;
+  }
+}

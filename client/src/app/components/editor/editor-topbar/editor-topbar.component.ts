@@ -62,7 +62,6 @@ export class EditorTopbarComponent {
   // Game mode selection (mutually exclusive)
   readonly modeOptions = [
     { value: GameMode.CLASSIC, label: 'Classic' },
-    { value: GameMode.CTF, label: 'CTF' },
   ] as const;
 
   // Map size selection
@@ -81,6 +80,7 @@ export class EditorTopbarComponent {
     return this.serverIssues();
   });
   readonly shouldShowIssues = computed(() => this.hasAttemptedSave() && this.activeIssues().length > 0);
+  readonly isSaveActionValid = computed(() => this.localValidation().isValid && this.serverIssues().length === 0);
 
   /* =========================================================
      Actions

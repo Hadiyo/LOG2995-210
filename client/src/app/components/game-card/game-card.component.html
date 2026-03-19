@@ -7,10 +7,10 @@
   (keydown.space)="onSelect(); $event.preventDefault()"
 >
   <div class="thumbnail">
-    @if (thumbnailUrl) {
+    @if (map.previewImage) {
       <img
         class="thumbnail-img"
-        [src]="'data:image/' + (map.previewImageFormat ?? 'webp') + ';base64,' + thumbnailUrl"
+        [src]="'data:image/' + (map.previewImageFormat ?? 'webp') + ';base64,' + map.previewImage"
         [attr.alt]="'Apercu de ' + map.name"
       />
     } @else {

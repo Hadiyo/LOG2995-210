@@ -1,6 +1,6 @@
 <article
   class="card"
-  [class.card--locked]="session.isLocked"
+  [class.card--locked]="isLocked"
   tabindex="0"
   (click)="onSelect()"
   (keydown.enter)="onSelect()"
@@ -24,13 +24,14 @@
   <div class="content">
     <h3 class="name">{{ session.name }}</h3>
     <div class="meta">
-      <span class="chip" [class.chip--locked]="session.isLocked">
-        {{ session.isLocked ? 'Verrouillee' : 'Ouverte' }}
+      <span class="chip" [class.chip--locked]="isLocked">
+        {{ isLocked ? 'Verrouillee' : 'Ouverte' }}
       </span>
       <span class="chip">Taille: {{ session.size }}</span>
       <span class="chip">Mode: {{ session.mode }}</span>
       <span class="chip">Description: {{ session.description }}</span>
-      <span class="chip">Joueurs: {{ session.nbOfPlayers }}/{{ session.maxPlayers }}</span>
+      <span class="chip">Joueurs: {{ session.playerCount }}/{{ session.maxPlayers }}</span>
+      <span class="chip">Code: {{ session.accessCode }}</span>
     </div>
   </div>
   }

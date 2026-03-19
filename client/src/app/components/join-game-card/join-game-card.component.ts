@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { GameSessionPreview } from '@common/game/game-session.interface';
+import { WaitingRoomPreview } from '@common/game/waiting-room-preview.interface';
 
 @Component({
   selector: 'app-join-game-card',
@@ -8,13 +8,17 @@ import { GameSessionPreview } from '@common/game/game-session.interface';
   styleUrl: './join-game-card.component.scss',
 })
 export class JoinGameCardComponent {
-  @Input() session!: GameSessionPreview;
+  @Input() session!: WaitingRoomPreview;
   @Output() select = new EventEmitter<string>();
 
+  get isLocked(): boolean {
+    return this.session.playerCount >= this.session.maxPlayers;
+  }
+
   onSelect(): void {
-    if (this.session.isLocked) {
+    if (this.isLocked) {
       return;
     }
-    this.select.emit(this.session.id);
+    this.select.emit(this.session.accessCode);
   }
 }
