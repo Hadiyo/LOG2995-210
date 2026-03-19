@@ -17,7 +17,7 @@ describe('JoinGameComponent', () => {
       {
         previews: signal([]),
         errorMessage: signal(null),
-        state: signal<'idle' | 'loading' | 'success' | 'error'>('idle'),
+        state: signal<'idle' | 'loading' | 'loaded' | 'error'>('idle'),
       },
     );
 
