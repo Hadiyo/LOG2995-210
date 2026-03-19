@@ -3,12 +3,28 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { GameViewComponent } from './game-view.component';
+import { MatchLobbyPlayer } from '@common/game/match.interface';
 
 describe('GameViewComponent', () => {
   let component: GameViewComponent;
   let fixture: ComponentFixture<GameViewComponent>;
   let mockWaitingRoomService: jasmine.SpyObj<WaitingRoomService>;
   let router: Router;
+
+  const makePlayer = (overrides: Partial<MatchLobbyPlayer> = {}): MatchLobbyPlayer => ({
+    id: 'p1',
+    name: 'Player',
+    avatarId: 0,
+    isOrganizer: false,
+    speed: 4,
+    maxHealth: 4,
+    baseAttack: 4,
+    baseDefense: 4,
+    attackDie: 'D4',
+    defenseDie: 'D4',
+    controller: 'human',
+    ...overrides,
+  });
 
   beforeEach(async () => {
     mockWaitingRoomService = jasmine.createSpyObj<WaitingRoomService>('WaitingRoomService', [
@@ -58,7 +74,7 @@ describe('GameViewComponent', () => {
   it('should let organizer delete the session when leaving', () => {
     Object.defineProperty(mockWaitingRoomService, 'me', {
       configurable: true,
-      get: () => ({ id: 'p1', name: 'Host', avatarId: 0, isOrganizer: true, speed: 4, maxHealth: 4, baseAttack: 4, baseDefense: 4, attackDie: 'D4', defenseDie: 'D4', controller: 'human' }),
+      get: () => makePlayer({ id: 'p1', name: 'Host', isOrganizer: true }),
     });
 
     component['leaveSession']();
@@ -70,7 +86,7 @@ describe('GameViewComponent', () => {
   it('should let participant leave and navigate home', async () => {
     Object.defineProperty(mockWaitingRoomService, 'me', {
       configurable: true,
-      get: () => ({ id: 'p2', name: 'Player', avatarId: 1, isOrganizer: false, speed: 4, maxHealth: 4, baseAttack: 4, baseDefense: 4, attackDie: 'D4', defenseDie: 'D4', controller: 'human' }),
+      get: () => makePlayer({ id: 'p2', avatarId: 1 }),
     });
     const navigateSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
 

@@ -166,25 +166,21 @@
     opacity: 0.5;
     cursor: not-allowed;
     filter: grayscale(60%);
-    
-    /* X overlay */
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      background: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 10px,
-        rgba(255,0,0,0.7) 10px,
-        rgba(255,0,0,0.7) 12px
-      );
-    }
   }
+}
+
+.avatar--taken::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 8%;
+  width: 84%;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.92);
+  transform: rotate(-18deg);
+  box-shadow: 0 0 0 1px rgba(17, 24, 39, 0.28);
+  pointer-events: none;
 }
 
 .avatar:disabled img,

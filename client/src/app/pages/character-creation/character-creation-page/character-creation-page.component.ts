@@ -1,5 +1,5 @@
 import { AsyncPipe, CommonModule } from '@angular/common';
-import { Component, computed } from '@angular/core';
+import { Component, computed, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -40,7 +40,7 @@ type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
   templateUrl: './character-creation-page.component.html',
   styleUrls: ['./character-creation-page.component.scss'],
 })
-export class CharacterCreationPageComponent {
+export class CharacterCreationPageComponent implements OnInit {
   readonly avatars = AVATAR_IDS;
   readonly nameMaxLength = CHARACTER_NAME_MAX_LENGTH;
 
@@ -48,6 +48,7 @@ export class CharacterCreationPageComponent {
   protected readonly takenAvatars$ = this.waitingRoomService.players$.pipe(
     map((players) => players.map((player) => player.avatarId)),
   );
+  private readonly waitingRoomError = toSignal(this.waitingRoomService.error$, { initialValue: '' });
 
   constructor(
     private readonly fb: FormBuilder,
@@ -58,7 +59,17 @@ export class CharacterCreationPageComponent {
   ) {}
 
   get errorMessage(): string {
-    return this.matchStateService.errorMessage();
+    return this.matchStateService.errorMessage() || this.waitingRoomError();
+  }
+
+  ngOnInit(): void {
+    const accessCode = this.route.snapshot.queryParamMap.get('accessCode');
+    if (accessCode) {
+      this.waitingRoomService.preloadWaitingRoom(accessCode);
+      return;
+    }
+
+    this.waitingRoomService.clearPreviewState();
   }
 
   readonly form = this.fb.group({
@@ -108,6 +119,9 @@ export class CharacterCreationPageComponent {
   );
 
   onSelectAvatar(id: AvatarId): void {
+    if (this.waitingRoomService.getPlayerSnapshot().some((player) => player.avatarId === id)) {
+      return;
+    }
     this.form.controls.avatarId.setValue(id);
   }
 
