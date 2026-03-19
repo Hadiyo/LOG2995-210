@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
@@ -14,6 +15,7 @@ import {
   WaitingRoomStatePayload,
 } from '@common/socket-events';
 import { BehaviorSubject } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class WaitingRoomService {
@@ -23,6 +25,8 @@ export class WaitingRoomService {
   private mePlayer: MatchLobbyPlayer | null = null;
   private roomPlayers: MatchLobbyPlayer[] = [];
   private listenersRegistered = false;
+  private previewAccessCode: string | null = null;
+  private previewUpdatesRegistered = false;
 
   private readonly playersSubject = new BehaviorSubject<MatchLobbyPlayer[]>([]);
   readonly players$ = this.playersSubject.asObservable();
@@ -44,8 +48,10 @@ export class WaitingRoomService {
 
   private readonly errorSubject = new BehaviorSubject('');
   readonly error$ = this.errorSubject.asObservable();
+  private readonly waitingRoomUrl = `${environment.serverUrl}/waiting-rooms`;
 
   constructor(
+    private readonly http: HttpClient,
     private readonly socketManager: SocketManagerService,
     private readonly router: Router,
   ) {}
@@ -54,7 +60,25 @@ export class WaitingRoomService {
     return this.mePlayer;
   }
 
+  getPlayerSnapshot(): MatchLobbyPlayer[] {
+    return this.playersSubject.value;
+  }
+
+  clearPreviewState(): void {
+    this.unregisterPreviewUpdates();
+    this.resetState();
+  }
+
+  preloadWaitingRoom(accessCode: string): void {
+    this.previewAccessCode = accessCode;
+    this.ensureConnected();
+    this.registerPreviewUpdates();
+    this.fetchWaitingRoomPreview(accessCode, true);
+  }
+
   initAsOrganizer(mapId: string, player: MatchLobbyPlayer): void {
+    this.unregisterPreviewUpdates();
+    this.resetState();
     this.ensureConnected();
     this.registerListeners();
 
@@ -72,6 +96,7 @@ export class WaitingRoomService {
   }
 
   initAsPlayer(accessCode: string, player: MatchLobbyPlayer): void {
+    this.unregisterPreviewUpdates();
     this.ensureConnected();
     this.registerListeners();
 
@@ -117,6 +142,7 @@ export class WaitingRoomService {
 
   leaveGame(): void {
     this.leaveWaitingRoom();
+    this.unregisterPreviewUpdates();
     this.resetState();
     void this.router.navigate(['/home']);
   }
@@ -156,6 +182,22 @@ export class WaitingRoomService {
     this.socketManager.send(SocketEvents.StartWaitingRoomGame, { accessCode: this.code });
   }
 
+  private fetchWaitingRoomPreview(accessCode: string, resetBeforeLoad: boolean): void {
+    if (resetBeforeLoad) {
+      this.resetState();
+    }
+
+    this.http.get<WaitingRoomStatePayload>(`${this.waitingRoomUrl}/${accessCode}`).subscribe({
+      next: (payload) => {
+        this.handleWaitingRoomUpdated(payload);
+      },
+      error: () => {
+        this.resetState();
+        this.errorSubject.next('Impossible de charger la salle d attente.');
+      },
+    });
+  }
+
   private ensureConnected(): void {
     if (!this.socketManager.isSocketAlive()) {
       this.socketManager.connect();
@@ -176,6 +218,25 @@ export class WaitingRoomService {
     this.socketManager.on<WaitingRoomGameStartedPayload>(SocketEvents.WaitingRoomGameStarted, this.handleGameStarted);
   }
 
+  private registerPreviewUpdates(): void {
+    if (this.previewUpdatesRegistered) {
+      return;
+    }
+
+    this.previewUpdatesRegistered = true;
+    this.socketManager.on(SocketEvents.WaitingRoomDirectoryUpdated, this.handlePreviewDirectoryUpdated);
+  }
+
+  private unregisterPreviewUpdates(): void {
+    if (!this.previewUpdatesRegistered) {
+      return;
+    }
+
+    this.previewUpdatesRegistered = false;
+    this.previewAccessCode = null;
+    this.socketManager.off(SocketEvents.WaitingRoomDirectoryUpdated, this.handlePreviewDirectoryUpdated);
+  }
+
   private readonly handleWaitingRoomUpdated = (payload: WaitingRoomStatePayload): void => {
     this.code = payload.accessCode;
     this.currentMapId = payload.mapId;
@@ -193,6 +254,14 @@ export class WaitingRoomService {
 
   private readonly handleWaitingRoomMessageSent = (message: ChatMessage): void => {
     this.messagesSubject.next([...this.messagesSubject.value, message]);
+  };
+
+  private readonly handlePreviewDirectoryUpdated = (): void => {
+    if (!this.previewAccessCode || this.mePlayer) {
+      return;
+    }
+
+    this.fetchWaitingRoomPreview(this.previewAccessCode, false);
   };
 
   private readonly handleWaitingRoomError = (payload: WaitingRoomErrorPayload): void => {
@@ -239,5 +308,4 @@ export class WaitingRoomService {
     this.statusMessageSubject.next('');
     this.errorSubject.next('');
   }
-
 }

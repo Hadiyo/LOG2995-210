@@ -197,7 +197,6 @@ export class GameSessionService {
         // Only delete players and session, keep the map for reuse
         this.gameSessions.get(session.id).players.forEach((playerId) => this.playerService.removePlayer(playerId));
         this.gameSessions.delete(session.id);
-        this.gameMapService.deleteGameMapPreview(session.mapTemplateId);
     }
 
     /**

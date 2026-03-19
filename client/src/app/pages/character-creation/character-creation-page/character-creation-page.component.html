@@ -18,7 +18,7 @@
 
             <div class="input-with-actions">
                 <input type="text" [formControl]="form.controls.name" [maxlength]="nameMaxLength"
-                    placeholder="lettres, espace, - et ’" (input)="onNameInput($event)" />
+                    placeholder="lettres, chiffres, espace, - et ’" (input)="onNameInput($event)" />
                 <button type="button" class="mini-btn btn-generate-name" (click)="onRandomName()">Nom Aléatoire</button>
                 <button type="button" class="mini-btn btn-clear-name" (click)="form.controls.name.setValue('')">Effacer</button>
             </div>
@@ -78,7 +78,8 @@
             <div class="avatar-grid">
                 @for (id of avatars; track id) {
                 <button type="button" class="avatar" [class.selected]="id === form.controls.avatarId.value"
-                    [style.background]="avatarFallbackColors[id]" (click)="onSelectAvatar(id)">
+                    [class.avatar--taken]="(takenAvatars$ | async)?.includes(id)"
+                    [disabled]="(takenAvatars$ | async)?.includes(id)" [style.background]="avatarFallbackColors[id]" (click)="onSelectAvatar(id)">
                     <img [src]="getAvatarThumbPath(id)" [alt]="'Avatar ' + id" />
                 </button>
                 }
@@ -92,20 +93,30 @@
             <div class="actions actions-top">
                 <button type="button" class="btn-generate" (click)="onGenerate()">Générer
                     personnage</button>
-                <button type="button" class="btn-validate" (click)="onSubmit()">Valider</button>
+                <button type="button" class="btn-validate" [disabled]="(isLocked$ | async) !== false" (click)="onSubmit()">Valider</button>
             </div>
         </div>
 
         <div class="preview-identity">
-            <div class="preview-avatar"
-                [style.background]="form.controls.avatarId.value !== null ? avatarFallbackColors[form.controls.avatarId.value] : null">
+            <div
+                class="preview-avatar"
+                [style.background]="
+                    form.controls.avatarId.value !== null
+                    ? avatarFallbackColors[form.controls.avatarId.value]
+                    : null
+                "
+                >
                 @if (form.controls.avatarId.value !== null) {
-                <img [src]="getAvatarThumbPath(form.controls.avatarId.value)"
-                    [alt]="'Avatar ' + form.controls.avatarId.value" />
+                    <img
+                    [src]="getAvatarThumbPath(form.controls.avatarId.value)"
+                    [alt]="'Avatar ' + form.controls.avatarId.value"
+                    />
                 } @else {
-                <div class="preview-placeholder">Aucun avatar</div>
+                    <div class="preview-placeholder">
+                    Aucun avatar
+                    </div>
                 }
-            </div>
+                </div>
 
             <div class="preview-meta">
                 <div class="preview-name">{{ form.controls.name.value || 'Sans nom' }}</div>
@@ -182,6 +193,16 @@
                     </small>
                 </div>
             </div>
+            @if((isLocked$ | async)) {
+                <div class="join-error-container stat">
+                    <span class="join-error">
+                        La session que vous tentez de joindre est vérouillée
+                    </span>
+                    <button class="join-error-btn mini-btn btn-clear-name" type="button" title="Retour à la page principal" (click)="onLeavingCharacterCreation()">
+                        Retour
+                    </button>
+                </div>
+            }
         </div>
     </div>
 </div>

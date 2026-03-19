@@ -192,7 +192,6 @@ describe('SessionService', () => {
         const mockPlayer = createMockPlayer();
         service['currentMapId'] = 'id1234';
         // To test private method
-         
         const spyPayload = spyOn<any>(service, 'setJoinSessionPayload').and.returnValue({id: 'id1234', character: mockPlayer});
         service.createGameSession(mockPlayer);
         expect(socketManagerMock.send).toHaveBeenCalled();
@@ -205,7 +204,6 @@ describe('SessionService', () => {
     it('should return and set error message if the character is undefined - createGameSession', () => {
         service['currentMapId'] = 'id1234';
         // To test private method
-         
         const spyPayload = spyOn<any>(service, 'setJoinSessionPayload').and.returnValue({id: 'id1234', character: undefined});
         service.createGameSession(undefined);
         expect(socketManagerMock.send).not.toHaveBeenCalled();
@@ -216,7 +214,6 @@ describe('SessionService', () => {
     it('should return and set error message if the currentMap is undefined - createGameSession', () => {
         const mockPlayer = createMockPlayer();
         // To test private method
-         
         const spyPayload = spyOn<any>(service, 'setJoinSessionPayload').and.returnValue({id: undefined, character: mockPlayer});
         service['currentMapId'] = undefined;
         service.createGameSession(mockPlayer);
@@ -240,7 +237,6 @@ describe('SessionService', () => {
         const mockPlayer = createMockPlayer();
         service['currentMapId'] = 'id1234';
         // To test private method
-         
         const spyPayload = spyOn<any>(service, 'setJoinSessionPayload').and.returnValue({id: 'id1234', character: mockPlayer});
         service['addPlayerToSession'](mockPlayer);
         expect(socketManagerMock.send).toHaveBeenCalled();
@@ -259,7 +255,6 @@ describe('SessionService', () => {
     it('should create the join session payload - setJoinSessionPayload', () => {
         const mockPlayer = createMockPlayer();
         // To test private method
-         
         const spy = spyOn<any>(service, 'clearCurrentIds');
         service['currentPreviewId'] = 'id1234';
         const payload = service['setJoinSessionPayload'](mockPlayer, service['currentPreviewId']);
@@ -279,22 +274,18 @@ describe('SessionService', () => {
 
         service['sessionPreviewSubjects'].next([mockGameSessionPreview, mockGameSessionPreview2]);
 
-        // Assert: s1 should have nbOfPlayers increased and not locked
         expect(nextSpy).toHaveBeenCalled();
 
         const updated = service['sessionPreviewSubjects'].value;
         const updatedS1 = updated.find(s => s.id === 'i1234');
         const updatedS2 = updated.find(s => s.id === 'id8965');
 
-        // Check if first map was updated
         expect(updatedS1?.nbOfPlayers).toBe(NB_PLAYERS_PRIOR_S1);
         expect(updatedS1?.isLocked).toBeFalse();
 
-        // Second preview map should be unchanged
         expect(updatedS2?.nbOfPlayers).toBe(NB_PLAYER_S2);
         expect(updatedS2?.isLocked).toBeFalse();
 
-        // Act: increment by 1 to reach maxPlayers
         service['updatePlayerCount']('i1234', 1);
 
         const updatedAgain = service['sessionPreviewSubjects'].value;
