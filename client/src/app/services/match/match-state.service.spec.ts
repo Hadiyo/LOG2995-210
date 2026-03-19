@@ -46,10 +46,57 @@ describe('MatchStateService', () => {
             },
         };
 
-        service.registerLocalPlayer(character);
+        service.registerLocalPlayer(character, true);
 
         expect(service.localPlayer()?.speed).toBe(8);
         expect(service.localPlayer()?.controller).toBe('human');
+    });
+
+    it('should keep a joining player as non-organizer when registering the local player', () => {
+        const character: Character = {
+            name: 'Guest',
+            avatarId: 1,
+            bonuses: {
+                plusTwo: 'vie',
+                attaqueDie: 'D4',
+                defenseDie: 'D6',
+            },
+        };
+
+        service.registerLocalPlayer(character, false);
+
+        expect(service.localPlayer()?.isOrganizer).toBeFalse();
+    });
+
+    it('should assign a fresh player id when a new local player is registered', () => {
+        const firstCharacter: Character = {
+            name: 'Organizer',
+            avatarId: 0,
+            bonuses: {
+                plusTwo: 'rapidite',
+                attaqueDie: 'D6',
+                defenseDie: 'D4',
+            },
+        };
+        const secondCharacter: Character = {
+            name: 'Guest',
+            avatarId: 1,
+            bonuses: {
+                plusTwo: 'vie',
+                attaqueDie: 'D4',
+                defenseDie: 'D6',
+            },
+        };
+
+        service.registerLocalPlayer(firstCharacter, true);
+        const firstPlayerId = service.localPlayer()?.id;
+
+        service.registerLocalPlayer(secondCharacter, false);
+
+        expect(service.localPlayer()?.id).not.toBe(firstPlayerId);
+        expect(service.localPlayer()?.name).toBe('Guest');
+        expect(service.localPlayer()?.avatarId).toBe(1);
+        expect(service.localPlayer()?.isOrganizer).toBeFalse();
     });
 
     it('should remove the visible start point and ghost turn when a player leaves the match', () => {
