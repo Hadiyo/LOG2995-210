@@ -132,6 +132,11 @@ export class WaitingRoomService {
             return false;
         }
 
+        if (room.players.some((existingPlayer) => existingPlayer.avatarId === payload.player.avatarId)) {
+            this.emitError(socketId, 'Cet avatar est deja utilise dans cette partie.');
+            return false;
+        }
+
         const player: MatchLobbyPlayer = {
             ...payload.player,
             name: resolveUniqueWaitingRoomPlayerName(payload.player.name, room),

@@ -78,6 +78,7 @@
             <div class="avatar-grid">
                 @for (id of avatars; track id) {
                 <button type="button" class="avatar" [class.selected]="id === form.controls.avatarId.value"
+                    [class.avatar--taken]="(takenAvatars$ | async)?.includes(id)"
                     [disabled]="(takenAvatars$ | async)?.includes(id)" [style.background]="avatarFallbackColors[id]" (click)="onSelectAvatar(id)">
                     <img [src]="getAvatarThumbPath(id)" [alt]="'Avatar ' + id" />
                 </button>
