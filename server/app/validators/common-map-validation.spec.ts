@@ -21,6 +21,7 @@ import type { EditorCell, EditorMap, MapObject } from '@common/maps/map.interfac
 
 describe('common map-validation (validateMap)', () => {
     const threeByThreeMapSize = Number('3') as MapSize;
+    const fourByFourMapSize = Number('4') as MapSize;
 
     const makeCell = (xOrTileType: number | TileType, yOrTileType?: number | TileType, maybeTileType?: TileType): EditorCell => {
         const tileType = typeof xOrTileType === 'number' ? (maybeTileType as TileType) : xOrTileType;
@@ -33,11 +34,11 @@ describe('common map-validation (validateMap)', () => {
         };
     };
 
-    const makeObject = (type: ObjectType, x: number, y: number, id = 1): MapObject => ({
+    const makeObject = (type: ObjectType, x: number, y: number, id = 1, size: ObjectSize = ObjectSize.S): MapObject => ({
         id,
         type,
         position: { x, y },
-        size: ObjectSize.S,
+        size,
     });
 
     const makeEditorMap = (overrides: Partial<EditorMap> = {}): EditorMap => {
@@ -234,6 +235,49 @@ describe('common map-validation (validateMap)', () => {
         expect(issueCodes(result)).toContain('START_POINTS_MISSING');
     });
 
+    it('should report FLAG_MISSING when mode is CTF and no flag is placed', () => {
+        const result = validateMap(
+            makeEditorMap({
+                mode: GameMode.CTF,
+            }),
+        );
+
+        expect(issueCodes(result)).toContain('FLAG_MISSING');
+    });
+
+    it('should report FLAG_NOT_ALLOWED when mode is CLASSIC and a flag is present', () => {
+        const result = validateMap(
+            makeEditorMap({
+                objects: [
+                    makeObject(ObjectType.START, 0, 0, 1),
+                    makeObject(ObjectType.START, 1, 0, 2),
+                    makeObject(ObjectType.FLAG, 2, 0, 2),
+                ],
+            }),
+        );
+
+        expect(issueCodes(result)).toContain('FLAG_NOT_ALLOWED');
+    });
+
+    it('should report FLAG_ON_DOOR_NOT_ALLOWED when a flag is placed on an open door', () => {
+        const result = validateMap(
+            makeEditorMap({
+                mode: GameMode.CTF,
+                map: [
+                    { ...makeCell(0, 0, TileType.DOOR), isWalkable: true },
+                    makeCell(1, 0, TileType.DIRT),
+                ],
+                objects: [
+                    makeObject(ObjectType.START, 1, 0, 1),
+                    makeObject(ObjectType.START, 1, 0, 2),
+                    makeObject(ObjectType.FLAG, 0, 0, 2),
+                ],
+            }),
+        );
+
+        expect(issueCodes(result)).toContain('FLAG_ON_DOOR_NOT_ALLOWED');
+    });
+
     it('should report START_ON_OPEN_DOOR_NOT_ALLOWED when a start is placed on an open door', () => {
         const result = validateMap(
             makeEditorMap({
@@ -292,6 +336,27 @@ describe('common map-validation (validateMap)', () => {
                 objects: [makeObject(ObjectType.START, 1, 0, 1), makeObject(ObjectType.START, 1, 0, 2)],
             }),
         );
+        expect(issueCodes(result)).toContain('UNREACHABLE_TILES');
+    });
+
+    it('should treat sanctuary footprints as blocked when validating reachable tiles', () => {
+        const result = validateMap(
+            makeEditorMap({
+                size: fourByFourMapSize,
+                map: [
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                    makeCell(TileType.WALL), makeCell(TileType.WALL), makeCell(TileType.DIRT), makeCell(TileType.WALL),
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                ],
+                objects: [
+                    makeObject(ObjectType.START, 0, 0, 1),
+                    makeObject(ObjectType.START, 1, 0, 2),
+                    makeObject(ObjectType.REGEN, 2, 0, 2, ObjectSize.L),
+                ],
+            }),
+        );
+
         expect(issueCodes(result)).toContain('UNREACHABLE_TILES');
     });
 });

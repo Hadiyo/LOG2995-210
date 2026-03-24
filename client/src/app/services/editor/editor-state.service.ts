@@ -77,6 +77,8 @@ export class EditorStateService {
      * - switches tool to applicator
      */
     selectObject(objectType: ObjectType): void {
+        if (objectType === ObjectType.FLAG && this.editorMap().mode !== GameMode.CTF) return;
+
         this.selectedObjectType.set(objectType);
         this.selectedTileType.set(null);
     }
@@ -333,17 +335,20 @@ export class EditorStateService {
      * - placing overwrites intersecting objects (by design)
      */
     private placeObjectAtIndex(index: number, type: ObjectType): void {
+        if (type === ObjectType.FLAG && this.editorMap().mode !== GameMode.CTF) return;
+
         this.editorMap.update((currentMap) => {
             const cell = currentMap.map[index];
             if (!cell) return currentMap;
 
             // Objects only on walkable tiles
             if (!cell.isWalkable) return currentMap;
-            if (type === ObjectType.START && cell.tileType === TileType.DOOR) return currentMap;
+            if ((type === ObjectType.START || type === ObjectType.FLAG) && cell.tileType === TileType.DOOR) return currentMap;
 
             const anchor = cell.position;
 
-            const size: ObjectSize = ObjectSize.S;
+            const size: ObjectSize =
+                type === ObjectType.REGEN || type === ObjectType.ARENA ? ObjectSize.L : ObjectSize.S;
 
             // Enforce per-type limits based on map size + mode
             const limit = this.rules.getObjectLimit(type, currentMap.size, currentMap.mode);
@@ -362,7 +367,7 @@ export class EditorStateService {
             if (!this.rules.arePositionsInBounds(covered, currentMap.size)) return currentMap;
 
             // Must be walkable everywhere + no collisions
-            if (!this.rules.canPlaceObject(covered, objectsFiltered, currentMap)) return currentMap;
+            if (!this.rules.canPlaceObject(covered, objectsFiltered, currentMap, type)) return currentMap;
 
             // Collision policy: placement is rejected if it intersects an existing object.
             const newObj: MapObject = {

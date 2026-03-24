@@ -5,6 +5,7 @@ import { GameMode, MapSize } from '@common/maps/map.enums';
 
 const MODE_OPTIONS = [
   { value: GameMode.CLASSIC, label: 'Classique' },
+  { value: GameMode.CTF, label: 'CTF' },
 ] as const;
 
 @Component({

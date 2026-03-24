@@ -4,7 +4,7 @@ import { MapService } from '@app/services/map/map.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InitializedMatch, MatchLobbyPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
-import { TileType } from '@common/maps/map.enums';
+import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SocketEvents } from '@common/socket-events';
 import { EventEmitter } from 'events';
 import {
@@ -314,7 +314,10 @@ export class GameSessionService {
         const playerOnDoor = session.match.players.some(
             (candidate) => candidate.position.x === position.x && candidate.position.y === position.y,
         );
-        if (playerOnDoor && doorCell.isWalkable) {
+        const flagOnDoor = session.match.mode === GameMode.CTF && session.match.objects.some(
+            (object) => object.type === ObjectType.FLAG && object.position.x === position.x && object.position.y === position.y,
+        );
+        if ((playerOnDoor || flagOnDoor) && doorCell.isWalkable) {
             return false;
         }
 

@@ -1,4 +1,4 @@
-import { MapSize, ObjectType, TileType } from './map.enums';
+import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from './map.enums';
 import type { EditorMap, Vec2 } from './map.interface';
 import { getCellPositionAtIndex } from './map-utils';
 
@@ -8,6 +8,9 @@ export type MapValidationIssueCode =
     | 'NAME_NOT_UNIQUE'
     | 'TERRAIN_RATIO_TOO_LOW'
     | 'START_POINTS_MISSING'
+    | 'FLAG_MISSING'
+    | 'FLAG_NOT_ALLOWED'
+    | 'FLAG_ON_DOOR_NOT_ALLOWED'
     | 'START_ON_OPEN_DOOR_NOT_ALLOWED'
     | 'DOOR_INVALID_PLACEMENT'
     | 'UNREACHABLE_TILES';
@@ -31,6 +34,11 @@ export const STARTS_REQUIRED_BY_SIZE: Record<MapSize, number> = {
     [MapSize.L]: 6,
 };
 
+const FLAGS_REQUIRED_BY_MODE: Record<GameMode, number> = {
+    [GameMode.CLASSIC]: 0,
+    [GameMode.CTF]: 1,
+};
+
 const MIN_TERRAIN_RATIO = 0.5;
 
 const isTerrainTile = (tileType: TileType): boolean => TERRAIN_TILES.has(tileType);
@@ -38,6 +46,8 @@ const isTerrainTile = (tileType: TileType): boolean => TERRAIN_TILES.has(tileTyp
 const isWallTile = (tileType: TileType): boolean => tileType === TileType.WALL;
 
 const isDoorTile = (tileType: TileType): boolean => tileType === TileType.DOOR;
+
+const isBlockingObjectType = (type: ObjectType): boolean => type === ObjectType.REGEN || type === ObjectType.ARENA;
 
 const positionKey = (x: number, y: number): string => `${x},${y}`;
 
@@ -63,6 +73,19 @@ const getNeighborKeys = (pos: Vec2): string[] => [
     positionKey(pos.x, pos.y - 1),
     positionKey(pos.x, pos.y + 1),
 ];
+
+const getCoveredPositions = (position: Vec2, size: ObjectSize): Vec2[] => {
+    if (size === ObjectSize.S) {
+        return [{ ...position }];
+    }
+
+    return [
+        { ...position },
+        { x: position.x + 1, y: position.y },
+        { x: position.x, y: position.y + 1 },
+        { x: position.x + 1, y: position.y + 1 },
+    ];
+};
 
 const getInvalidDoorPositions = (cellsByKey: Map<string, Cell>): Vec2[] => {
     const invalid: Vec2[] = [];
@@ -105,6 +128,20 @@ const collectTraversableKeys = (cellsByKey: Map<string, Cell>, blockedKeys: Set<
         }
     }
     return traversable;
+};
+
+const collectBlockedKeys = (map: EditorMap): Set<string> => {
+    const blockedKeys = new Set<string>();
+
+    for (const object of map.objects) {
+        if (!isBlockingObjectType(object.type)) continue;
+
+        for (const position of getCoveredPositions(object.position, object.size)) {
+            blockedKeys.add(positionKey(position.x, position.y));
+        }
+    }
+
+    return blockedKeys;
 };
 
 const traverseFrom = (startKey: string, traversable: Set<string>, cellsByKey: Map<string, Cell>): Set<string> => {
@@ -188,6 +225,45 @@ const addStartPointIssues = (map: EditorMap, issues: MapValidationIssue[]): void
     }
 };
 
+const addFlagIssues = (map: EditorMap, issues: MapValidationIssue[]): void => {
+    const requiredFlags = FLAGS_REQUIRED_BY_MODE[map.mode];
+    const flagCount = map.objects.filter((object) => object.type === ObjectType.FLAG).length;
+
+    if (requiredFlags > 0 && flagCount !== requiredFlags) {
+        issues.push({
+            code: 'FLAG_MISSING',
+            message: 'Le drapeau doit etre place en mode CTF.',
+            details: { required: requiredFlags, actual: flagCount },
+        });
+    }
+
+    if (requiredFlags === 0 && flagCount > 0) {
+        issues.push({
+            code: 'FLAG_NOT_ALLOWED',
+            message: 'Le drapeau est autorise uniquement en mode CTF.',
+            details: { actual: flagCount },
+        });
+    }
+};
+
+const addFlagOnDoorIssues = (map: EditorMap, cellsByKey: Map<string, Cell>, issues: MapValidationIssue[]): void => {
+    const invalidFlags = map.objects
+        .filter((object) => object.type === ObjectType.FLAG)
+        .filter((object) => {
+            const key = positionKey(object.position.x, object.position.y);
+            return cellsByKey.get(key)?.tileType === TileType.DOOR;
+        })
+        .map((object) => object.position);
+
+    if (invalidFlags.length === 0) return;
+
+    issues.push({
+        code: 'FLAG_ON_DOOR_NOT_ALLOWED',
+        message: 'Le drapeau doit etre place sur une tuile de terrain.',
+        details: { positions: invalidFlags },
+    });
+};
+
 const addStartOnOpenDoorIssues = (map: EditorMap, cellsByKey: Map<string, Cell>, issues: MapValidationIssue[]): void => {
     const invalidStarts = map.objects
         .filter((object) => object.type === ObjectType.START)
@@ -222,7 +298,7 @@ const collectUnreachablePositions = (
 };
 
 const addReachabilityIssues = (map: EditorMap, cellsByKey: Map<string, Cell>, issues: MapValidationIssue[]): void => {
-    const traversable = collectTraversableKeys(cellsByKey, new Set<string>());
+    const traversable = collectTraversableKeys(cellsByKey, collectBlockedKeys(map));
     if (traversable.size === 0) return;
 
     const startPositions = map.objects
@@ -252,6 +328,8 @@ export const validateMap = (map: EditorMap): MapValidationResult => {
     const cellsByKey = buildCellMap(map.map, map.size);
     addDoorPlacementIssues(cellsByKey, issues);
     addStartPointIssues(map, issues);
+    addFlagIssues(map, issues);
+    addFlagOnDoorIssues(map, cellsByKey, issues);
     addStartOnOpenDoorIssues(map, cellsByKey, issues);
     addReachabilityIssues(map, cellsByKey, issues);
 

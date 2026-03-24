@@ -51,6 +51,10 @@ export function getGameSessionMovementCost(match: InitializedMatch, destination:
     if (!cell) return null;
     if (cell.tileType === TileType.WALL) return null;
     if (cell.tileType === TileType.DOOR && !cell.isWalkable) return null;
+    const blockingObject = getGameSessionObjectCovering(match.objects, destination);
+    if (blockingObject && (blockingObject.type === ObjectType.REGEN || blockingObject.type === ObjectType.ARENA)) {
+        return null;
+    }
     if (match.players.some((player) => player.id !== movingPlayerId && samePosition(player.position, destination))) {
         return null;
     }

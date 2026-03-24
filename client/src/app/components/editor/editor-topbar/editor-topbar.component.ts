@@ -62,6 +62,7 @@ export class EditorTopbarComponent {
   // Game mode selection (mutually exclusive)
   readonly modeOptions = [
     { value: GameMode.CLASSIC, label: 'Classic' },
+    { value: GameMode.CTF, label: 'CTF' },
   ] as const;
 
   // Map size selection

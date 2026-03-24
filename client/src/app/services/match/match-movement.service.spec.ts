@@ -115,6 +115,16 @@ describe('MatchMovementService', () => {
         expect(service.getMovementCost(match, { x: -1, y: 1 }, 'player-1')).toBeNull();
     });
 
+    it('should treat sanctuaries as blocked tiles for movement', () => {
+        const match = createMatch();
+        const sanctuary = { id: 3, type: ObjectType.REGEN, position: { x: 6, y: 1 }, size: ObjectSize.L };
+        match.objects = [...match.objects, sanctuary];
+        match.allObjects = [...match.allObjects, sanctuary];
+
+        expect(service.getMovementCost(match, { x: 6, y: 1 }, 'player-1')).toBeNull();
+        expect(service.getMovementCost(match, { x: 7, y: 2 }, 'player-1')).toBeNull();
+    });
+
     it('should allow only cardinal moves within the remaining movement points', () => {
         const match = createMatch();
 
