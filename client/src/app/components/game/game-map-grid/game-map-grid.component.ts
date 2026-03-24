@@ -30,10 +30,6 @@ export class GameMapGridComponent {
   @Input() objects: readonly MapObject[] = [];
   // Current players list.
   @Input() players: readonly Player[] = [];
-  // Optional per-player direction overrides (dev/runtime).
-  @Input() playerDirections: Readonly<Record<string, CharacterDirection>> = {};
-  // Optional per-player state overrides (dev/runtime).
-  @Input() playerStates: Readonly<Record<string, CharacterState>> = {};
   // Local render clock used to expire transient poses client-side.
   @Input() nowMs = 0;
   // Toggles action-mode cursor style.
@@ -90,21 +86,18 @@ export class GameMapGridComponent {
     return player.information.avatarId ?? 0;
   }
 
-  // Dead players force dead pose; otherwise use override or idle.
+  // Dead players force dead pose; otherwise use snapshot pose or idle.
   getPlayerState(player: Player): CharacterState {
     if (player.state.status === PlayerStatus.Eliminated) return this.deadPlayerState;
-    const localOverride = this.playerStates[player.id];
-    if (localOverride) return localOverride;
-
     const pose = player.render?.pose ?? this.defaultPlayerState;
     if (this.isTransientPoseExpired(player, pose)) return this.defaultPlayerState;
 
     return pose;
   }
 
-  // Direction override or front by default.
+  // Direction from snapshot or front by default.
   getPlayerDirection(player: Player): CharacterDirection {
-    return this.playerDirections[player.id] ?? player.render?.facing ?? this.defaultPlayerDirection;
+    return player.render?.facing ?? this.defaultPlayerDirection;
   }
 
   // Deterministic pseudo-random delay from playerId for desynced idle breathing.

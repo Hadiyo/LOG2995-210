@@ -36,6 +36,11 @@ export function toGamePlayer(
             remainingActions: isActivePlayer && !actionTaken ? 1 : 0,
             remainingMovements: isActivePlayer ? movementPointsRemaining : 0,
         },
-        render: {},
+        render: {
+            facing: player.render?.facing ?? 'front',
+            pose: player.render?.pose ?? 'idle',
+            poseStartedAt: player.render?.poseStartedAt,
+            poseDurationMs: player.render?.poseDurationMs,
+        },
     };
 }

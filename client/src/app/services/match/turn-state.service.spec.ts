@@ -41,6 +41,7 @@ const createPlayer = (
     startingPosition: position,
     health: 6,
     combatWins: 0,
+    render: { facing: 'front', pose: 'idle' },
 });
 
 const createMatch = (): InitializedMatch => ({

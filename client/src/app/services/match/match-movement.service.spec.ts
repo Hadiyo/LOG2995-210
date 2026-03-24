@@ -49,6 +49,7 @@ const createPlayers = (): MatchPlayer[] => [
         startingPosition: { x: 1, y: 1 },
         health: 6,
         combatWins: 0,
+        render: { facing: 'front', pose: 'idle' },
     },
     {
         id: 'player-2',
@@ -66,6 +67,7 @@ const createPlayers = (): MatchPlayer[] => [
         startingPosition: { x: 5, y: 5 },
         health: 6,
         combatWins: 0,
+        render: { facing: 'front', pose: 'idle' },
     },
 ];
 

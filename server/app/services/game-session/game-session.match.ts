@@ -1,6 +1,12 @@
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { PlayerFacing, PlayerRenderState } from '@common/player/player.interface';
+
+export const WALK_POSE_DURATION_MS = 180;
+export const ATTACK_POSE_DURATION_MS = 220;
+
+type MatchTransientPose = Extract<NonNullable<PlayerRenderState['pose']>, 'walk' | 'attack'>;
 
 export function buildInitializedMatchFromEditor(
     map: EditorMapDetails,
@@ -18,6 +24,7 @@ export function buildInitializedMatchFromEditor(
         startingPosition: { ...shuffledStarts[index].position },
         health: player.maxHealth,
         combatWins: 0,
+        render: createDefaultMatchPlayerRender(),
     }));
 
     return {
@@ -44,6 +51,62 @@ export function getGameSessionDestination(position: Vec2, direction: 'up' | 'dow
     };
     const offset = offsets[direction];
     return { x: position.x + offset.x, y: position.y + offset.y };
+}
+
+export function createDefaultMatchPlayerRender(): PlayerRenderState {
+    return {
+        facing: 'front',
+        pose: 'idle',
+    };
+}
+
+export function orientMatchPlayerToward(player: MatchPlayer, target: Vec2): MatchPlayer {
+    const facing = getFacingToTarget(player.position, target);
+    if (!facing) {
+        return player;
+    }
+
+    return {
+        ...player,
+        render: {
+            ...createDefaultMatchPlayerRender(),
+            ...player.render,
+            facing,
+        },
+    };
+}
+
+export function setMatchPlayerTransientPose(
+    player: MatchPlayer,
+    pose: MatchTransientPose,
+    durationMs: number,
+    startedAt = new Date().toISOString(),
+): MatchPlayer {
+    return {
+        ...player,
+        render: {
+            ...createDefaultMatchPlayerRender(),
+            ...player.render,
+            pose,
+            poseStartedAt: startedAt,
+            poseDurationMs: durationMs,
+        },
+    };
+}
+
+function getFacingToTarget(from: Vec2, to: Vec2): PlayerFacing | null {
+    const deltaX = to.x - from.x;
+    const deltaY = to.y - from.y;
+
+    if (deltaX === 0 && deltaY === 0) {
+        return null;
+    }
+
+    if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+        return deltaX >= 0 ? 'right' : 'left';
+    }
+
+    return deltaY >= 0 ? 'front' : 'back';
 }
 
 export function getGameSessionMovementCost(match: InitializedMatch, destination: Vec2, movingPlayerId: string): number | null {

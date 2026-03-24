@@ -59,6 +59,10 @@ export class MatchSetupService {
                 startingPosition: cloneVec2(startObject.position),
                 health: player.maxHealth,
                 combatWins: 0,
+                render: {
+                    facing: 'front',
+                    pose: 'idle',
+                },
             };
         });
 
@@ -102,6 +106,12 @@ export class MatchSetupService {
             health: player.health ?? player.maxHealth,
             combatWins: player.combatWins ?? 0,
             controller: player.controller ?? 'human',
+            render: {
+                facing: player.render?.facing ?? 'front',
+                pose: player.render?.pose ?? 'idle',
+                poseStartedAt: player.render?.poseStartedAt,
+                poseDurationMs: player.render?.poseDurationMs,
+            },
         }));
         const allObjects = (match.allObjects ?? match.objects).map((object) => ({
             ...object,

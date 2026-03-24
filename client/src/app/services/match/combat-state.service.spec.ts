@@ -50,6 +50,7 @@ const createPlayer = (
     startingPosition: position,
     health: STARTING_HEALTH,
     combatWins: 0,
+    render: { facing: 'front', pose: 'idle' },
 });
 
 const createMatch = (mode: GameMode = GameMode.CLASSIC): InitializedMatch => ({

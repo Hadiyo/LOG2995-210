@@ -23,10 +23,8 @@ import { GameSessionTargetsService } from '@app/pages/game-view/game-session-tar
 import { GameSessionTurnEffectsService } from '@app/pages/game-view/game-session-turn-effects.service';
 import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
-import { GameVisualFeedbackService } from '@app/services/game/game-visual-feedback.service';
 import { positionKey } from '@app/services/match/match-geometry';
 import { MatchStateService } from '@app/services/match/match-state.service';
-import { LOCAL_POSE_REFRESH_MS } from '@app/shared/game/game-visual.constants';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchEndState, MatchPlayer } from '@common/game/match.interface';
 import { MapSize } from '@common/maps/map.enums';
@@ -35,7 +33,6 @@ import { Player, PlayerStatus } from '@common/player/player.interface';
 import { createPanelAvatarDirection, createPanelAvatarId, createPanelAvatarState } from './game-view-avatar.utils';
 import { GAME_VIEW_CONSTANTS } from './game-view.constants';
 import { getPhaseDescription, getPhaseHeadline } from './game-view-phase.utils';
-import { startLocalPoseRefreshClock, stopLocalPoseRefreshClock } from './game-view-pose-clock.utils';
 import { toGamePlayer } from './game-view-player.utils';
 import { createSelectedTileInfo } from './game-view-tile-info.utils';
 @Component({
@@ -62,13 +59,13 @@ import { createSelectedTileInfo } from './game-view-tile-info.utils';
 })
 export class GameViewPageComponent implements OnInit, OnDestroy {
     private static readonly activeTurnDurationSeconds = ACTIVE_TURN_DURATION_MS / MILLISECONDS_PER_SECOND;
+    private static readonly localPoseRefreshMs = 100;
     private static readonly transitionDurationSeconds = TRANSITION_DURATION_MS / MILLISECONDS_PER_SECOND;
     protected readonly constants = GAME_VIEW_CONSTANTS;
     protected readonly display = inject(GameSessionDisplayService);
     protected readonly interaction = inject(GameSessionInteractionService);
     protected readonly targets = inject(GameSessionTargetsService);
     protected readonly effects = inject(GameSessionTurnEffectsService);
-    protected readonly visualFeedback = inject(GameVisualFeedbackService);
 
     private readonly matchState = inject(MatchStateService);
     private readonly route = inject(ActivatedRoute);
@@ -93,8 +90,6 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         return MAP_SIZE_CONFIG.find((config) => config.value === mapSize)?.maxPlayers ?? this.players().length;
     });
     protected readonly turnOrder = computed<readonly string[]>(() => this.display.turnOrderedPlayers().map((player) => player.id));
-    protected readonly playerDirections = this.visualFeedback.playerDirections;
-    protected readonly playerStates = this.visualFeedback.playerStates;
     protected readonly players = computed<readonly Player[]>(() => {
         const currentTurnState = this.display.turnState();
         return (this.match()?.players ?? []).map((player) =>
@@ -114,8 +109,8 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.players().find((player) => player.id === this.localPlayerId()) ?? null,
     );
     protected readonly panelAvatarId = createPanelAvatarId(this.currentPlayer);
-    protected readonly panelAvatarState = createPanelAvatarState(this.currentPlayer, this.nowMs, this.playerStates);
-    protected readonly panelAvatarDirection = createPanelAvatarDirection(this.currentPlayer, this.playerDirections);
+    protected readonly panelAvatarState = createPanelAvatarState(this.currentPlayer, this.nowMs);
+    protected readonly panelAvatarDirection = createPanelAvatarDirection(this.currentPlayer);
     protected readonly activePlayersCount = computed<number>(() =>
         this.players().filter((player) => player.state.status === PlayerStatus.Active).length,
     );
@@ -179,8 +174,9 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
-        this.visualFeedback.resetVisualOverrides();
-        this.localPoseIntervalId = startLocalPoseRefreshClock(this.nowMs, LOCAL_POSE_REFRESH_MS);
+        this.localPoseIntervalId = window.setInterval(() => {
+            this.nowMs.set(Date.now());
+        }, GameViewPageComponent.localPoseRefreshMs);
 
         const sessionId = this.route.snapshot.queryParamMap.get('sessionId');
         const localPlayer = this.display.localPlayer();
@@ -201,8 +197,10 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void {
         this.chatService.unsubscribeToSocketEvents();
         this.effects.destroy();
-        this.localPoseIntervalId = stopLocalPoseRefreshClock(this.localPoseIntervalId);
-        this.visualFeedback.resetVisualOverrides();
+        if (this.localPoseIntervalId !== null) {
+            window.clearInterval(this.localPoseIntervalId);
+            this.localPoseIntervalId = null;
+        }
         this.clearMatchEndRedirect();
     }
 

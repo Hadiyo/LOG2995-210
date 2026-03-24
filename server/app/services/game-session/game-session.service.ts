@@ -8,10 +8,14 @@ import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SocketEvents } from '@common/socket-events';
 import { EventEmitter } from 'events';
 import {
+    ATTACK_POSE_DURATION_MS,
     buildGameSessionVisibleObjects,
+    orientMatchPlayerToward,
     getGameSessionDestination,
     getGameSessionMovementCost,
     getGameSessionObjectCovering,
+    setMatchPlayerTransientPose,
+    WALK_POSE_DURATION_MS,
 } from './game-session.match';
 import {
     ACTIVE_TURN_DURATION_MS,
@@ -232,7 +236,12 @@ export class GameSessionService {
         session.match = {
             ...session.match,
             players: session.match.players.map((candidate) =>
-                candidate.id === playerId ? { ...candidate, position: { ...position } } : candidate,
+                candidate.id === playerId
+                    ? {
+                        ...orientMatchPlayerToward(candidate, position),
+                        position: { ...position },
+                    }
+                    : candidate,
             ),
         };
         this.emitSnapshot(session);
@@ -268,7 +277,16 @@ export class GameSessionService {
         }
 
         const nextPlayers = session.match.players.map((player) =>
-            player.id === playerId ? { ...player, position: { ...destination } } : player,
+            player.id === playerId
+                ? {
+                    ...setMatchPlayerTransientPose(
+                        orientMatchPlayerToward(player, destination),
+                        'walk',
+                        WALK_POSE_DURATION_MS,
+                    ),
+                    position: { ...destination },
+                }
+                : player,
         );
         session.match = {
             ...session.match,
@@ -326,10 +344,20 @@ export class GameSessionService {
                 ? { ...cell, isWalkable: !cell.isWalkable }
                 : cell,
         );
+        const nextPlayers = session.match.players.map((candidate) =>
+            candidate.id === playerId
+                ? setMatchPlayerTransientPose(
+                    orientMatchPlayerToward(candidate, position),
+                    'attack',
+                    ATTACK_POSE_DURATION_MS,
+                )
+                : candidate,
+        );
 
         session.match = {
             ...session.match,
             map: nextMap,
+            players: nextPlayers,
         };
         session.turnState = { ...session.turnState, actionTaken: true };
         this.emitSnapshot(session);
@@ -355,7 +383,14 @@ export class GameSessionService {
         const respawnPosition = resolveRespawnPosition(session.match, defenderId);
         const nextPlayers = session.match.players.map((player) => {
             if (player.id === attackerId) {
-                return { ...player, combatWins: player.combatWins + 1 };
+                return {
+                    ...setMatchPlayerTransientPose(
+                        orientMatchPlayerToward(player, defender.position),
+                        'attack',
+                        ATTACK_POSE_DURATION_MS,
+                    ),
+                    combatWins: player.combatWins + 1,
+                };
             }
 
             if (player.id === defenderId) {

@@ -1,6 +1,7 @@
 import { AvatarId, Die } from '../character/character.model';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '../maps/map.enums';
 import { EditorCell, MapObject, Vec2 } from '../maps/map.interface';
+import { PlayerRenderState } from '../player/player.interface';
 
 export type MatchPlayerController = 'human';
 
@@ -23,6 +24,7 @@ export interface MatchPlayer extends MatchLobbyPlayer {
     startingPosition: Vec2;
     health: number;
     combatWins: number;
+    render: PlayerRenderState;
 }
 
 export interface MatchObjectDetails {

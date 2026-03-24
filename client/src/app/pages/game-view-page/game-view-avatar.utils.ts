@@ -9,10 +9,9 @@ export function createPanelAvatarId(currentPlayer: Signal<Player | null>): Signa
 export function createPanelAvatarState(
     currentPlayer: Signal<Player | null>,
     nowMs: Signal<number>,
-    playerStates: Signal<Readonly<Record<string, CharacterState>>>,
 ): Signal<CharacterState> {
     return computed(() => {
-        nowMs();
+        const currentTimeMs = nowMs();
         const player = currentPlayer();
         if (!player) {
             return 'idle';
@@ -22,19 +21,13 @@ export function createPanelAvatarState(
             return 'dead';
         }
 
-        const localOverride = playerStates()[player.id];
-        if (localOverride) {
-            return localOverride;
-        }
-
         const pose = player.render?.pose ?? 'idle';
-        return isTransientPoseExpired(player, pose, nowMs()) ? 'idle' : pose;
+        return isTransientPoseExpired(player, pose, currentTimeMs) ? 'idle' : pose;
     });
 }
 
 export function createPanelAvatarDirection(
     currentPlayer: Signal<Player | null>,
-    playerDirections: Signal<Readonly<Record<string, CharacterDirection>>>,
 ): Signal<CharacterDirection> {
     return computed(() => {
         const player = currentPlayer();
@@ -42,7 +35,7 @@ export function createPanelAvatarDirection(
             return 'front';
         }
 
-        return playerDirections()[player.id] ?? player.render?.facing ?? 'front';
+        return player.render?.facing ?? 'front';
     });
 }
 

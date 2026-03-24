@@ -17,5 +17,6 @@ describe('MatchSetupService', () => {
         expect(match.players).toHaveSize(3);
         expect(new Set(match.players.map((player) => `${player.startingPosition.x}:${player.startingPosition.y}`)).size).toBe(3);
         expect(match.objects.filter((object) => object.type === ObjectType.START)).toHaveSize(3);
+        expect(match.players.every((player) => player.render.facing === 'front' && player.render.pose === 'idle')).toBeTrue();
     });
 });
