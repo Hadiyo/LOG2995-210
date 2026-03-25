@@ -109,8 +109,8 @@ export class MatchSetupService {
             render: {
                 facing: player.render?.facing ?? 'front',
                 pose: player.render?.pose ?? 'idle',
-                poseStartedAt: player.render?.poseStartedAt,
-                poseDurationMs: player.render?.poseDurationMs,
+                ...(player.render?.poseStartedAt ? { poseStartedAt: player.render.poseStartedAt } : {}),
+                ...(player.render?.poseDurationMs !== undefined ? { poseDurationMs: player.render.poseDurationMs } : {}),
             },
         }));
         const allObjects = (match.allObjects ?? match.objects).map((object) => ({
