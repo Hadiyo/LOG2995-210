@@ -36,6 +36,7 @@ describe('GameSessionGateway', () => {
                 handlers[event] = handler;
             }),
             off: jest.fn(),
+            findSessionIdForSocket: jest.fn(),
             removeSocket: jest.fn(),
             surrender: jest.fn(),
             registerSocket: jest.fn(),
@@ -97,6 +98,7 @@ describe('GameSessionGateway', () => {
             match: { id: 'match' },
             turnState: { id: 'turn' },
             messages: [{ id: 'msg-1' }],
+            previousSessionId: null,
         });
 
         gateway.joinSession(client, payload);
@@ -118,6 +120,21 @@ describe('GameSessionGateway', () => {
             SocketEvents.GameSessionError,
             { message: 'Impossible de joindre la session de jeu.' },
         );
+    });
+
+    it('leaves the previous game room when migrating a socket to another session', () => {
+        const client = makeSocket('socket-1');
+        gameSessionService.registerSocket.mockReturnValue({
+            match: { id: 'match' },
+            turnState: { id: 'turn' },
+            messages: [],
+            previousSessionId: 'session-0',
+        });
+
+        gateway.joinSession(client, { sessionId: 'session-1', playerId: 'player-1' });
+
+        expect(client.leave).toHaveBeenCalledWith(getGameSessionRoom('session-0'));
+        expect(client.join).toHaveBeenCalledWith(getGameSessionRoom('session-1'));
     });
 
     it('guards every player action behind socket ownership and service success', () => {

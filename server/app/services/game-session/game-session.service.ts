@@ -53,7 +53,7 @@ export class GameSessionService {
         sessionId: string,
         playerId: string,
         socketId: string,
-    ): { match: InitializedMatch; turnState: MatchTurnState; messages: ChatMessage[] } {
+    ): { match: InitializedMatch; turnState: MatchTurnState; messages: ChatMessage[]; previousSessionId: string | null } {
         const session = this.sessions.get(sessionId);
         if (!session) {
             throw new NotFoundException('Game session not found');
@@ -64,9 +64,20 @@ export class GameSessionService {
             throw new NotFoundException('Game player not found');
         }
 
-        this.removeSocketMemberships(socketId);
+        const previousSessionId = this.findSessionIdForSocket(socketId);
+        if (previousSessionId && previousSessionId !== sessionId) {
+            const previousMembership = this.removeSocket(socketId);
+            if (previousMembership) {
+                this.surrender(previousMembership.sessionId, previousMembership.playerId);
+            }
+        }
         session.socketToPlayerId.set(socketId, playerId);
-        return { match: session.match, turnState: session.turnState, messages: session.messages };
+        return {
+            match: session.match,
+            turnState: session.turnState,
+            messages: session.messages,
+            previousSessionId: previousSessionId && previousSessionId !== sessionId ? previousSessionId : null,
+        };
     }
 
     getPlayerIdForSocket(socketId: string, sessionId: string): string | null {
@@ -111,10 +122,14 @@ export class GameSessionService {
         return null;
     }
 
-    private removeSocketMemberships(socketId: string): void {
-        for (const session of this.sessions.values()) {
-            session.socketToPlayerId.delete(socketId);
+    destroySession(sessionId: string): void {
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return;
         }
+
+        this.clearTimers(session);
+        this.sessions.delete(sessionId);
     }
 
     endTurn(sessionId: string, playerId: string): boolean {

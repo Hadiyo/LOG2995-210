@@ -107,7 +107,11 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
         @MessageBody() payload: CreateWaitingRoomPayload,
     ): Promise<void> {
         try {
+            const previousAccessCode = this.waitingRoomService.getAccessCodeForSocket(client.id);
             const accessCode = await this.waitingRoomService.createWaitingRoom(client.id, payload);
+            if (previousAccessCode && previousAccessCode !== accessCode) {
+                client.leave(getWaitingRoomRoom(previousAccessCode));
+            }
             client.join(getWaitingRoomRoom(accessCode));
             const state = this.waitingRoomService.getWaitingRoomState(accessCode);
             if (state) {
@@ -124,11 +128,15 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: JoinWaitingRoomPayload,
     ): void {
+        const previousAccessCode = this.waitingRoomService.getAccessCodeForSocket(client.id);
         const joined = this.waitingRoomService.joinWaitingRoom(client.id, payload);
         if (!joined) {
             return;
         }
 
+        if (previousAccessCode && previousAccessCode !== payload.accessCode) {
+            client.leave(getWaitingRoomRoom(previousAccessCode));
+        }
         client.join(getWaitingRoomRoom(payload.accessCode));
         const state = this.waitingRoomService.getWaitingRoomState(payload.accessCode);
         if (state) {

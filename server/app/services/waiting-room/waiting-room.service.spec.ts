@@ -51,7 +51,7 @@ const makeMapSummary = (overrides: Partial<MapSummary> = {}): MapSummary => ({
 describe('WaitingRoomService', () => {
     let service: WaitingRoomService;
     let mapService: { getMapById: jest.Mock; getAllMapsSummary: jest.Mock };
-    let gameSessionService: { createSessionFromWaitingRoom: jest.Mock };
+    let gameSessionService: { createSessionFromWaitingRoom: jest.Mock; destroySession: jest.Mock };
 
     beforeEach(() => {
         mapService = {
@@ -60,6 +60,7 @@ describe('WaitingRoomService', () => {
         };
         gameSessionService = {
             createSessionFromWaitingRoom: jest.fn(),
+            destroySession: jest.fn(),
         };
 
         service = new WaitingRoomService(mapService as never, gameSessionService as never);
@@ -398,7 +399,10 @@ describe('WaitingRoomService', () => {
         const secondStart = service.startGame('socket-org', accessCode);
 
         expect(gameSessionService.createSessionFromWaitingRoom).toHaveBeenCalledTimes(1);
-        expect(service.getWaitingRoomState(accessCode)).toBeNull();
+        expect(service.getWaitingRoomState(accessCode)).toEqual(expect.objectContaining({
+            accessCode,
+            isLocked: true,
+        }));
 
         resolveSessionCreation?.('session-99');
         await Promise.all([firstStart, secondStart]);
@@ -409,6 +413,42 @@ describe('WaitingRoomService', () => {
             sessionId: 'session-99',
             messages: [],
         });
+    });
+
+    it('cancels a started room cleanly if the organizer leaves during session creation', async () => {
+        const onCancelled = jest.fn();
+        const onStarted = jest.fn();
+        service.on(SocketEvents.WaitingRoomCancelled, onCancelled);
+        service.on(SocketEvents.WaitingRoomGameStarted, onStarted);
+        mapService.getMapById.mockResolvedValue(makeMap({ size: MapSize.M }));
+
+        let resolveSessionCreation: ((sessionId: string) => void) | undefined;
+        gameSessionService.createSessionFromWaitingRoom.mockImplementation(
+            () =>
+                new Promise<string>((resolve) => {
+                    resolveSessionCreation = resolve;
+                }),
+        );
+
+        const accessCode = await service.createWaitingRoom('socket-org', {
+            mapId: 'map-1',
+            player: makeLobbyPlayer(),
+        });
+        service.joinWaitingRoom('socket-2', {
+            accessCode,
+            player: makeLobbyPlayer({ id: 'player-2', name: 'Bob', avatarId: 1 }),
+        });
+
+        const startPromise = service.startGame('socket-org', accessCode);
+        service.leaveWaitingRoom('socket-org', accessCode);
+
+        resolveSessionCreation?.('session-99');
+        await startPromise;
+
+        expect(onCancelled).toHaveBeenCalledWith({ accessCode });
+        expect(onStarted).not.toHaveBeenCalled();
+        expect(gameSessionService.destroySession).toHaveBeenCalledWith('session-99');
+        expect(service.getWaitingRoomState(accessCode)).toBeNull();
     });
 
     it('finds the access code for a socket and disconnects through leaveWaitingRoom', async () => {

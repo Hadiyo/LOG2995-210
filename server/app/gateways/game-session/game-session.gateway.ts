@@ -60,6 +60,9 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
     ): void {
         try {
             const snapshot = this.gameSessionService.registerSocket(payload.sessionId, payload.playerId, client.id);
+            if (snapshot.previousSessionId) {
+                client.leave(getGameSessionRoom(snapshot.previousSessionId));
+            }
             client.join(getGameSessionRoom(payload.sessionId));
             client.emit(SocketEvents.GameSessionSnapshot, {
                 sessionId: payload.sessionId,

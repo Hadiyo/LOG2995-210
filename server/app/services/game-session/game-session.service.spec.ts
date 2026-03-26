@@ -202,6 +202,7 @@ describe('GameSessionService', () => {
             match: runtime.match,
             turnState: runtime.turnState,
             messages: runtime.messages,
+            previousSessionId: null,
         });
         expect(service.getPlayerIdForSocket('socket-1', 'session-1')).toBe('player-1');
         expect(service.getPlayerNameForSocket('socket-1', 'session-1')).toBe('Alice');
@@ -226,9 +227,10 @@ describe('GameSessionService', () => {
         privateState.sessions.set(secondRuntime.sessionId, secondRuntime);
 
         service.registerSocket('session-1', 'player-1', 'socket-1');
-        service.registerSocket('session-2', 'player-3', 'socket-1');
+        const secondSnapshot = service.registerSocket('session-2', 'player-3', 'socket-1');
 
-        expect(firstRuntime.socketToPlayerId.has('socket-1')).toBe(false);
+        expect(secondSnapshot.previousSessionId).toBe('session-1');
+        expect(privateState.sessions.has('session-1')).toBe(false);
         expect(secondRuntime.socketToPlayerId.get('socket-1')).toBe('player-3');
     });
 

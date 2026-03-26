@@ -56,7 +56,7 @@ export class WaitingRoomService {
     }
 
     async getAvailableWaitingRoomPreviews(): Promise<WaitingRoomPreview[]> {
-        const roomEntries = [...this.rooms.values()].filter((room) => !room.isLocked && room.players.length < room.maxPlayers);
+        const roomEntries = [...this.rooms.values()].filter((room) => !room.isStarting && !room.isLocked && room.players.length < room.maxPlayers);
         if (roomEntries.length === 0) {
             return [];
         }
@@ -129,7 +129,7 @@ export class WaitingRoomService {
             return false;
         }
 
-        if (room.isLocked || room.players.length >= room.maxPlayers) {
+        if (room.isStarting || room.isLocked || room.players.length >= room.maxPlayers) {
             this.emitError(socketId, 'La salle est verrouillee ou complete.');
             return false;
         }
@@ -252,19 +252,38 @@ export class WaitingRoomService {
             return;
         }
 
+        if (room.isStarting) {
+            return;
+        }
+
         room.isStarting = true;
-        this.rooms.delete(accessCode);
+        this.updateLockState(room);
+        this.emitWaitingRoomUpdated(room);
         this.emitDirectoryUpdated();
         try {
             const sessionId = await this.gameSessionService.createSessionFromWaitingRoom(room.mapId, room.players, room.messages);
+            if (this.rooms.get(accessCode) !== room || room.players.length < MIN_PLAYERS_TO_START) {
+                room.isStarting = false;
+                this.updateLockState(room);
+                this.gameSessionService.destroySession(sessionId);
+                if (this.rooms.get(accessCode) === room) {
+                    this.emitWaitingRoomUpdated(room);
+                    this.emitDirectoryUpdated();
+                }
+                return;
+            }
+
+            this.rooms.delete(accessCode);
             this.events.emit(SocketEvents.WaitingRoomGameStarted, {
                 accessCode,
                 sessionId,
                 messages: room.messages,
             } as WaitingRoomGameStartedEvent);
+            this.emitDirectoryUpdated();
         } catch (error) {
             room.isStarting = false;
-            this.rooms.set(accessCode, room);
+            this.updateLockState(room);
+            this.emitWaitingRoomUpdated(room);
             this.emitDirectoryUpdated();
             throw error;
         }
@@ -322,7 +341,7 @@ export class WaitingRoomService {
     }
 
     private updateLockState(room: WaitingRoom): void {
-        room.isLocked = room.players.length >= room.maxPlayers;
+        room.isLocked = room.isStarting || room.players.length >= room.maxPlayers;
     }
 
     private leaveExistingWaitingRoom(socketId: string, nextAccessCode?: string): void {

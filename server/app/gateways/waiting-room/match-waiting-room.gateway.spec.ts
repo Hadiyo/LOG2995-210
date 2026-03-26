@@ -47,6 +47,7 @@ describe('MatchWaitingRoomGateway', () => {
             }),
             off: jest.fn(),
             handleDisconnect: jest.fn(),
+            getAccessCodeForSocket: jest.fn(),
             createWaitingRoom: jest.fn(),
             getWaitingRoomState: jest.fn(),
             joinWaitingRoom: jest.fn(),
@@ -130,11 +131,13 @@ describe('MatchWaitingRoomGateway', () => {
 
     it('creates a waiting room, joins its socket room, and emits current state', async () => {
         const client = makeSocket('socket-1');
+        waitingRoomService.getAccessCodeForSocket.mockReturnValue('OLD999');
         waitingRoomService.createWaitingRoom.mockResolvedValue('ABC123');
         waitingRoomService.getWaitingRoomState.mockReturnValue({ accessCode: 'ABC123' });
 
         await gateway.createWaitingRoom(client, makeCreatePayload());
 
+        expect(client.leave).toHaveBeenCalledWith(getWaitingRoomRoom('OLD999'));
         expect(waitingRoomService.createWaitingRoom).toHaveBeenCalledWith('socket-1', makeCreatePayload());
         expect(client.join).toHaveBeenCalledWith(getWaitingRoomRoom('ABC123'));
         expect(client.emit).toHaveBeenCalledWith(SocketEvents.WaitingRoomUpdated, { accessCode: 'ABC123' });
@@ -155,6 +158,7 @@ describe('MatchWaitingRoomGateway', () => {
 
     it('joins a waiting room only when the service accepts it', () => {
         const client = makeSocket('socket-2');
+        waitingRoomService.getAccessCodeForSocket.mockReturnValue('OLD999');
         waitingRoomService.joinWaitingRoom.mockReturnValue(true);
         waitingRoomService.getWaitingRoomState.mockReturnValue({ accessCode: 'ABC123', players: [] });
 
@@ -163,6 +167,7 @@ describe('MatchWaitingRoomGateway', () => {
             player: makeCreatePayload().player,
         });
 
+        expect(client.leave).toHaveBeenCalledWith(getWaitingRoomRoom('OLD999'));
         expect(client.join).toHaveBeenCalledWith(getWaitingRoomRoom('ABC123'));
         expect(client.emit).toHaveBeenCalledWith(SocketEvents.WaitingRoomUpdated, { accessCode: 'ABC123', players: [] });
 
