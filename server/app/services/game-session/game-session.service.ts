@@ -1,19 +1,20 @@
 /* eslint-disable max-lines */
-import { ChatMessage } from '@common/chat/chat.interface';
 import { MapService } from '@app/services/map/map.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
+import { PlayerPose } from '@common/player/player.interface';
 import { SocketEvents } from '@common/socket-events';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import {
     ATTACK_POSE_DURATION_MS,
     buildGameSessionVisibleObjects,
-    orientMatchPlayerToward,
     getGameSessionDestination,
     getGameSessionMovementCost,
     getGameSessionObjectCovering,
+    orientMatchPlayerToward,
     setMatchPlayerTransientPose,
     WALK_POSE_DURATION_MS,
 } from './game-session.match';
@@ -281,7 +282,7 @@ export class GameSessionService {
                 ? {
                     ...setMatchPlayerTransientPose(
                         orientMatchPlayerToward(player, destination),
-                        'walk',
+                        PlayerPose.Walk,
                         WALK_POSE_DURATION_MS,
                     ),
                     position: { ...destination },
@@ -348,7 +349,7 @@ export class GameSessionService {
             candidate.id === playerId
                 ? setMatchPlayerTransientPose(
                     orientMatchPlayerToward(candidate, position),
-                    'attack',
+                    PlayerPose.Attack,
                     ATTACK_POSE_DURATION_MS,
                 )
                 : candidate,
@@ -386,7 +387,7 @@ export class GameSessionService {
                 return {
                     ...setMatchPlayerTransientPose(
                         orientMatchPlayerToward(player, defender.position),
-                        'attack',
+                        PlayerPose.Attack,
                         ATTACK_POSE_DURATION_MS,
                     ),
                     combatWins: player.combatWins + 1,

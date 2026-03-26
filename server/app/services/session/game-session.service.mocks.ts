@@ -4,7 +4,7 @@ import { TurnPhase, TurnState } from '@common/game-session';
 import { GameSession, GameSessionPreview, WaitingRoom } from '@common/game/game-session.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { GameMap } from '@common/maps/map.interface';
-import { Player, PlayerInformation, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerFacing, PlayerInformation, PlayerPose, PlayerStatus } from '@common/player/player.interface';
 
 export function createMockSessionPlayers(): PlayerInformation[] {
   return [
@@ -57,8 +57,8 @@ export const createMockPlayer = (overrides: Partial<Player> = {}): Player => {
     },
 
     render: {
-      facing: 'front',
-      pose: 'idle',
+      facing: PlayerFacing.Front,
+      pose: PlayerPose.Idle,
       poseStartedAt: new Date().toISOString(),
       poseDurationMs: 1000,
     },

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell } from '@common/maps/map.interface';
+import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
 import { MatchMovementService } from './match-movement.service';
 
 const createCells = (): EditorCell[] => {
@@ -49,7 +50,7 @@ const createPlayers = (): MatchPlayer[] => [
         startingPosition: { x: 1, y: 1 },
         health: 6,
         combatWins: 0,
-        render: { facing: 'front', pose: 'idle' },
+        render: { facing: PlayerFacing.Front, pose: PlayerPose.Idle },
     },
     {
         id: 'player-2',
@@ -67,7 +68,7 @@ const createPlayers = (): MatchPlayer[] => [
         startingPosition: { x: 5, y: 5 },
         health: 6,
         combatWins: 0,
-        render: { facing: 'front', pose: 'idle' },
+        render: { facing: PlayerFacing.Front, pose: PlayerPose.Idle },
     },
 ];
 

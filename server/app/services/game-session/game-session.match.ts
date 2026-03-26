@@ -1,12 +1,12 @@
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
-import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
-import { PlayerFacing, PlayerRenderState } from '@common/player/player.interface';
+import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
+import { PlayerFacing, PlayerPose, PlayerRenderState } from '@common/player/player.interface';
 
 export const WALK_POSE_DURATION_MS = 180;
 export const ATTACK_POSE_DURATION_MS = 220;
 
-type MatchTransientPose = Extract<NonNullable<PlayerRenderState['pose']>, 'walk' | 'attack'>;
+type MatchTransientPose = Extract<PlayerPose, PlayerPose.Walk | PlayerPose.Attack>;
 
 export function buildInitializedMatchFromEditor(
     map: EditorMapDetails,
@@ -55,8 +55,8 @@ export function getGameSessionDestination(position: Vec2, direction: 'up' | 'dow
 
 export function createDefaultMatchPlayerRender(): PlayerRenderState {
     return {
-        facing: 'front',
-        pose: 'idle',
+        facing: PlayerFacing.Front,
+        pose: PlayerPose.Idle,
     };
 }
 
@@ -103,10 +103,10 @@ function getFacingToTarget(from: Vec2, to: Vec2): PlayerFacing | null {
     }
 
     if (Math.abs(deltaX) >= Math.abs(deltaY)) {
-        return deltaX >= 0 ? 'right' : 'left';
+        return deltaX >= 0 ? PlayerFacing.Right : PlayerFacing.Left;
     }
 
-    return deltaY >= 0 ? 'front' : 'back';
+    return deltaY >= 0 ? PlayerFacing.Front : PlayerFacing.Back;
 }
 
 export function getGameSessionMovementCost(match: InitializedMatch, destination: Vec2, movingPlayerId: string): number | null {

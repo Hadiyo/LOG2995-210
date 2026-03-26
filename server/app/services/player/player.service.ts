@@ -1,7 +1,7 @@
 import { InternalPlayer } from '@app/interface/player.interface';
 import { ObjectType } from '@common/maps/map.enums';
 import { GameCell, GameMap } from '@common/maps/map.interface';
-import { Player, PlayerInformation, PlayerRenderState, PlayerState, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerFacing, PlayerInformation, PlayerPose, PlayerRenderState, PlayerState, PlayerStatus } from '@common/player/player.interface';
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
@@ -84,8 +84,8 @@ export class PlayerService {
                 },
                 render: {
                     ...player.render,
-                    facing: player.render.facing ?? 'front',
-                    pose: player.render.pose ?? 'idle',
+                    facing: player.render.facing ?? PlayerFacing.Front,
+                    pose: player.render.pose ?? PlayerPose.Idle,
                 },
             }));
     }
@@ -115,8 +115,8 @@ export class PlayerService {
 
     private setPlayerInitialRenderState(): PlayerRenderState {
         const render: PlayerRenderState = {
-            facing: 'front',
-            pose: 'idle',
+            facing: PlayerFacing.Front,
+            pose: PlayerPose.Idle,
         };
         return render;
     }
