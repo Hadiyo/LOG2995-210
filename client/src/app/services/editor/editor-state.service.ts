@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MapConfig } from '@app/config/map.config';
 import { MapApiService } from '@app/services/map/map-api.service';
+import { getIndexFromPosition } from '@common/maps/map-utils';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import type { EditorCell, EditorMap, EditorMapDetails, MapObject, ObjectCountAndLimit } from '@common/maps/map.interface';
 import { MouseButton } from '@common/mouse-events.enum';
@@ -56,6 +57,19 @@ export class EditorStateService {
     // Convenience computed signals for template usage
     readonly cells = computed(() => this.editorMap().map);
     readonly objects = computed(() => this.editorMap().objects);
+    readonly objectLookUp = computed(() => {
+        const editorMap = this.editorMap();
+        const lookup = new Map<number, MapObject | null>();
+
+        for (const object of editorMap.objects) {
+            const coveredPositions = getCoveredPositions(object.position, object.size);
+            for (const position of coveredPositions) {
+                lookup.set(getIndexFromPosition(position, editorMap.size), object);
+            }
+        }
+
+        return lookup;
+    });
 
     /* =========================================================
        Public API — palette selection
