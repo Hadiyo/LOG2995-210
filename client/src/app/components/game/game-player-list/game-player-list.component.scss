@@ -31,6 +31,9 @@
 }
 
 .player {
+  --player-highlight: var(--accent-primary);
+  --player-highlight-soft: color-mix(in srgb, var(--player-highlight) 22%, transparent);
+  --player-highlight-strong: color-mix(in srgb, var(--player-highlight) 28%, var(--bg-main));
   display: flex;
   flex-wrap: nowrap;
   gap: 6px;
@@ -43,8 +46,15 @@
   min-width: 0;
 }
 
+.player--flag {
+  --player-highlight: #ff9f1c;
+  --player-highlight-soft: rgba(255, 159, 28, 0.22);
+  --player-highlight-strong: rgba(255, 159, 28, 0.28);
+}
+
 .player--active {
-  border-color: var(--accent-primary);
+  border-color: var(--player-highlight);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--player-highlight) 55%, white 45%);
 }
 
 .player--placeholder {
@@ -72,7 +82,7 @@
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-main);
-  background: color-mix(in srgb, var(--accent-primary) 28%, var(--bg-main));
+  background: var(--player-highlight-strong);
 }
 
 .player__name--surrendered {
@@ -111,9 +121,20 @@
   white-space: nowrap;
 }
 
+.player__badge--flag-icon {
+  min-width: 1.5rem;
+  padding-inline: 0;
+  display: inline-grid;
+  place-items: center;
+  color: #2f1d00;
+  background: #ffbf69;
+  box-shadow: inset 0 0 0 1px rgba(255, 159, 28, 0.85);
+  font-size: 0.8rem;
+}
+
 .player__badge--active {
-  color: var(--accent-secondary);
-  background: color-mix(in srgb, var(--accent-secondary) 22%, transparent);
+  color: var(--player-highlight);
+  background: var(--player-highlight-soft);
 }
 
 .player__badge--active.player__badge--active-self {
