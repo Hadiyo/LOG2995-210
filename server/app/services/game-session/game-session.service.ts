@@ -59,6 +59,12 @@ export class GameSessionService {
             throw new NotFoundException('Game session not found');
         }
 
+        const playerExists = session.match.players.some((player) => player.id === playerId);
+        if (!playerExists) {
+            throw new NotFoundException('Game player not found');
+        }
+
+        this.removeSocketMemberships(socketId);
         session.socketToPlayerId.set(socketId, playerId);
         return { match: session.match, turnState: session.turnState, messages: session.messages };
     }
@@ -103,6 +109,12 @@ export class GameSessionService {
         }
 
         return null;
+    }
+
+    private removeSocketMemberships(socketId: string): void {
+        for (const session of this.sessions.values()) {
+            session.socketToPlayerId.delete(socketId);
+        }
     }
 
     endTurn(sessionId: string, playerId: string): boolean {

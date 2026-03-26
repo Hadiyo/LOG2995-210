@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { GameSessionRuntime } from '@app/services/game-session/game-session.runtime';
 import * as runtimeModule from '@app/services/game-session/game-session.runtime';
@@ -6,8 +7,20 @@ import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/ma
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMapDetails, MapObject } from '@common/maps/map.interface';
-import { SocketEvents } from '@common/socket-events';
 import { NotFoundException } from '@nestjs/common';
+
+const ACTIVE_TURN_MS = 5000;
+const MOVEMENT_POINTS_AFTER_MOVE = 3;
+
+type GameSessionServiceInternals = GameSessionService & {
+    advanceToNextTurn: (...args: unknown[]) => unknown;
+    emitSnapshot: (...args: unknown[]) => unknown;
+    startTransition: (...args: unknown[]) => unknown;
+};
+
+type GameSessionServicePrivateState = {
+    sessions: Map<string, GameSessionRuntime>;
+};
 
 const makeLobbyPlayer = (overrides: Partial<MatchLobbyPlayer> = {}): MatchLobbyPlayer => ({
     id: 'player-1',
@@ -116,8 +129,8 @@ const makeTurnState = (overrides: Partial<MatchTurnState> = {}): MatchTurnState 
     transitionTargetPlayerId: null,
     transitionEndsAt: null,
     transitionRemainingMs: 0,
-    activeTurnEndsAt: Date.now() + 5000,
-    activeTurnRemainingMs: 5000,
+    activeTurnEndsAt: Date.now() + ACTIVE_TURN_MS,
+    activeTurnRemainingMs: ACTIVE_TURN_MS,
     movementPointsRemaining: 4,
     actionTaken: false,
     movementCount: 0,
@@ -158,11 +171,15 @@ describe('GameSessionService', () => {
         jest.restoreAllMocks();
     });
 
+    const getServiceInternals = (): GameSessionServiceInternals => service as unknown as GameSessionServiceInternals;
+    const getPrivateState = (): GameSessionServicePrivateState => service as unknown as GameSessionServicePrivateState;
+
     it('creates a session from a waiting room, emits a snapshot, and starts transitions', async () => {
         const runtime = makeRuntime();
-        const serviceAny = service as any;
-        const emitSnapshotSpy = jest.spyOn(serviceAny, 'emitSnapshot').mockImplementation(() => undefined);
-        const startTransitionSpy = jest.spyOn(serviceAny, 'startTransition').mockImplementation(() => undefined);
+        const serviceInternals = getServiceInternals();
+        const privateState = getPrivateState();
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
+        const startTransitionSpy = jest.spyOn(serviceInternals, 'startTransition').mockImplementation((() => undefined) as never);
         jest.spyOn(runtimeModule, 'buildSession').mockReturnValue(runtime);
         mapService.getMapByIdForEditor.mockResolvedValue(makeMapDetails());
 
@@ -170,14 +187,14 @@ describe('GameSessionService', () => {
 
         expect(sessionId).toBe('session-1');
         expect(mapService.getMapByIdForEditor).toHaveBeenCalledWith('map-1');
-        expect(service['sessions'].get('session-1')).toBe(runtime);
+        expect(privateState.sessions.get('session-1')).toBe(runtime);
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
         expect(startTransitionSpy).toHaveBeenCalledWith(runtime);
     });
 
     it('registers sockets and resolves socket lookups', () => {
         const runtime = makeRuntime();
-        service['sessions'].set(runtime.sessionId, runtime);
+        getPrivateState().sessions.set(runtime.sessionId, runtime);
 
         const snapshot = service.registerSocket('session-1', 'player-1', 'socket-1');
 
@@ -190,6 +207,29 @@ describe('GameSessionService', () => {
         expect(service.getPlayerNameForSocket('socket-1', 'session-1')).toBe('Alice');
         expect(service.findSessionIdForSocket('socket-1')).toBe('session-1');
         expect(() => service.registerSocket('missing', 'player-1', 'socket-x')).toThrow(NotFoundException);
+        expect(() => service.registerSocket('session-1', 'ghost-player', 'socket-y')).toThrow(NotFoundException);
+    });
+
+    it('moves a socket membership to the latest joined session', () => {
+        const firstRuntime = makeRuntime();
+        const secondRuntime = makeRuntime({
+            sessionId: 'session-2',
+            match: makeMatch({
+                players: [
+                    makeMatchPlayer({ id: 'player-3', name: 'Cara', avatarId: 2, isOrganizer: true }),
+                    makeMatchPlayer({ id: 'player-4', name: 'Dan', avatarId: 3 }),
+                ],
+            }),
+        });
+        const privateState = getPrivateState();
+        privateState.sessions.set(firstRuntime.sessionId, firstRuntime);
+        privateState.sessions.set(secondRuntime.sessionId, secondRuntime);
+
+        service.registerSocket('session-1', 'player-1', 'socket-1');
+        service.registerSocket('session-2', 'player-3', 'socket-1');
+
+        expect(firstRuntime.socketToPlayerId.has('socket-1')).toBe(false);
+        expect(secondRuntime.socketToPlayerId.get('socket-1')).toBe('player-3');
     });
 
     it('removes sockets and keeps a player active when another socket is still linked', () => {
@@ -199,7 +239,7 @@ describe('GameSessionService', () => {
                 ['socket-2', 'player-1'],
             ]),
         });
-        service['sessions'].set(runtime.sessionId, runtime);
+        getPrivateState().sessions.set(runtime.sessionId, runtime);
 
         expect(service.removeSocket('missing')).toBeNull();
         expect(service.removeSocket('socket-1')).toBeNull();
@@ -211,8 +251,9 @@ describe('GameSessionService', () => {
 
     it('ends the active turn only for the active player', () => {
         const runtime = makeRuntime();
-        service['sessions'].set(runtime.sessionId, runtime);
-        const advanceSpy = jest.spyOn(service as any, 'advanceToNextTurn').mockImplementation(() => undefined);
+        const serviceInternals = getServiceInternals();
+        getPrivateState().sessions.set(runtime.sessionId, runtime);
+        const advanceSpy = jest.spyOn(serviceInternals, 'advanceToNextTurn').mockImplementation((() => undefined) as never);
 
         expect(service.endTurn('missing', 'player-1')).toBe(false);
         expect(service.endTurn('session-1', 'player-2')).toBe(false);
@@ -221,8 +262,10 @@ describe('GameSessionService', () => {
     });
 
     it('handles surrender for empty, final, active, and inactive roster changes', () => {
-        const emitSnapshotSpy = jest.spyOn(service as any, 'emitSnapshot').mockImplementation(() => undefined);
-        const startTransitionSpy = jest.spyOn(service as any, 'startTransition').mockImplementation(() => undefined);
+        const serviceInternals = getServiceInternals();
+        const privateState = getPrivateState();
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
+        const startTransitionSpy = jest.spyOn(serviceInternals, 'startTransition').mockImplementation((() => undefined) as never);
 
         const emptyRuntime = makeRuntime({
             match: makeMatch({ players: [makeMatchPlayer({ id: 'player-1' })] }),
@@ -231,9 +274,9 @@ describe('GameSessionService', () => {
                 playerStates: [{ playerId: 'player-1', state: 'active' }],
             }),
         });
-        service['sessions'].set('empty', emptyRuntime);
+        privateState.sessions.set('empty', emptyRuntime);
         expect(service.surrender('empty', 'player-1')).toBe(true);
-        expect(service['sessions'].has('empty')).toBe(false);
+        expect(privateState.sessions.has('empty')).toBe(false);
 
         const finalRuntime = makeRuntime({
             sessionId: 'final',
@@ -244,10 +287,10 @@ describe('GameSessionService', () => {
                 ],
             }),
         });
-        service['sessions'].set('final', finalRuntime);
+        privateState.sessions.set('final', finalRuntime);
         expect(service.surrender('final', 'player-1')).toBe(true);
         expect(finalRuntime.match.endState?.winnerKind).toBe('none');
-        expect(service['sessions'].has('final')).toBe(false);
+        expect(privateState.sessions.has('final')).toBe(false);
 
         const activeRuntime = makeRuntime({
             sessionId: 'active',
@@ -283,7 +326,7 @@ describe('GameSessionService', () => {
                 ],
             }),
         });
-        service['sessions'].set('active', activeRuntime);
+        privateState.sessions.set('active', activeRuntime);
         expect(service.surrender('active', 'player-1')).toBe(true);
         expect(startTransitionSpy).toHaveBeenCalledWith(activeRuntime);
 
@@ -321,7 +364,7 @@ describe('GameSessionService', () => {
                 ],
             }),
         });
-        service['sessions'].set('inactive', inactiveRuntime);
+        privateState.sessions.set('inactive', inactiveRuntime);
         expect(service.surrender('inactive', 'player-2')).toBe(true);
         expect(emitSnapshotSpy).toHaveBeenCalledWith(inactiveRuntime);
         expect(service.surrender('missing', 'player-1')).toBe(false);
@@ -330,8 +373,9 @@ describe('GameSessionService', () => {
 
     it('toggles debug mode only for the organizer', () => {
         const runtime = makeRuntime();
-        service['sessions'].set(runtime.sessionId, runtime);
-        const emitSnapshotSpy = jest.spyOn(service as any, 'emitSnapshot').mockImplementation(() => undefined);
+        const serviceInternals = getServiceInternals();
+        getPrivateState().sessions.set(runtime.sessionId, runtime);
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
 
         expect(service.toggleDebugMode('session-1', 'player-2')).toBe(false);
         expect(service.toggleDebugMode('session-1', 'player-1')).toBe(true);
@@ -341,8 +385,9 @@ describe('GameSessionService', () => {
 
     it('forces debug turn ends only in valid debug sessions', () => {
         const runtime = makeRuntime({ match: makeMatch({ debugMode: true }) });
-        service['sessions'].set(runtime.sessionId, runtime);
-        const advanceSpy = jest.spyOn(service as any, 'advanceToNextTurn').mockImplementation(() => undefined);
+        const serviceInternals = getServiceInternals();
+        getPrivateState().sessions.set(runtime.sessionId, runtime);
+        const advanceSpy = jest.spyOn(serviceInternals, 'advanceToNextTurn').mockImplementation((() => undefined) as never);
 
         expect(service.forceEndDebugTurn('session-1', 'player-2')).toBe(false);
         expect(service.forceEndDebugTurn('session-1', 'player-1')).toBe(true);
@@ -365,8 +410,9 @@ describe('GameSessionService', () => {
                 ],
             }),
         });
-        service['sessions'].set(runtime.sessionId, runtime);
-        const emitSnapshotSpy = jest.spyOn(service as any, 'emitSnapshot').mockImplementation(() => undefined);
+        const serviceInternals = getServiceInternals();
+        getPrivateState().sessions.set(runtime.sessionId, runtime);
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
 
         expect(service.debugTeleportPlayer('session-1', 'player-2', { x: 0, y: 1 })).toBe(false);
         expect(service.debugTeleportPlayer('session-1', 'player-1', { x: 9, y: 9 })).toBe(false);
@@ -385,8 +431,9 @@ describe('GameSessionService', () => {
             content: 'hello',
             createdAt: '2026-01-01T00:00:00.000Z',
         };
-        service['sessions'].set(runtime.sessionId, runtime);
-        const emitSnapshotSpy = jest.spyOn(service as any, 'emitSnapshot').mockImplementation(() => undefined);
+        const serviceInternals = getServiceInternals();
+        getPrivateState().sessions.set(runtime.sessionId, runtime);
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
 
         expect(service.addChatMessage('missing', message)).toBeNull();
         expect(service.addChatMessage('session-1', message)).toEqual(message);
@@ -403,8 +450,9 @@ describe('GameSessionService', () => {
                 ],
             }),
         });
-        service['sessions'].set(runtime.sessionId, runtime);
-        const emitSnapshotSpy = jest.spyOn(service as any, 'emitSnapshot').mockImplementation(() => undefined);
+        const serviceInternals = getServiceInternals();
+        getPrivateState().sessions.set(runtime.sessionId, runtime);
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
 
         expect(service.movePlayer('missing', 'player-1', 'right')).toBe(false);
         expect(service.movePlayer('session-1', 'player-2', 'right')).toBe(false);
@@ -415,7 +463,7 @@ describe('GameSessionService', () => {
         runtime.turnState.movementPointsRemaining = 4;
         expect(service.movePlayer('session-1', 'player-1', 'right')).toBe(true);
         expect(runtime.match.players.find((player) => player.id === 'player-1')?.position).toEqual({ x: 1, y: 0 });
-        expect(runtime.turnState.movementPointsRemaining).toBe(3);
+        expect(runtime.turnState.movementPointsRemaining).toBe(MOVEMENT_POINTS_AFTER_MOVE);
         expect(runtime.turnState.movementCount).toBe(1);
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
     });
@@ -429,8 +477,9 @@ describe('GameSessionService', () => {
                 ],
             }),
         });
-        service['sessions'].set(runtime.sessionId, runtime);
-        const emitSnapshotSpy = jest.spyOn(service as any, 'emitSnapshot').mockImplementation(() => undefined);
+        const serviceInternals = getServiceInternals();
+        getPrivateState().sessions.set(runtime.sessionId, runtime);
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
 
         expect(service.toggleDoor('session-1', 'player-2', { x: 0, y: 1 })).toBe(false);
         expect(service.toggleDoor('session-1', 'player-1', { x: 2, y: 2 })).toBe(false);
@@ -441,7 +490,9 @@ describe('GameSessionService', () => {
     });
 
     it('starts combat only for adjacent active players and finishes the match on the win threshold', () => {
-        const emitSnapshotSpy = jest.spyOn(service as any, 'emitSnapshot').mockImplementation(() => undefined);
+        const serviceInternals = getServiceInternals();
+        const privateState = getPrivateState();
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
 
         const runtime = makeRuntime({
             match: makeMatch({
@@ -451,7 +502,7 @@ describe('GameSessionService', () => {
                 ],
             }),
         });
-        service['sessions'].set(runtime.sessionId, runtime);
+        privateState.sessions.set(runtime.sessionId, runtime);
 
         expect(service.startCombat('missing', 'player-1', 'player-2')).toBe(false);
         expect(service.startCombat('session-1', 'player-2', 'player-1')).toBe(false);
@@ -469,8 +520,8 @@ describe('GameSessionService', () => {
                 ],
             }),
         });
-        service['sessions'].set('winner', winnerRuntime);
+        privateState.sessions.set('winner', winnerRuntime);
         expect(service.startCombat('winner', 'player-1', 'player-2')).toBe(true);
-        expect(service['sessions'].has('winner')).toBe(false);
+        expect(privateState.sessions.has('winner')).toBe(false);
     });
 });

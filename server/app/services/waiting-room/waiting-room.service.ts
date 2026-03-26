@@ -94,6 +94,7 @@ export class WaitingRoomService {
 
     async createWaitingRoom(socketId: string, payload: CreateWaitingRoomPayload): Promise<string> {
         const map = await this.mapService.getMapById(payload.mapId);
+        this.leaveExistingWaitingRoom(socketId);
         const maxPlayers = this.resolveMaxPlayers(map.size);
         const accessCode = this.generateAccessCode();
 
@@ -111,6 +112,7 @@ export class WaitingRoomService {
             messages: [],
             socketToPlayerId: new Map([[socketId, organizer.id]]),
             isLocked: false,
+            isStarting: false,
             maxPlayers,
         };
 
@@ -136,6 +138,8 @@ export class WaitingRoomService {
             this.emitError(socketId, 'Cet avatar est deja utilise dans cette partie.');
             return false;
         }
+
+        this.leaveExistingWaitingRoom(socketId, payload.accessCode);
 
         const player: MatchLobbyPlayer = {
             ...payload.player,
@@ -248,14 +252,22 @@ export class WaitingRoomService {
             return;
         }
 
-        const sessionId = await this.gameSessionService.createSessionFromWaitingRoom(room.mapId, room.players, room.messages);
-        this.events.emit(SocketEvents.WaitingRoomGameStarted, {
-            accessCode,
-            sessionId,
-            messages: room.messages,
-        } as WaitingRoomGameStartedEvent);
+        room.isStarting = true;
         this.rooms.delete(accessCode);
         this.emitDirectoryUpdated();
+        try {
+            const sessionId = await this.gameSessionService.createSessionFromWaitingRoom(room.mapId, room.players, room.messages);
+            this.events.emit(SocketEvents.WaitingRoomGameStarted, {
+                accessCode,
+                sessionId,
+                messages: room.messages,
+            } as WaitingRoomGameStartedEvent);
+        } catch (error) {
+            room.isStarting = false;
+            this.rooms.set(accessCode, room);
+            this.emitDirectoryUpdated();
+            throw error;
+        }
     }
 
     handleDisconnect(socketId: string): void {
@@ -311,6 +323,15 @@ export class WaitingRoomService {
 
     private updateLockState(room: WaitingRoom): void {
         room.isLocked = room.players.length >= room.maxPlayers;
+    }
+
+    private leaveExistingWaitingRoom(socketId: string, nextAccessCode?: string): void {
+        const currentAccessCode = this.getAccessCodeForSocket(socketId);
+        if (!currentAccessCode || currentAccessCode === nextAccessCode) {
+            return;
+        }
+
+        this.leaveWaitingRoom(socketId, currentAccessCode);
     }
 
     private resolveMaxPlayers(size: MapSize): number {

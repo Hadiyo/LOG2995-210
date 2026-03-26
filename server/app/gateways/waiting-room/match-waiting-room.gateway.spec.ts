@@ -1,11 +1,9 @@
 import { MatchWaitingRoomGateway } from '@app/gateways/waiting-room/match-waiting-room.gateway';
-import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import {
     CreateWaitingRoomPayload,
     SocketEvents,
     getWaitingRoomRoom,
 } from '@common/socket-events';
-import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 
 const makeCreatePayload = (): CreateWaitingRoomPayload => ({

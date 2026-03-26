@@ -1,6 +1,4 @@
 import { GameSessionGateway } from '@app/gateways/game-session/game-session.gateway';
-import { GameSessionService } from '@app/services/game-session/game-session.service';
-import { Logger } from '@nestjs/common';
 import {
     DebugTeleportPlayerPayload,
     EndGameTurnPayload,
@@ -124,46 +122,54 @@ describe('GameSessionGateway', () => {
 
     it('guards every player action behind socket ownership and service success', () => {
         const client = makeSocket('socket-1');
-        const gatewayAny = gateway as any;
+        const actions = {
+            debugTeleportPlayer: gateway.debugTeleportPlayer.bind(gateway),
+            endTurn: gateway.endTurn.bind(gateway),
+            forceEndDebugTurn: gateway.forceEndDebugTurn.bind(gateway),
+            movePlayer: gateway.movePlayer.bind(gateway),
+            startCombat: gateway.startCombat.bind(gateway),
+            toggleDebugMode: gateway.toggleDebugMode.bind(gateway),
+            toggleDoor: gateway.toggleDoor.bind(gateway),
+        };
         const cases = [
             {
-                method: 'toggleDebugMode',
+                action: actions.toggleDebugMode,
                 serviceMethod: 'toggleDebugMode',
                 payload: { sessionId: 'session-1', playerId: 'player-1' } satisfies ToggleDebugModePayload,
                 error: 'Mode debug refuse.',
             },
             {
-                method: 'forceEndDebugTurn',
+                action: actions.forceEndDebugTurn,
                 serviceMethod: 'forceEndDebugTurn',
                 payload: { sessionId: 'session-1', playerId: 'player-1' } satisfies ForceEndDebugTurnPayload,
                 error: 'Fin de tour debug refusee.',
             },
             {
-                method: 'debugTeleportPlayer',
+                action: actions.debugTeleportPlayer,
                 serviceMethod: 'debugTeleportPlayer',
                 payload: { sessionId: 'session-1', playerId: 'player-1', position: { x: 1, y: 1 } } satisfies DebugTeleportPlayerPayload,
                 error: 'Teleportation debug refusee.',
             },
             {
-                method: 'movePlayer',
+                action: actions.movePlayer,
                 serviceMethod: 'movePlayer',
                 payload: { sessionId: 'session-1', playerId: 'player-1', direction: 'right' } satisfies MoveGamePlayerPayload,
                 error: 'Deplacement refuse.',
             },
             {
-                method: 'endTurn',
+                action: actions.endTurn,
                 serviceMethod: 'endTurn',
                 payload: { sessionId: 'session-1', playerId: 'player-1' } satisfies EndGameTurnPayload,
                 error: 'Fin de tour refusee.',
             },
             {
-                method: 'startCombat',
+                action: actions.startCombat,
                 serviceMethod: 'startCombat',
                 payload: { sessionId: 'session-1', playerId: 'player-1', defenderId: 'player-2' } satisfies StartCombatPayload,
                 error: 'Combat refuse.',
             },
             {
-                method: 'toggleDoor',
+                action: actions.toggleDoor,
                 serviceMethod: 'toggleDoor',
                 payload: { sessionId: 'session-1', playerId: 'player-1', position: { x: 0, y: 1 } } satisfies ToggleDoorPayload,
                 error: 'Action de porte refusee.',
@@ -172,17 +178,17 @@ describe('GameSessionGateway', () => {
 
         for (const testCase of cases) {
             gameSessionService.getPlayerIdForSocket.mockReturnValue('other-player');
-            gatewayAny[testCase.method](client, testCase.payload);
+            testCase.action(client, testCase.payload);
             expect(client.emit).toHaveBeenLastCalledWith(SocketEvents.GameSessionError, { message: testCase.error });
 
             gameSessionService.getPlayerIdForSocket.mockReturnValue('player-1');
             gameSessionService[testCase.serviceMethod].mockReturnValue(false);
-            gatewayAny[testCase.method](client, testCase.payload);
+            testCase.action(client, testCase.payload);
             expect(client.emit).toHaveBeenLastCalledWith(SocketEvents.GameSessionError, { message: testCase.error });
 
             gameSessionService[testCase.serviceMethod].mockReturnValue(true);
             (client.emit as jest.Mock).mockClear();
-            gatewayAny[testCase.method](client, testCase.payload);
+            testCase.action(client, testCase.payload);
             expect(client.emit).not.toHaveBeenCalled();
         }
     });

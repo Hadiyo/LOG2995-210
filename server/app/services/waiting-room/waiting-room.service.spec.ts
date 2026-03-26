@@ -1,5 +1,6 @@
+/* eslint-disable max-lines */
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
-import { MIN_PLAYERS_TO_START } from '@app/services/waiting-room/waiting-room.constants';
+import { ACCESS_CODE_LENGTH, MIN_PLAYERS_TO_START } from '@app/services/waiting-room/waiting-room.constants';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { PreviewImageFormat } from '@common/enum';
 import { GameMode, MapSize } from '@common/maps/map.enums';
@@ -83,7 +84,7 @@ describe('WaitingRoomService', () => {
             isOrganizer: true,
             controller: 'human',
         });
-        expect(accessCode).toHaveLength(6);
+        expect(accessCode).toHaveLength(ACCESS_CODE_LENGTH);
         expect(onUpdated).toHaveBeenCalledWith({
             accessCode,
             payload: expect.objectContaining({
@@ -94,6 +95,22 @@ describe('WaitingRoomService', () => {
             }),
         });
         expect(onDirectory).toHaveBeenCalledTimes(1);
+    });
+
+    it('moves an organizer socket out of its previous room before creating a new one', async () => {
+        mapService.getMapById.mockResolvedValue(makeMap());
+
+        const firstAccessCode = await service.createWaitingRoom('socket-org', {
+            mapId: 'map-1',
+            player: makeLobbyPlayer(),
+        });
+        const secondAccessCode = await service.createWaitingRoom('socket-org', {
+            mapId: 'map-1',
+            player: makeLobbyPlayer({ id: 'player-2', name: 'Bob', avatarId: 1 }),
+        });
+
+        expect(service.getWaitingRoomState(firstAccessCode)).toBeNull();
+        expect(service.getAccessCodeForSocket('socket-org')).toBe(secondAccessCode);
     });
 
     it('returns only joinable waiting room previews', async () => {
@@ -110,6 +127,7 @@ describe('WaitingRoomService', () => {
             messages: [],
             socketToPlayerId: new Map([['socket-2', 'player-2']]),
             isLocked: true,
+            isStarting: false,
             maxPlayers: 4,
         });
         mapService.getAllMapsSummary.mockResolvedValue([
@@ -159,7 +177,8 @@ describe('WaitingRoomService', () => {
             player: makeLobbyPlayer({ id: 'player-z', avatarId: 0 }),
         })).toBe(false);
 
-        expect(onError).toHaveBeenCalledTimes(3);
+        const expectedJoinErrors = 3;
+        expect(onError).toHaveBeenCalledTimes(expectedJoinErrors);
     });
 
     it('joins a room, resolves duplicate names, and updates lock state', async () => {
@@ -178,6 +197,36 @@ describe('WaitingRoomService', () => {
         expect(joined).toBe(true);
         expect(state?.players.map((player) => player.name)).toEqual(['Alice', 'Alice-2']);
         expect(state?.isLocked).toBe(true);
+    });
+
+    it('moves a joining socket out of its previous room before entering another one', async () => {
+        mapService.getMapById.mockResolvedValue(makeMap({ size: MapSize.M }));
+        const firstAccessCode = await service.createWaitingRoom('socket-org-1', {
+            mapId: 'map-1',
+            player: makeLobbyPlayer(),
+        });
+        const secondAccessCode = await service.createWaitingRoom('socket-org-2', {
+            mapId: 'map-1',
+            player: makeLobbyPlayer({ id: 'player-9', name: 'Zoe', avatarId: 9 }),
+        });
+
+        expect(service.joinWaitingRoom('socket-player', {
+            accessCode: firstAccessCode,
+            player: makeLobbyPlayer({ id: 'player-2', name: 'Bob', avatarId: 1 }),
+        })).toBe(true);
+        expect(service.joinWaitingRoom('socket-player', {
+            accessCode: secondAccessCode,
+            player: makeLobbyPlayer({ id: 'player-3', name: 'Cara', avatarId: 2 }),
+        })).toBe(true);
+
+        expect(service.getWaitingRoomState(firstAccessCode)?.players).toEqual([
+            expect.objectContaining({ id: 'player-1' }),
+        ]);
+        expect(service.getWaitingRoomState(secondAccessCode)?.players).toEqual([
+            expect.objectContaining({ id: 'player-9' }),
+            expect.objectContaining({ id: 'player-3' }),
+        ]);
+        expect(service.getAccessCodeForSocket('socket-player')).toBe(secondAccessCode);
     });
 
     it('adds chat messages, trims content, and ignores blanks', async () => {
@@ -321,6 +370,45 @@ describe('WaitingRoomService', () => {
         });
         expect(service['rooms'].has(accessCode)).toBe(false);
         expect(onDirectory).toHaveBeenCalled();
+    });
+
+    it('starts a waiting room only once even when requested twice quickly', async () => {
+        const onStarted = jest.fn();
+        service.on(SocketEvents.WaitingRoomGameStarted, onStarted);
+        mapService.getMapById.mockResolvedValue(makeMap({ size: MapSize.M }));
+
+        let resolveSessionCreation: ((sessionId: string) => void) | undefined;
+        gameSessionService.createSessionFromWaitingRoom.mockImplementation(
+            () =>
+                new Promise<string>((resolve) => {
+                    resolveSessionCreation = resolve;
+                }),
+        );
+
+        const accessCode = await service.createWaitingRoom('socket-org', {
+            mapId: 'map-1',
+            player: makeLobbyPlayer(),
+        });
+        service.joinWaitingRoom('socket-2', {
+            accessCode,
+            player: makeLobbyPlayer({ id: 'player-2', name: 'Bob', avatarId: 1 }),
+        });
+
+        const firstStart = service.startGame('socket-org', accessCode);
+        const secondStart = service.startGame('socket-org', accessCode);
+
+        expect(gameSessionService.createSessionFromWaitingRoom).toHaveBeenCalledTimes(1);
+        expect(service.getWaitingRoomState(accessCode)).toBeNull();
+
+        resolveSessionCreation?.('session-99');
+        await Promise.all([firstStart, secondStart]);
+
+        expect(onStarted).toHaveBeenCalledTimes(1);
+        expect(onStarted).toHaveBeenCalledWith({
+            accessCode,
+            sessionId: 'session-99',
+            messages: [],
+        });
     });
 
     it('finds the access code for a socket and disconnects through leaveWaitingRoom', async () => {
