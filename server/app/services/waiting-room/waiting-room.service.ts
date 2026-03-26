@@ -219,6 +219,12 @@ export class WaitingRoomService {
             return;
         }
 
+        const organizerId = room.socketToPlayerId.get(room.organizerSocketId);
+        if (payload.playerId === organizerId) {
+            this.emitError(organizerSocketId, 'L organisateur ne peut pas etre exclu.');
+            return;
+        }
+
         const kickedSocketId = [...room.socketToPlayerId.entries()]
             .find(([, playerId]) => playerId === payload.playerId)?.[0];
 

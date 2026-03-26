@@ -296,7 +296,7 @@ describe('WaitingRoomService', () => {
         }));
     });
 
-    it('only lets the organizer kick players', async () => {
+    it('only lets the organizer kick players and never allows kicking the organizer', async () => {
         const onError = jest.fn();
         const onKicked = jest.fn();
         service.on(SocketEvents.WaitingRoomError, onError);
@@ -312,11 +312,16 @@ describe('WaitingRoomService', () => {
         });
 
         service.kickPlayer('socket-2', { accessCode, playerId: 'player-1' });
+        service.kickPlayer('socket-org', { accessCode, playerId: 'player-1' });
         service.kickPlayer('socket-org', { accessCode, playerId: 'player-2' });
 
         expect(onError).toHaveBeenCalledWith({
             socketId: 'socket-2',
             payload: { message: 'Seul l organisateur peut exclure des joueurs.' },
+        });
+        expect(onError).toHaveBeenCalledWith({
+            socketId: 'socket-org',
+            payload: { message: 'L organisateur ne peut pas etre exclu.' },
         });
         expect(onKicked).toHaveBeenCalledWith({
             accessCode,
