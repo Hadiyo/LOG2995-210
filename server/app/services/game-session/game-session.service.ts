@@ -6,16 +6,14 @@ import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/ma
 import { MatchTurnState } from '@common/game/turn.interface';
 import { TileType } from '@common/maps/map.enums';
 import { SocketEvents } from '@common/socket-events';
-import { PlayerRenderState } from '@common/player/player.interface';
 import { EventEmitter } from 'events';
 import {
     buildGameSessionVisibleObjects,
-    createGameSessionInitialRenderState,
     getGameSessionDestination,
-    getGameSessionFacingToTarget,
     getGameSessionMovementCost,
-    getGameSessionObjectCovering,
 } from './game-session.match';
+import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
+import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
 import {
     ACTIVE_TURN_DURATION_MS,
     buildSession,
@@ -29,6 +27,7 @@ import {
     SNAPSHOT_TICK_MS,
     TRANSITION_DURATION_MS,
 } from './game-session.runtime';
+import { clearGameSessionTimers, tickGameSessionTimers } from './game-session.timers';
 
 const WALK_POSE_DURATION_MS = 180;
 const ATTACK_POSE_DURATION_MS = 220;
@@ -134,7 +133,7 @@ export class GameSessionService {
             return;
         }
 
-        this.clearTimers(session);
+        clearGameSessionTimers(session);
         this.sessions.delete(sessionId);
     }
 
@@ -170,7 +169,7 @@ export class GameSessionService {
         };
 
         if (nextPlayers.length === 0) {
-            this.clearTimers(session);
+            clearGameSessionTimers(session);
             this.sessions.delete(sessionId);
             return true;
         }
@@ -233,32 +232,11 @@ export class GameSessionService {
     debugTeleportPlayer(sessionId: string, playerId: string, position: { x: number; y: number }): boolean {
         const session = this.sessions.get(sessionId);
         const player = session?.match.players.find((candidate) => candidate.id === playerId);
-        if (!session ||
-            !player ||
-            !player.isOrganizer ||
-            !session.match.debugMode ||
-            session.turnState.phase !== 'active' ||
-            session.turnState.activePlayerId !== playerId ||
-            session.match.endState) {
+        if (!canUseDebugTeleport(session, player, playerId)) {
             return false;
         }
 
-        const targetCell = session.match.map.find(
-            (cell) => cell.position.x === position.x && cell.position.y === position.y,
-        );
-        if (!targetCell || targetCell.tileType === TileType.WALL || (targetCell.tileType === TileType.DOOR && !targetCell.isWalkable)) {
-            return false;
-        }
-
-        const occupiedByPlayer = session.match.players.some(
-            (candidate) => candidate.id !== playerId && candidate.position.x === position.x && candidate.position.y === position.y,
-        );
-        if (occupiedByPlayer) {
-            return false;
-        }
-
-        const occupiedByObject = !!getGameSessionObjectCovering(session.match.objects, position);
-        if (occupiedByObject) {
+        if (!isDebugTeleportDestinationAvailable(session.match, playerId, position)) {
             return false;
         }
 
@@ -269,7 +247,7 @@ export class GameSessionService {
                     ? {
                         ...candidate,
                         position: { ...position },
-                        render: this.applyFacingTowardPosition(candidate, position).render,
+                        render: applyFacingTowardPosition(candidate, position).render,
                     }
                     : candidate,
             ),
@@ -311,8 +289,8 @@ export class GameSessionService {
                 ? {
                     ...player,
                     position: { ...destination },
-                    render: this.setTransientPose(
-                        this.applyFacingTowardPosition(player, destination),
+                    render: setTransientPose(
+                        applyFacingTowardPosition(player, destination),
                         'walk',
                         WALK_POSE_DURATION_MS,
                     ).render,
@@ -334,38 +312,12 @@ export class GameSessionService {
     }
 
     toggleDoor(sessionId: string, playerId: string, position: { x: number; y: number }): boolean {
-        const session = this.sessions.get(sessionId);
-        if (!session ||
-            session.turnState.phase !== 'active' ||
-            session.turnState.activePlayerId !== playerId ||
-            session.turnState.actionTaken ||
-            session.match.endState) {
+        const actionContext = this.getDoorToggleContext(sessionId, playerId, position);
+        if (!actionContext) {
             return false;
         }
 
-        const player = session.match.players.find((candidate) => candidate.id === playerId);
-        if (!player) {
-            return false;
-        }
-
-        const adjacent = Math.abs(player.position.x - position.x) + Math.abs(player.position.y - position.y) === 1;
-        if (!adjacent) {
-            return false;
-        }
-
-        const doorCell = session.match.map.find(
-            (cell) => cell.tileType === TileType.DOOR && cell.position.x === position.x && cell.position.y === position.y,
-        );
-        if (!doorCell) {
-            return false;
-        }
-
-        const playerOnDoor = session.match.players.some(
-            (candidate) => candidate.position.x === position.x && candidate.position.y === position.y,
-        );
-        if (playerOnDoor && doorCell.isWalkable) {
-            return false;
-        }
+        const { session, player } = actionContext;
 
         const nextMap = session.match.map.map((cell) =>
             cell.position.x === position.x && cell.position.y === position.y
@@ -379,8 +331,8 @@ export class GameSessionService {
                 candidate.id === playerId
                     ? {
                         ...candidate,
-                        render: this.setTransientPose(
-                            this.applyFacingTowardPosition(candidate, position),
+                        render: setTransientPose(
+                            applyFacingTowardPosition(player, position),
                             'attack',
                             ATTACK_POSE_DURATION_MS,
                         ).render,
@@ -395,29 +347,20 @@ export class GameSessionService {
     }
 
     startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
-        const session = this.sessions.get(sessionId);
-        if (!session ||
-            session.turnState.phase !== 'active' ||
-            session.turnState.activePlayerId !== attackerId ||
-            session.turnState.actionTaken ||
-            session.match.endState) {
+        const combatContext = this.getCombatContext(sessionId, attackerId, defenderId);
+        if (!combatContext) {
             return false;
         }
 
-        const attacker = session.match.players.find((player) => player.id === attackerId);
-        const defender = session.match.players.find((player) => player.id === defenderId);
-        if (!attacker || !defender || !canStartCombat(attacker, defender)) {
-            return false;
-        }
-
+        const { session, attacker, defender } = combatContext;
         const respawnPosition = resolveRespawnPosition(session.match, defenderId);
         const nextPlayers = session.match.players.map((player) => {
             if (player.id === attackerId) {
                 return {
                     ...player,
                     combatWins: player.combatWins + 1,
-                    render: this.setTransientPose(
-                        this.applyFacingTowardPosition(player, defender.position),
+                    render: setTransientPose(
+                        applyFacingTowardPosition(player, defender.position),
                         'attack',
                         ATTACK_POSE_DURATION_MS,
                     ).render,
@@ -459,10 +402,10 @@ export class GameSessionService {
     }
 
     private startTransition(session: GameSessionRuntime): void {
-        this.clearTimers(session);
+        clearGameSessionTimers(session);
         session.turnState = createTransitionTurnState(session.turnState);
         this.emitSnapshot(session);
-        session.timerIntervalId = setInterval(() => this.tickTimers(session), SNAPSHOT_TICK_MS);
+        session.timerIntervalId = setInterval(() => tickGameSessionTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
         session.transitionTimeoutId = setTimeout(() => this.activateTurn(session), TRANSITION_DURATION_MS);
     }
 
@@ -473,15 +416,15 @@ export class GameSessionService {
             return;
         }
 
-        this.clearTimers(session);
+        clearGameSessionTimers(session);
         session.turnState = createActiveTurnState(session.turnState, activePlayer);
         this.emitSnapshot(session);
-        session.timerIntervalId = setInterval(() => this.tickTimers(session), SNAPSHOT_TICK_MS);
+        session.timerIntervalId = setInterval(() => tickGameSessionTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
         session.activeTurnTimeoutId = setTimeout(() => this.advanceToNextTurn(session), ACTIVE_TURN_DURATION_MS);
     }
 
     private advanceToNextTurn(session: GameSessionRuntime): void {
-        this.clearTimers(session);
+        clearGameSessionTimers(session);
         if (session.turnState.order.length === 0) {
             return;
         }
@@ -493,27 +436,8 @@ export class GameSessionService {
         this.startTransition(session);
     }
 
-    private tickTimers(session: GameSessionRuntime): void {
-        if (session.turnState.phase === 'transition' && session.turnState.transitionEndsAt !== null) {
-            session.turnState = {
-                ...session.turnState,
-                transitionRemainingMs: Math.max(0, session.turnState.transitionEndsAt - Date.now()),
-            };
-            this.emitSnapshot(session);
-            return;
-        }
-
-        if (session.turnState.phase === 'active' && session.turnState.activeTurnEndsAt !== null) {
-            session.turnState = {
-                ...session.turnState,
-                activeTurnRemainingMs: Math.max(0, session.turnState.activeTurnEndsAt - Date.now()),
-            };
-            this.emitSnapshot(session);
-        }
-    }
-
     private finishMatch(session: GameSessionRuntime): void {
-        this.clearTimers(session);
+        clearGameSessionTimers(session);
         session.turnState = {
             ...session.turnState,
             phase: 'transition',
@@ -539,47 +463,67 @@ export class GameSessionService {
         });
     }
 
-    private clearTimers(session: GameSessionRuntime): void {
-        if (session.transitionTimeoutId) {
-            clearTimeout(session.transitionTimeoutId);
-            session.transitionTimeoutId = null;
+    private getDoorToggleContext(
+        sessionId: string,
+        playerId: string,
+        position: { x: number; y: number },
+    ): { session: GameSessionRuntime; player: MatchPlayer } | null {
+        const session = this.sessions.get(sessionId);
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== playerId ||
+            session.turnState.actionTaken ||
+            session.match.endState) {
+            return null;
         }
-        if (session.activeTurnTimeoutId) {
-            clearTimeout(session.activeTurnTimeoutId);
-            session.activeTurnTimeoutId = null;
+
+        const player = session.match.players.find((candidate) => candidate.id === playerId);
+        if (!player) {
+            return null;
         }
-        if (session.timerIntervalId) {
-            clearInterval(session.timerIntervalId);
-            session.timerIntervalId = null;
+
+        const adjacent = Math.abs(player.position.x - position.x) + Math.abs(player.position.y - position.y) === 1;
+        if (!adjacent) {
+            return null;
         }
+
+        const doorCell = session.match.map.find(
+            (cell) => cell.tileType === TileType.DOOR && cell.position.x === position.x && cell.position.y === position.y,
+        );
+        if (!doorCell) {
+            return null;
+        }
+
+        const playerOnDoor = session.match.players.some(
+            (candidate) => candidate.position.x === position.x && candidate.position.y === position.y,
+        );
+        if (playerOnDoor && doorCell.isWalkable) {
+            return null;
+        }
+
+        return { session, player };
     }
 
-    private applyFacingTowardPosition(player: MatchPlayer, target: { x: number; y: number }): MatchPlayer {
-        const facing = getGameSessionFacingToTarget(player.position, target);
-        if (!facing) {
-            return player;
+    private getCombatContext(
+        sessionId: string,
+        attackerId: string,
+        defenderId: string,
+    ): { session: GameSessionRuntime; attacker: MatchPlayer; defender: MatchPlayer } | null {
+        const session = this.sessions.get(sessionId);
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== attackerId ||
+            session.turnState.actionTaken ||
+            session.match.endState) {
+            return null;
         }
 
-        return {
-            ...player,
-            render: {
-                ...createGameSessionInitialRenderState(),
-                ...player.render,
-                facing,
-            },
-        };
-    }
+        const attacker = session.match.players.find((player) => player.id === attackerId);
+        const defender = session.match.players.find((player) => player.id === defenderId);
+        if (!attacker || !defender || !canStartCombat(attacker, defender)) {
+            return null;
+        }
 
-    private setTransientPose(player: MatchPlayer, pose: 'walk' | 'attack', durationMs: number): MatchPlayer {
-        return {
-            ...player,
-            render: {
-                ...createGameSessionInitialRenderState(),
-                ...player.render,
-                pose,
-                poseStartedAt: new Date().toISOString(),
-                poseDurationMs: durationMs,
-            } satisfies PlayerRenderState,
-        };
+        return { session, attacker, defender };
     }
 }

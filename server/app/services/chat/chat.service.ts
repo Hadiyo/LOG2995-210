@@ -8,20 +8,31 @@ import { randomUUID } from 'crypto';
 export class ChatService {
     constructor(private readonly gameSessionService: GameSessionService) {}
 
+    createMessage(author: string, content: string, maxContentLength?: number): ChatMessage | null {
+        const normalizedContent = typeof maxContentLength === 'number'
+            ? content.trim().slice(0, maxContentLength)
+            : content.trim();
+
+        if (!normalizedContent) {
+            return null;
+        }
+
+        return {
+            id: randomUUID(),
+            author,
+            content: normalizedContent,
+            createdAt: new Date().toISOString(),
+        };
+    }
+
     addMessage(sessionId: string, socketId: string, content: string): ChatMessage | null {
         const playerName = this.gameSessionService.getPlayerNameForSocket(socketId, sessionId);
         if (!playerName) {
             return null;
         }
 
-        const message: ChatMessage = {
-            id: randomUUID(),
-            author: playerName,
-            content,
-            createdAt: new Date().toISOString(),
-        };
-
-        if (!validateChatMessage(message)) {
+        const message = this.createMessage(playerName, content);
+        if (!message || !validateChatMessage(message)) {
             return null;
         }
 

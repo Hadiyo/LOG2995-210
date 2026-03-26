@@ -1,7 +1,7 @@
+import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { MapService } from '@app/services/map/map.service';
 import { Injectable } from '@nestjs/common';
-import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { WaitingRoomPreview } from '@common/game/waiting-room-preview.interface';
 import { MapSize } from '@common/maps/map.enums';
@@ -45,6 +45,7 @@ export class WaitingRoomService {
     constructor(
         private readonly mapService: MapService,
         private readonly gameSessionService: GameSessionService,
+        private readonly chatService: ChatService,
     ) {}
 
     on<T>(event: SocketEvents, callback: (payload: T) => void): void {
@@ -170,17 +171,10 @@ export class WaitingRoomService {
             return;
         }
 
-        const content = payload.content.trim().slice(0, CHAT_MESSAGE_MAX_LENGTH);
-        if (!content) {
+        const message = this.chatService.createMessage(author, payload.content, CHAT_MESSAGE_MAX_LENGTH);
+        if (!message) {
             return;
         }
-
-        const message: ChatMessage = {
-            id: crypto.randomUUID(),
-            author,
-            content,
-            createdAt: new Date().toISOString(),
-        };
 
         room.messages.push(message);
         this.events.emit(SocketEvents.WaitingRoomMessageSent, {
