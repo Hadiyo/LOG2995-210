@@ -2,14 +2,17 @@
 import { ChatMessage } from '@common/chat/chat.interface';
 import { MapService } from '@app/services/map/map.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InitializedMatch, MatchLobbyPlayer } from '@common/game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { TileType } from '@common/maps/map.enums';
 import { SocketEvents } from '@common/socket-events';
+import { PlayerRenderState } from '@common/player/player.interface';
 import { EventEmitter } from 'events';
 import {
     buildGameSessionVisibleObjects,
+    createGameSessionInitialRenderState,
     getGameSessionDestination,
+    getGameSessionFacingToTarget,
     getGameSessionMovementCost,
     getGameSessionObjectCovering,
 } from './game-session.match';
@@ -26,6 +29,9 @@ import {
     SNAPSHOT_TICK_MS,
     TRANSITION_DURATION_MS,
 } from './game-session.runtime';
+
+const WALK_POSE_DURATION_MS = 180;
+const ATTACK_POSE_DURATION_MS = 220;
 @Injectable()
 export class GameSessionService {
     private readonly sessions = new Map<string, GameSessionRuntime>();
@@ -259,7 +265,13 @@ export class GameSessionService {
         session.match = {
             ...session.match,
             players: session.match.players.map((candidate) =>
-                candidate.id === playerId ? { ...candidate, position: { ...position } } : candidate,
+                candidate.id === playerId
+                    ? {
+                        ...candidate,
+                        position: { ...position },
+                        render: this.applyFacingTowardPosition(candidate, position).render,
+                    }
+                    : candidate,
             ),
         };
         this.emitSnapshot(session);
@@ -295,7 +307,17 @@ export class GameSessionService {
         }
 
         const nextPlayers = session.match.players.map((player) =>
-            player.id === playerId ? { ...player, position: { ...destination } } : player,
+            player.id === playerId
+                ? {
+                    ...player,
+                    position: { ...destination },
+                    render: this.setTransientPose(
+                        this.applyFacingTowardPosition(player, destination),
+                        'walk',
+                        WALK_POSE_DURATION_MS,
+                    ).render,
+                }
+                : player,
         );
         session.match = {
             ...session.match,
@@ -353,6 +375,18 @@ export class GameSessionService {
 
         session.match = {
             ...session.match,
+            players: session.match.players.map((candidate) =>
+                candidate.id === playerId
+                    ? {
+                        ...candidate,
+                        render: this.setTransientPose(
+                            this.applyFacingTowardPosition(candidate, position),
+                            'attack',
+                            ATTACK_POSE_DURATION_MS,
+                        ).render,
+                    }
+                    : candidate,
+            ),
             map: nextMap,
         };
         session.turnState = { ...session.turnState, actionTaken: true };
@@ -379,7 +413,15 @@ export class GameSessionService {
         const respawnPosition = resolveRespawnPosition(session.match, defenderId);
         const nextPlayers = session.match.players.map((player) => {
             if (player.id === attackerId) {
-                return { ...player, combatWins: player.combatWins + 1 };
+                return {
+                    ...player,
+                    combatWins: player.combatWins + 1,
+                    render: this.setTransientPose(
+                        this.applyFacingTowardPosition(player, defender.position),
+                        'attack',
+                        ATTACK_POSE_DURATION_MS,
+                    ).render,
+                };
             }
 
             if (player.id === defenderId) {
@@ -510,5 +552,34 @@ export class GameSessionService {
             clearInterval(session.timerIntervalId);
             session.timerIntervalId = null;
         }
+    }
+
+    private applyFacingTowardPosition(player: MatchPlayer, target: { x: number; y: number }): MatchPlayer {
+        const facing = getGameSessionFacingToTarget(player.position, target);
+        if (!facing) {
+            return player;
+        }
+
+        return {
+            ...player,
+            render: {
+                ...createGameSessionInitialRenderState(),
+                ...player.render,
+                facing,
+            },
+        };
+    }
+
+    private setTransientPose(player: MatchPlayer, pose: 'walk' | 'attack', durationMs: number): MatchPlayer {
+        return {
+            ...player,
+            render: {
+                ...createGameSessionInitialRenderState(),
+                ...player.render,
+                pose,
+                poseStartedAt: new Date().toISOString(),
+                poseDurationMs: durationMs,
+            } satisfies PlayerRenderState,
+        };
     }
 }

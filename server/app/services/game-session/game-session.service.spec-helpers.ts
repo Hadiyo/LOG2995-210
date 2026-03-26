@@ -40,6 +40,10 @@ export const makeMatchPlayer = (overrides: Partial<MatchPlayer> = {}): MatchPlay
     startingPosition: { x: 0, y: 0 },
     health: 6,
     combatWins: 0,
+    render: {
+        facing: 'front',
+        pose: 'idle',
+    },
     ...overrides,
 });
 

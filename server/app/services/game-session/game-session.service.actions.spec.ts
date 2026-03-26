@@ -61,6 +61,7 @@ describe('GameSessionService actions', () => {
         expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 2, y: 2 })).toBe(false);
         expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 2, y: 1 })).toBe(true);
         expect(runtime.match.players.find((player) => player.id === 'player-1')?.position).toEqual({ x: 2, y: 1 });
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.render?.facing).toBe('right');
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
     });
 
@@ -104,6 +105,11 @@ describe('GameSessionService actions', () => {
         runtime.turnState.movementPointsRemaining = 4;
         expect(harness.service.movePlayer('session-1', 'player-1', 'right')).toBe(true);
         expect(runtime.match.players.find((player) => player.id === 'player-1')?.position).toEqual({ x: 1, y: 0 });
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.render).toMatchObject({
+            facing: 'right',
+            pose: 'walk',
+            poseDurationMs: 180,
+        });
         expect(runtime.turnState.movementPointsRemaining).toBe(MOVEMENT_POINTS_AFTER_MOVE);
         expect(runtime.turnState.movementCount).toBe(1);
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
@@ -126,6 +132,11 @@ describe('GameSessionService actions', () => {
         expect(harness.service.toggleDoor('session-1', 'player-1', { x: 2, y: 2 })).toBe(false);
         expect(harness.service.toggleDoor('session-1', 'player-1', { x: 0, y: 1 })).toBe(true);
         expect(runtime.match.map.find((cell) => cell.position.x === 0 && cell.position.y === 1)?.isWalkable).toBe(true);
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.render).toMatchObject({
+            facing: 'front',
+            pose: 'attack',
+            poseDurationMs: 220,
+        });
         expect(runtime.turnState.actionTaken).toBe(true);
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
     });
@@ -149,6 +160,11 @@ describe('GameSessionService actions', () => {
         expect(harness.service.startCombat('session-1', 'player-2', 'player-1')).toBe(false);
         expect(harness.service.startCombat('session-1', 'player-1', 'player-2')).toBe(true);
         expect(runtime.match.players.find((player) => player.id === 'player-1')?.combatWins).toBe(2);
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.render).toMatchObject({
+            facing: 'right',
+            pose: 'attack',
+            poseDurationMs: 220,
+        });
         expect(runtime.turnState.actionTaken).toBe(true);
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
 
