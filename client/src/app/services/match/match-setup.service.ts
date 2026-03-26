@@ -4,8 +4,8 @@ import {
     CHARACTER_BASE_ATTRIBUTES,
     CHARACTER_PLUS_TWO_VALUE,
 } from '@common/character/character.model';
-import { MatchEndState, InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
-import { ObjectType } from '@common/maps/map.enums';
+import { MatchEndState, InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
+import { GameMode, ObjectType } from '@common/maps/map.enums';
 import { EditorMapDetails } from '@common/maps/map.interface';
 import { generateClientId } from '@app/utils/id.util';
 import {
@@ -51,12 +51,14 @@ export class MatchSetupService {
         }
 
         const shuffledStarts = shuffle(availableStartObjects, random);
+        const teamAssignments = this.buildTeamAssignments(players.length, map.mode, random);
         const initializedPlayers = players.map((player, index): MatchPlayer => {
             const startObject = shuffledStarts[index];
             return {
                 ...player,
                 position: cloneVec2(startObject.position),
                 startingPosition: cloneVec2(startObject.position),
+                teamId: teamAssignments[index],
                 health: player.maxHealth,
                 combatWins: 0,
             };
@@ -69,10 +71,12 @@ export class MatchSetupService {
             mapSize: map.mapsize,
             debugMode: false,
             map: map.map.map((cell) => ({ ...cell, position: cloneVec2(cell.position) })),
-            objects: this.matchBoardService.buildVisibleObjects(map.objects, initializedPlayers),
+            objects: this.matchBoardService.buildVisibleObjects(map.objects, initializedPlayers, null),
             allObjects: map.objects.map((object) => ({ ...object, position: cloneVec2(object.position) })),
             allStartingPoints: availableStartObjects.map((object) => cloneVec2(object.position)),
             players: initializedPlayers,
+            flagCarrierId: null,
+            pendingFlagTransfer: null,
             endState: null,
         };
     }
@@ -118,8 +122,10 @@ export class MatchSetupService {
             players: normalizedPlayers,
             allObjects,
             allStartingPoints,
+            flagCarrierId: match.flagCarrierId ?? null,
+            pendingFlagTransfer: match.pendingFlagTransfer ?? null,
             endState: match.endState ?? null,
-            objects: this.matchBoardService.buildVisibleObjects(allObjects, normalizedPlayers),
+            objects: this.matchBoardService.buildVisibleObjects(allObjects, normalizedPlayers, match.flagCarrierId ?? null),
         };
     }
 
@@ -128,6 +134,7 @@ export class MatchSetupService {
             id: generateClientId(),
             winnerKind: 'player',
             winnerPlayerId: winner.id,
+            winnerTeamId: null,
             message: `${winner.name} remporte la partie avec ${winner.combatWins} victoires de combat.`,
             resolvedAt: Date.now(),
         };
@@ -138,6 +145,7 @@ export class MatchSetupService {
             id: generateClientId(),
             winnerKind: 'none',
             winnerPlayerId: null,
+            winnerTeamId: null,
             message: `La partie se termine sans gagnant: ${remainingPlayer.name} est le dernier joueur encore en partie apres les abandons.`,
             resolvedAt: Date.now(),
         };
@@ -156,4 +164,22 @@ export class MatchSetupService {
         return CHARACTER_BASE_ATTRIBUTES.vie +
             (character.bonuses.plusTwo === 'vie' ? CHARACTER_PLUS_TWO_VALUE : 0);
     }
+
+    private buildTeamAssignments(playerCount: number, mode: GameMode, random: () => number): (MatchTeamId | null)[] {
+        if (mode !== GameMode.CTF || playerCount < 2 || playerCount % 2 !== 0) {
+            return Array.from({ length: playerCount }, () => null);
+        }
+
+        const assignments: (MatchTeamId | null)[] = Array.from({ length: playerCount }, () => null);
+        const shuffledIndexes = shuffle(playersToIndexes(playerCount), random);
+        const playersPerTeam = playerCount / 2;
+
+        shuffledIndexes.forEach((playerIndex, orderIndex) => {
+            assignments[playerIndex] = orderIndex < playersPerTeam ? 'A' : 'B';
+        });
+
+        return assignments;
+    }
 }
+
+const playersToIndexes = (count: number): number[] => Array.from({ length: count }, (_, index) => index);

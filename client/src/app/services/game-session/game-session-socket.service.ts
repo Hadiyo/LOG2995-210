@@ -12,6 +12,8 @@ import {
     ToggleDebugModePayload,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
+    RequestFlagTransferPayload,
+    ResolveFlagTransferPayload,
     SocketEvents,
     StartCombatPayload,
     ToggleDoorPayload,
@@ -100,6 +102,32 @@ export class GameSessionSocketService {
             playerId,
             position,
         } satisfies ToggleDoorPayload);
+    }
+
+    requestFlagTransfer(playerId: string, teammateId: string): void {
+        const sessionId = this.sessionId();
+        if (!sessionId) {
+            return;
+        }
+
+        this.socketManager.send(SocketEvents.RequestFlagTransfer, {
+            sessionId,
+            playerId,
+            teammateId,
+        } satisfies RequestFlagTransferPayload);
+    }
+
+    resolveFlagTransfer(playerId: string, accepted: boolean): void {
+        const sessionId = this.sessionId();
+        if (!sessionId) {
+            return;
+        }
+
+        this.socketManager.send(SocketEvents.ResolveFlagTransfer, {
+            sessionId,
+            playerId,
+            accepted,
+        } satisfies ResolveFlagTransferPayload);
     }
 
     surrender(playerId: string): void {

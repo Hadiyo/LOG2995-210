@@ -112,6 +112,7 @@ export const makeMatch = (overrides: Partial<InitializedMatch> = {}): Initialize
         allObjects: allObjects.map((object) => ({ ...object, position: { ...object.position } })),
         allStartingPoints: [{ x: 0, y: 0 }, { x: 1, y: 0 }],
         players,
+        pendingFlagTransfer: null,
         endState: null,
         ...overrides,
     };

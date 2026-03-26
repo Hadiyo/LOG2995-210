@@ -2,9 +2,9 @@
 import { ChatMessage } from '@common/chat/chat.interface';
 import { MapService } from '@app/services/map/map.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchPendingFlagTransfer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
-import { TileType } from '@common/maps/map.enums';
+import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SocketEvents } from '@common/socket-events';
 import { PlayerRenderState } from '@common/player/player.interface';
 import { EventEmitter } from 'events';
@@ -15,11 +15,11 @@ import {
     getGameSessionFacingToTarget,
     getGameSessionMovementCost,
     getGameSessionObjectCovering,
+    resolveGameSessionFlagCarrier,
 } from './game-session.match';
 import {
     ACTIVE_TURN_DURATION_MS,
     buildSession,
-    canStartCombat,
     CLASSIC_WIN_THRESHOLD,
     createActiveTurnState,
     createTransitionTurnState,
@@ -148,6 +148,82 @@ export class GameSessionService {
         return true;
     }
 
+    requestFlagTransfer(sessionId: string, requesterId: string, receiverId: string): boolean {
+        const session = this.sessions.get(sessionId);
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== requesterId ||
+            session.turnState.actionTaken ||
+            session.match.endState) {
+            return false;
+        }
+
+        const pendingFlagTransfer = this.createPendingFlagTransfer(session.match, requesterId, receiverId);
+        if (!pendingFlagTransfer) {
+            return false;
+        }
+
+        session.match = {
+            ...session.match,
+            pendingFlagTransfer,
+        };
+        session.turnState = {
+            ...session.turnState,
+            actionTaken: true,
+        };
+        this.emitSnapshot(session);
+        return true;
+    }
+
+    resolveFlagTransfer(sessionId: string, receiverId: string, accepted: boolean): boolean {
+        const session = this.sessions.get(sessionId);
+        const pendingFlagTransfer = session?.match.pendingFlagTransfer ?? null;
+        if (!session || !pendingFlagTransfer || pendingFlagTransfer.receiverId !== receiverId || session.match.endState) {
+            return false;
+        }
+
+        const nextFlagCarrierId = accepted
+            ? (pendingFlagTransfer.kind === 'offer' ? pendingFlagTransfer.receiverId : pendingFlagTransfer.requesterId)
+            : (session.match.flagCarrierId ?? null);
+        session.match = {
+            ...session.match,
+            flagCarrierId: nextFlagCarrierId,
+            pendingFlagTransfer: null,
+            objects: buildGameSessionVisibleObjects(session.match.allObjects, session.match.players, nextFlagCarrierId),
+        };
+
+        if (accepted) {
+            const transferMessage = this.buildFlagTransferMessage(session.match, pendingFlagTransfer, nextFlagCarrierId);
+            if (transferMessage) {
+                session.messages.push(this.createSystemMessage(transferMessage));
+            }
+        }
+
+        if (accepted && nextFlagCarrierId && this.isCtfWinner(session.match, nextFlagCarrierId)) {
+            const winner = session.match.players.find((player) => player.id === nextFlagCarrierId) ?? null;
+            if (!winner) {
+                return false;
+            }
+
+            session.match = {
+                ...session.match,
+                endState: {
+                    id: crypto.randomUUID(),
+                    winnerKind: 'team',
+                    winnerPlayerId: winner.id,
+                    winnerTeamId: winner.teamId ?? null,
+                    message: `L equipe ${winner.teamId ?? '?'} remporte la partie: ${winner.name} ramene le drapeau a son point de depart.`,
+                    resolvedAt: Date.now(),
+                },
+            };
+            this.finishMatch(session);
+            return true;
+        }
+
+        this.emitSnapshot(session);
+        return true;
+    }
+
     surrender(sessionId: string, playerId: string): boolean {
         const session = this.sessions.get(sessionId);
         if (!session) {
@@ -162,16 +238,48 @@ export class GameSessionService {
             return false;
         }
 
+        const nextFlagCarrierId = session.match.flagCarrierId === playerId ? null : (session.match.flagCarrierId ?? null);
+        const nextPendingFlagTransfer = this.clearPendingFlagTransfer(session.match.pendingFlagTransfer ?? null, playerId);
+        const nextAllObjects = session.match.allObjects.map((object) =>
+            session.match.flagCarrierId === playerId && object.type === ObjectType.FLAG && departingPlayer
+                ? { ...object, position: { ...departingPlayer.position } }
+                : { ...object, position: { ...object.position } },
+        );
+
         session.match = {
             ...session.match,
             debugMode: organizerLeftWhileDebugEnabled ? false : session.match.debugMode,
             players: nextPlayers,
-            objects: buildGameSessionVisibleObjects(session.match.allObjects, nextPlayers),
+            allObjects: nextAllObjects,
+            flagCarrierId: nextFlagCarrierId,
+            pendingFlagTransfer: nextPendingFlagTransfer,
+            objects: buildGameSessionVisibleObjects(
+                nextAllObjects,
+                nextPlayers,
+                nextFlagCarrierId,
+            ),
         };
 
         if (nextPlayers.length === 0) {
             this.clearTimers(session);
             this.sessions.delete(sessionId);
+            return true;
+        }
+
+        const missingTeamId = this.getMissingCtfTeamId(session.match.mode, nextPlayers);
+        if (missingTeamId) {
+            session.match = {
+                ...session.match,
+                endState: {
+                    id: crypto.randomUUID(),
+                    winnerKind: 'none',
+                    winnerPlayerId: null,
+                    winnerTeamId: null,
+                    message: `La partie est annulee: l equipe ${missingTeamId} n'a plus aucun joueur suite a des abandons.`,
+                    resolvedAt: Date.now(),
+                },
+            };
+            this.finishMatch(session);
             return true;
         }
 
@@ -183,6 +291,7 @@ export class GameSessionService {
                     id: crypto.randomUUID(),
                     winnerKind: 'none',
                     winnerPlayerId: null,
+                    winnerTeamId: null,
                     message: `La partie se termine sans gagnant: ${remainingPlayer.name} est le dernier joueur encore en partie apres les abandons.`,
                     resolvedAt: Date.now(),
                 },
@@ -319,16 +428,40 @@ export class GameSessionService {
                 }
                 : player,
         );
+        const nextFlagCarrierId = resolveGameSessionFlagCarrier(session.match, playerId, destination);
+        const pickedUpFlag = session.match.flagCarrierId === null && nextFlagCarrierId === playerId;
         session.match = {
             ...session.match,
             players: nextPlayers,
-            objects: buildGameSessionVisibleObjects(session.match.allObjects, nextPlayers),
+            flagCarrierId: nextFlagCarrierId,
+            objects: buildGameSessionVisibleObjects(session.match.allObjects, nextPlayers, nextFlagCarrierId),
         };
+        if (pickedUpFlag) {
+            session.messages.push(this.createSystemMessage(`${movingPlayer.name} ramasse le drapeau.`));
+        }
         session.turnState = {
             ...session.turnState,
             movementPointsRemaining: session.turnState.movementPointsRemaining - cost,
             movementCount: session.turnState.movementCount + 1,
         };
+
+        if (this.isCtfWinner(session.match, playerId)) {
+            const winner = session.match.players.find((player) => player.id === playerId) ?? movingPlayer;
+            session.match = {
+                ...session.match,
+                endState: {
+                    id: crypto.randomUUID(),
+                    winnerKind: 'team',
+                    winnerPlayerId: winner.id,
+                    winnerTeamId: winner.teamId ?? null,
+                    message: `L equipe ${winner.teamId ?? '?'} remporte la partie: ${winner.name} ramene le drapeau a son point de depart.`,
+                    resolvedAt: Date.now(),
+                },
+            };
+            this.finishMatch(session);
+            return true;
+        }
+
         this.emitSnapshot(session);
         return true;
     }
@@ -363,7 +496,10 @@ export class GameSessionService {
         const playerOnDoor = session.match.players.some(
             (candidate) => candidate.position.x === position.x && candidate.position.y === position.y,
         );
-        if (playerOnDoor && doorCell.isWalkable) {
+        const flagOnDoor = session.match.mode === GameMode.CTF && session.match.objects.some(
+            (object) => object.type === ObjectType.FLAG && object.position.x === position.x && object.position.y === position.y,
+        );
+        if ((playerOnDoor || flagOnDoor) && doorCell.isWalkable) {
             return false;
         }
 
@@ -406,11 +542,16 @@ export class GameSessionService {
 
         const attacker = session.match.players.find((player) => player.id === attackerId);
         const defender = session.match.players.find((player) => player.id === defenderId);
-        if (!attacker || !defender || !canStartCombat(attacker, defender)) {
+        if (!attacker || !defender || !this.canStartCombat(session.match, attacker, defender)) {
             return false;
         }
 
         const respawnPosition = resolveRespawnPosition(session.match, defenderId);
+        let nextFlagCarrierId = session.match.flagCarrierId ?? null;
+        let nextAllObjects = session.match.allObjects.map((object) => ({
+            ...object,
+            position: { ...object.position },
+        }));
         const nextPlayers = session.match.players.map((player) => {
             if (player.id === attackerId) {
                 return {
@@ -432,14 +573,26 @@ export class GameSessionService {
         });
         const winner = nextPlayers.find((player) => player.id === attackerId) ?? attacker;
 
+        if (session.match.flagCarrierId === defenderId) {
+            nextFlagCarrierId = null;
+            nextAllObjects = nextAllObjects.map((object) =>
+                object.type === ObjectType.FLAG
+                    ? { ...object, position: { ...defender.position } }
+                    : object,
+            );
+        }
+
         session.match = {
             ...session.match,
             players: nextPlayers,
-            objects: buildGameSessionVisibleObjects(session.match.allObjects, nextPlayers),
+            allObjects: nextAllObjects,
+            flagCarrierId: nextFlagCarrierId,
+            objects: buildGameSessionVisibleObjects(nextAllObjects, nextPlayers, nextFlagCarrierId),
             endState: winner.combatWins >= CLASSIC_WIN_THRESHOLD ? {
                 id: crypto.randomUUID(),
                 winnerKind: 'player',
                 winnerPlayerId: winner.id,
+                winnerTeamId: null,
                 message: `${winner.name} remporte la partie avec ${winner.combatWins} victoires de combat.`,
                 resolvedAt: Date.now(),
             } : session.match.endState ?? null,
@@ -484,6 +637,13 @@ export class GameSessionService {
         this.clearTimers(session);
         if (session.turnState.order.length === 0) {
             return;
+        }
+
+        if (session.match.pendingFlagTransfer) {
+            session.match = {
+                ...session.match,
+                pendingFlagTransfer: null,
+            };
         }
 
         session.turnState = {
@@ -580,6 +740,118 @@ export class GameSessionService {
                 poseStartedAt: new Date().toISOString(),
                 poseDurationMs: durationMs,
             } satisfies PlayerRenderState,
+        };
+    }
+
+    private canStartCombat(match: InitializedMatch, attacker: MatchPlayer, defender: MatchPlayer): boolean {
+        if (Math.abs(attacker.position.x - defender.position.x) + Math.abs(attacker.position.y - defender.position.y) !== 1) {
+            return false;
+        }
+
+        return match.mode !== 'CTF' ||
+            attacker.teamId === null ||
+            attacker.teamId === undefined ||
+            attacker.teamId !== defender.teamId;
+    }
+
+    private isCtfWinner(match: InitializedMatch, playerId: string): boolean {
+        if (match.mode !== GameMode.CTF || match.flagCarrierId !== playerId) {
+            return false;
+        }
+
+        const player = match.players.find((candidate) => candidate.id === playerId);
+        return !!player &&
+            player.position.x === player.startingPosition.x &&
+            player.position.y === player.startingPosition.y;
+    }
+
+    private createPendingFlagTransfer(
+        match: InitializedMatch,
+        requesterId: string,
+        receiverId: string,
+    ): MatchPendingFlagTransfer | null {
+        if (match.mode !== GameMode.CTF || match.pendingFlagTransfer) {
+            return null;
+        }
+
+        const requester = match.players.find((player) => player.id === requesterId) ?? null;
+        const receiver = match.players.find((player) => player.id === receiverId) ?? null;
+        if (!requester || !receiver) {
+            return null;
+        }
+
+        const sameTeam = requester.teamId !== null && requester.teamId !== undefined && requester.teamId === receiver.teamId;
+        const adjacent = Math.abs(requester.position.x - receiver.position.x) + Math.abs(requester.position.y - receiver.position.y) === 1;
+        if (!sameTeam || !adjacent) {
+            return null;
+        }
+
+        const requesterHasFlag = match.flagCarrierId === requesterId;
+        const receiverHasFlag = match.flagCarrierId === receiverId;
+        if (requesterHasFlag === receiverHasFlag) {
+            return null;
+        }
+
+        return {
+            requesterId,
+            receiverId,
+            kind: requesterHasFlag ? 'offer' : 'request',
+        };
+    }
+
+    private clearPendingFlagTransfer(
+        pendingFlagTransfer: MatchPendingFlagTransfer | null,
+        playerId: string,
+    ): MatchPendingFlagTransfer | null {
+        if (!pendingFlagTransfer) {
+            return null;
+        }
+
+        return pendingFlagTransfer.requesterId === playerId || pendingFlagTransfer.receiverId === playerId
+            ? null
+            : pendingFlagTransfer;
+    }
+
+    private getMissingCtfTeamId(mode: GameMode, players: MatchPlayer[]): MatchTeamId | null {
+        if (mode !== GameMode.CTF || players.length === 0) {
+            return null;
+        }
+
+        const teamAAlive = players.some((player) => player.teamId === 'A');
+        const teamBAlive = players.some((player) => player.teamId === 'B');
+        if (teamAAlive === teamBAlive) {
+            return null;
+        }
+
+        return teamAAlive ? 'B' : 'A';
+    }
+
+    private buildFlagTransferMessage(
+        match: InitializedMatch,
+        pendingFlagTransfer: MatchPendingFlagTransfer,
+        nextFlagCarrierId: string | null,
+    ): string | null {
+        if (!nextFlagCarrierId) {
+            return null;
+        }
+
+        const receiver = match.players.find((player) => player.id === pendingFlagTransfer.receiverId) ?? null;
+        const requester = match.players.find((player) => player.id === pendingFlagTransfer.requesterId) ?? null;
+        if (!receiver || !requester) {
+            return null;
+        }
+
+        const giver = nextFlagCarrierId === receiver.id ? requester : receiver;
+        const beneficiary = nextFlagCarrierId === receiver.id ? receiver : requester;
+        return `${beneficiary.name} obtient le drapeau de ${giver.name}.`;
+    }
+
+    private createSystemMessage(content: string): ChatMessage {
+        return {
+            id: crypto.randomUUID(),
+            author: 'Journal',
+            content,
+            createdAt: new Date().toISOString(),
         };
     }
 }

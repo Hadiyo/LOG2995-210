@@ -9,3 +9,5 @@ export const START_LIMITS_BY_SIZE: Record<MapSize, number> = {
   [MapSize.M]: 4,
   [MapSize.L]: 6,
 };
+
+export const FLAG_LIMIT = 1;

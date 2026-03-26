@@ -1,4 +1,4 @@
-import { MapSize } from '@common/maps/map.enums';
+import { GameMode, MapSize } from '@common/maps/map.enums';
 import { SocketEvents } from '@common/socket-events';
 import {
     createWaitingRoomServiceHarness,
@@ -97,6 +97,37 @@ describe('WaitingRoomService start game', () => {
             sessionId: 'session-99',
             messages: [],
         });
+    });
+
+    it('rejects CTF game start when the roster size is odd', async () => {
+        const onError = jest.fn();
+        harness.service.on(SocketEvents.WaitingRoomError, onError);
+        harness.mapService.getMapById.mockResolvedValue(makeMap({ size: MapSize.M, mode: GameMode.CTF }));
+
+        const accessCode = await harness.service.createWaitingRoom('socket-org', {
+            mapId: 'map-1',
+            player: makeLobbyPlayer(),
+        });
+        harness.service.joinWaitingRoom('socket-2', {
+            accessCode,
+            player: makeLobbyPlayer({ id: 'player-2', name: 'Bob', avatarId: 1 }),
+        });
+        harness.service.joinWaitingRoom('socket-3', {
+            accessCode,
+            player: makeLobbyPlayer({ id: 'player-3', name: 'Cara', avatarId: 2 }),
+        });
+
+        await harness.service.startGame('socket-org', accessCode);
+
+        expect(harness.gameSessionService.createSessionFromWaitingRoom).not.toHaveBeenCalled();
+        expect(onError).toHaveBeenCalledWith({
+            socketId: 'socket-org',
+            payload: { message: 'Une partie CTF exige un nombre pair de joueurs.' },
+        });
+        expect(harness.service.getWaitingRoomState(accessCode)).toEqual(expect.objectContaining({
+            accessCode,
+            isLocked: false,
+        }));
     });
 
     it('cancels a started room cleanly if the organizer leaves during session creation', async () => {

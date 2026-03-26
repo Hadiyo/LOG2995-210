@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { WaitingRoomPreview } from '@common/game/waiting-room-preview.interface';
-import { MapSize } from '@common/maps/map.enums';
+import { GameMode, MapSize } from '@common/maps/map.enums';
 import {
     CreateWaitingRoomPayload,
     JoinWaitingRoomPayload,
@@ -107,6 +107,7 @@ export class WaitingRoomService {
         const room: WaitingRoom = {
             accessCode,
             mapId: payload.mapId,
+            mapMode: map.mode,
             organizerSocketId: socketId,
             players: [organizer],
             messages: [],
@@ -267,6 +268,15 @@ export class WaitingRoomService {
         this.emitWaitingRoomUpdated(room);
         this.emitDirectoryUpdated();
         try {
+            if (room.mapMode === GameMode.CTF && room.players.length % 2 !== 0) {
+                room.isStarting = false;
+                this.updateLockState(room);
+                this.emitWaitingRoomUpdated(room);
+                this.emitDirectoryUpdated();
+                this.emitError(organizerSocketId, 'Une partie CTF exige un nombre pair de joueurs.');
+                return;
+            }
+
             const sessionId = await this.gameSessionService.createSessionFromWaitingRoom(room.mapId, room.players, room.messages);
             if (this.rooms.get(accessCode) !== room || room.players.length < MIN_PLAYERS_TO_START) {
                 room.isStarting = false;

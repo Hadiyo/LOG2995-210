@@ -25,6 +25,8 @@ export class GamePlayerListComponent {
   @Input({ required: true }) turnOrder: readonly string[] = [];
   @Input() activePlayerId = '';
   @Input() currentPlayerId = '';
+  @Input() winnerKind: 'player' | 'team' | 'none' = 'none';
+  @Input() winnerTeamId: 'A' | 'B' | null = null;
   @Input() maxPlayers = 0;
   @Input() expanded = false;
 
@@ -68,6 +70,13 @@ export class GamePlayerListComponent {
   // Helper to identify if a row corresponds to the active player for styling.
   isRowActive(row: PlayerRowView): boolean {
     return row.player?.id === this.activePlayerId;
+  }
+
+  isWinningTeamPlayer(row: PlayerRowView): boolean {
+    return this.winnerKind === 'team' &&
+      !!row.player &&
+      row.player.information.teamId !== null &&
+      row.player.information.teamId === this.winnerTeamId;
   }
 
   // Helper to identify if a row corresponds to the current player for styling.

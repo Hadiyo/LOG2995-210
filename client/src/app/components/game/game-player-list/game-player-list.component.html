@@ -32,6 +32,21 @@
           {{ player.id === activePlayerId ? 'Org.' : 'Organisateur' }}
         </span>
         }
+        @if (player.information.teamId) {
+        <span class="player__badge">
+          Equipe {{ player.information.teamId }}
+        </span>
+        }
+        @if (player.state.hasFlag) {
+        <span class="player__badge">
+          Drapeau
+        </span>
+        }
+        @if (isWinningTeamPlayer(row)) {
+        <span class="player__badge player__badge--active">
+          Gagnant
+        </span>
+        }
         <!-- Display active badge if it's the active player's turn. -->
         @if (player.id === activePlayerId) {
         <span class="player__badge player__badge--active"

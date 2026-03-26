@@ -1,5 +1,5 @@
 import { ACCESS_CODE_LENGTH, MIN_PLAYERS_TO_START } from '@app/services/waiting-room/waiting-room.constants';
-import { MapSize } from '@common/maps/map.enums';
+import { GameMode, MapSize } from '@common/maps/map.enums';
 import { SocketEvents } from '@common/socket-events';
 import {
     createWaitingRoomServiceHarness,
@@ -68,6 +68,7 @@ describe('WaitingRoomService rooms', () => {
         harness.service['rooms'].set('LOCKED1', {
             accessCode: 'LOCKED1',
             mapId: 'map-2',
+            mapMode: GameMode.CLASSIC,
             organizerSocketId: 'socket-2',
             players: [makeLobbyPlayer({ id: 'player-2' })],
             messages: [],

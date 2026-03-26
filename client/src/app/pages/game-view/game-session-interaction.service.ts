@@ -1,5 +1,4 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { GameVisualFeedbackService } from '@app/services/game/game-visual-feedback.service';
 import { MatchPlayer, MatchTileInspection } from '@common/game/match.interface';
 import { EditorCell } from '@common/maps/map.interface';
 import { TileType } from '@common/maps/map.enums';
@@ -9,7 +8,6 @@ import { CombatStateService } from '@app/services/match/combat-state.service';
 import { MatchMovementService, MovementDirection } from '@app/services/match/match-movement.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
-import { ATTACK_VISUAL_MS, WALK_VISUAL_MS } from '@app/shared/game/game-visual.constants';
 import {
     EDITABLE_TARGET_TAGS,
     MOVEMENT_KEY_BINDINGS,
@@ -27,7 +25,6 @@ export class GameSessionInteractionService {
     private readonly movementService = inject(MatchMovementService);
     private readonly targets = inject(GameSessionTargetsService);
     private readonly turnStateService = inject(TurnStateService);
-    private readonly visualFeedback = inject(GameVisualFeedbackService);
     readonly inspectedTile = signal<MatchTileInspection | null>(null);
     readonly movementFeedback = signal('');
     readonly actionContext = signal<GameSessionActionContext | null>(null);
@@ -40,6 +37,9 @@ export class GameSessionInteractionService {
         if (this.targets.getCombatActionTargets().size > 0) {
             options.push({ context: 'combat', label: 'Combat' });
         }
+        if (this.targets.getFlagTransferTargets().size > 0) {
+            options.push({ context: 'flag-transfer', label: 'Transferer drapeau' });
+        }
         if (this.targets.getDoorActionTargets().size > 0) {
             options.push({ context: 'door', label: 'Ouvrir/Fermer porte' });
         }
@@ -49,6 +49,8 @@ export class GameSessionInteractionService {
         switch (this.actionContext()) {
             case 'combat':
                 return this.targets.getCombatActionTargets();
+            case 'flag-transfer':
+                return this.targets.getFlagTransferTargets();
             case 'door':
                 return this.targets.getDoorActionTargets();
             default:
@@ -80,6 +82,7 @@ export class GameSessionInteractionService {
 
     actionHelperText(): string {
         if (this.actionContext() === 'combat') return 'Choisissez un adversaire adjacent pour engager le combat.';
+        if (this.actionContext() === 'flag-transfer') return 'Choisissez un coequipier adjacent pour demander ou offrir le drapeau.';
         if (this.actionContext() === 'door') return 'Choisissez une porte adjacente pour l ouvrir ou la fermer.';
         return '';
     }
@@ -144,14 +147,10 @@ export class GameSessionInteractionService {
             return;
         }
 
-        this.applyVisualFeedback(localPlayer, attempt.destination, 'walk', WALK_VISUAL_MS);
-        this.matchState.updatePlayerPosition(localPlayer.id, attempt.destination);
-        this.turnStateService.recordMovement(localPlayer.id, attempt.cost);
         this.gameSessionSocket.movePlayer(localPlayer.id, direction);
         this.closeInspection();
         this.movementFeedback.set(
-            `Deplacement effectue vers (${attempt.destination.x}, ${attempt.destination.y}) pour ${attempt.cost} point(s). ` +
-            'Le serveur synchronise maintenant le nouvel etat pour tous les joueurs.',
+            `Deplacement envoye au serveur vers (${attempt.destination.x}, ${attempt.destination.y}) pour ${attempt.cost} point(s).`,
         );
     }
 
@@ -166,6 +165,8 @@ export class GameSessionInteractionService {
     handleCellPrimaryAction(tile: EditorCell): void {
         if (this.actionContext() === 'combat') {
             this.handleCombatAction(tile);
+        } else if (this.actionContext() === 'flag-transfer') {
+            this.handleFlagTransferAction(tile);
         } else if (this.actionContext() === 'door') {
             this.handleDoorAction(tile);
         }
@@ -189,7 +190,6 @@ export class GameSessionInteractionService {
             return;
         }
 
-        this.applyVisualFeedback(localPlayer, tile.position, 'attack', ATTACK_VISUAL_MS);
         if (!this.combatStateService.startCombat(localPlayer.id, targetPlayer.id)) {
             this.movementFeedback.set('Action ignoree: combat impossible.');
             return;
@@ -208,11 +208,24 @@ export class GameSessionInteractionService {
             return;
         }
 
-        this.applyVisualFeedback(localPlayer, tile.position, 'attack', ATTACK_VISUAL_MS);
         this.gameSessionSocket.toggleDoor(localPlayer.id, tile.position);
         this.clearActionSelection();
         this.closeInspection();
         this.movementFeedback.set(`Porte en (${tile.position.x}, ${tile.position.y}) actionnee.`);
+    }
+
+    private handleFlagTransferAction(tile: EditorCell): void {
+        const localPlayer = this.getLocalMatchPlayer();
+        const targetPlayer = this.display.playerAt(tile);
+        if (!localPlayer || !this.isActionTarget(tile) || !targetPlayer) {
+            this.movementFeedback.set('Action ignoree: transfert de drapeau impossible.');
+            return;
+        }
+
+        this.gameSessionSocket.requestFlagTransfer(localPlayer.id, targetPlayer.id);
+        this.clearActionSelection();
+        this.closeInspection();
+        this.movementFeedback.set(`Demande de transfert envoyee a ${targetPlayer.name}.`);
     }
 
     private shouldIgnoreMovementShortcut(event: KeyboardEvent): boolean {
@@ -251,53 +264,13 @@ export class GameSessionInteractionService {
             return true;
         }
 
-        this.setVisualDirectionToward(localPlayer, tile.position);
-        this.matchState.updatePlayerPosition(localPlayer.id, tile.position);
         this.gameSessionSocket.debugTeleportPlayer(localPlayer.id, tile.position);
         this.closeInspection();
-        this.movementFeedback.set(`Teleportation debug vers (${tile.position.x}, ${tile.position.y}).`);
+        this.movementFeedback.set(`Teleportation debug envoyee au serveur vers (${tile.position.x}, ${tile.position.y}).`);
         return true;
     }
 
     private getLocalMatchPlayer(): MatchPlayer | null {
         return this.display.findPlayerById(this.display.localPlayer()?.id ?? null);
-    }
-
-    private applyVisualFeedback(
-        player: MatchPlayer,
-        target: { x: number; y: number },
-        state: 'walk' | 'attack',
-        durationMs: number,
-    ): void {
-        this.setVisualDirectionToward(player, target);
-        this.visualFeedback.setVisualTransientState(player.id, state, durationMs);
-    }
-
-    private setVisualDirectionToward(player: MatchPlayer, target: { x: number; y: number }): void {
-        const direction = this.getDirectionToTarget(player.position.x, player.position.y, target.x, target.y);
-        if (!direction) {
-            return;
-        }
-
-        this.visualFeedback.setVisualDirection(player.id, direction);
-    }
-
-    private getDirectionToTarget(
-        fromX: number,
-        fromY: number,
-        toX: number,
-        toY: number,
-    ): 'front' | 'back' | 'left' | 'right' | null {
-        const deltaX = toX - fromX;
-        const deltaY = toY - fromY;
-        if (deltaX === 0 && deltaY === 0) {
-            return null;
-        }
-
-        if (Math.abs(deltaX) >= Math.abs(deltaY)) {
-            return deltaX >= 0 ? 'right' : 'left';
-        }
-
-        return deltaY >= 0 ? 'front' : 'back';
     }
 }

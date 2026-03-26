@@ -1,4 +1,4 @@
-import { MapSize, ObjectType, TileType } from './map.enums';
+import { GameMode, MapSize, ObjectType, TileType } from './map.enums';
 import type { EditorMap, Vec2 } from './map.interface';
 import { getCellPositionAtIndex } from './map-utils';
 
@@ -9,6 +9,8 @@ export type MapValidationIssueCode =
     | 'TERRAIN_RATIO_TOO_LOW'
     | 'START_POINTS_MISSING'
     | 'START_ON_OPEN_DOOR_NOT_ALLOWED'
+    | 'FLAG_MISSING'
+    | 'FLAG_NOT_ALLOWED'
     | 'DOOR_INVALID_PLACEMENT'
     | 'UNREACHABLE_TILES';
 
@@ -32,6 +34,10 @@ export const STARTS_REQUIRED_BY_SIZE: Record<MapSize, number> = {
 };
 
 const MIN_TERRAIN_RATIO = 0.5;
+const FLAGS_REQUIRED_BY_MODE: Record<GameMode, number> = {
+    [GameMode.CLASSIC]: 0,
+    [GameMode.CTF]: 1,
+};
 
 const isTerrainTile = (tileType: TileType): boolean => TERRAIN_TILES.has(tileType);
 
@@ -207,6 +213,27 @@ const addStartOnOpenDoorIssues = (map: EditorMap, cellsByKey: Map<string, Cell>,
     });
 };
 
+const addFlagIssues = (map: EditorMap, issues: MapValidationIssue[]): void => {
+    const requiredFlags = FLAGS_REQUIRED_BY_MODE[map.mode];
+    const flagCount = map.objects.filter((object) => object.type === ObjectType.FLAG).length;
+
+    if (requiredFlags > 0 && flagCount !== requiredFlags) {
+        issues.push({
+            code: 'FLAG_MISSING',
+            message: 'Le drapeau doit etre place en mode CTF.',
+            details: { required: requiredFlags, actual: flagCount },
+        });
+    }
+
+    if (requiredFlags === 0 && flagCount > 0) {
+        issues.push({
+            code: 'FLAG_NOT_ALLOWED',
+            message: 'Le drapeau est autorise uniquement en mode CTF.',
+            details: { actual: flagCount },
+        });
+    }
+};
+
 const collectUnreachablePositions = (
     traversable: Set<string>,
     reachable: Set<string>,
@@ -253,6 +280,7 @@ export const validateMap = (map: EditorMap): MapValidationResult => {
     addDoorPlacementIssues(cellsByKey, issues);
     addStartPointIssues(map, issues);
     addStartOnOpenDoorIssues(map, cellsByKey, issues);
+    addFlagIssues(map, issues);
     addReachabilityIssues(map, cellsByKey, issues);
 
     return { isValid: issues.length === 0, issues };

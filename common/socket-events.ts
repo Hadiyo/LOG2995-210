@@ -30,6 +30,8 @@ export enum SocketEvents {
     EndGameTurn = 'endGameTurn',
     StartCombat = 'startCombat',
     ToggleDoor = 'toggleDoor',
+    RequestFlagTransfer = 'requestFlagTransfer',
+    ResolveFlagTransfer = 'resolveFlagTransfer',
     SurrenderGame = 'surrenderGame',
     ToggleDebugMode = 'toggleDebugMode',
     ForceEndDebugTurn = 'forceEndDebugTurn',
@@ -178,6 +180,18 @@ export interface ToggleDoorPayload {
     sessionId: string;
     playerId: string;
     position: { x: number; y: number };
+}
+
+export interface RequestFlagTransferPayload {
+    sessionId: string;
+    playerId: string;
+    teammateId: string;
+}
+
+export interface ResolveFlagTransferPayload {
+    sessionId: string;
+    playerId: string;
+    accepted: boolean;
 }
 
 export interface SurrenderGamePayload {

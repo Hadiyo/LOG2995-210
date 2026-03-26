@@ -103,10 +103,13 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
                 currentTurnState?.activePlayerId ?? null,
                 currentTurnState?.actionTaken ?? true,
                 this.display.localMovementPointsRemaining(),
+                this.match()?.flagCarrierId ?? null,
             ),
         );
     });
     protected readonly activePlayerId = computed<string>(() => this.display.turnState()?.activePlayerId ?? '');
+    protected readonly winningTeamId = computed(() => this.display.matchEndState()?.winnerTeamId ?? null);
+    protected readonly winnerKind = computed(() => this.display.matchEndState()?.winnerKind ?? 'none');
     protected readonly activePlayer = computed<Player | null>(() =>
         this.players().find((player) => player.id === this.activePlayerId()) ?? null,
     );
@@ -166,6 +169,24 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly turnDetails = computed<readonly MatchPlayer[]>(() => this.display.turnOrderedPlayers());
     protected readonly selectedTileInfo = createSelectedTileInfo(this.interaction.inspectedTile, this.mapCells, this.mapObjects, this.players);
     protected readonly chatMessages = toSignal(this.chatService.chat$, { initialValue: [] as ChatMessage[] });
+    protected readonly incomingFlagTransfer = computed(() => {
+        const currentMatch = this.match();
+        const localPlayerId = this.localPlayerId();
+        const pendingTransfer = currentMatch?.pendingFlagTransfer ?? null;
+        if (!currentMatch || !localPlayerId || !pendingTransfer || pendingTransfer.receiverId !== localPlayerId) {
+            return null;
+        }
+
+        const requester = currentMatch.players.find((player) => player.id === pendingTransfer.requesterId) ?? null;
+        if (!requester) {
+            return null;
+        }
+
+        return {
+            kind: pendingTransfer.kind,
+            requesterName: requester.name,
+        };
+    });
 
     private matchEndRedirectTimeoutId: number | null = null;
     private matchEndRedirectIntervalId: number | null = null;
@@ -274,6 +295,26 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
 
     protected onToggleTurnStatusPanel(): void {
         this.isTurnStatusPanelOpen.update((open) => !open);
+    }
+
+    protected acceptIncomingFlagTransfer(): void {
+        const localPlayerId = this.localPlayerId();
+        if (!localPlayerId || !this.incomingFlagTransfer()) {
+            return;
+        }
+
+        this.gameSessionSocket.resolveFlagTransfer(localPlayerId, true);
+        this.interaction.movementFeedback.set('Transfert du drapeau accepte.');
+    }
+
+    protected refuseIncomingFlagTransfer(): void {
+        const localPlayerId = this.localPlayerId();
+        if (!localPlayerId || !this.incomingFlagTransfer()) {
+            return;
+        }
+
+        this.gameSessionSocket.resolveFlagTransfer(localPlayerId, false);
+        this.interaction.movementFeedback.set('Transfert du drapeau refuse.');
     }
 
     protected onToggleDebugMode(): void {

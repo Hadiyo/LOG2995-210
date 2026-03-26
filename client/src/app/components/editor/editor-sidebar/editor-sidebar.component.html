@@ -72,6 +72,7 @@
 
     <div class="palette">
       @for (obj of objects; track obj.id) {
+      @if (obj.id !== objectType.FLAG || editorState.editorMap().mode === gameMode.CTF) {
       <!-- Object selection button -->
       <button class="palette-item" type="button" (click)="editorState.selectObject(obj.id)"
         [class.active]="editorState.selectedObjectType() === obj.id" [class.disabled]="
@@ -91,6 +92,7 @@
           editorState.getObjectCountAndLimit(obj.id).limit }}</span>
         }
       </button>
+      }
       }
     </div>
   </section>

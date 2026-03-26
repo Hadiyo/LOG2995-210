@@ -3,6 +3,7 @@ import { GameMode, MapSize, ObjectType, TileType } from '@common/maps/map.enums'
 import type { EditorMap, MapObject, Vec2 } from '@common/maps/map.interface';
 
 import {
+    FLAG_LIMIT,
     START_LIMITS_BY_SIZE,
 } from './constants/editor.constants';
 
@@ -39,10 +40,14 @@ export class EditorPlacementRulesService {
 
     /**
      * Object limits (editor-time validation)
+     * - FLAG: only in CTF, singleton
      * - START: depends on map size
      */
     getObjectLimit(type: ObjectType, size: MapSize, mode: GameMode): number {
-        void mode;
+        if (type === ObjectType.FLAG) {
+            return mode === GameMode.CTF ? FLAG_LIMIT : 0;
+        }
+
         if (type === ObjectType.START) {
             return START_LIMITS_BY_SIZE[size];
         }

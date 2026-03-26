@@ -470,6 +470,13 @@
   margin: 0 0 8px;
 }
 
+.match-end-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
 .combat-toast-stack {
   position: fixed;
   right: 16px;

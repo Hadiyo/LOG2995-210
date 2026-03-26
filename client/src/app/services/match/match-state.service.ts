@@ -94,10 +94,12 @@ export class MatchStateService extends MatchSessionStore {
         const nextPlayers = currentMatch.players.map((player) =>
             player.id === playerId ? { ...player, position } : player,
         );
+        const nextFlagCarrierId = this.matchBoardService.resolveFlagCarrier(currentMatch, playerId, position);
         const nextMatch = {
             ...currentMatch,
             players: nextPlayers,
-            objects: this.matchBoardService.buildVisibleObjects(currentMatch.allObjects, nextPlayers),
+            flagCarrierId: nextFlagCarrierId,
+            objects: this.matchBoardService.buildVisibleObjects(currentMatch.allObjects, nextPlayers, nextFlagCarrierId),
         };
 
         this.setPersistedMatch(nextMatch);
@@ -190,10 +192,12 @@ export class MatchStateService extends MatchSessionStore {
             return null;
         }
 
+        const nextFlagCarrierId = currentMatch.flagCarrierId === playerId ? null : (currentMatch.flagCarrierId ?? null);
         return {
             ...currentMatch,
             players: remainingPlayers,
-            objects: this.matchBoardService.buildVisibleObjects(currentMatch.allObjects, remainingPlayers),
+            flagCarrierId: nextFlagCarrierId,
+            objects: this.matchBoardService.buildVisibleObjects(currentMatch.allObjects, remainingPlayers, nextFlagCarrierId),
             endState: remainingPlayers.length === 1 && !currentMatch.endState
                 ? this.matchSetupService.createNoWinnerEndState(remainingPlayers[0])
                 : currentMatch.endState ?? null,

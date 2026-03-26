@@ -110,8 +110,6 @@
           [objects]="mapObjects()"
           [players]="players()"
           [nowMs]="nowMs()"
-          [playerDirections]="playerDirections()"
-          [playerStates]="playerStates()"
           [actionModeEnabled]="actionModeEnabled()"
           [reachableCellKeys]="reachableCellKeys()"
           [reachableOriginKey]="reachableOriginKey()"
@@ -195,6 +193,8 @@
           [currentPlayerId]="localPlayerId()"
           [maxPlayers]="maxPlayers()"
           [expanded]="isPlayerListExpanded()"
+          [winnerKind]="winnerKind()"
+          [winnerTeamId]="winningTeamId()"
         />
       </section>
 
@@ -239,6 +239,26 @@
       <p class="match-end-modal__eyebrow">Partie terminee</p>
       <h2>{{ endState.message }}</h2>
       <p>Retour a l accueil dans {{ endRedirectCountdownSeconds() }} secondes.</p>
+    </section>
+  </div>
+}
+
+@if (incomingFlagTransfer(); as transfer) {
+  <div class="match-end-overlay">
+    <section class="match-end-modal" role="dialog" aria-modal="true">
+      <p class="match-end-modal__eyebrow">Transfert du drapeau</p>
+      <h2>
+        {{
+          transfer.kind === 'offer'
+            ? transfer.requesterName + ' vous propose le drapeau.'
+            : transfer.requesterName + ' souhaite recevoir votre drapeau.'
+        }}
+      </h2>
+      <p>La demande sera refusee automatiquement a la fin du tour.</p>
+      <div class="match-end-modal__actions">
+        <button type="button" class="panel__toggle-btn" (click)="refuseIncomingFlagTransfer()">Refuser</button>
+        <button type="button" class="panel__toggle-btn panel__toggle-btn--active" (click)="acceptIncomingFlagTransfer()">Accepter</button>
+      </div>
     </section>
   </div>
 }

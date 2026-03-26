@@ -1,4 +1,5 @@
 import { AvatarId, Die } from '../character/character.model';
+import type { MatchTeamId } from '../game/match.interface';
 import { Vec2 } from '../maps/map.interface';
 
 // Represents the status of a player in the game session
@@ -49,6 +50,7 @@ export interface PlayerInformation {
     name: string;
     avatarId: AvatarId;
     isOrganizer: boolean;
+    teamId?: MatchTeamId | null;
     dices: PlayerDice;
     bonus: Bonus;
 }
@@ -58,6 +60,7 @@ export interface PlayerState {
     status: PlayerStatus;
     attributes: PlayerAttributes;
     wins: number;
+    hasFlag?: boolean;
     remainingActions: number;
     remainingMovements: number;
 }

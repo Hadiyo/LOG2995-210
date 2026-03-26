@@ -3,7 +3,7 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
-import { ObjectType, TileType } from '@common/maps/map.enums';
+import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { ObjectPaletteItem, TilePaletteItem } from './editor-sidebar.types';
 
 @Component({
@@ -25,6 +25,7 @@ export class EditorSidebarComponent {
      Template helpers
      - Expose enums so HTML can compare modes/types safely
      ========================================================= */
+  readonly gameMode = GameMode;
   readonly objectType = ObjectType;
 
   /* =========================================================
@@ -67,6 +68,12 @@ export class EditorSidebarComponent {
       label: 'Point de départ',
       description: "Un joueur est assigné aléatoirement un point de départ au début d'une partie.",
       cssVar: '--object-spawn-img',
+    },
+    {
+      id: ObjectType.FLAG,
+      label: 'Drapeau',
+      description: "L'objectif principal du mode CTF.",
+      cssVar: '--object-flag-img',
     },
   ];
 
