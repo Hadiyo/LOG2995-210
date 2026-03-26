@@ -1,6 +1,6 @@
+import { getCellPositionAtIndex } from '@common/maps/map-utils';
 import { validateMap } from '@common/maps/map-validation';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
-import { getCellPositionAtIndex } from '@common/maps/map-utils';
 import type { EditorCell, EditorMap, MapObject } from '@common/maps/map.interface';
 
 /**
@@ -293,6 +293,52 @@ describe('common map-validation (validateMap)', () => {
         );
 
         expect(issueCodes(result)).toContain('START_ON_OPEN_DOOR_NOT_ALLOWED');
+    });
+
+    it('should report DOOR_DOORWAY_BLOCKED when a blocking object covers a doorway tile', () => {
+        const fiveByFiveMapSize = Number('5') as MapSize;
+        const result = validateMap(
+            makeEditorMap({
+                size: fiveByFiveMapSize,
+                map: [
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                    makeCell(TileType.WALL), makeCell(TileType.WALL), makeCell(TileType.DOOR), makeCell(TileType.WALL), makeCell(TileType.WALL),
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                ],
+                objects: [
+                    makeObject(ObjectType.START, 0, 0, 1),
+                    makeObject(ObjectType.START, 1, 0, 2),
+                    makeObject(ObjectType.REGEN, 1, 2, 2, ObjectSize.L), // covers (1,2),(2,2),(1,3),(2,3) — blocks south doorway
+                ],
+            }),
+        );
+
+        expect(issueCodes(result)).toContain('DOOR_DOORWAY_BLOCKED');
+    });
+
+    it('should not report DOOR_DOORWAY_BLOCKED when blocking objects do not touch doorway tiles', () => {
+        const fiveByFiveMapSize = Number('5') as MapSize;
+        const result = validateMap(
+            makeEditorMap({
+                size: fiveByFiveMapSize,
+                map: [
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                    makeCell(TileType.WALL), makeCell(TileType.WALL), makeCell(TileType.DOOR), makeCell(TileType.WALL), makeCell(TileType.WALL),
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                ],
+                objects: [
+                    makeObject(ObjectType.START, 0, 0, 1),
+                    makeObject(ObjectType.START, 1, 0, 2),
+                    makeObject(ObjectType.REGEN, 0, 2, 2, ObjectSize.L), // covers (0,2),(1,2),(0,3),(1,3) — NOT near doorway
+                ],
+            }),
+        );
+
+        expect(issueCodes(result)).not.toContain('DOOR_DOORWAY_BLOCKED');
     });
 
     it('should not add UNREACHABLE_TILES when there are no traversable tiles', () => {

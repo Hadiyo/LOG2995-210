@@ -1,6 +1,6 @@
-import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from './map.enums';
+import { getCellPositionAtIndex, getCoveredPositions } from './map-utils';
+import { GameMode, MapSize, ObjectType, TileType } from './map.enums';
 import type { EditorMap, Vec2 } from './map.interface';
-import { getCellPositionAtIndex } from './map-utils';
 
 export type MapValidationIssueCode =
     | 'NAME_REQUIRED'
@@ -13,6 +13,7 @@ export type MapValidationIssueCode =
     | 'FLAG_ON_DOOR_NOT_ALLOWED'
     | 'START_ON_OPEN_DOOR_NOT_ALLOWED'
     | 'DOOR_INVALID_PLACEMENT'
+    | 'DOOR_DOORWAY_BLOCKED'
     | 'UNREACHABLE_TILES';
 
 export interface MapValidationIssue {
@@ -74,17 +75,31 @@ const getNeighborKeys = (pos: Vec2): string[] => [
     positionKey(pos.x, pos.y + 1),
 ];
 
-const getCoveredPositions = (position: Vec2, size: ObjectSize): Vec2[] => {
-    if (size === ObjectSize.S) {
-        return [{ ...position }];
+const getDoorPlacement = (position: Vec2, cellsByKey: Map<string, Cell>): 'horizontal' | 'vertical' | null => {
+    const { x, y } = position;
+    const left = getTileType(cellsByKey, x - 1, y);
+    const right = getTileType(cellsByKey, x + 1, y);
+    const up = getTileType(cellsByKey, x, y - 1);
+    const down = getTileType(cellsByKey, x, y + 1);
+
+    if (left === undefined || right === undefined || up === undefined || down === undefined) {
+        return null;
     }
 
-    return [
-        { ...position },
-        { x: position.x + 1, y: position.y },
-        { x: position.x, y: position.y + 1 },
-        { x: position.x + 1, y: position.y + 1 },
-    ];
+    const horizontalWalls = isWallTile(left) && isWallTile(right);
+    const verticalWalls = isWallTile(up) && isWallTile(down);
+    const horizontalTerrain = isTerrainTile(left) && isTerrainTile(right);
+    const verticalTerrain = isTerrainTile(up) && isTerrainTile(down);
+
+    if (horizontalWalls && verticalTerrain) {
+        return 'vertical';
+    }
+
+    if (verticalWalls && horizontalTerrain) {
+        return 'horizontal';
+    }
+
+    return null;
 };
 
 const getInvalidDoorPositions = (cellsByKey: Map<string, Cell>): Vec2[] => {
@@ -95,25 +110,8 @@ const getInvalidDoorPositions = (cellsByKey: Map<string, Cell>): Vec2[] => {
             continue;
         }
 
-        const { x, y } = cell.position;
-        const left = getTileType(cellsByKey, x - 1, y);
-        const right = getTileType(cellsByKey, x + 1, y);
-        const up = getTileType(cellsByKey, x, y - 1);
-        const down = getTileType(cellsByKey, x, y + 1);
-
-        if (left === undefined || right === undefined || up === undefined || down === undefined) {
-            invalid.push({ x, y });
-            continue;
-        }
-
-        const horizontalWalls = isWallTile(left) && isWallTile(right);
-        const verticalWalls = isWallTile(up) && isWallTile(down);
-        const horizontalTerrain = isTerrainTile(left) && isTerrainTile(right);
-        const verticalTerrain = isTerrainTile(up) && isTerrainTile(down);
-
-        const validPlacement = (horizontalWalls && verticalTerrain) || (verticalWalls && horizontalTerrain);
-        if (!validPlacement) {
-            invalid.push({ x, y });
+        if (getDoorPlacement(cell.position, cellsByKey) === null) {
+            invalid.push(cell.position);
         }
     }
 
@@ -212,6 +210,41 @@ const addDoorPlacementIssues = (cellsByKey: Map<string, Cell>, issues: MapValida
     });
 };
 
+const getBlockedDoorwayPositions = (cellsByKey: Map<string, Cell>, blockedKeys: Set<string>): Vec2[] => {
+    const blocked: Vec2[] = [];
+
+    for (const cell of cellsByKey.values()) {
+        if (!isDoorTile(cell.tileType)) continue;
+
+        const { x, y } = cell.position;
+        const doorPlacement = getDoorPlacement(cell.position, cellsByKey);
+        if (doorPlacement === null) continue;
+
+        if (doorPlacement === 'vertical') {
+            if (blockedKeys.has(positionKey(x, y - 1)) || blockedKeys.has(positionKey(x, y + 1))) {
+                blocked.push({ x, y });
+            }
+        } else {
+            if (blockedKeys.has(positionKey(x - 1, y)) || blockedKeys.has(positionKey(x + 1, y))) {
+                blocked.push({ x, y });
+            }
+        }
+    }
+
+    return blocked;
+};
+
+const addDoorwayBlockedIssues = (cellsByKey: Map<string, Cell>, blockedKeys: Set<string>, issues: MapValidationIssue[]): void => {
+    const blockedDoors = getBlockedDoorwayPositions(cellsByKey, blockedKeys);
+    if (blockedDoors.length === 0) return;
+
+    issues.push({
+        code: 'DOOR_DOORWAY_BLOCKED',
+        message: "Un objet bloquant empeche le passage a travers une porte.",
+        details: { positions: blockedDoors },
+    });
+};
+
 const addStartPointIssues = (map: EditorMap, issues: MapValidationIssue[]): void => {
     const requiredStarts = STARTS_REQUIRED_BY_SIZE[map.size];
     const startCount = map.objects.filter((object) => object.type === ObjectType.START).length;
@@ -297,8 +330,8 @@ const collectUnreachablePositions = (
     return unreachable;
 };
 
-const addReachabilityIssues = (map: EditorMap, cellsByKey: Map<string, Cell>, issues: MapValidationIssue[]): void => {
-    const traversable = collectTraversableKeys(cellsByKey, collectBlockedKeys(map));
+const addReachabilityIssues = (cellsByKey: Map<string, Cell>, blockedKeys: Set<string>, map: EditorMap, issues: MapValidationIssue[]): void => {
+    const traversable = collectTraversableKeys(cellsByKey, blockedKeys);
     if (traversable.size === 0) return;
 
     const startPositions = map.objects
@@ -326,12 +359,14 @@ export const validateMap = (map: EditorMap): MapValidationResult => {
     addTerrainRatioIssues(map, issues);
 
     const cellsByKey = buildCellMap(map.map, map.size);
+    const blockedKeys = collectBlockedKeys(map);
     addDoorPlacementIssues(cellsByKey, issues);
+    addDoorwayBlockedIssues(cellsByKey, blockedKeys, issues);
     addStartPointIssues(map, issues);
     addFlagIssues(map, issues);
     addFlagOnDoorIssues(map, cellsByKey, issues);
     addStartOnOpenDoorIssues(map, cellsByKey, issues);
-    addReachabilityIssues(map, cellsByKey, issues);
+    addReachabilityIssues(cellsByKey, blockedKeys, map, issues);
 
     return { isValid: issues.length === 0, issues };
 };

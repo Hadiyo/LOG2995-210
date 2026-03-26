@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { getCoveredPositions } from '@common/maps/map-utils';
 import { GameMode, MapSize, ObjectType, TileType } from '@common/maps/map.enums';
 import type { EditorMap, MapObject, Vec2 } from '@common/maps/map.interface';
 
@@ -9,7 +10,11 @@ import {
 } from './constants/editor.constants';
 
 import { EditorMapFactoryService } from './editor-map-factory.service';
-import { getCoveredPositions, positionsIntersect } from './utils/editor-geometry.util';
+
+const positionsIntersect = (a: Vec2[], b: Vec2[]): boolean => {
+    const bKey = new Set(b.map((position) => `${position.x},${position.y}`));
+    return a.some((position) => bKey.has(`${position.x},${position.y}`));
+};
 
 
 @Injectable({ providedIn: 'root' })

@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MapConfig } from '@app/config/map.config';
 import { MapApiService } from '@app/services/map/map-api.service';
-import { getIndexFromPosition } from '@common/maps/map-utils';
+import { getCoveredPositions, getIndexFromPosition } from '@common/maps/map-utils';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import type { EditorCell, EditorMap, EditorMapDetails, MapObject, ObjectCountAndLimit } from '@common/maps/map.interface';
 import { MouseButton } from '@common/mouse-events.enum';
@@ -10,7 +10,6 @@ import { EditorMapFactoryService } from './editor-map-factory.service';
 import { EditorOccupancyService } from './editor-occupancy.service';
 import { EditorPlacementRulesService } from './editor-placement-rules.service';
 import type { SelectedCellInfo } from './types/selected-cell-info.type';
-import { getCoveredPositions } from './utils/editor-geometry.util';
 
 @Injectable({ providedIn: 'root' })
 export class EditorStateService {
