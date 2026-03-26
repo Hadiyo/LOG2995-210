@@ -178,13 +178,11 @@ export class GameSessionService {
     resolveFlagTransfer(sessionId: string, receiverId: string, accepted: boolean): boolean {
         const session = this.sessions.get(sessionId);
         const pendingFlagTransfer = session?.match.pendingFlagTransfer ?? null;
-        if (!session || !pendingFlagTransfer || pendingFlagTransfer.receiverId !== receiverId || session.match.endState) {
+        if (!this.canResolveFlagTransfer(session, pendingFlagTransfer, receiverId)) {
             return false;
         }
 
-        const nextFlagCarrierId = accepted
-            ? (pendingFlagTransfer.kind === 'offer' ? pendingFlagTransfer.receiverId : pendingFlagTransfer.requesterId)
-            : (session.match.flagCarrierId ?? null);
+        const nextFlagCarrierId = this.resolveTransferredFlagCarrierId(session.match, pendingFlagTransfer, accepted);
         session.match = {
             ...session.match,
             flagCarrierId: nextFlagCarrierId,
@@ -199,24 +197,7 @@ export class GameSessionService {
             }
         }
 
-        if (accepted && nextFlagCarrierId && this.isCtfWinner(session.match, nextFlagCarrierId)) {
-            const winner = session.match.players.find((player) => player.id === nextFlagCarrierId) ?? null;
-            if (!winner) {
-                return false;
-            }
-
-            session.match = {
-                ...session.match,
-                endState: {
-                    id: crypto.randomUUID(),
-                    winnerKind: 'team',
-                    winnerPlayerId: winner.id,
-                    winnerTeamId: winner.teamId ?? null,
-                    message: `L equipe ${winner.teamId ?? '?'} remporte la partie: ${winner.name} ramene le drapeau a son point de depart.`,
-                    resolvedAt: Date.now(),
-                },
-            };
-            this.finishMatch(session);
+        if (this.finishCtfMatchIfFlagTransferWins(session, accepted, nextFlagCarrierId)) {
             return true;
         }
 
@@ -844,6 +825,60 @@ export class GameSessionService {
         const giver = nextFlagCarrierId === receiver.id ? requester : receiver;
         const beneficiary = nextFlagCarrierId === receiver.id ? receiver : requester;
         return `${beneficiary.name} obtient le drapeau de ${giver.name}.`;
+    }
+
+    private canResolveFlagTransfer(
+        session: GameSessionRuntime | undefined,
+        pendingFlagTransfer: MatchPendingFlagTransfer | null,
+        receiverId: string,
+    ): session is GameSessionRuntime {
+        return !!session &&
+            !!pendingFlagTransfer &&
+            pendingFlagTransfer.receiverId === receiverId &&
+            !session.match.endState;
+    }
+
+    private resolveTransferredFlagCarrierId(
+        match: InitializedMatch,
+        pendingFlagTransfer: MatchPendingFlagTransfer,
+        accepted: boolean,
+    ): string | null {
+        if (!accepted) {
+            return match.flagCarrierId ?? null;
+        }
+
+        return pendingFlagTransfer.kind === 'offer'
+            ? pendingFlagTransfer.receiverId
+            : pendingFlagTransfer.requesterId;
+    }
+
+    private finishCtfMatchIfFlagTransferWins(
+        session: GameSessionRuntime,
+        accepted: boolean,
+        nextFlagCarrierId: string | null,
+    ): boolean {
+        if (!accepted || !nextFlagCarrierId || !this.isCtfWinner(session.match, nextFlagCarrierId)) {
+            return false;
+        }
+
+        const winner = session.match.players.find((player) => player.id === nextFlagCarrierId) ?? null;
+        if (!winner) {
+            return false;
+        }
+
+        session.match = {
+            ...session.match,
+            endState: {
+                id: crypto.randomUUID(),
+                winnerKind: 'team',
+                winnerPlayerId: winner.id,
+                winnerTeamId: winner.teamId ?? null,
+                message: `L equipe ${winner.teamId ?? '?'} remporte la partie: ${winner.name} ramene le drapeau a son point de depart.`,
+                resolvedAt: Date.now(),
+            },
+        };
+        this.finishMatch(session);
+        return true;
     }
 
     private createSystemMessage(content: string): ChatMessage {

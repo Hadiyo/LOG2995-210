@@ -221,9 +221,15 @@ describe('GameSessionService lifecycle', () => {
             match: makeMatch({
                 mode: GameMode.CTF,
                 players: [
-                    makeMatchPlayer({ id: 'player-1', name: 'Alice', isOrganizer: true, teamId: 'A', position: { x: 0, y: 0 }, startingPosition: { x: 0, y: 0 } }),
-                    makeMatchPlayer({ id: 'player-2', name: 'Bob', avatarId: 1, teamId: 'B', position: { x: 1, y: 0 }, startingPosition: { x: 1, y: 0 } }),
-                    makeMatchPlayer({ id: 'player-3', name: 'Cara', avatarId: 2, teamId: 'B', position: { x: 2, y: 0 }, startingPosition: { x: 2, y: 0 } }),
+                    makeMatchPlayer({
+                        id: 'player-1', name: 'Alice', isOrganizer: true, teamId: 'A', position: { x: 0, y: 0 }, startingPosition: { x: 0, y: 0 },
+                    }),
+                    makeMatchPlayer({
+                        id: 'player-2', name: 'Bob', avatarId: 1, teamId: 'B', position: { x: 1, y: 0 }, startingPosition: { x: 1, y: 0 },
+                    }),
+                    makeMatchPlayer({
+                        id: 'player-3', name: 'Cara', avatarId: 2, teamId: 'B', position: { x: 2, y: 0 }, startingPosition: { x: 2, y: 0 },
+                    }),
                 ],
             }),
         });

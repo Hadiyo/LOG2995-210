@@ -225,7 +225,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.effects.destroy();
         this.localPoseIntervalId = stopLocalPoseRefreshClock(this.localPoseIntervalId);
         this.visualFeedback.resetVisualOverrides();
-        this.clearMatchEndRedirect();
+        this.matchEndRedirectState = clearMatchEndRedirect(this.matchEndRedirectState, this.endRedirectRemainingMs);
     }
 
     protected endRedirectCountdownSeconds(): number {

@@ -287,10 +287,18 @@ describe('GameSessionService actions', () => {
             match: makeMatch({
                 mode: GameMode.CTF,
                 players: [
-                    makeMatchPlayer({ id: 'player-1', position: { x: 1, y: 0 }, startingPosition: { x: 0, y: 0 }, teamId: 'A', name: 'Alice' }),
-                    makeMatchPlayer({ id: 'player-2', position: { x: 2, y: 0 }, startingPosition: { x: 1, y: 0 }, avatarId: 1, teamId: 'A', name: 'Bob' }),
-                    makeMatchPlayer({ id: 'player-3', position: { x: 2, y: 2 }, startingPosition: { x: 2, y: 2 }, avatarId: 2, teamId: 'B', name: 'Cara' }),
-                    makeMatchPlayer({ id: 'player-4', position: { x: 2, y: 1 }, startingPosition: { x: 2, y: 1 }, avatarId: 3, teamId: 'B', name: 'Dan' }),
+                    makeMatchPlayer({
+                        id: 'player-1', position: { x: 1, y: 0 }, startingPosition: { x: 0, y: 0 }, teamId: 'A', name: 'Alice',
+                    }),
+                    makeMatchPlayer({
+                        id: 'player-2', position: { x: 2, y: 0 }, startingPosition: { x: 1, y: 0 }, avatarId: 1, teamId: 'A', name: 'Bob',
+                    }),
+                    makeMatchPlayer({
+                        id: 'player-3', position: { x: 2, y: 2 }, startingPosition: { x: 2, y: 2 }, avatarId: 2, teamId: 'B', name: 'Cara',
+                    }),
+                    makeMatchPlayer({
+                        id: 'player-4', position: { x: 2, y: 1 }, startingPosition: { x: 2, y: 1 }, avatarId: 3, teamId: 'B', name: 'Dan',
+                    }),
                 ],
                 flagCarrierId: 'player-1',
             }),
