@@ -15,9 +15,10 @@ import {
     MOVEMENT_KEY_BINDINGS,
     GameSessionActionContext,
     GameSessionActionOption,
-} from './game-session.constants';
+} from '@app/config/game-session.config';
 import { GameSessionDisplayService } from './game-session-display.service';
 import { GameSessionTargetsService } from './game-session-targets.service';
+
 @Injectable()
 export class GameSessionInteractionService {
     private readonly combatStateService = inject(CombatStateService);
