@@ -1,6 +1,7 @@
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { PlayerFacing, PlayerRenderState } from '@common/player/player.interface';
 
 export function buildInitializedMatchFromEditor(
     map: EditorMapDetails,
@@ -18,6 +19,7 @@ export function buildInitializedMatchFromEditor(
         startingPosition: { ...shuffledStarts[index].position },
         health: player.maxHealth,
         combatWins: 0,
+        render: createGameSessionInitialRenderState(),
     }));
 
     return {
@@ -68,6 +70,27 @@ export function buildGameSessionVisibleObjects(
     return objects
         .filter((object) => object.type !== ObjectType.START || activeStarts.has(`${object.position.x}:${object.position.y}`))
         .map((object) => ({ ...object, position: { ...object.position } }));
+}
+
+export function createGameSessionInitialRenderState(): PlayerRenderState {
+    return {
+        facing: 'front',
+        pose: 'idle',
+    };
+}
+
+export function getGameSessionFacingToTarget(from: Vec2, to: Vec2): PlayerFacing | null {
+    const deltaX = to.x - from.x;
+    const deltaY = to.y - from.y;
+    if (deltaX === 0 && deltaY === 0) {
+        return null;
+    }
+
+    if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+        return deltaX >= 0 ? 'right' : 'left';
+    }
+
+    return deltaY >= 0 ? 'front' : 'back';
 }
 
 export function getGameSessionObjectCovering(objects: MapObject[], position: Vec2): MapObject | null {

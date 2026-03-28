@@ -36,6 +36,6 @@ export function toGamePlayer(
             remainingActions: isActivePlayer && !actionTaken ? 1 : 0,
             remainingMovements: isActivePlayer ? movementPointsRemaining : 0,
         },
-        render: {},
+        render: player.render ? { ...player.render } : {},
     };
 }

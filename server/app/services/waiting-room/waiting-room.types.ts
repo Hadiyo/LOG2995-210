@@ -10,6 +10,7 @@ export interface WaitingRoom {
     messages: ChatMessage[];
     socketToPlayerId: Map<string, string>;
     isLocked: boolean;
+    isStarting: boolean;
     maxPlayers: number;
 }
 
