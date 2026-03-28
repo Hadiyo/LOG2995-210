@@ -7,7 +7,7 @@ const IDLE_STATE: CharacterState = 'idle';
 @Injectable({
     providedIn: 'root',
 })
-export class GameVisualFeedbackService {
+export class MatchVisualFeedbackService {
     // Per-player direction override used by renderers (local visual layer only).
     private readonly playerDirectionSignal = signal<Record<string, CharacterDirection>>({});
     readonly playerDirections = this.playerDirectionSignal.asReadonly();
