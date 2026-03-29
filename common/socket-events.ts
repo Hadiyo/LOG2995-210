@@ -1,5 +1,5 @@
 import { ChatMessage } from './chat/chat.interface';
-import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from './game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice, VirtualPlayerProfile } from './game/match.interface';
 import { MatchTurnState } from './game/turn.interface';
 
 export enum SocketEvents {
@@ -71,6 +71,7 @@ export enum WaitingRoomEvents {
     JoinWaitingRoom = 'joinWaitingRoom',
     LeaveWaitingRoom = 'leaveWaitingRoom',
     KickWaitingRoomPlayer = 'kickWaitingRoomPlayer',
+    AddWaitingRoomVirtualPlayer = 'addWaitingRoomVirtualPlayer',
     SendWaitingRoomMessage = 'sendWaitingRoomMessage',
     StartWaitingRoomGame = 'startWaitingRoomGame',
 
@@ -118,6 +119,11 @@ export interface LeaveWaitingRoomPayload {
 export interface KickWaitingRoomPlayerPayload {
     accessCode: string;
     playerId: string;
+}
+
+export interface AddWaitingRoomVirtualPlayerPayload {
+    accessCode: string;
+    profile: VirtualPlayerProfile;
 }
 
 export interface SendWaitingRoomMessagePayload {

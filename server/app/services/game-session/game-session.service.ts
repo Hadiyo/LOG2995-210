@@ -3,7 +3,7 @@ import { clearTimers } from '@app/services/timer/turn.timers';
 import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
-import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { SessionSocketEvents } from '@common/socket-events';
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -13,13 +13,17 @@ import { GameSessionActions } from './game-session.actions';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { buildSession } from './game-session.runtime';
 import { GameSessionSessionActions } from './game-session.session-actions';
+import { planVirtualPlayerDecision } from './game-session.virtual-player';
+
+const VIRTUAL_PLAYER_MIN_DELAY_MS = 450;
+const VIRTUAL_PLAYER_DELAY_VARIANCE_MS = 450;
 
 @Injectable()
 export class GameSessionService {
     private readonly sessions = new Map<string, GameSessionRuntime>();
     private readonly events = new EventEmitter();
     private readonly event2 = new EventEmitter2();
-    private readonly lifecycle = new GameSessionLifecycle(this.sessions, this.events);
+    private readonly lifecycle = new GameSessionLifecycle(this.sessions, this.events, (session) => this.scheduleVirtualDecision(session));
     private readonly sessionActions = new GameSessionSessionActions(this.sessions, this.lifecycle);
     private readonly actions = new GameSessionActions(this.sessions, this.lifecycle);
 
@@ -52,8 +56,8 @@ export class GameSessionService {
             throw new NotFoundException('Game session not found');
         }
 
-        const playerExists = session.match.players.some((player) => player.id === playerId);
-        if (!playerExists) {
+        const player = session.match.players.find((candidate) => candidate.id === playerId) ?? null;
+        if (!player || player.controller === 'virtual') {
             throw new NotFoundException('Game player not found');
         }
 
@@ -61,7 +65,7 @@ export class GameSessionService {
         if (previousSessionId && previousSessionId !== sessionId) {
             const previousMembership = this.removeSocket(socketId);
             if (previousMembership) {
-                this.sessionActions.surrender(previousMembership.sessionId, previousMembership.playerId);
+                this.surrender(previousMembership.sessionId, previousMembership.playerId);
             }
         }
 
@@ -81,7 +85,6 @@ export class GameSessionService {
     getMatchFromSessionId(id: string): InitializedMatch | null {
         return this.sessions.get(id)?.match ?? null;
     }
-
 
     getPlayerIdForSocket(socketId: string, sessionId: string): string | null {
         return this.sessions.get(sessionId)?.socketToPlayerId.get(socketId) ?? null;
@@ -149,31 +152,42 @@ export class GameSessionService {
     }
 
     endTurn(sessionId: string, playerId: string): boolean {
-        return this.sessionActions.endTurn(sessionId, playerId);
+        return this.runSessionAction(sessionId, () => this.sessionActions.endTurn(sessionId, playerId));
     }
 
     requestFlagTransfer(sessionId: string, requesterId: string, receiverId: string): boolean {
-        return this.sessionActions.requestFlagTransfer(sessionId, requesterId, receiverId);
+        const success = this.runSessionAction(sessionId, () => this.sessionActions.requestFlagTransfer(sessionId, requesterId, receiverId));
+        if (!success) {
+            return false;
+        }
+
+        const session = this.sessions.get(sessionId);
+        const receiver = session?.match.players.find((player) => player.id === receiverId) ?? null;
+        if (receiver?.controller === 'virtual') {
+            return this.resolveFlagTransfer(sessionId, receiverId, true);
+        }
+
+        return true;
     }
 
     resolveFlagTransfer(sessionId: string, receiverId: string, accepted: boolean): boolean {
-        return this.sessionActions.resolveFlagTransfer(sessionId, receiverId, accepted);
+        return this.runSessionAction(sessionId, () => this.sessionActions.resolveFlagTransfer(sessionId, receiverId, accepted));
     }
 
     surrender(sessionId: string, playerId: string): boolean {
-        return this.sessionActions.surrender(sessionId, playerId);
+        return this.runSessionAction(sessionId, () => this.sessionActions.surrender(sessionId, playerId));
     }
 
     toggleDebugMode(sessionId: string, playerId: string): boolean {
-        return this.sessionActions.toggleDebugMode(sessionId, playerId);
+        return this.runSessionAction(sessionId, () => this.sessionActions.toggleDebugMode(sessionId, playerId));
     }
 
     forceEndDebugTurn(sessionId: string, playerId: string): boolean {
-        return this.sessionActions.forceEndDebugTurn(sessionId, playerId);
+        return this.runSessionAction(sessionId, () => this.sessionActions.forceEndDebugTurn(sessionId, playerId));
     }
 
     debugTeleportPlayer(sessionId: string, playerId: string, position: { x: number; y: number }): boolean {
-        return this.sessionActions.debugTeleportPlayer(sessionId, playerId, position);
+        return this.runSessionAction(sessionId, () => this.sessionActions.debugTeleportPlayer(sessionId, playerId, position));
     }
 
     addChatMessage(sessionId: string, message: ChatMessage): ChatMessage | null {
@@ -181,19 +195,19 @@ export class GameSessionService {
     }
 
     movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
-        return this.actions.movePlayer(sessionId, playerId, direction);
+        return this.runSessionAction(sessionId, () => this.actions.movePlayer(sessionId, playerId, direction));
     }
 
     useSanctuary(sessionId: string, playerId: string, sanctuaryId: number): boolean {
-        return this.actions.useSanctuary(sessionId, playerId, sanctuaryId);
+        return this.runSessionAction(sessionId, () => this.actions.useSanctuary(sessionId, playerId, sanctuaryId));
     }
 
     resolveSanctuaryChoice(sessionId: string, playerId: string, choice: MatchSanctuaryChoice): boolean {
-        return this.actions.resolveSanctuaryChoice(sessionId, playerId, choice);
+        return this.runSessionAction(sessionId, () => this.actions.resolveSanctuaryChoice(sessionId, playerId, choice));
     }
 
     toggleDoor(sessionId: string, playerId: string, position: { x: number; y: number }): boolean {
-        return this.actions.toggleDoor(sessionId, playerId, position);
+        return this.runSessionAction(sessionId, () => this.actions.toggleDoor(sessionId, playerId, position));
     }
 
     resumeSessionTurns(sessionId: string): void {
@@ -212,5 +226,89 @@ export class GameSessionService {
 
     resolveCombatTie(sessionId: string, winnerId: string, loserId: string): void {
         this.sessionActions.resolveCombatTie(sessionId, winnerId, loserId);
+    }
+
+    private runSessionAction(sessionId: string, action: () => boolean): boolean {
+        const success = action();
+        if (!success) {
+            return false;
+        }
+
+        const session = this.sessions.get(sessionId);
+        if (session) {
+            this.scheduleVirtualDecision(session);
+        }
+
+        return true;
+    }
+
+    private scheduleVirtualDecision(session: GameSessionRuntime): void {
+        if (session.virtualDecisionTimeoutId) {
+            clearTimeout(session.virtualDecisionTimeoutId);
+            session.virtualDecisionTimeoutId = null;
+        }
+
+        const activeVirtualPlayer = this.getActiveVirtualPlayer(session);
+        if (!activeVirtualPlayer || session.match.endState) {
+            return;
+        }
+
+        const delayMs = VIRTUAL_PLAYER_MIN_DELAY_MS + Math.floor(Math.random() * VIRTUAL_PLAYER_DELAY_VARIANCE_MS);
+        session.virtualDecisionTimeoutId = setTimeout(() => {
+            session.virtualDecisionTimeoutId = null;
+            this.performVirtualDecision(session.sessionId, activeVirtualPlayer.id);
+        }, delayMs);
+    }
+
+    private performVirtualDecision(sessionId: string, playerId: string): void {
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return;
+        }
+
+        const activeVirtualPlayer = this.getActiveVirtualPlayer(session);
+        if (!activeVirtualPlayer || activeVirtualPlayer.id !== playerId) {
+            return;
+        }
+
+        if (session.match.pendingSanctuaryChoice?.playerId === playerId) {
+            const choice = activeVirtualPlayer.virtualProfile === 'aggressive' ? 'double-or-nothing' : 'normal';
+            this.resolveSanctuaryChoice(sessionId, playerId, choice);
+            return;
+        }
+
+        const decision = planVirtualPlayerDecision(session.match, session.turnState, activeVirtualPlayer);
+        switch (decision.kind) {
+            case 'move':
+                if (!this.movePlayer(sessionId, playerId, decision.direction)) {
+                    this.endTurn(sessionId, playerId);
+                }
+                return;
+            case 'toggle-door':
+                if (!this.toggleDoor(sessionId, playerId, decision.position)) {
+                    this.endTurn(sessionId, playerId);
+                }
+                return;
+            case 'use-sanctuary':
+                if (!this.useSanctuary(sessionId, playerId, decision.sanctuaryId)) {
+                    this.endTurn(sessionId, playerId);
+                }
+                return;
+            case 'combat':
+            case 'end-turn':
+                this.endTurn(sessionId, playerId);
+                return;
+            default:
+                return;
+        }
+    }
+
+    private getActiveVirtualPlayer(session: GameSessionRuntime): MatchPlayer | null {
+        if (session.turnState.phase !== 'active' || !session.turnState.activePlayerId) {
+            return null;
+        }
+
+        const activePlayer = session.match.players.find((player) => player.id === session.turnState.activePlayerId) ?? null;
+        return activePlayer?.controller === 'virtual' ? activePlayer : null;
     }
 }

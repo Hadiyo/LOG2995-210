@@ -42,6 +42,7 @@ export class GameSessionLifecycle {
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly events: EventEmitter,
+        private readonly syncAutomation: (session: GameSessionRuntime) => void = () => undefined,
     ) {
         this.emitSnapshot = this.emitSnapshot.bind(this);
         this.setNextMatch = this.setNextMatch.bind(this);
@@ -197,6 +198,10 @@ export class GameSessionLifecycle {
             return null;
         }
 
+        if (requester.controller === 'virtual') {
+            return null;
+        }
+
         const sameTeam = requester.teamId !== null && requester.teamId !== undefined && requester.teamId === receiver.teamId;
         const adjacent = Math.abs(requester.position.x - receiver.position.x) + Math.abs(requester.position.y - receiver.position.y) === 1;
         if (!sameTeam || !adjacent) {
@@ -324,6 +329,7 @@ export class GameSessionLifecycle {
 
     startTransition(session: GameSessionRuntime): void {
         startTimerTransition(session, this.startTimerConfig);
+        this.syncAutomation(session);
     }
 
     advanceToNextTurn(session: GameSessionRuntime): void {
@@ -338,6 +344,7 @@ export class GameSessionLifecycle {
             (s) => this.activateTurn(s),
             (s) => this.advanceToNextTurn(s),
         );
+        this.syncAutomation(session);
     }
 
     stopSessionTimers(session: GameSessionRuntime): void {
@@ -347,6 +354,7 @@ export class GameSessionLifecycle {
 
     private activateTurn(session: GameSessionRuntime): void {
         activateTurn(session, this.getActivePlayer, this.activateTurnConfig);
+        this.syncAutomation(session);
     }
 
     private getMissingCtfTeamId(mode: GameMode, players: MatchPlayer[]): MatchTeamId | null {

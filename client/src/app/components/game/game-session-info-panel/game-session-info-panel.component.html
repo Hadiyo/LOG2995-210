@@ -10,7 +10,12 @@
   </div>
   <div class="info-row">
     <span class="info-label">Joueur actif</span>
-    <span class="info-value">{{ activePlayerName ?? defaultPanelTitle }}</span>
+    <span class="info-value info-value--player">
+      <span>{{ activePlayerName ?? defaultPanelTitle }}</span>
+      @if (activePlayerBadge) {
+        <span class="player-badge" [attr.title]="activePlayerBadge">{{ activePlayerBadge }}</span>
+      }
+    </span>
   </div>
   <div class="info-row">
     <span class="info-label">Temps restant</span>

@@ -9,4 +9,5 @@ export interface GameSessionRuntime extends Timers {
     messages: ChatMessage[];
     socketToPlayerId: Map<string, string>;
     turnState: MatchTurnState;
+    virtualDecisionTimeoutId: NodeJS.Timeout | null;
 }

@@ -24,6 +24,14 @@ export class GameTileInfoModalComponent {
     return resolveAssetUrl(`assets/avatars/thumbs/${avatarId}.png`);
   }
 
+  getVirtualPlayerLabel(): string | null {
+    if (this.tileInfo.playerController !== 'virtual') {
+      return null;
+    }
+
+    return this.tileInfo.playerVirtualProfile === 'defensive' ? 'JV defensif' : 'JV agressif';
+  }
+
   // Close the modal from the overlay or button.
   onClose(): void {
     this.close.emit();

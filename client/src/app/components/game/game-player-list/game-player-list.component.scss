@@ -195,6 +195,11 @@
   background: color-mix(in srgb, var(--accent-success) 22%, transparent);
 }
 
+.player__badge--virtual {
+  color: #8fd0ff;
+  background: color-mix(in srgb, #5db4ff 20%, transparent);
+}
+
 .player__placeholder-text {
   font-style: italic;
 }

@@ -39,6 +39,7 @@ export class MatchSetupService {
             attackDie: character.bonuses.attaqueDie,
             defenseDie: character.bonuses.defenseDie,
             controller: 'human',
+            virtualProfile: null,
         };
     }
 
@@ -102,6 +103,7 @@ export class MatchSetupService {
             baseAttack: player.baseAttack ?? DEFAULT_PLAYER_ATTACK,
             baseDefense: player.baseDefense ?? DEFAULT_PLAYER_DEFENSE,
             controller: player.controller ?? 'human',
+            virtualProfile: player.virtualProfile ?? null,
         };
     }
 
@@ -178,6 +180,7 @@ export class MatchSetupService {
             defenseBonus: player.defenseBonus ?? 0,
             arenaBuffTurnsRemaining: player.arenaBuffTurnsRemaining ?? 0,
             controller: player.controller ?? 'human',
+            virtualProfile: player.virtualProfile ?? null,
             render: this.normalizePlayerRender(player),
         };
     }

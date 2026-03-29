@@ -8,6 +8,7 @@ import {
     WaitingRoomUpdatedEvent,
 } from '@app/services/waiting-room/waiting-room.types';
 import {
+    AddWaitingRoomVirtualPlayerPayload,
     CreateWaitingRoomPayload,
     getWaitingRoomRoom,
     JoinWaitingRoomPayload,
@@ -111,6 +112,14 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
         @MessageBody() payload: KickWaitingRoomPlayerPayload,
     ): void {
         this.waitingRoomService.kickPlayer(client.id, payload);
+    }
+
+    @SubscribeMessage(WaitingRoomEvents.AddWaitingRoomVirtualPlayer)
+    addVirtualPlayer(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: AddWaitingRoomVirtualPlayerPayload,
+    ): void {
+        this.waitingRoomService.addVirtualPlayer(client.id, payload);
     }
 
     @SubscribeMessage(WaitingRoomEvents.SendWaitingRoomMessage)

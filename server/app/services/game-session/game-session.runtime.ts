@@ -24,6 +24,7 @@ export function buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[],
         transitionTimeoutId: null,
         activeTurnTimeoutId: null,
         timerIntervalId: null,
+        virtualDecisionTimeoutId: null,
     };
 }
 

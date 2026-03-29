@@ -6,7 +6,7 @@ import { positionKey } from '@app/services/match/match-geometry';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
 import { TileType } from '@common/maps/map.enums';
 import { GameCell, MapObject } from '@common/maps/map.interface';
-import { Player, PlayerFacing, PlayerPose } from '@common/player/player.interface';
+import { Player, PlayerFacing, PlayerPose, PlayerStatus } from '@common/player/player.interface';
 
 // Used to vary breathing animation delay across players (avoid sync look).
 const BREATHING_DELAY_VARIANTS = 5;
@@ -47,6 +47,7 @@ export class GameMapGridComponent {
   // Expose enum to template.
   readonly tileType = TileType;
   readonly defaultPlayerState: CharacterState = PlayerPose.Idle;
+  readonly deadPlayerState: CharacterState = PlayerPose.Dead;
   readonly defaultPlayerDirection: CharacterDirection = PlayerFacing.Front;
 
   // Forward clicked cell index to parent.
@@ -91,8 +92,34 @@ export class GameMapGridComponent {
     return player.information.avatarId ?? 0;
   }
 
-  // Outside the combat panel, players should render normally after combat resolution.
+  isVirtualPlayer(player: Player): boolean {
+    return player.information.controller === 'virtual';
+  }
+
+  getVirtualPlayerTitle(player: Player): string | null {
+    if (!this.isVirtualPlayer(player)) {
+      return null;
+    }
+
+    return player.information.virtualProfile === 'defensive' ? 'Joueur virtuel defensif' : 'Joueur virtuel agressif';
+  }
+
+  getVirtualPlayerProfile(player: Player): 'aggressive' | 'defensive' | null {
+    if (!this.isVirtualPlayer(player)) {
+      return null;
+    }
+
+    return player.information.virtualProfile === 'defensive' ? 'defensive' : 'aggressive';
+  }
+
+  getAvatarAriaLabel(player: Player): string {
+    const playerType = this.isVirtualPlayer(player) ? 'joueur virtuel' : 'joueur';
+    return `Avatar de ${player.information.name}, ${playerType}`;
+  }
+
+  // Dead players force dead pose; otherwise use snapshot pose or idle.
   getPlayerState(player: Player): CharacterState {
+    if (player.state.status === PlayerStatus.Eliminated) return this.deadPlayerState;
     const pose = player.render?.pose ?? this.defaultPlayerState;
     if (this.isTransientPoseExpired(player, pose)) return this.defaultPlayerState;
 
