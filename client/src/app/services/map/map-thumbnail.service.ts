@@ -50,6 +50,7 @@ export class MapThumbnailService {
      * - START is slightly inset to avoid touching grid lines
      */
     private readonly objectPaddingByType: Partial<Record<ObjectType, number>> = {
+        [ObjectType.FLAG]: 0.15,
         [ObjectType.START]: 0.05,
     };
 
@@ -336,6 +337,12 @@ rows = map.size;
         switch (type) {
             case ObjectType.START:
                 return this.getCssImageVar('--object-spawn-img');
+            case ObjectType.FLAG:
+                return this.getCssImageVar('--object-flag-img');
+            case ObjectType.REGEN:
+                return this.getCssImageVar('--object-heal-img');
+            case ObjectType.ARENA:
+                return this.getCssImageVar('--object-fight-img');
             default:
                 return '';
         }

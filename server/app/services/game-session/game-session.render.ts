@@ -1,5 +1,5 @@
 import { MatchPlayer } from '@common/game/match.interface';
-import { PlayerRenderState } from '@common/player/player.interface';
+import { PlayerPose, PlayerRenderState } from '@common/player/player.interface';
 import {
     createGameSessionInitialRenderState,
     getGameSessionFacingToTarget,
@@ -21,7 +21,7 @@ export function applyFacingTowardPosition(player: MatchPlayer, target: { x: numb
     };
 }
 
-export function setTransientPose(player: MatchPlayer, pose: 'walk' | 'attack', durationMs: number): MatchPlayer {
+export function setTransientPose(player: MatchPlayer, pose: PlayerPose.Walk | PlayerPose.Attack, durationMs: number): MatchPlayer {
     return {
         ...player,
         render: {

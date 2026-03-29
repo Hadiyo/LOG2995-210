@@ -9,10 +9,20 @@ export enum PlayerStatus {
 }
 
 // Facing orientation used by the renderer.
-export type PlayerFacing = 'front' | 'right' | 'back' | 'left';
+export enum PlayerFacing {
+    Front = 'front',
+    Right = 'right',
+    Back = 'back',
+    Left = 'left',
+}
 
 // Pose/state used by the renderer.
-export type PlayerPose = 'idle' | 'walk' | 'attack' | 'dead';
+export enum PlayerPose {
+    Idle = 'idle',
+    Walk = 'walk',
+    Attack = 'attack',
+    Dead = 'dead',
+}
 
 export type Bonus = 'speed' | 'life';
 

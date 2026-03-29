@@ -1,11 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CharacterSpriteComponent } from '@app/components/game/character-sprite/character-sprite.component';
-import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
 import { positionKey } from '@app/services/match/match-geometry';
+import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
 import { TileType } from '@common/maps/map.enums';
 import { GameCell, MapObject } from '@common/maps/map.interface';
-import { Player, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerFacing, PlayerPose, PlayerStatus } from '@common/player/player.interface';
 
 // Used to vary breathing animation delay across players (avoid sync look).
 const BREATHING_DELAY_VARIANTS = 5;
@@ -30,10 +30,6 @@ export class GameMapGridComponent {
   @Input() objects: readonly MapObject[] = [];
   // Current players list.
   @Input() players: readonly Player[] = [];
-  // Optional per-player direction overrides (dev/runtime).
-  @Input() playerDirections: Readonly<Record<string, CharacterDirection>> = {};
-  // Optional per-player state overrides (dev/runtime).
-  @Input() playerStates: Readonly<Record<string, CharacterState>> = {};
   // Local render clock used to expire transient poses client-side.
   @Input() nowMs = 0;
   // Toggles action-mode cursor style.
@@ -48,9 +44,9 @@ export class GameMapGridComponent {
 
   // Expose enum to template.
   readonly tileType = TileType;
-  readonly defaultPlayerState: CharacterState = 'idle';
-  readonly deadPlayerState: CharacterState = 'dead';
-  readonly defaultPlayerDirection: CharacterDirection = 'front';
+  readonly defaultPlayerState: CharacterState = PlayerPose.Idle;
+  readonly deadPlayerState: CharacterState = PlayerPose.Dead;
+  readonly defaultPlayerDirection: CharacterDirection = PlayerFacing.Front;
 
   // Forward clicked cell index to parent.
   onCellClick(index: number): void {
@@ -90,21 +86,18 @@ export class GameMapGridComponent {
     return player.information.avatarId ?? 0;
   }
 
-  // Dead players force dead pose; otherwise use override or idle.
+  // Dead players force dead pose; otherwise use snapshot pose or idle.
   getPlayerState(player: Player): CharacterState {
     if (player.state.status === PlayerStatus.Eliminated) return this.deadPlayerState;
-    const localOverride = this.playerStates[player.id];
-    if (localOverride) return localOverride;
-
     const pose = player.render?.pose ?? this.defaultPlayerState;
     if (this.isTransientPoseExpired(player, pose)) return this.defaultPlayerState;
 
     return pose;
   }
 
-  // Direction override or front by default.
+  // Direction from snapshot or front by default.
   getPlayerDirection(player: Player): CharacterDirection {
-    return this.playerDirections[player.id] ?? player.render?.facing ?? this.defaultPlayerDirection;
+    return player.render?.facing ?? this.defaultPlayerDirection;
   }
 
   // Deterministic pseudo-random delay from playerId for desynced idle breathing.
@@ -116,7 +109,7 @@ export class GameMapGridComponent {
 
   // Helper to identify if a pose is expired based on server timestamp and duration.
   private isTransientPoseExpired(player: Player, pose: CharacterState): boolean {
-    if (pose !== 'walk' && pose !== 'attack') return false;
+    if (pose !== PlayerPose.Walk && pose !== PlayerPose.Attack) return false;
     if (!player.render?.poseStartedAt || !player.render?.poseDurationMs) return false;
 
     const startedAtMs = Date.parse(player.render?.poseStartedAt);

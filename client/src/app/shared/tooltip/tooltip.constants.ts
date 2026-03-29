@@ -33,4 +33,21 @@ export const OBJECTS: ObjectPaletteItem[] = [
         description: "Un joueur est assigne aleatoirement un point de depart au debut d'une partie.",
         cssVar: '--object-spawn-img',
     },
+    {   
+        id: ObjectType.FLAG, 
+        label: 'Drapeau', 
+        description: "L'objectif principal du mode CTF.", 
+        cssVar: '--object-flag-img' },
+    {
+        id: ObjectType.REGEN,
+        label: 'Sanctuaire de soin',
+        description: 'Activer pour regagner 2 points de vie au joueur.',
+        cssVar: '--object-heal-img',
+    },
+    {
+        id: ObjectType.ARENA,
+        label: 'Sanctuaire de combat',
+        description: "Activer pour un bonus temporaire de +1 à l'attaque et à la défense. Ce bonus reste jusqu'à la fin du prochain tour.",
+        cssVar: '--object-fight-img',
+    },
 ];

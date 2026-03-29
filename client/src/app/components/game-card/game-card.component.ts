@@ -20,6 +20,7 @@ export class GameCardComponent {
 
   protected readonly modeLabels: Record<GameMode, string> = {
     [GameMode.CLASSIC]: 'Classique',
+    [GameMode.CTF]: 'CTF',
   };
 
   protected get modeLabel(): string {
