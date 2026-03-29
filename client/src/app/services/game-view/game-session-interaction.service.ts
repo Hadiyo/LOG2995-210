@@ -1,5 +1,4 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { GameVisualFeedbackService } from '@app/services/game/game-visual-feedback.service';
 import { MatchPlayer, MatchTileInspection } from '@common/game/match.interface';
 import { EditorCell } from '@common/maps/map.interface';
 import { TileType } from '@common/maps/map.enums';
@@ -8,6 +7,7 @@ import { positionKey } from '@app/services/match/match-geometry';
 import { CombatStateService } from '@app/services/match/combat-state.service';
 import { MatchMovementService, MovementDirection } from '@app/services/match/match-movement.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
+import { MatchVisualFeedbackService } from '@app/services/match/match-visual-feedback.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
 import { ATTACK_VISUAL_MS, WALK_VISUAL_MS } from '@app/shared/game/game-visual.constants';
 import {
@@ -15,9 +15,10 @@ import {
     MOVEMENT_KEY_BINDINGS,
     GameSessionActionContext,
     GameSessionActionOption,
-} from './game-session.constants';
+} from '@app/config/game-session.config';
 import { GameSessionDisplayService } from './game-session-display.service';
 import { GameSessionTargetsService } from './game-session-targets.service';
+
 @Injectable()
 export class GameSessionInteractionService {
     private readonly combatStateService = inject(CombatStateService);
@@ -27,7 +28,7 @@ export class GameSessionInteractionService {
     private readonly movementService = inject(MatchMovementService);
     private readonly targets = inject(GameSessionTargetsService);
     private readonly turnStateService = inject(TurnStateService);
-    private readonly visualFeedback = inject(GameVisualFeedbackService);
+    private readonly visualFeedback = inject(MatchVisualFeedbackService);
     readonly inspectedTile = signal<MatchTileInspection | null>(null);
     readonly movementFeedback = signal('');
     readonly actionContext = signal<GameSessionActionContext | null>(null);

@@ -5,7 +5,7 @@ import { EditorCell, Vec2 } from '@common/maps/map.interface';
 import { MatchMovementService } from '@app/services/match/match-movement.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
-import { MILLISECONDS_PER_SECOND } from './game-session.constants';
+import { MILLISECONDS_PER_SECOND } from '@app/config/game-session.config';
 
 @Injectable()
 export class GameSessionDisplayService {

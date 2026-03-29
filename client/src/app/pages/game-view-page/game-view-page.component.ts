@@ -9,35 +9,36 @@ import { GameMapGridComponent } from '@app/components/game/game-map-grid/game-ma
 import { GamePlayerListComponent } from '@app/components/game/game-player-list/game-player-list.component';
 import { GameSessionInfoPanelComponent } from '@app/components/game/game-session-info-panel/game-session-info-panel.component';
 import { GameTileInfoModalComponent } from '@app/components/game/game-tile-info-modal/game-tile-info-modal.component';
-import { MAP_SIZE_CONFIG } from '@app/config/map.config';
-import { GameSessionDisplayService } from '@app/pages/game-view/game-session-display.service';
-import { GameSessionInteractionService } from '@app/pages/game-view/game-session-interaction.service';
 import {
     ACTIVE_TURN_DURATION_MS,
     CLOCK_TICK_MS,
     MATCH_END_REDIRECT_DURATION_MS,
     MILLISECONDS_PER_SECOND,
     TRANSITION_DURATION_MS,
-} from '@app/pages/game-view/game-session.constants';
-import { GameSessionTargetsService } from '@app/pages/game-view/game-session-targets.service';
-import { GameSessionTurnEffectsService } from '@app/pages/game-view/game-session-turn-effects.service';
+} from '@app/config/game-session.config';
+import { GAME_VIEW_CONSTANTS } from '@app/config/game-view.config';
+import { MAP_SIZE_CONFIG } from '@app/config/map.config';
 import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
-import { GameVisualFeedbackService } from '@app/services/game/game-visual-feedback.service';
+import { GameSessionDisplayService } from '@app/services/game-view/game-session-display.service';
+import { GameSessionInteractionService } from '@app/services/game-view/game-session-interaction.service';
+import { GameSessionTargetsService } from '@app/services/game-view/game-session-targets.service';
+import { GameSessionTurnEffectsService } from '@app/services/game-view/game-session-turn-effects.service';
 import { positionKey } from '@app/services/match/match-geometry';
 import { MatchStateService } from '@app/services/match/match-state.service';
+import { MatchVisualFeedbackService } from '@app/services/match/match-visual-feedback.service';
 import { LOCAL_POSE_REFRESH_MS } from '@app/shared/game/game-visual.constants';
+import { createPanelAvatarDirection, createPanelAvatarId, createPanelAvatarState } from '@app/utils/game-view/game-view-avatar.utils';
+import { getPhaseDescription, getPhaseHeadline } from '@app/utils/game-view/game-view-phase.utils';
+import { toGamePlayer } from '@app/utils/game-view/game-view-player.utils';
+import { startLocalPoseRefreshClock, stopLocalPoseRefreshClock } from '@app/utils/game-view/game-view-pose-clock.utils';
+import { createSelectedTileInfo } from '@app/utils/game-view/game-view-tile-info.utils';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchEndState, MatchPlayer } from '@common/game/match.interface';
 import { MapSize } from '@common/maps/map.enums';
 import { GameCell } from '@common/maps/map.interface';
 import { Player, PlayerStatus } from '@common/player/player.interface';
-import { createPanelAvatarDirection, createPanelAvatarId, createPanelAvatarState } from './game-view-avatar.utils';
-import { GAME_VIEW_CONSTANTS } from './game-view.constants';
-import { getPhaseDescription, getPhaseHeadline } from './game-view-phase.utils';
-import { startLocalPoseRefreshClock, stopLocalPoseRefreshClock } from './game-view-pose-clock.utils';
-import { toGamePlayer } from './game-view-player.utils';
-import { createSelectedTileInfo } from './game-view-tile-info.utils';
+
 @Component({
     selector: 'app-game-view-page',
     standalone: true,
@@ -68,7 +69,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly interaction = inject(GameSessionInteractionService);
     protected readonly targets = inject(GameSessionTargetsService);
     protected readonly effects = inject(GameSessionTurnEffectsService);
-    protected readonly visualFeedback = inject(GameVisualFeedbackService);
+    protected readonly visualFeedback = inject(MatchVisualFeedbackService);
 
     private readonly matchState = inject(MatchStateService);
     private readonly route = inject(ActivatedRoute);
