@@ -1,10 +1,10 @@
 import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
-import { TileType } from '@common/maps/map.enums';
+import { ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMapDetails, Vec2 } from '@common/maps/map.interface';
 import { buildTurnOrderFromPlayers } from '@app/services/game-session/game-session.turn';
-import { buildInitializedMatchFromEditor } from './game-session.match';
+import { buildInitializedMatchFromEditor, getGameSessionObjectCovering } from './game-session.match';
 
 export const TRANSITION_DURATION_MS = 3000;
 export const ACTIVE_TURN_DURATION_MS = 30000;
@@ -114,7 +114,14 @@ export function resolveRespawnPosition(match: InitializedMatch, defeatedPlayerId
     );
 
     const origin = defeatedPlayer.startingPosition;
-    const isFree = (pos: Vec2): boolean => !occupiedKeys.has(`${pos.x}:${pos.y}`);
+    const isFree = (pos: Vec2): boolean => {
+        if (occupiedKeys.has(`${pos.x}:${pos.y}`)) {
+            return false;
+        }
+
+        const blockingObject = getGameSessionObjectCovering(match.allObjects, pos);
+        return !blockingObject || (blockingObject.type !== ObjectType.REGEN && blockingObject.type !== ObjectType.ARENA);
+    };
 
     if (isFree(origin)) {
         return { ...origin };

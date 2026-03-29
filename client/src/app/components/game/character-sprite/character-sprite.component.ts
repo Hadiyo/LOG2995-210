@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { getFrameIndex } from '@app/shared/character/character-frame-map';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
+import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
 import {
     CANVAS_CLEAR_X,
     CANVAS_CLEAR_Y,
@@ -36,8 +37,8 @@ export class CharacterSpriteComponent implements AfterViewInit, OnChanges, OnDes
     @ViewChild('canvasElement', { static: true }) private canvasRef!: ElementRef<HTMLCanvasElement>;
 
     @Input() avatarId = DEFAULT_AVATAR_ID;
-    @Input() state: CharacterState = 'idle';
-    @Input() direction: CharacterDirection = 'front';
+    @Input() state: CharacterState = PlayerPose.Idle;
+    @Input() direction: CharacterDirection = PlayerFacing.Front;
     // Destination sprite render size.
     @Input() width = DEFAULT_SPRITE_SIZE;
     @Input() height = DEFAULT_SPRITE_SIZE;

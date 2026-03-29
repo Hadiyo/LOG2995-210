@@ -31,4 +31,16 @@ describe('EditorSidebarComponent', () => {
 
     expect(labels).not.toContain('Drapeau');
   });
+
+  it('should show advanced editor objects when available', () => {
+    component.editorState.setMode(GameMode.CTF);
+    fixture.detectChanges();
+
+    const element: HTMLElement = fixture.nativeElement;
+    const labels = Array.from(element.querySelectorAll('.palette .label')).map((node) => node.textContent?.trim());
+
+    expect(labels).toContain('Drapeau');
+    expect(labels).toContain('Sanctuaire de soin');
+    expect(labels).toContain('Sanctuaire de combat');
+  });
 });

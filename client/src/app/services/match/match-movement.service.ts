@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { InitializedMatch } from '@common/game/match.interface';
-import { TileType } from '@common/maps/map.enums';
+import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, Vec2 } from '@common/maps/map.interface';
 import { positionKey, samePosition } from './match-geometry';
 
@@ -40,6 +40,7 @@ export class MatchMovementService {
         if (!cell) return null;
         if (cell.tileType === TileType.WALL) return null;
         if (cell.tileType === TileType.DOOR && !cell.isWalkable) return null;
+        if (this.isBlockedBySanctuary(match, destination)) return null;
         if (this.isOccupiedByAnotherPlayer(match, destination, movingPlayerId)) return null;
 
         switch (cell.tileType) {
@@ -125,4 +126,23 @@ export class MatchMovementService {
         return match.players.some((player) => player.id !== movingPlayerId && samePosition(player.position, position));
     }
 
+    private isBlockedBySanctuary(match: InitializedMatch, position: Vec2): boolean {
+        return match.objects.some((object) =>
+            (object.type === ObjectType.REGEN || object.type === ObjectType.ARENA) &&
+            this.objectFootprint(object).some((tile) => samePosition(tile, position)),
+        );
+    }
+
+    private objectFootprint(object: InitializedMatch['objects'][number]): Vec2[] {
+        if (object.size !== ObjectSize.L) {
+            return [{ ...object.position }];
+        }
+
+        return [
+            { x: object.position.x, y: object.position.y },
+            { x: object.position.x + 1, y: object.position.y },
+            { x: object.position.x, y: object.position.y + 1 },
+            { x: object.position.x + 1, y: object.position.y + 1 },
+        ];
+    }
 }

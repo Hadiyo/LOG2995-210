@@ -1,19 +1,20 @@
 import { inject, Injectable } from '@angular/core';
+import { generateClientId } from '@app/utils/id.util';
 import { Character } from '@common/character/character.interface';
 import {
     CHARACTER_BASE_ATTRIBUTES,
     CHARACTER_PLUS_TWO_VALUE,
 } from '@common/character/character.model';
-import { MatchEndState, InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { InitializedMatch, MatchEndState, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { ObjectType } from '@common/maps/map.enums';
 import { EditorMapDetails } from '@common/maps/map.interface';
-import { generateClientId } from '@app/utils/id.util';
+import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
+import { MatchBoardService } from './match-board.service';
 import {
     CLASSIC_WIN_THRESHOLD,
     DEFAULT_PLAYER_ATTACK,
     DEFAULT_PLAYER_DEFENSE,
 } from './match-defaults';
-import { MatchBoardService } from './match-board.service';
 import { cloneVec2, shuffle } from './match-geometry';
 
 @Injectable({ providedIn: 'root' })
@@ -59,6 +60,10 @@ export class MatchSetupService {
                 startingPosition: cloneVec2(startObject.position),
                 health: player.maxHealth,
                 combatWins: 0,
+                render: {
+                    facing: PlayerFacing.Front,
+                    pose: PlayerPose.Idle,
+                },
             };
         });
 
@@ -102,6 +107,12 @@ export class MatchSetupService {
             health: player.health ?? player.maxHealth,
             combatWins: player.combatWins ?? 0,
             controller: player.controller ?? 'human',
+            render: {
+                facing: player.render?.facing ?? PlayerFacing.Front,
+                pose: player.render?.pose ?? PlayerPose.Idle,
+                ...(player.render?.poseStartedAt ? { poseStartedAt: player.render.poseStartedAt } : {}),
+                ...(player.render?.poseDurationMs !== undefined ? { poseDurationMs: player.render.poseDurationMs } : {}),
+            },
         }));
         const allObjects = (match.allObjects ?? match.objects).map((object) => ({
             ...object,

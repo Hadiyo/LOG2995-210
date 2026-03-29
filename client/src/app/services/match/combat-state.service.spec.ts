@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { AvatarId } from '@common/character/character.model';
 import { MapApiService } from '@app/services/map/map-api.service';
+import { AvatarId } from '@common/character/character.model';
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, MapSize, TileType } from '@common/maps/map.enums';
 import { EditorCell } from '@common/maps/map.interface';
+import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
 import { CombatStateService } from './combat-state.service';
 import { MatchStateService } from './match-state.service';
 import { TurnStateService } from './turn-state.service';
@@ -50,6 +51,7 @@ const createPlayer = (
     startingPosition: position,
     health: STARTING_HEALTH,
     combatWins: 0,
+    render: { facing: PlayerFacing.Front, pose: PlayerPose.Idle },
 });
 
 const createMatch = (mode: GameMode = GameMode.CLASSIC): InitializedMatch => ({

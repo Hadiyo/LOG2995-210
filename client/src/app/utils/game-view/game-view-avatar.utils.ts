@@ -1,6 +1,6 @@
 import { computed, Signal } from '@angular/core';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
-import { Player, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerFacing, PlayerPose, PlayerStatus } from '@common/player/player.interface';
 
 export function createPanelAvatarId(currentPlayer: Signal<Player | null>): Signal<number> {
     return computed(() => currentPlayer()?.information.avatarId ?? 0);
@@ -9,45 +9,38 @@ export function createPanelAvatarId(currentPlayer: Signal<Player | null>): Signa
 export function createPanelAvatarState(
     currentPlayer: Signal<Player | null>,
     nowMs: Signal<number>,
-    playerStates: Signal<Readonly<Record<string, CharacterState>>>,
 ): Signal<CharacterState> {
     return computed(() => {
-        nowMs();
+        const currentTimeMs = nowMs();
         const player = currentPlayer();
         if (!player) {
-            return 'idle';
+            return PlayerPose.Idle;
         }
 
         if (player.state.status === PlayerStatus.Eliminated) {
-            return 'dead';
+            return PlayerPose.Dead;
         }
 
-        const localOverride = playerStates()[player.id];
-        if (localOverride) {
-            return localOverride;
-        }
-
-        const pose = player.render?.pose ?? 'idle';
-        return isTransientPoseExpired(player, pose, nowMs()) ? 'idle' : pose;
+        const pose = player.render?.pose ?? PlayerPose.Idle;
+        return isTransientPoseExpired(player, pose, currentTimeMs) ? PlayerPose.Idle : pose;
     });
 }
 
 export function createPanelAvatarDirection(
     currentPlayer: Signal<Player | null>,
-    playerDirections: Signal<Readonly<Record<string, CharacterDirection>>>,
 ): Signal<CharacterDirection> {
     return computed(() => {
         const player = currentPlayer();
         if (!player) {
-            return 'front';
+            return PlayerFacing.Front;
         }
 
-        return playerDirections()[player.id] ?? player.render?.facing ?? 'front';
+        return player.render?.facing ?? PlayerFacing.Front;
     });
 }
 
 function isTransientPoseExpired(player: Player, pose: CharacterState, nowMs: number): boolean {
-    if (pose !== 'walk' && pose !== 'attack') {
+    if (pose !== PlayerPose.Walk && pose !== PlayerPose.Attack) {
         return false;
     }
 

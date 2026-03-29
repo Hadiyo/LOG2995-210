@@ -1,16 +1,19 @@
 /* eslint-disable max-lines */
-import { ChatMessage } from '@common/chat/chat.interface';
 import { MapService } from '@app/services/map/map.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
-import { TileType } from '@common/maps/map.enums';
+import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
+import { PlayerPose } from '@common/player/player.interface';
 import { SocketEvents } from '@common/socket-events';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import {
+    ATTACK_POSE_DURATION_MS,
     buildGameSessionVisibleObjects,
     getGameSessionDestination,
     getGameSessionMovementCost,
+    WALK_POSE_DURATION_MS,
 } from './game-session.match';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
@@ -29,12 +32,11 @@ import {
 } from './game-session.runtime';
 import { clearGameSessionTimers, tickGameSessionTimers } from './game-session.timers';
 
-const WALK_POSE_DURATION_MS = 180;
-const ATTACK_POSE_DURATION_MS = 220;
 @Injectable()
 export class GameSessionService {
     private readonly sessions = new Map<string, GameSessionRuntime>();
     private readonly events = new EventEmitter();
+
     constructor(private readonly mapService: MapService) {}
 
     on<T>(event: SocketEvents, callback: (payload: T) => void): void {
@@ -76,6 +78,7 @@ export class GameSessionService {
                 this.surrender(previousMembership.sessionId, previousMembership.playerId);
             }
         }
+
         session.socketToPlayerId.set(socketId, playerId);
         return {
             match: session.match,
@@ -121,6 +124,7 @@ export class GameSessionService {
             if (playerStillConnected) {
                 return null;
             }
+
             return { sessionId: session.sessionId, playerId };
         }
 
@@ -291,7 +295,7 @@ export class GameSessionService {
                     position: { ...destination },
                     render: setTransientPose(
                         applyFacingTowardPosition(player, destination),
-                        'walk',
+                        PlayerPose.Walk,
                         WALK_POSE_DURATION_MS,
                     ).render,
                 }
@@ -318,7 +322,6 @@ export class GameSessionService {
         }
 
         const { session, player } = actionContext;
-
         const nextMap = session.match.map.map((cell) =>
             cell.position.x === position.x && cell.position.y === position.y
                 ? { ...cell, isWalkable: !cell.isWalkable }
@@ -333,7 +336,7 @@ export class GameSessionService {
                         ...candidate,
                         render: setTransientPose(
                             applyFacingTowardPosition(player, position),
-                            'attack',
+                            PlayerPose.Attack,
                             ATTACK_POSE_DURATION_MS,
                         ).render,
                     }
@@ -361,7 +364,7 @@ export class GameSessionService {
                     combatWins: player.combatWins + 1,
                     render: setTransientPose(
                         applyFacingTowardPosition(player, defender.position),
-                        'attack',
+                        PlayerPose.Attack,
                         ATTACK_POSE_DURATION_MS,
                     ).render,
                 };
@@ -497,7 +500,10 @@ export class GameSessionService {
         const playerOnDoor = session.match.players.some(
             (candidate) => candidate.position.x === position.x && candidate.position.y === position.y,
         );
-        if (playerOnDoor && doorCell.isWalkable) {
+        const flagOnDoor = session.match.mode === GameMode.CTF && session.match.objects.some(
+            (object) => object.type === ObjectType.FLAG && object.position.x === position.x && object.position.y === position.y,
+        );
+        if ((playerOnDoor || flagOnDoor) && doorCell.isWalkable) {
             return null;
         }
 

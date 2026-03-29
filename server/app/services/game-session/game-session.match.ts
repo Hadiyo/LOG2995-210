@@ -1,7 +1,10 @@
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
-import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
-import { PlayerFacing, PlayerRenderState } from '@common/player/player.interface';
+import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
+import { PlayerFacing, PlayerPose, PlayerRenderState } from '@common/player/player.interface';
+
+export const WALK_POSE_DURATION_MS = 180;
+export const ATTACK_POSE_DURATION_MS = 220;
 
 export function buildInitializedMatchFromEditor(
     map: EditorMapDetails,
@@ -48,11 +51,38 @@ export function getGameSessionDestination(position: Vec2, direction: 'up' | 'dow
     return { x: position.x + offset.x, y: position.y + offset.y };
 }
 
+export function createGameSessionInitialRenderState(): PlayerRenderState {
+    return {
+        facing: PlayerFacing.Front,
+        pose: PlayerPose.Idle,
+    };
+}
+
+export function getGameSessionFacingToTarget(from: Vec2, to: Vec2): PlayerFacing | null {
+    const deltaX = to.x - from.x;
+    const deltaY = to.y - from.y;
+    if (deltaX === 0 && deltaY === 0) {
+        return null;
+    }
+
+    if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+        return deltaX >= 0 ? PlayerFacing.Right : PlayerFacing.Left;
+    }
+
+    return deltaY >= 0 ? PlayerFacing.Front : PlayerFacing.Back;
+}
+
 export function getGameSessionMovementCost(match: InitializedMatch, destination: Vec2, movingPlayerId: string): number | null {
     const cell = match.map.find((candidate) => samePosition(candidate.position, destination));
     if (!cell) return null;
     if (cell.tileType === TileType.WALL) return null;
     if (cell.tileType === TileType.DOOR && !cell.isWalkable) return null;
+
+    const blockingObject = getGameSessionObjectCovering(match.objects, destination);
+    if (blockingObject && (blockingObject.type === ObjectType.REGEN || blockingObject.type === ObjectType.ARENA)) {
+        return null;
+    }
+
     if (match.players.some((player) => player.id !== movingPlayerId && samePosition(player.position, destination))) {
         return null;
     }
@@ -70,27 +100,6 @@ export function buildGameSessionVisibleObjects(
     return objects
         .filter((object) => object.type !== ObjectType.START || activeStarts.has(`${object.position.x}:${object.position.y}`))
         .map((object) => ({ ...object, position: { ...object.position } }));
-}
-
-export function createGameSessionInitialRenderState(): PlayerRenderState {
-    return {
-        facing: 'front',
-        pose: 'idle',
-    };
-}
-
-export function getGameSessionFacingToTarget(from: Vec2, to: Vec2): PlayerFacing | null {
-    const deltaX = to.x - from.x;
-    const deltaY = to.y - from.y;
-    if (deltaX === 0 && deltaY === 0) {
-        return null;
-    }
-
-    if (Math.abs(deltaX) >= Math.abs(deltaY)) {
-        return deltaX >= 0 ? 'right' : 'left';
-    }
-
-    return deltaY >= 0 ? 'front' : 'back';
 }
 
 export function getGameSessionObjectCovering(objects: MapObject[], position: Vec2): MapObject | null {

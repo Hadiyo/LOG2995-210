@@ -2,6 +2,7 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { AvatarId } from '@common/character/character.model';
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { GameMode, MapSize } from '@common/maps/map.enums';
+import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
 import { TurnStateService } from './turn-state.service';
 
 const FAST_SPEED = 8;
@@ -41,6 +42,7 @@ const createPlayer = (
     startingPosition: position,
     health: 6,
     combatWins: 0,
+    render: { facing: PlayerFacing.Front, pose: PlayerPose.Idle },
 });
 
 const createMatch = (): InitializedMatch => ({

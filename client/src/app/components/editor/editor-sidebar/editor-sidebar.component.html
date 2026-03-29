@@ -72,12 +72,11 @@
 
     <div class="palette">
       @for (obj of objects; track obj.id) {
+      @if (obj.id !== objectType.FLAG || editorState.editorMap().mode === gameMode.CTF) {
       <!-- Object selection button -->
       <button class="palette-item" type="button" (click)="editorState.selectObject(obj.id)"
-        [class.active]="editorState.selectedObjectType() === obj.id" [class.disabled]="
-          this.editorState.getObjectCountAndLimit(obj.id).count 
-          === this.editorState.getObjectCountAndLimit(obj.id).limit
-        " matTooltip="{{ obj.description }}" matTooltipClass="tooltip">
+        [class.active]="editorState.selectedObjectType() === obj.id" [class.disabled]="isDisabled(obj.id)"
+        [disabled]="isDisabled(obj.id)" matTooltip="{{ obj.description }}" matTooltipClass="tooltip">
         <!-- Object color swatch -->
         <span class="swatch" [style.backgroundImage]="'var(' + obj.cssVar + ')'"></span>
 
@@ -91,6 +90,7 @@
           editorState.getObjectCountAndLimit(obj.id).limit }}</span>
         }
       </button>
+      }
       }
     </div>
   </section>

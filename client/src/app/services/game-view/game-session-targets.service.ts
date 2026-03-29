@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { MatchPlayer } from '@common/game/match.interface';
-import { TileType } from '@common/maps/map.enums';
+import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { positionKey } from '@app/services/match/match-geometry';
 import { MatchBoardService } from '@app/services/match/match-board.service';
 import { MatchMovementService, MovementDirection } from '@app/services/match/match-movement.service';
@@ -62,7 +62,14 @@ export class GameSessionTargetsService {
             const occupiedByPlayer = currentMatch.players.some(
                 (player) => player.position.x === cell.position.x && player.position.y === cell.position.y,
             );
-            return cell.tileType === TileType.DOOR && isAdjacent && !(cell.isWalkable && occupiedByPlayer);
+            const occupiedByFlag = currentMatch.mode === GameMode.CTF &&
+                currentMatch.objects.some(
+                    (object) =>
+                        object.type === ObjectType.FLAG &&
+                        object.position.x === cell.position.x &&
+                        object.position.y === cell.position.y,
+                );
+            return cell.tileType === TileType.DOOR && isAdjacent && !(cell.isWalkable && (occupiedByPlayer || occupiedByFlag));
         });
 
         return new Set(adjacentDoors.map((cell) => positionKey(cell.position)));
