@@ -1,6 +1,11 @@
 import { CHARACTER_BASE_ATTRIBUTES } from '@common/character/character.model';
-import { MatchPlayer } from '@common/game/match.interface';
+import { MatchPlayer, MatchPlayerController, VirtualPlayerProfile } from '@common/game/match.interface';
 import { Player, PlayerFacing, PlayerPose, PlayerStatus } from '@common/player/player.interface';
+
+type VirtualPlayerLike = {
+    controller?: MatchPlayerController;
+    virtualProfile?: VirtualPlayerProfile | null;
+} | null | undefined;
 
 export function toGamePlayer(
     player: MatchPlayer,
@@ -17,6 +22,8 @@ export function toGamePlayer(
             name: player.name,
             avatarId: player.avatarId,
             isOrganizer: player.isOrganizer,
+            controller: player.controller,
+            virtualProfile: player.virtualProfile ?? null,
             teamId: player.teamId ?? null,
             dices: {
                 attack: player.attackDie,
@@ -46,4 +53,27 @@ export function toGamePlayer(
             poseDurationMs: player.render?.poseDurationMs,
         },
     };
+}
+
+export function getActivePanelPlayer(
+    turnPhase: 'active' | 'transition' | null | undefined,
+    activePlayer: Player | null,
+    players: readonly Player[],
+    transitionTargetPlayerId: string | null,
+): Player | null {
+    if (!turnPhase) {
+        return null;
+    }
+
+    return turnPhase === 'active'
+        ? activePlayer
+        : players.find((player) => player.id === transitionTargetPlayerId) ?? null;
+}
+
+export function getVirtualPlayerBadgeLabel(player: VirtualPlayerLike): string | null {
+    if (player?.controller !== 'virtual') {
+        return null;
+    }
+
+    return player.virtualProfile === 'defensive' ? 'JV defensif' : 'JV agressif';
 }

@@ -11,6 +11,7 @@ export const ACTIVE_TURN_MS = 5000;
 export const MOVEMENT_POINTS_AFTER_MOVE = 3;
 
 export type GameSessionServiceInternals = {
+    activateTurn: (...args: unknown[]) => unknown;
     advanceToNextTurn: (...args: unknown[]) => unknown;
     emitSnapshot: (...args: unknown[]) => unknown;
     startTransition: (...args: unknown[]) => unknown;
@@ -32,6 +33,7 @@ export const makeLobbyPlayer = (overrides: Partial<MatchLobbyPlayer> = {}): Matc
     attackDie: 'D4',
     defenseDie: 'D6',
     controller: 'human',
+    virtualProfile: null,
     ...overrides,
 });
 
@@ -185,6 +187,7 @@ export const makeRuntime = (overrides: Partial<GameSessionRuntime> = {}): GameSe
     transitionTimeoutId: null,
     activeTurnTimeoutId: null,
     timerIntervalId: null,
+    virtualDecisionTimeoutId: null,
     ...overrides,
 });
 

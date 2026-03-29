@@ -18,6 +18,10 @@ export class MatchInteractionService {
             return null;
         }
 
+        if (requester.controller === 'virtual') {
+            return null;
+        }
+
         if (!this.matchBoardService.isSameTeam(requester, receiver) || !this.matchBoardService.areAdjacent(requester.position, receiver.position)) {
             return null;
         }

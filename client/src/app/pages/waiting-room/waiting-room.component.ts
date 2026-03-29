@@ -5,8 +5,8 @@ import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/gam
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { ChatMessage } from '@common/chat/chat.interface';
-import { MatchLobbyPlayer } from '@common/game/match.interface';
-import { map, Observable } from 'rxjs';
+import { MatchLobbyPlayer, VirtualPlayerProfile } from '@common/game/match.interface';
+import { combineLatest, map, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-waiting-room',
@@ -27,6 +27,34 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   protected maxPlayers$ = this.waitingRoomService.maxPlayers$;
   protected statusMessage$ = this.waitingRoomService.statusMessage$;
   protected errorMessage$ = this.waitingRoomService.error$;
+  protected canAddVirtualPlayers$ = combineLatest([
+    this.players$,
+    this.isLocked$,
+    this.maxPlayers$,
+  ]).pipe(
+    map(([players, isLocked, maxPlayers]) => this.isOrganizer && !isLocked && players.length < maxPlayers),
+  );
+  protected virtualPlayerHelpText$ = combineLatest([
+    this.players$,
+    this.isLocked$,
+    this.maxPlayers$,
+  ]).pipe(
+    map(([players, isLocked, maxPlayers]) => {
+      if (!this.isOrganizer || maxPlayers <= 0) {
+        return '';
+      }
+
+      if (players.length >= maxPlayers) {
+        return 'Aucun emplacement libre pour ajouter un JV.';
+      }
+
+      if (isLocked) {
+        return 'La salle est verrouillee pendant le lancement de la partie.';
+      }
+
+      return 'Ajoutez un JV agressif ou defensif. Il pourra ensuite etre retire depuis cette liste.';
+    }),
+  );
 
   constructor(
     private readonly router: Router,
@@ -62,6 +90,10 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     this.waitingRoomService.kickPlayer(player.id);
   }
 
+  protected addVirtualPlayer(profile: VirtualPlayerProfile): void {
+    this.waitingRoomService.addVirtualPlayer(profile);
+  }
+
   protected startGame(): void {
     if (!this.isOrganizer) {
       return;
@@ -75,5 +107,13 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
   protected getAvatarThumbPath(avatarId: number): string {
     return resolveAssetUrl(`assets/avatars/thumbs/${avatarId}.png`);
+  }
+
+  protected getVirtualPlayerLabel(player: MatchLobbyPlayer): string {
+    if (player.controller !== 'virtual') {
+      return '';
+    }
+
+    return player.virtualProfile === 'defensive' ? 'Bot defensif' : 'Bot agressif';
   }
 }

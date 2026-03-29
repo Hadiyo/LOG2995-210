@@ -7,7 +7,7 @@ import { ATTACK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { CombatPlayerStatistics } from '@common/combat/combat.interface';
-import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
 import { PlayerPose } from '@common/player/player.interface';
 import { GameSessionSnapshotPayload, SessionSocketEvents } from '@common/socket-events';
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -18,6 +18,10 @@ import { GameSessionLifecycle } from './game-session.lifecycle';
 import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
 import { buildSession } from './game-session.runtime';
 import { GameSessionSessionActions } from './game-session.session-actions';
+import { planVirtualPlayerDecision } from './game-session.virtual-player';
+
+const VIRTUAL_PLAYER_MIN_DELAY_MS = 450;
+const VIRTUAL_PLAYER_DELAY_VARIANCE_MS = 450;
 
 @Injectable()
 export class GameSessionService {
@@ -32,7 +36,7 @@ export class GameSessionService {
         private readonly mapService: MapService,
         private readonly endStatsService: EndStatsService,
     ) {
-        this.lifecycle = new GameSessionLifecycle(this.sessions, this.events, this.endStatsService);
+        this.lifecycle = new GameSessionLifecycle(this.sessions, this.events, this.endStatsService, (session) => this.scheduleVirtualDecision(session));
         this.sessionActions = new GameSessionSessionActions(this.sessions, this.lifecycle, this.endStatsService);
         this.actions = new GameSessionActions(this.sessions, this.lifecycle, this.endStatsService);
     }
@@ -71,8 +75,8 @@ export class GameSessionService {
             throw new NotFoundException('Game session not found');
         }
 
-        const playerExists = session.match.players.some((player) => player.id === playerId);
-        if (!playerExists) {
+        const player = session.match.players.find((candidate) => candidate.id === playerId) ?? null;
+        if (!player || player.controller === 'virtual') {
             throw new NotFoundException('Game player not found');
         }
 
@@ -108,7 +112,7 @@ export class GameSessionService {
 
         return this.buildSnapshot(session, playerId);
     }
-    
+
     getSessionById(id: string): GameSessionRuntime | undefined {
         return this.sessions.get(id);
     }
@@ -116,6 +120,7 @@ export class GameSessionService {
     getMatchFromSessionId(id: string): InitializedMatch | null {
         return this.sessions.get(id)?.match ?? null;
     }
+
     getPlayerIdForSocket(socketId: string, sessionId: string): string | null {
         return this.sessions.get(sessionId)?.socketToPlayerId.get(socketId) ?? null;
     }
@@ -142,8 +147,9 @@ export class GameSessionService {
 
     getSocketFromPlayer(sessionId: string, playerId: string | undefined): string | null {
         const session = this.sessions.get(sessionId);
-        if(!session || !playerId)
+        if (!session || !playerId) {
             return null;
+        }
         for (const [socketId, pId] of session.socketToPlayerId) {
             if (pId === playerId) {
                 return socketId;
@@ -163,8 +169,7 @@ export class GameSessionService {
             if (playerStillConnected) {
                 return null;
             }
-            const payload = { sessionId: session.sessionId, playerId };
-            return payload;
+            return { sessionId: session.sessionId, playerId };
         }
 
         return null;
@@ -177,36 +182,40 @@ export class GameSessionService {
         }
 
         clearTimers(session);
+        if (session.virtualDecisionTimeoutId) {
+            clearTimeout(session.virtualDecisionTimeoutId);
+            session.virtualDecisionTimeoutId = null;
+        }
         this.sessions.delete(sessionId);
         this.event2.emit(GameSessionEvents.OnGameEnd, { id: sessionId });
     }
 
     endTurn(sessionId: string, playerId: string): boolean {
-        return this.sessionActions.endTurn(sessionId, playerId);
+        return this.runSessionAction(sessionId, () => this.sessionActions.endTurn(sessionId, playerId));
     }
 
     requestFlagTransfer(sessionId: string, requesterId: string, receiverId: string): boolean {
-        return this.sessionActions.requestFlagTransfer(sessionId, requesterId, receiverId);
+        return this.runSessionAction(sessionId, () => this.sessionActions.requestFlagTransfer(sessionId, requesterId, receiverId));
     }
 
     resolveFlagTransfer(sessionId: string, receiverId: string, accepted: boolean): boolean {
-        return this.sessionActions.resolveFlagTransfer(sessionId, receiverId, accepted);
+        return this.runSessionAction(sessionId, () => this.sessionActions.resolveFlagTransfer(sessionId, receiverId, accepted));
     }
 
     surrender(sessionId: string, playerId: string): boolean {
-        return this.sessionActions.surrender(sessionId, playerId);
+        return this.runSessionAction(sessionId, () => this.sessionActions.surrender(sessionId, playerId));
     }
 
     toggleDebugMode(sessionId: string, playerId: string): boolean {
-        return this.sessionActions.toggleDebugMode(sessionId, playerId);
+        return this.runSessionAction(sessionId, () => this.sessionActions.toggleDebugMode(sessionId, playerId));
     }
 
     forceEndDebugTurn(sessionId: string, playerId: string): boolean {
-        return this.sessionActions.forceEndDebugTurn(sessionId, playerId);
+        return this.runSessionAction(sessionId, () => this.sessionActions.forceEndDebugTurn(sessionId, playerId));
     }
 
     debugTeleportPlayer(sessionId: string, playerId: string, position: { x: number; y: number }): boolean {
-        return this.sessionActions.debugTeleportPlayer(sessionId, playerId, position);
+        return this.runSessionAction(sessionId, () => this.sessionActions.debugTeleportPlayer(sessionId, playerId, position));
     }
 
     addChatMessage(sessionId: string, message: ChatMessage): ChatMessage | null {
@@ -214,7 +223,7 @@ export class GameSessionService {
     }
 
     movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
-        return this.actions.movePlayer(sessionId, playerId, direction);
+        return this.runSessionAction(sessionId, () => this.actions.movePlayer(sessionId, playerId, direction));
     }
 
     startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
@@ -258,15 +267,15 @@ export class GameSessionService {
     }
 
     useSanctuary(sessionId: string, playerId: string, sanctuaryId: number): boolean {
-        return this.actions.useSanctuary(sessionId, playerId, sanctuaryId);
+        return this.runSessionAction(sessionId, () => this.actions.useSanctuary(sessionId, playerId, sanctuaryId));
     }
 
     resolveSanctuaryChoice(sessionId: string, playerId: string, choice: MatchSanctuaryChoice): boolean {
-        return this.actions.resolveSanctuaryChoice(sessionId, playerId, choice);
+        return this.runSessionAction(sessionId, () => this.actions.resolveSanctuaryChoice(sessionId, playerId, choice));
     }
 
     toggleDoor(sessionId: string, playerId: string, position: { x: number; y: number }): boolean {
-        return this.actions.toggleDoor(sessionId, playerId, position);
+        return this.runSessionAction(sessionId, () => this.actions.toggleDoor(sessionId, playerId, position));
     }
 
     resumeSessionTurns(sessionId: string): void {
@@ -298,10 +307,39 @@ export class GameSessionService {
         this.lifecycle.emitSnapshot(session);
     }
 
-    private buildSnapshot(
-        session: GameSessionRuntime,
-        playerId: string,
-    ): GameSessionSnapshotPayload {
+    private runSessionAction(sessionId: string, action: () => boolean): boolean {
+        const success = action();
+        if (!success) {
+            return false;
+        }
+
+        const session = this.sessions.get(sessionId);
+        if (session) {
+            this.scheduleVirtualDecision(session);
+        }
+
+        return true;
+    }
+
+    private scheduleVirtualDecision(session: GameSessionRuntime): void {
+        if (session.virtualDecisionTimeoutId) {
+            clearTimeout(session.virtualDecisionTimeoutId);
+            session.virtualDecisionTimeoutId = null;
+        }
+
+        const activeVirtualPlayer = this.getActiveVirtualPlayer(session);
+        if (!activeVirtualPlayer || session.match.endState) {
+            return;
+        }
+
+        const delayMs = VIRTUAL_PLAYER_MIN_DELAY_MS + Math.floor(Math.random() * VIRTUAL_PLAYER_DELAY_VARIANCE_MS);
+        session.virtualDecisionTimeoutId = setTimeout(() => {
+            session.virtualDecisionTimeoutId = null;
+            this.performVirtualDecision(session.sessionId, activeVirtualPlayer.id);
+        }, delayMs);
+    }
+
+    private buildSnapshot(session: GameSessionRuntime, playerId: string): GameSessionSnapshotPayload {
         return {
             sessionId: session.sessionId,
             match: session.match,
@@ -311,5 +349,45 @@ export class GameSessionService {
                 .filter((entry) => !entry.visibleToPlayerIds || entry.visibleToPlayerIds.includes(playerId))
                 .map((entry) => ({ ...entry.entry, involvedPlayers: [...entry.entry.involvedPlayers] })),
         };
+    }
+
+    private performVirtualDecision(sessionId: string, playerId: string): void {
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return;
+        }
+
+        const activeVirtualPlayer = this.getActiveVirtualPlayer(session);
+        if (!activeVirtualPlayer || activeVirtualPlayer.id !== playerId) {
+            return;
+        }
+
+        const decision = planVirtualPlayerDecision(session.match, session.turnState, activeVirtualPlayer);
+        switch (decision.kind) {
+            case 'combat':
+                if (!this.startCombat(sessionId, playerId, decision.targetId)) {
+                    this.endTurn(sessionId, playerId);
+                }
+                return;
+            case 'move':
+                if (!this.movePlayer(sessionId, playerId, decision.direction)) {
+                    this.endTurn(sessionId, playerId);
+                }
+                return;
+            case 'end-turn':
+                this.endTurn(sessionId, playerId);
+                return;
+            default:
+                return;
+        }
+    }
+
+    private getActiveVirtualPlayer(session: GameSessionRuntime): MatchPlayer | null {
+        if (session.turnState.phase !== 'active' || !session.turnState.activePlayerId) {
+            return null;
+        }
+
+        const activePlayer = session.match.players.find((player) => player.id === session.turnState.activePlayerId) ?? null;
+        return activePlayer?.controller === 'virtual' ? activePlayer : null;
     }
 }

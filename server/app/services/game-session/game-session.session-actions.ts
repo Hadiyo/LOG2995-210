@@ -102,6 +102,9 @@ export class GameSessionSessionActions {
             return false;
         }
         const departingPlayer = session.match.players.find((player) => player.id === playerId);
+        if (!departingPlayer || departingPlayer.controller === 'virtual') {
+            return false;
+        }
         const organizerLeftWhileDebugEnabled = !!departingPlayer?.isOrganizer && session.match.debugMode;
         const nextPlayers = session.match.players.filter((player) => player.id !== playerId);
         if (nextPlayers.length === session.match.players.length) {

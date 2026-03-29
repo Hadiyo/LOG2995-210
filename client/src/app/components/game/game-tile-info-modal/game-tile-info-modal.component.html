@@ -75,7 +75,12 @@
         <div class="section-content">
           <h3>Joueur</h3>
           @if (tileInfo.playerName && tileInfo.playerAvatarId !== null) {
-            <p class="primary-value">{{ tileInfo.playerName }}</p>
+            <div class="player-heading">
+              <p class="primary-value">{{ tileInfo.playerName }}</p>
+              @if (getVirtualPlayerLabel(); as virtualPlayerLabel) {
+                <span class="player-badge" [attr.title]="virtualPlayerLabel">{{ virtualPlayerLabel }}</span>
+              }
+            </div>
           } @else {
             <p class="secondary-value">Aucun joueur sur cette tuile.</p>
           }

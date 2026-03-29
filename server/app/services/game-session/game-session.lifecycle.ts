@@ -1,19 +1,25 @@
 import { EndStatsService } from '@app/services/end-stats.service';
-import { createActiveTurnState } from '@app/services/game-session/game-session.runtime';
 import {
-    advanceToNextTurn as advanceSessionTurn, clearTimers, clearTurnState,
-    pauseTimer, resumeTimers, startTimerTransition, tickTimers,
+    activateTurn,
+    advanceToNextTurn as advanceSessionTurn,
+    clearTimers,
+    clearTurnState,
+    pauseTimer,
+    resumeTimers,
+    startTimerTransition,
 } from '@app/services/timer/turn.timers';
 import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
-import { ACTIVE_TURN_DURATION_MS, SNAPSHOT_TICK_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
+import { ACTIVE_TURN_DURATION_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionLogEntry, GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { CombatPlayerStatistics } from '@common/combat/combat.interface';
 import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import {
-    InitializedMatch, MatchPendingFlagTransfer,
-    MatchPlayer, MatchTeamId,
+    InitializedMatch,
+    MatchPendingFlagTransfer,
+    MatchPlayer,
+    MatchTeamId,
 } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
@@ -25,17 +31,22 @@ import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
 
 export class GameSessionLifecycle {
     private readonly events2 = new EventEmitter2();
-
     private readonly startTimerConfig: TimerConfig<GameSessionRuntime> = {
         emitSnapshot: (session) => this.emitSnapshot(session),
         onTransitionEnd: (session) => this.activateTurn(session),
         transitionDuration: TRANSITION_DURATION_MS,
+    };
+    private readonly activeTurnConfig: TimerConfig<GameSessionRuntime> = {
+        emitSnapshot: (session) => this.emitSnapshot(session),
+        onTransitionEnd: (session) => this.advanceToNextTurn(session),
+        transitionDuration: ACTIVE_TURN_DURATION_MS,
     };
 
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly events: EventEmitter,
         private readonly endStatsService: EndStatsService,
+        private readonly syncAutomation: (session: GameSessionRuntime) => void = () => undefined,
     ) {
         this.emitSnapshot = this.emitSnapshot.bind(this);
         this.setNextMatch = this.setNextMatch.bind(this);
@@ -56,8 +67,8 @@ export class GameSessionLifecycle {
     ): boolean {
         if (nextPlayers.length === 0) {
             clearTimers(session);
-            this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
             this.sessions.delete(sessionId);
+            this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
             this.endStatsService.endSession(sessionId);
             return true;
         }
@@ -106,7 +117,9 @@ export class GameSessionLifecycle {
             pendingSanctuaryChoice: null,
         };
         this.emitSnapshot(session);
-        this.events.emit(SessionSocketEvents.EndGame, session.sessionId);
+        this.sessions.delete(session.sessionId);
+        this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
+        this.endStatsService.endSession(session.sessionId);
     }
 
     emitSnapshot(session: GameSessionRuntime): void {
@@ -191,6 +204,10 @@ export class GameSessionLifecycle {
         const requester = match.players.find((player) => player.id === requesterId) ?? null;
         const receiver = match.players.find((player) => player.id === receiverId) ?? null;
         if (!requester || !receiver) {
+            return null;
+        }
+
+        if (requester.controller === 'virtual') {
             return null;
         }
 
@@ -349,6 +366,7 @@ export class GameSessionLifecycle {
 
     startTransition(session: GameSessionRuntime): void {
         startTimerTransition(session, this.startTimerConfig);
+        this.syncAutomation(session);
     }
 
     advanceToNextTurn(session: GameSessionRuntime): void {
@@ -363,6 +381,7 @@ export class GameSessionLifecycle {
             (s) => this.activateTurn(s),
             (s) => this.advanceToNextTurn(s),
         );
+        this.syncAutomation(session);
     }
 
     stopSessionTimers(session: GameSessionRuntime): void {
@@ -371,17 +390,13 @@ export class GameSessionLifecycle {
     }
 
     private activateTurn(session: GameSessionRuntime): void {
+        activateTurn(session, this.getActivePlayer, this.activeTurnConfig);
         const activePlayer = this.getActivePlayer(session);
-        if (!activePlayer) {
-            return;
+        if (activePlayer) {
+            this.appendLogEntry(session, `Debut du tour de ${activePlayer.name}.`, [activePlayer.name]);
+            this.emitSnapshot(session);
         }
-
-        clearTimers(session);
-        session.turnState = createActiveTurnState(session.turnState, activePlayer, ACTIVE_TURN_DURATION_MS);
-        this.appendLogEntry(session, `Debut du tour de ${activePlayer.name}.`, [activePlayer.name]);
-        this.emitSnapshot(session);
-        session.timerIntervalId = setInterval(() => tickTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
-        session.activeTurnTimeoutId = setTimeout(() => this.advanceToNextTurn(session), ACTIVE_TURN_DURATION_MS);
+        this.syncAutomation(session);
     }
 
     private getMissingCtfTeamId(mode: GameMode, players: MatchPlayer[]): MatchTeamId | null {
