@@ -1,5 +1,6 @@
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import {
+    CombatSocketEvents,
     DebugTeleportPlayerPayload,
     EndGameTurnPayload,
     ForceEndDebugTurnPayload,
@@ -122,7 +123,7 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
         }
     }
 
-    @SubscribeMessage(SessionSocketEvents.MoveGamePlayer)
+    @SubscribeMessage(CombatSocketEvents.MoveGamePlayer)
     movePlayer(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: MoveGamePlayerPayload,
@@ -137,7 +138,7 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
         }
     }
 
-    @SubscribeMessage(SessionSocketEvents.EndGameTurn)
+    @SubscribeMessage(CombatSocketEvents.EndGameTurn)
     endTurn(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: EndGameTurnPayload,
@@ -152,7 +153,7 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
         }
     }
 
-    @SubscribeMessage(SessionSocketEvents.StartCombat)
+    @SubscribeMessage(CombatSocketEvents.StartCombat)
     startCombat(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: StartCombatPayload,
@@ -167,7 +168,7 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
         }
     }
 
-    @SubscribeMessage(SessionSocketEvents.ToggleDoor)
+    @SubscribeMessage(CombatSocketEvents.ToggleDoor)
     toggleDoor(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: ToggleDoorPayload,

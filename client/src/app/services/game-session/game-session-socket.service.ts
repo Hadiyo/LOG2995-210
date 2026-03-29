@@ -4,6 +4,7 @@ import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import {
+    CombatSocketEvents,
     DebugTeleportPlayerPayload,
     EndGameTurnPayload,
     ForceEndDebugTurnPayload,
@@ -57,7 +58,7 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(SessionSocketEvents.MoveGamePlayer, {
+        this.socketManager.send(CombatSocketEvents.MoveGamePlayer, {
             sessionId,
             playerId,
             direction,
@@ -70,7 +71,7 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(SessionSocketEvents.EndGameTurn, {
+        this.socketManager.send(CombatSocketEvents.EndGameTurn, {
             sessionId,
             playerId,
         } satisfies EndGameTurnPayload);
@@ -82,7 +83,7 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(SessionSocketEvents.StartCombat, {
+        this.socketManager.send(CombatSocketEvents.StartCombat, {
             sessionId,
             playerId,
             defenderId,
@@ -95,7 +96,7 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(SessionSocketEvents.ToggleDoor, {
+        this.socketManager.send(CombatSocketEvents.ToggleDoor, {
             sessionId,
             playerId,
             position,

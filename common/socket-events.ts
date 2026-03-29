@@ -36,17 +36,19 @@ export enum PageContext {
 
 export enum SessionSocketEvents {
     JoinGameSession = 'joinGameSession',
-    MoveGamePlayer = 'moveGamePlayer',
-    EndGameTurn = 'endGameTurn',
-    StartCombat = 'startCombat',
-    ToggleDoor = 'toggleDoor',
     SurrenderGame = 'surrenderGame',
     ToggleDebugMode = 'toggleDebugMode',
     ForceEndDebugTurn = 'forceEndDebugTurn',
     DebugTeleportPlayer = 'debugTeleportPlayer',
-
     GameSessionSnapshot = 'gameSessionSnapshot',
     GameSessionError = 'gameSessionError',
+}
+
+export enum CombatSocketEvents {
+    MoveGamePlayer = 'moveGamePlayer',
+    EndGameTurn = 'endGameTurn',
+    StartCombat = 'startCombat',
+    ToggleDoor = 'toggleDoor',
 }
 
 export enum WaitingRoomEvents {
