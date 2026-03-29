@@ -6,8 +6,6 @@ export enum SocketEvents {
     MapCreated = 'mapCreated',
     MapUpdated = 'mapUpdated',
     MapDeleted = 'mapDeleted',
-    // JoinRoom = 'roomJoined',
-    // LeaveRoom = 'leaveRoom',
     ToggleMapVisibility = 'toggleMapVisibility',
 }
 
