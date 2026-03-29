@@ -17,6 +17,7 @@ export const makeLobbyPlayer = (overrides: Partial<MatchLobbyPlayer> = {}): Matc
     attackDie: 'D4',
     defenseDie: 'D6',
     controller: 'human',
+    virtualProfile: null,
     ...overrides,
 });
 

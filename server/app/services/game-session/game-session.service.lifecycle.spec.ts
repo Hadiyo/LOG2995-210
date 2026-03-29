@@ -52,6 +52,25 @@ describe('GameSessionService lifecycle', () => {
         expect(() => harness.service.registerSocket('session-1', 'ghost-player', 'socket-y')).toThrow(NotFoundException);
     });
 
+    it('rejects socket registration attempts for virtual players', () => {
+        const runtime = makeRuntime({
+            match: makeMatch({
+                players: [
+                    makeMatchPlayer({
+                        id: 'player-1',
+                        controller: 'virtual',
+                        virtualProfile: 'aggressive',
+                    }),
+                    makeMatchPlayer({ id: 'player-2', avatarId: 1 }),
+                ],
+            }),
+        });
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+
+        expect(() => harness.service.registerSocket('session-1', 'player-1', 'socket-bot')).toThrow(NotFoundException);
+        expect(harness.service.findSessionIdForSocket('socket-bot')).toBeNull();
+    });
+
     it('moves a socket membership to the latest joined session', () => {
         const firstRuntime = makeRuntime();
         const secondRuntime = makeRuntime({
@@ -212,6 +231,26 @@ describe('GameSessionService lifecycle', () => {
         expect(emitSnapshotSpy).toHaveBeenCalledWith(inactiveRuntime);
         expect(harness.service.surrender('missing', 'player-1')).toBe(false);
         expect(harness.service.surrender('inactive', 'ghost')).toBe(false);
+    });
+
+    it('refuses surrender requests for virtual players', () => {
+        const runtime = makeRuntime({
+            match: makeMatch({
+                players: [
+                    makeMatchPlayer({
+                        id: 'player-1',
+                        name: 'Bot agressif',
+                        controller: 'virtual',
+                        virtualProfile: 'aggressive',
+                    }),
+                    makeMatchPlayer({ id: 'player-2', name: 'Alice', avatarId: 1 }),
+                ],
+            }),
+        });
+
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+        expect(harness.service.surrender('session-1', 'player-1')).toBe(false);
+        expect(harness.getPrivateState().sessions.has(runtime.sessionId)).toBe(true);
     });
 
     it('cancels a CTF match when a team has no remaining players after abandons', () => {

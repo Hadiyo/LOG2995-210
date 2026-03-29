@@ -146,6 +146,50 @@ describe('WaitingRoomService rooms', () => {
         expect(state?.isLocked).toBe(true);
     });
 
+    it('adds and removes a virtual player from the organizer waiting room', async () => {
+        harness.mapService.getMapById.mockResolvedValue(makeMap());
+        const accessCode = await harness.service.createWaitingRoom('socket-org', {
+            mapId: 'map-1',
+            player: makeLobbyPlayer(),
+        });
+
+        harness.service.addVirtualPlayer('socket-org', { accessCode, profile: 'aggressive' });
+
+        const addedVirtualPlayer = harness.service.getWaitingRoomState(accessCode)?.players.find((player) => player.controller === 'virtual');
+        expect(addedVirtualPlayer).toEqual(expect.objectContaining({
+            controller: 'virtual',
+            isOrganizer: false,
+            virtualProfile: 'aggressive',
+        }));
+
+        harness.service.kickPlayer('socket-org', { accessCode, playerId: addedVirtualPlayer?.id ?? 'missing' });
+        expect(harness.service.getWaitingRoomState(accessCode)?.players).toEqual([
+            expect.objectContaining({ id: 'player-1', controller: 'human' }),
+        ]);
+    });
+
+    it('rejects virtual player additions once the room is starting', async () => {
+        const onError = jest.fn();
+        harness.service.on(SocketEvents.WaitingRoomError, onError);
+        harness.mapService.getMapById.mockResolvedValue(makeMap());
+        const accessCode = await harness.service.createWaitingRoom('socket-org', {
+            mapId: 'map-1',
+            player: makeLobbyPlayer(),
+        });
+        const room = harness.service['rooms'].get(accessCode);
+        if (!room) throw new Error('missing room');
+        room.isStarting = true;
+        room.isLocked = true;
+
+        harness.service.addVirtualPlayer('socket-org', { accessCode, profile: 'defensive' });
+
+        expect(harness.service.getWaitingRoomState(accessCode)?.players).toHaveLength(1);
+        expect(onError).toHaveBeenCalledWith({
+            socketId: 'socket-org',
+            payload: { message: 'La salle est verrouillee ou complete.' },
+        });
+    });
+
     it('moves a joining socket out of its previous room before entering another one', async () => {
         harness.mapService.getMapById.mockResolvedValue(makeMap({ size: MapSize.M }));
         const firstAccessCode = await harness.service.createWaitingRoom('socket-org-1', {

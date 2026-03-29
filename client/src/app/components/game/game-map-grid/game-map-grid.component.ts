@@ -92,6 +92,31 @@ export class GameMapGridComponent {
     return player.information.avatarId ?? 0;
   }
 
+  isVirtualPlayer(player: Player): boolean {
+    return player.information.controller === 'virtual';
+  }
+
+  getVirtualPlayerTitle(player: Player): string | null {
+    if (!this.isVirtualPlayer(player)) {
+      return null;
+    }
+
+    return player.information.virtualProfile === 'defensive' ? 'Joueur virtuel defensif' : 'Joueur virtuel agressif';
+  }
+
+  getVirtualPlayerProfile(player: Player): 'aggressive' | 'defensive' | null {
+    if (!this.isVirtualPlayer(player)) {
+      return null;
+    }
+
+    return player.information.virtualProfile === 'defensive' ? 'defensive' : 'aggressive';
+  }
+
+  getAvatarAriaLabel(player: Player): string {
+    const playerType = this.isVirtualPlayer(player) ? 'joueur virtuel' : 'joueur';
+    return `Avatar de ${player.information.name}, ${playerType}`;
+  }
+
   // Dead players force dead pose; otherwise use snapshot pose or idle.
   getPlayerState(player: Player): CharacterState {
     if (player.state.status === PlayerStatus.Eliminated) return this.deadPlayerState;

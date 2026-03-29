@@ -24,6 +24,7 @@ export class GameSessionLifecycle {
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly events: EventEmitter,
+        private readonly syncAutomation: (session: GameSessionRuntime) => void = () => undefined,
     ) {}
 
     startTransition(session: GameSessionRuntime): void {
@@ -32,6 +33,7 @@ export class GameSessionLifecycle {
         this.emitSnapshot(session);
         session.timerIntervalId = setInterval(() => tickGameSessionTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
         session.transitionTimeoutId = setTimeout(() => this.activateTurn(session), TRANSITION_DURATION_MS);
+        this.syncAutomation(session);
     }
 
     advanceToNextTurn(session: GameSessionRuntime): void {
@@ -230,6 +232,10 @@ export class GameSessionLifecycle {
             return null;
         }
 
+        if (requester.controller === 'virtual') {
+            return null;
+        }
+
         const sameTeam = requester.teamId !== null && requester.teamId !== undefined && requester.teamId === receiver.teamId;
         const adjacent = Math.abs(requester.position.x - receiver.position.x) + Math.abs(requester.position.y - receiver.position.y) === 1;
         if (!sameTeam || !adjacent) {
@@ -343,6 +349,7 @@ export class GameSessionLifecycle {
         this.emitSnapshot(session);
         session.timerIntervalId = setInterval(() => tickGameSessionTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
         session.activeTurnTimeoutId = setTimeout(() => this.advanceToNextTurn(session), ACTIVE_TURN_DURATION_MS);
+        this.syncAutomation(session);
     }
 
     private canStartCombat(match: InitializedMatch, attacker: MatchPlayer, defender: MatchPlayer): boolean {

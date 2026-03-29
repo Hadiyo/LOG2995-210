@@ -35,4 +35,8 @@ export function clearGameSessionTimers(session: GameSessionRuntime): void {
         clearInterval(session.timerIntervalId);
         session.timerIntervalId = null;
     }
+    if (session.virtualDecisionTimeoutId) {
+        clearTimeout(session.virtualDecisionTimeoutId);
+        session.virtualDecisionTimeoutId = null;
+    }
 }
