@@ -24,7 +24,7 @@ export interface MatchPlayer extends MatchLobbyPlayer {
     startingPosition: Vec2;
     health: number;
     combatWins: number;
-    render: PlayerRenderState;
+    render?: PlayerRenderState;
 }
 
 export interface MatchObjectDetails {

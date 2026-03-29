@@ -9,12 +9,10 @@ import { WaitingRoomService as MatchWaitingRoomService } from '@app/services/wai
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { GameMapController } from './controllers/game-map/game-map.controller';
 import { MapGateway } from './gateways/map/map.gateway';
 import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
 import { MatchWaitingRoomGateway } from './gateways/waiting-room/match-waiting-room.gateway';
 import { ChatService } from './services/chat/chat.service';
-import { GameMapService } from './services/game-map/game-map.service';
 
 @Module({
     imports: [
@@ -30,13 +28,12 @@ import { GameMapService } from './services/game-map/game-map.service';
             { name: Map.name, schema: mapSchema },
         ]),
     ],
-    controllers: [MapController, GameMapController, WaitingRoomController],
+    controllers: [MapController, WaitingRoomController],
     providers: [
         Logger,
         MapGateway,
         PageRoomGateway,
         MapService,
-        GameMapService,
         MatchWaitingRoomGateway,
         MatchGameSessionService,
         MatchWaitingRoomService,

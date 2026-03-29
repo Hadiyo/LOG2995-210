@@ -9,12 +9,12 @@ import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { map, Observable } from 'rxjs';
 
 @Component({
-  selector: 'app-game-view',
+  selector: 'app-waiting-room',
   imports: [CommonModule, GameChatPanelComponent],
-  templateUrl: './game-view.component.html',
-  styleUrls: ['./game-view.component.scss'],
+  templateUrl: './waiting-room.component.html',
+  styleUrls: ['./waiting-room.component.scss'],
 })
-export class GameViewComponent implements OnInit, OnDestroy {
+export class WaitingRoomComponent implements OnInit, OnDestroy {
   protected players$: Observable<MatchLobbyPlayer[]> = this.waitingRoomService.players$.pipe(
     map((players) => {
       const organizer = players.find((player) => player.isOrganizer);

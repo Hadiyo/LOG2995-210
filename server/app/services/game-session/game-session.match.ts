@@ -6,8 +6,6 @@ import { PlayerFacing, PlayerPose, PlayerRenderState } from '@common/player/play
 export const WALK_POSE_DURATION_MS = 180;
 export const ATTACK_POSE_DURATION_MS = 220;
 
-type MatchTransientPose = Extract<PlayerPose, PlayerPose.Walk | PlayerPose.Attack>;
-
 export function buildInitializedMatchFromEditor(
     map: EditorMapDetails,
     players: MatchLobbyPlayer[],
@@ -24,7 +22,7 @@ export function buildInitializedMatchFromEditor(
         startingPosition: { ...shuffledStarts[index].position },
         health: player.maxHealth,
         combatWins: 0,
-        render: createDefaultMatchPlayerRender(),
+        render: createGameSessionInitialRenderState(),
     }));
 
     return {
@@ -53,51 +51,16 @@ export function getGameSessionDestination(position: Vec2, direction: 'up' | 'dow
     return { x: position.x + offset.x, y: position.y + offset.y };
 }
 
-export function createDefaultMatchPlayerRender(): PlayerRenderState {
+export function createGameSessionInitialRenderState(): PlayerRenderState {
     return {
         facing: PlayerFacing.Front,
         pose: PlayerPose.Idle,
     };
 }
 
-export function orientMatchPlayerToward(player: MatchPlayer, target: Vec2): MatchPlayer {
-    const facing = getFacingToTarget(player.position, target);
-    if (!facing) {
-        return player;
-    }
-
-    return {
-        ...player,
-        render: {
-            ...createDefaultMatchPlayerRender(),
-            ...player.render,
-            facing,
-        },
-    };
-}
-
-export function setMatchPlayerTransientPose(
-    player: MatchPlayer,
-    pose: MatchTransientPose,
-    durationMs: number,
-    startedAt = new Date().toISOString(),
-): MatchPlayer {
-    return {
-        ...player,
-        render: {
-            ...createDefaultMatchPlayerRender(),
-            ...player.render,
-            pose,
-            poseStartedAt: startedAt,
-            poseDurationMs: durationMs,
-        },
-    };
-}
-
-function getFacingToTarget(from: Vec2, to: Vec2): PlayerFacing | null {
+export function getGameSessionFacingToTarget(from: Vec2, to: Vec2): PlayerFacing | null {
     const deltaX = to.x - from.x;
     const deltaY = to.y - from.y;
-
     if (deltaX === 0 && deltaY === 0) {
         return null;
     }
@@ -114,10 +77,12 @@ export function getGameSessionMovementCost(match: InitializedMatch, destination:
     if (!cell) return null;
     if (cell.tileType === TileType.WALL) return null;
     if (cell.tileType === TileType.DOOR && !cell.isWalkable) return null;
+
     const blockingObject = getGameSessionObjectCovering(match.objects, destination);
     if (blockingObject && (blockingObject.type === ObjectType.REGEN || blockingObject.type === ObjectType.ARENA)) {
         return null;
     }
+
     if (match.players.some((player) => player.id !== movingPlayerId && samePosition(player.position, destination))) {
         return null;
     }

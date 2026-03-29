@@ -2,12 +2,12 @@ import { Router, provideRouter } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
-import { GameViewComponent } from './game-view.component';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
+import { WaitingRoomComponent } from './waiting-room.component';
 
-describe('GameViewComponent', () => {
-  let component: GameViewComponent;
-  let fixture: ComponentFixture<GameViewComponent>;
+describe('WaitingRoomComponent', () => {
+  let component: WaitingRoomComponent;
+  let fixture: ComponentFixture<WaitingRoomComponent>;
   let mockWaitingRoomService: jasmine.SpyObj<WaitingRoomService>;
   let router: Router;
 
@@ -45,14 +45,14 @@ describe('GameViewComponent', () => {
     });
 
     await TestBed.configureTestingModule({
-      imports: [GameViewComponent],
+      imports: [WaitingRoomComponent],
       providers: [
         { provide: WaitingRoomService, useValue: mockWaitingRoomService },
         provideRouter([]),
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(GameViewComponent);
+    fixture = TestBed.createComponent(WaitingRoomComponent);
     component = fixture.componentInstance;
     router = TestBed.inject(Router);
     fixture.detectChanges();
