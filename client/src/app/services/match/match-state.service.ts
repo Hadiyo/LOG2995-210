@@ -85,25 +85,6 @@ export class MatchStateService extends MatchSessionStore {
         this.errorMessage.set('');
     }
 
-    updatePlayerPosition(playerId: string, position: Vec2): MatchPlayer | null {
-        const currentMatch = this.match();
-        if (!currentMatch) {
-            return null;
-        }
-
-        const nextPlayers = currentMatch.players.map((player) =>
-            player.id === playerId ? { ...player, position } : player,
-        );
-        const nextMatch = {
-            ...currentMatch,
-            players: nextPlayers,
-            objects: this.matchBoardService.buildVisibleObjects(currentMatch.allObjects, nextPlayers),
-        };
-
-        this.setPersistedMatch(nextMatch);
-        return nextPlayers.find((player) => player.id === playerId) ?? null;
-    }
-
     applyCombatAftermath(defeatedPlayerIds: string[]): CombatAftermathResult | null {
         const currentMatch = this.match();
         if (!currentMatch) {

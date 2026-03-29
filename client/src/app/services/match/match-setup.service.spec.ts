@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ObjectType } from '@common/maps/map.enums';
+import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
 import { MatchSetupService } from './match-setup.service';
 import { createMap, createPlayers, TEST_RELOAD_RANDOM } from './testing/match-test.fixtures';
 
@@ -17,5 +18,6 @@ describe('MatchSetupService', () => {
         expect(match.players).toHaveSize(3);
         expect(new Set(match.players.map((player) => `${player.startingPosition.x}:${player.startingPosition.y}`)).size).toBe(3);
         expect(match.objects.filter((object) => object.type === ObjectType.START)).toHaveSize(3);
+        expect(match.players.every((player) => player.render?.facing === PlayerFacing.Front && player.render?.pose === PlayerPose.Idle)).toBeTrue();
     });
 });
