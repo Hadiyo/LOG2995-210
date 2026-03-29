@@ -6,37 +6,9 @@ export enum SocketEvents {
     MapCreated = 'mapCreated',
     MapUpdated = 'mapUpdated',
     MapDeleted = 'mapDeleted',
-    JoinRoom = 'roomJoined',
-    LeaveRoom = 'leaveRoom',
+    // JoinRoom = 'roomJoined',
+    // LeaveRoom = 'leaveRoom',
     ToggleMapVisibility = 'toggleMapVisibility',
-
-    CreateWaitingRoom = 'createWaitingRoom',
-    JoinWaitingRoom = 'joinWaitingRoom',
-    LeaveWaitingRoom = 'leaveWaitingRoom',
-    KickWaitingRoomPlayer = 'kickWaitingRoomPlayer',
-    SendWaitingRoomMessage = 'sendWaitingRoomMessage',
-    StartWaitingRoomGame = 'startWaitingRoomGame',
-
-    WaitingRoomUpdated = 'waitingRoomUpdated',
-    WaitingRoomDirectoryUpdated = 'waitingRoomDirectoryUpdated',
-    WaitingRoomMessageSent = 'waitingRoomMessageSent',
-    WaitingRoomPlayerKicked = 'waitingRoomPlayerKicked',
-    WaitingRoomCancelled = 'waitingRoomCancelled',
-    WaitingRoomGameStarted = 'waitingRoomGameStarted',
-    WaitingRoomError = 'waitingRoomError',
-
-    JoinGameSession = 'joinGameSession',
-    MoveGamePlayer = 'moveGamePlayer',
-    EndGameTurn = 'endGameTurn',
-    StartCombat = 'startCombat',
-    ToggleDoor = 'toggleDoor',
-    SurrenderGame = 'surrenderGame',
-    ToggleDebugMode = 'toggleDebugMode',
-    ForceEndDebugTurn = 'forceEndDebugTurn',
-    DebugTeleportPlayer = 'debugTeleportPlayer',
-
-    GameSessionSnapshot = 'gameSessionSnapshot',
-    GameSessionError = 'gameSessionError',
 }
 
 export enum ChatSocketEvents {
@@ -64,30 +36,36 @@ export enum PageContext {
     JoinGame = 'joinGame',
 }
 
-export enum RoomSocketEvents {
-    JoinGameRoom = 'gameRoomJoined',
-    CreateGameSession = 'createGameSession',
-    NewAvailableSession = 'newSessionAvailable',
-    PlayerJoinedGame = 'playerJoinedGame',
-    IncrementPlayerCount = 'incrementPlayerCount',
-    DecrementPlayerCount = 'decrementPlayerCount',
-    LeaveSession = 'leaveSession',
-    AddPlayerToSession = 'addPlayerToSession',
+export enum SessionSocketEvents {
+    JoinGameSession = 'joinGameSession',
+    MoveGamePlayer = 'moveGamePlayer',
+    EndGameTurn = 'endGameTurn',
+    StartCombat = 'startCombat',
+    ToggleDoor = 'toggleDoor',
+    SurrenderGame = 'surrenderGame',
+    ToggleDebugMode = 'toggleDebugMode',
+    ForceEndDebugTurn = 'forceEndDebugTurn',
+    DebugTeleportPlayer = 'debugTeleportPlayer',
+
+    GameSessionSnapshot = 'gameSessionSnapshot',
+    GameSessionError = 'gameSessionError',
 }
 
 export enum WaitingRoomEvents {
-    InitPlayers = 'initPlayers',
-    LeaveGameRoom = 'leaveGameRoom',
-    DeleteGameSession = 'deleteGameSession',
-    GameSessionDeleted = 'gameSessionDeleted',
-    PlayerJoinedSession = 'playerJoinedSession',
-    PlayerLeftSession = 'playerLeftSession',
-    ClientJoinedSession = 'clientJoinedSession',
-    KickPlayer = 'kickPlayer',
-    KickedFromSession = 'kickedFromSession',
-    WaitingRoomState = 'waitingRoomState',
-    StartGame = 'waitingRoomStartGame',
-    GameStarted = 'waitingRoomGameStarted',
+    CreateWaitingRoom = 'createWaitingRoom',
+    JoinWaitingRoom = 'joinWaitingRoom',
+    LeaveWaitingRoom = 'leaveWaitingRoom',
+    KickWaitingRoomPlayer = 'kickWaitingRoomPlayer',
+    SendWaitingRoomMessage = 'sendWaitingRoomMessage',
+    StartWaitingRoomGame = 'startWaitingRoomGame',
+
+    WaitingRoomUpdated = 'waitingRoomUpdated',
+    WaitingRoomDirectoryUpdated = 'waitingRoomDirectoryUpdated',
+    WaitingRoomMessageSent = 'waitingRoomMessageSent',
+    WaitingRoomPlayerKicked = 'waitingRoomPlayerKicked',
+    WaitingRoomCancelled = 'waitingRoomCancelled',
+    WaitingRoomGameStarted = 'waitingRoomGameStarted',
+    WaitingRoomError = 'waitingRoomError',
 }
 
 export enum ErrorSocketEvents {

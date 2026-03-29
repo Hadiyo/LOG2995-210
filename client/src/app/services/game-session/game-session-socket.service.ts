@@ -9,13 +9,13 @@ import {
     ForceEndDebugTurnPayload,
     GameSessionErrorPayload,
     GameSessionSnapshotPayload,
-    ToggleDebugModePayload,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
-    SocketEvents,
+    SessionSocketEvents,
     StartCombatPayload,
-    ToggleDoorPayload,
     SurrenderGamePayload,
+    ToggleDebugModePayload,
+    ToggleDoorPayload,
 } from '@common/socket-events';
 
 @Injectable({ providedIn: 'root' })
@@ -45,7 +45,7 @@ export class GameSessionSocketService {
         }
 
         this.sessionId.set(sessionId);
-        this.socketManager.send(SocketEvents.JoinGameSession, {
+        this.socketManager.send(SessionSocketEvents.JoinGameSession, {
             sessionId,
             playerId,
         } satisfies JoinGameSessionPayload);
@@ -57,7 +57,7 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(SocketEvents.MoveGamePlayer, {
+        this.socketManager.send(SessionSocketEvents.MoveGamePlayer, {
             sessionId,
             playerId,
             direction,
@@ -70,7 +70,7 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(SocketEvents.EndGameTurn, {
+        this.socketManager.send(SessionSocketEvents.EndGameTurn, {
             sessionId,
             playerId,
         } satisfies EndGameTurnPayload);
@@ -82,7 +82,7 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(SocketEvents.StartCombat, {
+        this.socketManager.send(SessionSocketEvents.StartCombat, {
             sessionId,
             playerId,
             defenderId,
@@ -95,7 +95,7 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(SocketEvents.ToggleDoor, {
+        this.socketManager.send(SessionSocketEvents.ToggleDoor, {
             sessionId,
             playerId,
             position,
@@ -108,7 +108,7 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(SocketEvents.SurrenderGame, {
+        this.socketManager.send(SessionSocketEvents.SurrenderGame, {
             sessionId,
             playerId,
         } satisfies SurrenderGamePayload);
@@ -126,7 +126,7 @@ export class GameSessionSocketService {
             this.debugToggleTimeoutId = null;
         }, GameSessionSocketService.debugToggleGuardMs);
 
-        this.socketManager.send(SocketEvents.ToggleDebugMode, {
+        this.socketManager.send(SessionSocketEvents.ToggleDebugMode, {
             sessionId,
             playerId,
         } satisfies ToggleDebugModePayload);
@@ -138,7 +138,7 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(SocketEvents.ForceEndDebugTurn, {
+        this.socketManager.send(SessionSocketEvents.ForceEndDebugTurn, {
             sessionId,
             playerId,
         } satisfies ForceEndDebugTurnPayload);
@@ -150,7 +150,7 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(SocketEvents.DebugTeleportPlayer, {
+        this.socketManager.send(SessionSocketEvents.DebugTeleportPlayer, {
             sessionId,
             playerId,
             position,
@@ -158,7 +158,7 @@ export class GameSessionSocketService {
     }
 
     private registerListeners(): void {
-        this.socketManager.on<GameSessionSnapshotPayload>(SocketEvents.GameSessionSnapshot, (payload) => {
+        this.socketManager.on<GameSessionSnapshotPayload>(SessionSocketEvents.GameSessionSnapshot, (payload) => {
             this.clearDebugToggleGuard();
             this.sessionId.set(payload.sessionId);
             this.matchState.hydrateSnapshot(payload.match);
@@ -167,7 +167,7 @@ export class GameSessionSocketService {
             this.errorMessage.set('');
         });
 
-        this.socketManager.on<GameSessionErrorPayload>(SocketEvents.GameSessionError, (payload) => {
+        this.socketManager.on<GameSessionErrorPayload>(SessionSocketEvents.GameSessionError, (payload) => {
             this.clearDebugToggleGuard();
             this.errorMessage.set(payload.message);
         });
