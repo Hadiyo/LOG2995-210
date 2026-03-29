@@ -200,6 +200,38 @@ describe('GameSessionService actions', () => {
         expect(harness.service.requestFlagTransfer('session-1', 'player-2', 'player-1')).toBe(false);
     });
 
+    it('auto-accepts a flag transfer offered to a virtual teammate and refuses virtual requests', () => {
+        const runtime = makeRuntime({
+            match: makeMatch({
+                mode: GameMode.CTF,
+                players: [
+                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, startingPosition: { x: 0, y: 0 }, teamId: 'A' }),
+                    makeMatchPlayer({
+                        id: 'player-2',
+                        position: { x: 1, y: 0 },
+                        startingPosition: { x: 1, y: 0 },
+                        avatarId: 1,
+                        teamId: 'A',
+                        controller: 'virtual',
+                        virtualProfile: 'aggressive',
+                    }),
+                ],
+                flagCarrierId: 'player-1',
+            }),
+        });
+
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+
+        expect(harness.service.requestFlagTransfer('session-1', 'player-1', 'player-2')).toBe(true);
+        expect(runtime.match.pendingFlagTransfer).toBeNull();
+        expect(runtime.match.flagCarrierId).toBe('player-2');
+        expect(runtime.messages.at(-1)?.content).toContain('obtient le drapeau');
+
+        runtime.turnState.actionTaken = false;
+        runtime.match.flagCarrierId = 'player-2';
+        expect(harness.service.requestFlagTransfer('session-1', 'player-2', 'player-1')).toBe(false);
+    });
+
     it('logs flag pickup and clears unanswered transfers when the turn advances', () => {
         const serviceInternals = harness.getServiceInternals();
         const advanceSpy = jest.spyOn(serviceInternals, 'advanceToNextTurn');

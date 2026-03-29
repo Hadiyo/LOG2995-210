@@ -195,7 +195,18 @@ export class GameSessionService {
     }
 
     requestFlagTransfer(sessionId: string, requesterId: string, receiverId: string): boolean {
-        return this.runSessionAction(sessionId, () => this.sessionActions.requestFlagTransfer(sessionId, requesterId, receiverId));
+        const success = this.runSessionAction(sessionId, () => this.sessionActions.requestFlagTransfer(sessionId, requesterId, receiverId));
+        if (!success) {
+            return false;
+        }
+
+        const session = this.sessions.get(sessionId);
+        const receiver = session?.match.players.find((player) => player.id === receiverId) ?? null;
+        if (receiver?.controller === 'virtual') {
+            return this.resolveFlagTransfer(sessionId, receiverId, true);
+        }
+
+        return true;
     }
 
     resolveFlagTransfer(sessionId: string, receiverId: string, accepted: boolean): boolean {

@@ -16,4 +16,5 @@ export interface GameSessionRuntime extends Timers {
     logEntries: GameSessionLogEntry[];
     socketToPlayerId: Map<string, string>;
     turnState: MatchTurnState;
+    virtualDecisionTimeoutId: NodeJS.Timeout | null;
 }
