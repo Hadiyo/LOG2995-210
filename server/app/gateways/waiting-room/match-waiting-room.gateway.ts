@@ -1,3 +1,20 @@
+import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
+import {
+    WaitingRoomCancelledEvent,
+    WaitingRoomErrorEvent,
+    WaitingRoomGameStartedEvent,
+    WaitingRoomMessageSentEvent,
+    WaitingRoomPlayerKickedEvent,
+    WaitingRoomUpdatedEvent,
+} from '@app/services/waiting-room/waiting-room.types';
+import {
+    CreateWaitingRoomPayload,
+    getWaitingRoomRoom,
+    JoinWaitingRoomPayload,
+    KickWaitingRoomPlayerPayload,
+    SendWaitingRoomMessagePayload,
+    WaitingRoomEvents,
+} from '@common/socket-events';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
 import {
     ConnectedSocket,
@@ -8,23 +25,6 @@ import {
     WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import {
-    CreateWaitingRoomPayload,
-    getWaitingRoomRoom,
-    JoinWaitingRoomPayload,
-    KickWaitingRoomPlayerPayload,
-    SendWaitingRoomMessagePayload,
-    SocketEvents,
-} from '@common/socket-events';
-import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
-import {
-    WaitingRoomCancelledEvent,
-    WaitingRoomErrorEvent,
-    WaitingRoomGameStartedEvent,
-    WaitingRoomMessageSentEvent,
-    WaitingRoomPlayerKickedEvent,
-    WaitingRoomUpdatedEvent,
-} from '@app/services/waiting-room/waiting-room.types';
 
 @WebSocketGateway({ namespace: '/api' })
 export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDestroy {
@@ -53,7 +53,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
         this.waitingRoomService.handleDisconnect(client.id);
     }
 
-    @SubscribeMessage(SocketEvents.CreateWaitingRoom)
+    @SubscribeMessage(WaitingRoomEvents.CreateWaitingRoom)
     async createWaitingRoom(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: CreateWaitingRoomPayload,
@@ -67,15 +67,15 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
             client.join(getWaitingRoomRoom(accessCode));
             const state = this.waitingRoomService.getWaitingRoomState(accessCode);
             if (state) {
-                client.emit(SocketEvents.WaitingRoomUpdated, state);
+                client.emit(WaitingRoomEvents.WaitingRoomUpdated, state);
             }
         } catch (error) {
             this.logger.error(`Impossible de creer la salle: ${error}`);
-            client.emit(SocketEvents.WaitingRoomError, { message: 'Impossible de creer la salle d attente.' });
+            client.emit(WaitingRoomEvents.WaitingRoomError, { message: 'Impossible de creer la salle d attente.' });
         }
     }
 
-    @SubscribeMessage(SocketEvents.JoinWaitingRoom)
+    @SubscribeMessage(WaitingRoomEvents.JoinWaitingRoom)
     joinWaitingRoom(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: JoinWaitingRoomPayload,
@@ -92,11 +92,11 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
         client.join(getWaitingRoomRoom(payload.accessCode));
         const state = this.waitingRoomService.getWaitingRoomState(payload.accessCode);
         if (state) {
-            client.emit(SocketEvents.WaitingRoomUpdated, state);
+            client.emit(WaitingRoomEvents.WaitingRoomUpdated, state);
         }
     }
 
-    @SubscribeMessage(SocketEvents.LeaveWaitingRoom)
+    @SubscribeMessage(WaitingRoomEvents.LeaveWaitingRoom)
     leaveWaitingRoom(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: { accessCode: string },
@@ -105,7 +105,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
         client.leave(getWaitingRoomRoom(payload.accessCode));
     }
 
-    @SubscribeMessage(SocketEvents.KickWaitingRoomPlayer)
+    @SubscribeMessage(WaitingRoomEvents.KickWaitingRoomPlayer)
     kickPlayer(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: KickWaitingRoomPlayerPayload,
@@ -113,7 +113,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
         this.waitingRoomService.kickPlayer(client.id, payload);
     }
 
-    @SubscribeMessage(SocketEvents.SendWaitingRoomMessage)
+    @SubscribeMessage(WaitingRoomEvents.SendWaitingRoomMessage)
     sendMessage(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: SendWaitingRoomMessagePayload,
@@ -121,7 +121,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
         this.waitingRoomService.addMessage(client.id, payload);
     }
 
-    @SubscribeMessage(SocketEvents.StartWaitingRoomGame)
+    @SubscribeMessage(WaitingRoomEvents.StartWaitingRoomGame)
     async startGame(
         @ConnectedSocket() client: Socket,
         @MessageBody() payload: { accessCode: string },
@@ -130,7 +130,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
             await this.waitingRoomService.startGame(client.id, payload.accessCode);
         } catch (error) {
             this.logger.error(`Impossible de lancer la partie: ${error}`);
-            client.emit(SocketEvents.WaitingRoomError, { message: 'Impossible de lancer la partie.' });
+            client.emit(WaitingRoomEvents.WaitingRoomError, { message: 'Impossible de lancer la partie.' });
         }
     }
 
@@ -145,75 +145,75 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
     }
 
     private unsubscribeFromWaitingRoomEvents(): void {
-        this.waitingRoomService.off(SocketEvents.WaitingRoomUpdated, this.onUpdated);
-        this.waitingRoomService.off(SocketEvents.WaitingRoomMessageSent, this.onMessage);
-        this.waitingRoomService.off(SocketEvents.WaitingRoomError, this.onError);
-        this.waitingRoomService.off(SocketEvents.WaitingRoomPlayerKicked, this.onKicked);
-        this.waitingRoomService.off(SocketEvents.WaitingRoomCancelled, this.onCancelled);
-        this.waitingRoomService.off(SocketEvents.WaitingRoomGameStarted, this.onStarted);
-        this.waitingRoomService.off(SocketEvents.WaitingRoomDirectoryUpdated, this.onDirectoryUpdated);
+        this.waitingRoomService.off(WaitingRoomEvents.WaitingRoomUpdated, this.onUpdated);
+        this.waitingRoomService.off(WaitingRoomEvents.WaitingRoomMessageSent, this.onMessage);
+        this.waitingRoomService.off(WaitingRoomEvents.WaitingRoomError, this.onError);
+        this.waitingRoomService.off(WaitingRoomEvents.WaitingRoomPlayerKicked, this.onKicked);
+        this.waitingRoomService.off(WaitingRoomEvents.WaitingRoomCancelled, this.onCancelled);
+        this.waitingRoomService.off(WaitingRoomEvents.WaitingRoomGameStarted, this.onStarted);
+        this.waitingRoomService.off(WaitingRoomEvents.WaitingRoomDirectoryUpdated, this.onDirectoryUpdated);
     }
 
     private subscribeUpdatedEvent(): void {
         this.onUpdated = (event) => {
-            this.server.to(getWaitingRoomRoom(event.accessCode)).emit(SocketEvents.WaitingRoomUpdated, event.payload);
+            this.server.to(getWaitingRoomRoom(event.accessCode)).emit(WaitingRoomEvents.WaitingRoomUpdated, event.payload);
         };
-        this.waitingRoomService.on(SocketEvents.WaitingRoomUpdated, this.onUpdated);
+        this.waitingRoomService.on(WaitingRoomEvents.WaitingRoomUpdated, this.onUpdated);
     }
 
     private subscribeMessageEvent(): void {
         this.onMessage = (event) => {
-            this.server.to(getWaitingRoomRoom(event.accessCode)).emit(SocketEvents.WaitingRoomMessageSent, event.payload);
+            this.server.to(getWaitingRoomRoom(event.accessCode)).emit(WaitingRoomEvents.WaitingRoomMessageSent, event.payload);
         };
-        this.waitingRoomService.on(SocketEvents.WaitingRoomMessageSent, this.onMessage);
+        this.waitingRoomService.on(WaitingRoomEvents.WaitingRoomMessageSent, this.onMessage);
     }
 
     private subscribeErrorEvent(): void {
         this.onError = (event) => {
-            this.server.to(event.socketId).emit(SocketEvents.WaitingRoomError, event.payload);
+            this.server.to(event.socketId).emit(WaitingRoomEvents.WaitingRoomError, event.payload);
         };
-        this.waitingRoomService.on(SocketEvents.WaitingRoomError, this.onError);
+        this.waitingRoomService.on(WaitingRoomEvents.WaitingRoomError, this.onError);
     }
 
     private subscribeKickedEvent(): void {
         this.onKicked = (event) => {
             const room = getWaitingRoomRoom(event.accessCode);
             this.server.in(event.kickedSocketId).socketsLeave(room);
-            this.server.to(event.kickedSocketId).emit(SocketEvents.WaitingRoomPlayerKicked, {
+            this.server.to(event.kickedSocketId).emit(WaitingRoomEvents.WaitingRoomPlayerKicked, {
                 message: 'Vous avez ete exclu de la salle d attente par l organisateur.',
             });
         };
-        this.waitingRoomService.on(SocketEvents.WaitingRoomPlayerKicked, this.onKicked);
+        this.waitingRoomService.on(WaitingRoomEvents.WaitingRoomPlayerKicked, this.onKicked);
     }
 
     private subscribeCancelledEvent(): void {
         this.onCancelled = (event) => {
             const room = getWaitingRoomRoom(event.accessCode);
-            this.server.to(room).emit(SocketEvents.WaitingRoomCancelled, {
+            this.server.to(room).emit(WaitingRoomEvents.WaitingRoomCancelled, {
                 message: 'La salle d attente a ete fermee.',
             });
             this.server.in(room).socketsLeave(room);
         };
-        this.waitingRoomService.on(SocketEvents.WaitingRoomCancelled, this.onCancelled);
+        this.waitingRoomService.on(WaitingRoomEvents.WaitingRoomCancelled, this.onCancelled);
     }
 
     private subscribeStartedEvent(): void {
         this.onStarted = (event) => {
             const room = getWaitingRoomRoom(event.accessCode);
-            this.server.to(room).emit(SocketEvents.WaitingRoomGameStarted, {
+            this.server.to(room).emit(WaitingRoomEvents.WaitingRoomGameStarted, {
                 accessCode: event.accessCode,
                 sessionId: event.sessionId,
                 messages: event.messages,
             });
             this.server.in(room).socketsLeave(room);
         };
-        this.waitingRoomService.on(SocketEvents.WaitingRoomGameStarted, this.onStarted);
+        this.waitingRoomService.on(WaitingRoomEvents.WaitingRoomGameStarted, this.onStarted);
     }
 
     private subscribeDirectoryUpdatedEvent(): void {
         this.onDirectoryUpdated = () => {
-            this.server.emit(SocketEvents.WaitingRoomDirectoryUpdated);
+            this.server.emit(WaitingRoomEvents.WaitingRoomDirectoryUpdated);
         };
-        this.waitingRoomService.on(SocketEvents.WaitingRoomDirectoryUpdated, this.onDirectoryUpdated);
+        this.waitingRoomService.on(WaitingRoomEvents.WaitingRoomDirectoryUpdated, this.onDirectoryUpdated);
     }
 }
