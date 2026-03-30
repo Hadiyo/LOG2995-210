@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { GameActionBarComponent } from '@app/components/game/game-action-bar/game-action-bar.component';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { GameCurrentPlayerPanelComponent } from '@app/components/game/game-current-player-panel/game-current-player-panel.component';
+import { GameMapActionPromptComponent } from '@app/components/game/game-map-action-prompt/game-map-action-prompt.component';
 import { GameMapGridComponent } from '@app/components/game/game-map-grid/game-map-grid.component';
 import { GamePlayerListComponent } from '@app/components/game/game-player-list/game-player-list.component';
 import { GameSessionInfoPanelComponent } from '@app/components/game/game-session-info-panel/game-session-info-panel.component';
@@ -43,6 +44,7 @@ import { Player, PlayerStatus } from '@common/player/player.interface';
     imports: [
         CommonModule,
         GameMapGridComponent,
+        GameMapActionPromptComponent,
         GamePlayerListComponent,
         GameActionBarComponent,
         GameChatPanelComponent,

@@ -1,4 +1,5 @@
 :host {
+  --shared-action-panel-height: calc((var(--panel-padding) * 2) + 52px);
   --view-gap: 16px;
   --view-padding: 16px;
   --side-panel-left-width: 270px;
@@ -24,6 +25,7 @@
 }
 
 .panel {
+  box-sizing: border-box;
   border: 1px solid var(--border-soft);
   border-radius: var(--panel-radius);
   padding: var(--panel-padding);
@@ -34,10 +36,20 @@
   color: var(--accent-danger);
 }
 
+.map-column {
+  grid-area: map;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--view-gap);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .map-panel {
   position: relative;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   justify-items: center;
   align-content: start;
   gap: 10px;
@@ -60,13 +72,9 @@
   overflow: hidden;
 }
 
-.map-panel {
-  grid-area: map;
-}
-
 .side-panel--right {
   grid-area: right;
-  padding-bottom: 2px;
+  height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -227,8 +235,16 @@
 }
 
 .panel--action-bar {
+  display: flex;
+  align-items: center;
   margin-top: auto;
   flex: 0 0 auto;
+  height: var(--shared-action-panel-height);
+}
+
+.panel--action-bar > app-game-action-bar {
+  display: block;
+  width: 100%;
 }
 
 .turn-status__headline {
@@ -312,6 +328,33 @@
   overflow: hidden;
 }
 
+.map-action-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 100%;
+  height: var(--shared-action-panel-height);
+  overflow: hidden;
+}
+
+.map-action-panel > app-game-map-action-prompt {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+.map-action-panel > .map-panel__hint {
+  max-width: 100%;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .map-panel__status-toggle {
   padding: 6px 14px;
   font-size: 0.88rem;
@@ -371,30 +414,6 @@
 
 .map-turn-status__close:hover {
   background: color-mix(in srgb, var(--bg-main) 58%, transparent);
-}
-
-.map-panel__action-picker {
-  display: grid;
-  gap: 8px;
-}
-
-.map-panel__action-picker p {
-  margin: 0;
-}
-
-.map-panel__choice-title {
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.map-panel__action-picker--sanctuary {
-  gap: 10px;
-}
-
-.map-panel__action-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 .turn-order__details {
@@ -570,6 +589,10 @@
 
   .side-panel--left {
     display: flex;
+  }
+
+  .map-column {
+    overflow: visible;
   }
 
   .side-panel {

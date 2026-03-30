@@ -85,108 +85,88 @@
 
     </aside>
 
-    <section class="map-panel panel">
-      <div class="map-panel__header">
-        <div class="map-panel__title-block">
-          <h3>Carte de la partie</h3>
-          <p class="map-panel__copy">WASD pour bouger. Clic droit pour inspecter.</p>
-          <button
-            type="button"
-            class="panel__toggle-btn map-panel__status-toggle"
-            [class.panel__toggle-btn--active]="showTurnStatusOverlay()"
-            [attr.aria-expanded]="showTurnStatusOverlay()"
-            (click)="onToggleTurnStatusPanel()"
-          >
-            Etat du tour
-          </button>
+    <div class="map-column">
+      <section class="map-panel panel">
+        <div class="map-panel__header">
+          <div class="map-panel__title-block">
+            <h3>Carte de la partie</h3>
+            <p class="map-panel__copy">WASD pour bouger. Clic droit pour inspecter.</p>
+            <button
+              type="button"
+              class="panel__toggle-btn map-panel__status-toggle"
+              [class.panel__toggle-btn--active]="showTurnStatusOverlay()"
+              [attr.aria-expanded]="showTurnStatusOverlay()"
+              (click)="onToggleTurnStatusPanel()"
+            >
+              Etat du tour
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div class="map-panel__board">
-        <app-game-map-grid
-          [cols]="cols()"
-          [rows]="rows()"
-          [cells]="mapCells()"
-          [objects]="mapObjects()"
-          [players]="players()"
-          [nowMs]="nowMs()"
-          [actionModeEnabled]="actionModeEnabled()"
-          [reachableCellKeys]="reachableCellKeys()"
-          [reachableOriginKey]="reachableOriginKey()"
-          [actionTargetCellKeys]="interaction.actionTargets()"
-          [inactiveSanctuaryObjectIds]="inactiveSanctuaryObjectIds()"
-          (cellClick)="onCellClick($event)"
-          (cellContextMenu)="onCellContextMenu($event)"
-        />
-
-        @if (showTurnStatusOverlay() && !selectedTileInfo()) {
-          <section class="map-turn-status panel" role="status" aria-live="polite">
-            <div class="map-turn-status__header">
-              <p class="map-turn-status__eyebrow">Etat du tour</p>
-              <button
-                type="button"
-                class="map-turn-status__close"
-                aria-label="Fermer l etat du tour"
-                (click)="isTurnStatusPanelOpen.set(false)"
-              >
-                X
-              </button>
-            </div>
-            <p class="turn-status__headline">{{ phaseHeadline() }}</p>
-            <p class="turn-status__copy">{{ phaseDescription() }}</p>
-            <div class="turn-status__meta">
-              <span>Etat local: {{ display.localPlayerStateLabel() }}</span>
-              <span>Mouvements: {{ display.localMovementCount() }}</span>
-              <span>Action: {{ display.localActionAvailable() ? 'Disponible' : 'Utilisee' }}</span>
-            </div>
-            @if (interaction.movementFeedback()) {
-              <p class="turn-status__feedback">{{ interaction.movementFeedback() }}</p>
-            }
-          </section>
-        }
-
-        @if (selectedTileInfo(); as tileInfo) {
-          <app-game-tile-info-modal
-            [tileInfo]="tileInfo"
-            (close)="closeTileInfoModal()"
+        <div class="map-panel__board">
+          <app-game-map-grid
+            [cols]="cols()"
+            [rows]="rows()"
+            [cells]="mapCells()"
+            [objects]="mapObjects()"
+            [players]="players()"
+            [nowMs]="nowMs()"
+            [actionModeEnabled]="actionModeEnabled()"
+            [reachableCellKeys]="reachableCellKeys()"
+            [reachableOriginKey]="reachableOriginKey()"
+            [actionTargetCellKeys]="interaction.actionTargets()"
+            [inactiveSanctuaryObjectIds]="inactiveSanctuaryObjectIds()"
+            (cellClick)="onCellClick($event)"
+            (cellContextMenu)="onCellContextMenu($event)"
           />
+
+          @if (showTurnStatusOverlay() && !selectedTileInfo()) {
+            <section class="map-turn-status panel" role="status" aria-live="polite">
+              <div class="map-turn-status__header">
+                <p class="map-turn-status__eyebrow">Etat du tour</p>
+                <button
+                  type="button"
+                  class="map-turn-status__close"
+                  aria-label="Fermer l etat du tour"
+                  (click)="isTurnStatusPanelOpen.set(false)"
+                >
+                  X
+                </button>
+              </div>
+              <p class="turn-status__headline">{{ phaseHeadline() }}</p>
+              <p class="turn-status__copy">{{ phaseDescription() }}</p>
+              <div class="turn-status__meta">
+                <span>Etat local: {{ display.localPlayerStateLabel() }}</span>
+                <span>Mouvements: {{ display.localMovementCount() }}</span>
+                <span>Action: {{ display.localActionAvailable() ? 'Disponible' : 'Utilisee' }}</span>
+              </div>
+              @if (interaction.movementFeedback()) {
+                <p class="turn-status__feedback">{{ interaction.movementFeedback() }}</p>
+              }
+            </section>
+          }
+
+          @if (selectedTileInfo(); as tileInfo) {
+            <app-game-tile-info-modal
+              [tileInfo]="tileInfo"
+              (close)="closeTileInfoModal()"
+            />
+          }
+        </div>
+      </section>
+
+      <section class="map-action-panel panel" aria-live="polite">
+        @if (interaction.hasLocalPendingSanctuaryChoice() || interaction.actionSelectionOpen()) {
+          <app-game-map-action-prompt />
+        } @else {
+          @if (interaction.actionContext()) {
+            <p class="map-panel__hint">{{ interaction.actionHelperText() }}</p>
+          } @else {
+            <p class="map-panel__hint">Les cases surlignees indiquent les deplacements atteignables avec vos points restants.</p>
+          }
         }
-      </div>
-
-      @if (interaction.hasLocalPendingSanctuaryChoice()) {
-        <div class="map-panel__action-picker map-panel__action-picker--sanctuary">
-          <p class="map-panel__choice-title">{{ interaction.sanctuaryPromptTitle() }}</p>
-          <p>{{ interaction.sanctuaryPromptText() }}</p>
-          <div class="map-panel__action-buttons">
-            <button type="button" class="panel__toggle-btn" (click)="interaction.resolveSanctuaryChoice('normal')">
-              Normal
-            </button>
-            <button type="button" class="panel__toggle-btn" (click)="interaction.resolveSanctuaryChoice('double-or-nothing')">
-              Double ou rien
-            </button>
-            <button type="button" class="panel__toggle-btn" (click)="interaction.resolveSanctuaryChoice('cancel')">
-              Annuler
-            </button>
-          </div>
-        </div>
-      } @else if (interaction.actionSelectionOpen()) {
-        <div class="map-panel__action-picker">
-          <p>Choisissez une action pour ce tour.</p>
-          <div class="map-panel__action-buttons">
-            @for (option of interaction.availableActionContexts(); track option.context) {
-              <button type="button" class="panel__toggle-btn" (click)="interaction.selectActionContext(option.context)">
-                {{ option.label }}
-              </button>
-            }
-          </div>
-        </div>
-      } @else if (interaction.actionContext()) {
-        <p class="map-panel__hint">{{ interaction.actionHelperText() }}</p>
-      } @else {
-        <p class="map-panel__hint">Les cases surlignees indiquent les deplacements atteignables avec vos points restants.</p>
-      }
-
-    </section>
+      </section>
+    </div>
 
     <aside class="side-panel side-panel--right">
       <section class="panel panel--players">
