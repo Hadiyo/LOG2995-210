@@ -148,6 +148,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly showTurnStatusOverlay = computed<boolean>(() =>
         this.isTurnStatusPanelOpen() || this.display.turnState()?.phase === 'transition',
     );
+    protected readonly canCloseTurnStatusOverlay = computed<boolean>(() => this.display.turnState()?.phase !== 'transition');
     protected readonly activePanelName = computed<string | null>(() => {
         const turnState = this.display.turnState();
         if (!turnState) {

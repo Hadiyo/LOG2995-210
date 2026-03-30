@@ -124,14 +124,16 @@
             <section class="map-turn-status panel" role="status" aria-live="polite">
               <div class="map-turn-status__header">
                 <p class="map-turn-status__eyebrow">Etat du tour</p>
-                <button
-                  type="button"
-                  class="map-turn-status__close"
-                  aria-label="Fermer l etat du tour"
-                  (click)="isTurnStatusPanelOpen.set(false)"
-                >
-                  X
-                </button>
+                @if (canCloseTurnStatusOverlay()) {
+                  <button
+                    type="button"
+                    class="map-turn-status__close"
+                    aria-label="Fermer l etat du tour"
+                    (click)="isTurnStatusPanelOpen.set(false)"
+                  >
+                    X
+                  </button>
+                }
               </div>
               <p class="turn-status__headline">{{ phaseHeadline() }}</p>
               <p class="turn-status__copy">{{ phaseDescription() }}</p>
