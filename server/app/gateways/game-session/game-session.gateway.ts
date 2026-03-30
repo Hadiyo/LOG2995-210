@@ -18,10 +18,12 @@ import {
     getGameSessionRoom,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
+    ResolveSanctuaryChoicePayload,
     SocketEvents,
     StartCombatPayload,
     ToggleDebugModePayload,
     ToggleDoorPayload,
+    UseSanctuaryPayload,
     SurrenderGamePayload,
 } from '@common/socket-events';
 
@@ -164,6 +166,36 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
 
         if (!this.gameSessionService.startCombat(payload.sessionId, payload.playerId, payload.defenderId)) {
             client.emit(SocketEvents.GameSessionError, { message: 'Combat refuse.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(SocketEvents.UseSanctuary)
+    useSanctuary(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: UseSanctuaryPayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SocketEvents.GameSessionError, { message: 'Action de sanctuaire refusee.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.useSanctuary(payload.sessionId, payload.playerId, payload.sanctuaryId)) {
+            client.emit(SocketEvents.GameSessionError, { message: 'Action de sanctuaire refusee.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(SocketEvents.ResolveSanctuaryChoice)
+    resolveSanctuaryChoice(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: ResolveSanctuaryChoicePayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SocketEvents.GameSessionError, { message: 'Choix de sanctuaire refuse.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.resolveSanctuaryChoice(payload.sessionId, payload.playerId, payload.choice)) {
+            client.emit(SocketEvents.GameSessionError, { message: 'Choix de sanctuaire refuse.' } satisfies GameSessionErrorPayload);
         }
     }
 

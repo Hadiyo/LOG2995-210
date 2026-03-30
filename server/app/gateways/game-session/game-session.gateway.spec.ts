@@ -6,11 +6,13 @@ import {
     GameSessionSnapshotPayload,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
+    ResolveSanctuaryChoicePayload,
     SocketEvents,
     StartCombatPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
     ToggleDoorPayload,
+    UseSanctuaryPayload,
     getGameSessionRoom,
 } from '@common/socket-events';
 import { Server, Socket } from 'socket.io';
@@ -46,6 +48,8 @@ describe('GameSessionGateway', () => {
             debugTeleportPlayer: jest.fn(),
             movePlayer: jest.fn(),
             endTurn: jest.fn(),
+            useSanctuary: jest.fn(),
+            resolveSanctuaryChoice: jest.fn(),
             startCombat: jest.fn(),
             toggleDoor: jest.fn(),
         };
@@ -144,9 +148,11 @@ describe('GameSessionGateway', () => {
             endTurn: gateway.endTurn.bind(gateway),
             forceEndDebugTurn: gateway.forceEndDebugTurn.bind(gateway),
             movePlayer: gateway.movePlayer.bind(gateway),
+            resolveSanctuaryChoice: gateway.resolveSanctuaryChoice.bind(gateway),
             startCombat: gateway.startCombat.bind(gateway),
             toggleDebugMode: gateway.toggleDebugMode.bind(gateway),
             toggleDoor: gateway.toggleDoor.bind(gateway),
+            useSanctuary: gateway.useSanctuary.bind(gateway),
         };
         const cases = [
             {
@@ -184,6 +190,22 @@ describe('GameSessionGateway', () => {
                 serviceMethod: 'startCombat',
                 payload: { sessionId: 'session-1', playerId: 'player-1', defenderId: 'player-2' } satisfies StartCombatPayload,
                 error: 'Combat refuse.',
+            },
+            {
+                action: actions.useSanctuary,
+                serviceMethod: 'useSanctuary',
+                payload: { sessionId: 'session-1', playerId: 'player-1', sanctuaryId: 7 } satisfies UseSanctuaryPayload,
+                error: 'Action de sanctuaire refusee.',
+            },
+            {
+                action: actions.resolveSanctuaryChoice,
+                serviceMethod: 'resolveSanctuaryChoice',
+                payload: {
+                    sessionId: 'session-1',
+                    playerId: 'player-1',
+                    choice: 'normal',
+                } satisfies ResolveSanctuaryChoicePayload,
+                error: 'Choix de sanctuaire refuse.',
             },
             {
                 action: actions.toggleDoor,

@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 import { MapService } from '@app/services/map/map.service';
 import { ChatMessage } from '@common/chat/chat.interface';
-import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { PlayerPose } from '@common/player/player.interface';
@@ -17,6 +17,11 @@ import {
 } from './game-session.match';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
+import {
+    beginGameSessionSanctuaryChoice,
+    progressGameSessionSanctuaryEffects,
+    resolveGameSessionSanctuaryChoice,
+} from './game-session.sanctuary';
 import {
     ACTIVE_TURN_DURATION_MS,
     buildSession,
@@ -143,7 +148,10 @@ export class GameSessionService {
 
     endTurn(sessionId: string, playerId: string): boolean {
         const session = this.sessions.get(sessionId);
-        if (!session || session.turnState.phase !== 'active' || session.turnState.activePlayerId !== playerId) {
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== playerId ||
+            session.match.pendingSanctuaryChoice) {
             return false;
         }
 
@@ -170,6 +178,9 @@ export class GameSessionService {
             debugMode: organizerLeftWhileDebugEnabled ? false : session.match.debugMode,
             players: nextPlayers,
             objects: buildGameSessionVisibleObjects(session.match.allObjects, nextPlayers),
+            pendingSanctuaryChoice: session.match.pendingSanctuaryChoice?.playerId === playerId
+                ? null
+                : session.match.pendingSanctuaryChoice ?? null,
         };
 
         if (nextPlayers.length === 0) {
@@ -273,7 +284,10 @@ export class GameSessionService {
 
     movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
         const session = this.sessions.get(sessionId);
-        if (!session || session.turnState.phase !== 'active' || session.turnState.activePlayerId !== playerId) {
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== playerId ||
+            session.match.pendingSanctuaryChoice) {
             return false;
         }
 
@@ -311,6 +325,56 @@ export class GameSessionService {
             movementPointsRemaining: session.turnState.movementPointsRemaining - cost,
             movementCount: session.turnState.movementCount + 1,
         };
+        this.emitSnapshot(session);
+        return true;
+    }
+
+    useSanctuary(sessionId: string, playerId: string, sanctuaryId: number): boolean {
+        const session = this.sessions.get(sessionId);
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== playerId ||
+            session.turnState.actionTaken ||
+            session.match.endState) {
+            return false;
+        }
+
+        const pendingSanctuaryChoice = beginGameSessionSanctuaryChoice(session.match, playerId, sanctuaryId);
+        if (!pendingSanctuaryChoice) {
+            return false;
+        }
+
+        session.match = {
+            ...session.match,
+            pendingSanctuaryChoice,
+        };
+        this.emitSnapshot(session);
+        return true;
+    }
+
+    resolveSanctuaryChoice(sessionId: string, playerId: string, choice: MatchSanctuaryChoice): boolean {
+        const session = this.sessions.get(sessionId);
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== playerId ||
+            session.match.endState ||
+            session.match.pendingSanctuaryChoice?.playerId !== playerId) {
+            return false;
+        }
+
+        const resolution = resolveGameSessionSanctuaryChoice(session.match, choice, Math.random);
+        if (!resolution) {
+            return false;
+        }
+
+        session.match = resolution.nextMatch;
+        if (resolution.actionConsumed) {
+            session.turnState = {
+                ...session.turnState,
+                actionTaken: true,
+            };
+        }
+
         this.emitSnapshot(session);
         return true;
     }
@@ -432,6 +496,7 @@ export class GameSessionService {
             return;
         }
 
+        session.match = progressGameSessionSanctuaryEffects(session.match, session.turnState.activePlayerId);
         session.turnState = {
             ...session.turnState,
             currentTurnIndex: (session.turnState.currentTurnIndex + 1) % session.turnState.order.length,
@@ -452,6 +517,11 @@ export class GameSessionService {
             activeTurnRemainingMs: 0,
             movementPointsRemaining: 0,
             actionTaken: true,
+            playerStates: session.turnState.playerStates.map((playerState) => ({ ...playerState, state: 'waiting' })),
+        };
+        session.match = {
+            ...session.match,
+            pendingSanctuaryChoice: null,
         };
         this.emitSnapshot(session);
         this.sessions.delete(session.sessionId);
@@ -476,6 +546,7 @@ export class GameSessionService {
             session.turnState.phase !== 'active' ||
             session.turnState.activePlayerId !== playerId ||
             session.turnState.actionTaken ||
+            session.match.pendingSanctuaryChoice ||
             session.match.endState) {
             return null;
         }
@@ -520,6 +591,7 @@ export class GameSessionService {
             session.turnState.phase !== 'active' ||
             session.turnState.activePlayerId !== attackerId ||
             session.turnState.actionTaken ||
+            session.match.pendingSanctuaryChoice ||
             session.match.endState) {
             return null;
         }

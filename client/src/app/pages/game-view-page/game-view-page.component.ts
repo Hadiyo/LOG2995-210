@@ -52,12 +52,7 @@ import { Player, PlayerStatus } from '@common/player/player.interface';
     ],
     templateUrl: './game-view-page.component.html',
     styleUrls: ['./game-view-page.component.scss'],
-    providers: [
-        GameSessionDisplayService,
-        GameSessionInteractionService,
-        GameSessionTargetsService,
-        GameSessionTurnEffectsService,
-    ],
+    providers: [GameSessionDisplayService, GameSessionInteractionService, GameSessionTargetsService, GameSessionTurnEffectsService],
 })
 export class GameViewPageComponent implements OnInit, OnDestroy {
     private static readonly activeTurnDurationSeconds = ACTIVE_TURN_DURATION_MS / MILLISECONDS_PER_SECOND;
@@ -86,6 +81,9 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly nowMs = signal(Date.now());
     protected readonly mapCells = computed<readonly GameCell[]>(() => this.match()?.map ?? []);
     protected readonly mapObjects = computed(() => this.match()?.objects ?? []);
+    protected readonly inactiveSanctuaryObjectIds = computed<ReadonlySet<number>>(
+        () => new Set((this.match()?.sanctuaryStates ?? []).filter((state) => state.cooldownTurnsRemaining > 0).map((state) => state.objectId)),
+    );
     protected readonly cols = computed<number>(() => this.match()?.mapSize ?? MapSize.S);
     protected readonly rows = computed<number>(() => this.match()?.mapSize ?? MapSize.S);
     protected readonly maxPlayers = computed<number>(() => {
@@ -95,11 +93,12 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly turnOrder = computed<readonly string[]>(() => this.display.turnOrderedPlayers().map((player) => player.id));
     protected readonly players = computed<readonly Player[]>(() => {
         const currentTurnState = this.display.turnState();
+        const pendingSanctuaryPlayerId = this.match()?.pendingSanctuaryChoice?.playerId ?? null;
         return (this.match()?.players ?? []).map((player) =>
             toGamePlayer(
                 player,
                 currentTurnState?.activePlayerId ?? null,
-                currentTurnState?.actionTaken ?? true,
+                (currentTurnState?.actionTaken ?? true) || pendingSanctuaryPlayerId === player.id,
                 this.display.localMovementPointsRemaining(),
             ),
         );
@@ -119,11 +118,17 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     );
     protected readonly debugModeEnabled = computed<boolean>(() => this.match()?.debugMode ?? false);
     protected readonly canToggleDebugMode = computed<boolean>(() => this.currentPlayer()?.information.isOrganizer ?? false);
+    protected readonly hasLocalPendingSanctuaryChoice = computed<boolean>(() => this.interaction.hasLocalPendingSanctuaryChoice());
     protected readonly canEndTurn = computed<boolean>(() =>
-        this.canAct() || (this.debugModeEnabled() && (this.currentPlayer()?.information.isOrganizer ?? false)),
+        !this.hasLocalPendingSanctuaryChoice() &&
+        (this.canAct() || (this.debugModeEnabled() && (this.currentPlayer()?.information.isOrganizer ?? false))),
     );
-    protected readonly canAct = computed<boolean>(() => this.targets.isLocalPlayerTurn() && !this.display.matchEndState());
-    protected readonly canUseActionMode = computed<boolean>(() => this.interaction.canToggleActionMode());
+    protected readonly canAct = computed<boolean>(() =>
+        this.targets.isLocalPlayerTurn() && !this.display.matchEndState() && !this.hasLocalPendingSanctuaryChoice(),
+    );
+    protected readonly canUseActionMode = computed<boolean>(() =>
+        !this.hasLocalPendingSanctuaryChoice() && this.interaction.canToggleActionMode(),
+    );
     protected readonly actionModeEnabled = computed<boolean>(() =>
         this.interaction.actionSelectionOpen() || !!this.interaction.actionContext(),
     );
@@ -162,7 +167,9 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         return player ? positionKey(player.position) : null;
     });
     protected readonly turnDetails = computed<readonly MatchPlayer[]>(() => this.display.turnOrderedPlayers());
-    protected readonly selectedTileInfo = createSelectedTileInfo(this.interaction.inspectedTile, this.mapCells, this.mapObjects, this.players);
+    protected readonly selectedTileInfo = createSelectedTileInfo(
+        this.interaction.inspectedTile, this.mapCells, this.mapObjects, this.players, this.inactiveSanctuaryObjectIds,
+    );
     protected readonly chatMessages = toSignal(this.chatService.chat$, { initialValue: [] as ChatMessage[] });
 
     private matchEndRedirectTimeoutId: number | null = null;

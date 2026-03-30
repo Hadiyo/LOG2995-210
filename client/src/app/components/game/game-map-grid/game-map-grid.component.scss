@@ -150,6 +150,8 @@
 
 .obj[data-obj='REGEN'] { background-image: var(--object-heal-img); }
 .obj[data-obj='ARENA'] { background-image: var(--object-fight-img); }
+.obj[data-obj='REGEN'][data-used='true'] { background-image: var(--object-heal-used-img); }
+.obj[data-obj='ARENA'][data-used='true'] { background-image: var(--object-fight-used-img); }
 
 /* 2x2 objects span 4 tiles visually from top-left anchor */
 .obj[data-size='2x2'] {

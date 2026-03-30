@@ -114,6 +114,7 @@
           [reachableCellKeys]="reachableCellKeys()"
           [reachableOriginKey]="reachableOriginKey()"
           [actionTargetCellKeys]="interaction.actionTargets()"
+          [inactiveSanctuaryObjectIds]="inactiveSanctuaryObjectIds()"
           (cellClick)="onCellClick($event)"
           (cellContextMenu)="onCellContextMenu($event)"
         />
@@ -152,7 +153,23 @@
         }
       </div>
 
-      @if (interaction.actionSelectionOpen()) {
+      @if (interaction.hasLocalPendingSanctuaryChoice()) {
+        <div class="map-panel__action-picker map-panel__action-picker--sanctuary">
+          <p class="map-panel__choice-title">{{ interaction.sanctuaryPromptTitle() }}</p>
+          <p>{{ interaction.sanctuaryPromptText() }}</p>
+          <div class="map-panel__action-buttons">
+            <button type="button" class="panel__toggle-btn" (click)="interaction.resolveSanctuaryChoice('normal')">
+              Normal
+            </button>
+            <button type="button" class="panel__toggle-btn" (click)="interaction.resolveSanctuaryChoice('double-or-nothing')">
+              Double ou rien
+            </button>
+            <button type="button" class="panel__toggle-btn" (click)="interaction.resolveSanctuaryChoice('cancel')">
+              Annuler
+            </button>
+          </div>
+        </div>
+      } @else if (interaction.actionSelectionOpen()) {
         <div class="map-panel__action-picker">
           <p>Choisissez une action pour ce tour.</p>
           <div class="map-panel__action-buttons">

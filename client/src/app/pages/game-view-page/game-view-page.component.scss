@@ -382,6 +382,15 @@
   margin: 0;
 }
 
+.map-panel__choice-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.map-panel__action-picker--sanctuary {
+  gap: 10px;
+}
+
 .map-panel__action-buttons {
   display: flex;
   gap: 8px;

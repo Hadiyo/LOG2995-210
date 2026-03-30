@@ -1,5 +1,5 @@
 import { ChatMessage } from './chat/chat.interface';
-import { InitializedMatch, MatchLobbyPlayer } from './game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from './game/match.interface';
 import { MatchTurnState } from './game/turn.interface';
 
 export enum SocketEvents {
@@ -28,6 +28,8 @@ export enum SocketEvents {
     JoinGameSession = 'joinGameSession',
     MoveGamePlayer = 'moveGamePlayer',
     EndGameTurn = 'endGameTurn',
+    UseSanctuary = 'useSanctuary',
+    ResolveSanctuaryChoice = 'resolveSanctuaryChoice',
     StartCombat = 'startCombat',
     ToggleDoor = 'toggleDoor',
     SurrenderGame = 'surrenderGame',
@@ -166,6 +168,18 @@ export interface MoveGamePlayerPayload {
 export interface EndGameTurnPayload {
     sessionId: string;
     playerId: string;
+}
+
+export interface UseSanctuaryPayload {
+    sessionId: string;
+    playerId: string;
+    sanctuaryId: number;
+}
+
+export interface ResolveSanctuaryChoicePayload {
+    sessionId: string;
+    playerId: string;
+    choice: MatchSanctuaryChoice;
 }
 
 export interface StartCombatPayload {

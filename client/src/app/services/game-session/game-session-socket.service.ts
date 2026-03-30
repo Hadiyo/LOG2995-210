@@ -12,11 +12,14 @@ import {
     ToggleDebugModePayload,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
+    ResolveSanctuaryChoicePayload,
     SocketEvents,
     StartCombatPayload,
     ToggleDoorPayload,
+    UseSanctuaryPayload,
     SurrenderGamePayload,
 } from '@common/socket-events';
+import { MatchSanctuaryChoice } from '@common/game/match.interface';
 
 @Injectable({ providedIn: 'root' })
 export class GameSessionSocketService {
@@ -74,6 +77,32 @@ export class GameSessionSocketService {
             sessionId,
             playerId,
         } satisfies EndGameTurnPayload);
+    }
+
+    useSanctuary(playerId: string, sanctuaryId: number): void {
+        const sessionId = this.sessionId();
+        if (!sessionId) {
+            return;
+        }
+
+        this.socketManager.send(SocketEvents.UseSanctuary, {
+            sessionId,
+            playerId,
+            sanctuaryId,
+        } satisfies UseSanctuaryPayload);
+    }
+
+    resolveSanctuaryChoice(playerId: string, choice: MatchSanctuaryChoice): void {
+        const sessionId = this.sessionId();
+        if (!sessionId) {
+            return;
+        }
+
+        this.socketManager.send(SocketEvents.ResolveSanctuaryChoice, {
+            sessionId,
+            playerId,
+            choice,
+        } satisfies ResolveSanctuaryChoicePayload);
     }
 
     startCombat(playerId: string, defenderId: string): void {

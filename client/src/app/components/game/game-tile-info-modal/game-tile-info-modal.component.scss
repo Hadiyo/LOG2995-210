@@ -169,6 +169,8 @@
 .section-preview--object[data-obj='FLAG'] { background-image: var(--object-flag-img); }
 .section-preview--object[data-obj='REGEN'] { background-image: var(--object-heal-img); }
 .section-preview--object[data-obj='ARENA'] { background-image: var(--object-fight-img); }
+.section-preview--object[data-obj='REGEN'][data-used='true'] { background-image: var(--object-heal-used-img); }
+.section-preview--object[data-obj='ARENA'][data-used='true'] { background-image: var(--object-fight-used-img); }
 
 @media (max-width: 720px) {
   .section-layout {
