@@ -1,19 +1,19 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { MatchPlayer, MatchSanctuaryChoice, MatchTileInspection } from '@common/game/match.interface';
-import { EditorCell } from '@common/maps/map.interface';
-import { ObjectType, TileType } from '@common/maps/map.enums';
+import {
+    EDITABLE_TARGET_TAGS,
+    GameSessionActionContext,
+    GameSessionActionOption,
+    MOVEMENT_KEY_BINDINGS,
+} from '@app/config/game-session.config';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
-import { positionKey } from '@app/services/match/match-geometry';
 import { CombatStateService } from '@app/services/match/combat-state.service';
+import { positionKey } from '@app/services/match/match-geometry';
 import { MatchMovementService, MovementDirection } from '@app/services/match/match-movement.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
-import {
-    EDITABLE_TARGET_TAGS,
-    MOVEMENT_KEY_BINDINGS,
-    GameSessionActionContext,
-    GameSessionActionOption,
-} from '@app/config/game-session.config';
+import { MatchPlayer, MatchSanctuaryChoice, MatchTileInspection } from '@common/game/match.interface';
+import { ObjectType, TileType } from '@common/maps/map.enums';
+import { EditorCell } from '@common/maps/map.interface';
 import { GameSessionDisplayService } from './game-session-display.service';
 import { GameSessionTargetsService } from './game-session-targets.service';
 
@@ -30,6 +30,7 @@ export class GameSessionInteractionService {
     readonly movementFeedback = signal('');
     readonly actionContext = signal<GameSessionActionContext | null>(null);
     readonly actionSelectionOpen = signal(false);
+    readonly sanctuaryPromptUiHold = signal(false);
     readonly availableActionContexts = computed<GameSessionActionOption[]>(() => {
         if (!this.canUseAction()) {
             return [];
@@ -187,6 +188,10 @@ export class GameSessionInteractionService {
         return this.display.hasLocalPendingSanctuaryChoice();
     }
 
+    setSanctuaryPromptUiHold(isHeld: boolean): void {
+        this.sanctuaryPromptUiHold.set(isHeld);
+    }
+
     sanctuaryPromptTitle(): string {
         const sanctuary = this.getPendingSanctuaryObject();
         return sanctuary?.type === ObjectType.REGEN ? 'Sanctuaire de soin' : sanctuary ? 'Sanctuaire de combat' : '';
@@ -199,8 +204,8 @@ export class GameSessionInteractionService {
         }
 
         return sanctuary.type === ObjectType.REGEN
-            ? 'Choisissez un soin normal, un double ou rien, ou annulez.'
-            : 'Choisissez un bonus normal, un double ou rien, ou annulez.';
+            ? 'Choisissez : soin normal, double ou rien, ou annuler.'
+            : 'Choisissez : bonus normal, double ou rien, ou annuler.';
     }
 
     resolveSanctuaryChoice(choice: MatchSanctuaryChoice): void {

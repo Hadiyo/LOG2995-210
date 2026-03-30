@@ -28,6 +28,32 @@
   color: color-mix(in srgb, var(--text-main) 96%, var(--accent-primary));
 }
 
+.prompt--sanctuary .prompt__copy {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+}
+
+.prompt--sanctuary .prompt__title,
+.prompt--sanctuary .prompt__message {
+  width: 100%;
+}
+
+.prompt--sanctuary .prompt__title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(0.82rem, 0.54vw + 0.66rem, 1rem);
+}
+
+.prompt--sanctuary .prompt__message {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.1;
+  font-size: clamp(0.72rem, 0.38vw + 0.62rem, 0.94rem);
+}
+
 .prompt__title,
 .prompt__message {
   margin: 0;
@@ -76,17 +102,67 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  transition: all 120ms ease;
   white-space: nowrap;
 }
 
-.prompt__button:hover {
-  border-color: color-mix(in srgb, var(--accent-primary) 35%, var(--border-soft));
+.prompt__button:hover:not(:disabled) {
+  background: var(--bg-panel-soft);
+}
+
+.prompt__button--normal,
+.prompt__button--sanctuary {
+  border-color: var(--accent-success);
+  color: var(--accent-success);
+}
+.prompt__button--normal:hover:not(:disabled),
+.prompt__button--sanctuary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-success) 15%, transparent);
+}
+
+.prompt__button--double-or-nothing {
+  display: grid;
+  place-items: center;
+  border-color: var(--accent-secondary);
+  color: var(--accent-secondary);
+}
+.prompt__button--double-or-nothing:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-secondary) 15%, transparent);
+}
+
+.prompt__button--double-or-nothing::after {
+  content: 'Double ou rien';
+  grid-area: 1 / 1;
+  visibility: hidden;
+  white-space: nowrap;
+  font: inherit;
+}
+
+.prompt__button-text {
+  grid-area: 1 / 1;
+}
+
+.prompt__button--cancel,
+.prompt__button--combat {
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
+}
+.prompt__button--cancel:hover:not(:disabled),
+.prompt__button--combat:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-danger) 15%, transparent);
+}
+
+.prompt__button--door {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+.prompt__button--door:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
 }
 
 .prompt__button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 1px var(--accent-primary) inset;
+  box-shadow: 0 0 0 1px currentColor inset;
 }
 
 @media (max-width: 900px) {

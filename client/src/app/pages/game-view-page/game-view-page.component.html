@@ -156,7 +156,7 @@
       </section>
 
       <section class="map-action-panel panel" aria-live="polite">
-        @if (interaction.hasLocalPendingSanctuaryChoice() || interaction.actionSelectionOpen()) {
+        @if (interaction.hasLocalPendingSanctuaryChoice() || interaction.actionSelectionOpen() || interaction.sanctuaryPromptUiHold()) {
           <app-game-map-action-prompt />
         } @else {
           @if (interaction.actionContext()) {
