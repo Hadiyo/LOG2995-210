@@ -5,9 +5,10 @@ import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/ma
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { PlayerPose } from '@common/player/player.interface';
-import { SocketEvents } from '@common/socket-events';
+import { SessionSocketEvents } from '@common/socket-events';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter } from 'events';
+import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import {
     ATTACK_POSE_DURATION_MS,
     buildGameSessionVisibleObjects,
@@ -15,7 +16,6 @@ import {
     getGameSessionMovementCost,
     WALK_POSE_DURATION_MS,
 } from './game-session.match';
-import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
 import {
     ACTIVE_TURN_DURATION_MS,
@@ -39,11 +39,11 @@ export class GameSessionService {
 
     constructor(private readonly mapService: MapService) {}
 
-    on<T>(event: SocketEvents, callback: (payload: T) => void): void {
+    on<T>(event: SessionSocketEvents, callback: (payload: T) => void): void {
         this.events.on(event, callback);
     }
 
-    off<T>(event: SocketEvents, callback: (payload: T) => void): void {
+    off<T>(event: SessionSocketEvents, callback: (payload: T) => void): void {
         this.events.off(event, callback);
     }
 
@@ -458,7 +458,7 @@ export class GameSessionService {
     }
 
     private emitSnapshot(session: GameSessionRuntime): void {
-        this.events.emit(SocketEvents.GameSessionSnapshot, {
+        this.events.emit(SessionSocketEvents.GameSessionSnapshot, {
             sessionId: session.sessionId,
             match: session.match,
             turnState: session.turnState,
