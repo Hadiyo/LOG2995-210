@@ -1,5 +1,6 @@
 import { GameSessionGateway } from '@app/gateways/game-session/game-session.gateway';
 import {
+    CombatSocketEvents,
     DebugTeleportPlayerPayload,
     EndGameTurnPayload,
     ForceEndDebugTurnPayload,
@@ -7,7 +8,7 @@ import {
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
     ResolveSanctuaryChoicePayload,
-    SocketEvents,
+    SessionSocketEvents,
     StartCombatPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
@@ -71,15 +72,15 @@ describe('GameSessionGateway', () => {
             messages: [],
         };
 
-        handlers[SocketEvents.GameSessionSnapshot]?.(payload);
+        handlers[SessionSocketEvents.GameSessionSnapshot]?.(payload);
 
-        expect(gameSessionService.on).toHaveBeenCalledWith(SocketEvents.GameSessionSnapshot, expect.any(Function));
-        expect(serverToEmit).toHaveBeenCalledWith(SocketEvents.GameSessionSnapshot, payload);
+        expect(gameSessionService.on).toHaveBeenCalledWith(SessionSocketEvents.GameSessionSnapshot, expect.any(Function));
+        expect(serverToEmit).toHaveBeenCalledWith(SessionSocketEvents.GameSessionSnapshot, payload);
     });
 
     it('unsubscribes on destroy', () => {
         gateway.onModuleDestroy();
-        expect(gameSessionService.off).toHaveBeenCalledWith(SocketEvents.GameSessionSnapshot, expect.any(Function));
+        expect(gameSessionService.off).toHaveBeenCalledWith(SessionSocketEvents.GameSessionSnapshot, expect.any(Function));
     });
 
     it('handles disconnects and surrenders when the socket belonged to a player', () => {
@@ -109,7 +110,7 @@ describe('GameSessionGateway', () => {
 
         expect(gameSessionService.registerSocket).toHaveBeenCalledWith('session-1', 'player-1', 'socket-1');
         expect(client.join).toHaveBeenCalledWith(getGameSessionRoom('session-1'));
-        expect(client.emit).toHaveBeenCalledWith(SocketEvents.GameSessionSnapshot, {
+        expect(client.emit).toHaveBeenCalledWith(SessionSocketEvents.GameSessionSnapshot, {
             sessionId: 'session-1',
             match: { id: 'match' },
             turnState: { id: 'turn' },
@@ -121,7 +122,7 @@ describe('GameSessionGateway', () => {
         });
         gateway.joinSession(client, payload);
         expect(client.emit).toHaveBeenCalledWith(
-            SocketEvents.GameSessionError,
+            SessionSocketEvents.GameSessionError,
             { message: 'Impossible de joindre la session de jeu.' },
         );
     });
@@ -218,12 +219,12 @@ describe('GameSessionGateway', () => {
         for (const testCase of cases) {
             gameSessionService.getPlayerIdForSocket.mockReturnValue('other-player');
             testCase.action(client, testCase.payload);
-            expect(client.emit).toHaveBeenLastCalledWith(SocketEvents.GameSessionError, { message: testCase.error });
+            expect(client.emit).toHaveBeenLastCalledWith(SessionSocketEvents.GameSessionError, { message: testCase.error });
 
             gameSessionService.getPlayerIdForSocket.mockReturnValue('player-1');
             gameSessionService[testCase.serviceMethod].mockReturnValue(false);
             testCase.action(client, testCase.payload);
-            expect(client.emit).toHaveBeenLastCalledWith(SocketEvents.GameSessionError, { message: testCase.error });
+            expect(client.emit).toHaveBeenLastCalledWith(SessionSocketEvents.GameSessionError, { message: testCase.error });
 
             gameSessionService[testCase.serviceMethod].mockReturnValue(true);
             (client.emit as jest.Mock).mockClear();
@@ -238,12 +239,12 @@ describe('GameSessionGateway', () => {
 
         gameSessionService.getPlayerIdForSocket.mockReturnValue('other-player');
         gateway.surrender(client, payload);
-        expect(client.emit).toHaveBeenCalledWith(SocketEvents.GameSessionError, { message: 'Abandon refuse.' });
+        expect(client.emit).toHaveBeenCalledWith(SessionSocketEvents.GameSessionError, { message: 'Abandon refuse.' });
 
         gameSessionService.getPlayerIdForSocket.mockReturnValue('player-1');
         gameSessionService.surrender.mockReturnValue(false);
         gateway.surrender(client, payload);
-        expect(client.emit).toHaveBeenCalledWith(SocketEvents.GameSessionError, { message: 'Abandon refuse.' });
+        expect(client.emit).toHaveBeenCalledWith(SessionSocketEvents.GameSessionError, { message: 'Abandon refuse.' });
 
         (client.emit as jest.Mock).mockClear();
         gameSessionService.surrender.mockReturnValue(true);

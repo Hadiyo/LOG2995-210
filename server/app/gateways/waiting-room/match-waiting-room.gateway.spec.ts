@@ -1,8 +1,8 @@
 import { MatchWaitingRoomGateway } from '@app/gateways/waiting-room/match-waiting-room.gateway';
 import {
     CreateWaitingRoomPayload,
-    SocketEvents,
     getWaitingRoomRoom,
+    WaitingRoomEvents,
 } from '@common/socket-events';
 import { Server, Socket } from 'socket.io';
 
@@ -71,57 +71,57 @@ describe('MatchWaitingRoomGateway', () => {
     });
 
     it('subscribes and unsubscribes waiting-room events', () => {
-        expect(waitingRoomService.on).toHaveBeenCalledWith(SocketEvents.WaitingRoomUpdated, expect.any(Function));
-        expect(waitingRoomService.on).toHaveBeenCalledWith(SocketEvents.WaitingRoomGameStarted, expect.any(Function));
+        expect(waitingRoomService.on).toHaveBeenCalledWith(WaitingRoomEvents.WaitingRoomUpdated, expect.any(Function));
+        expect(waitingRoomService.on).toHaveBeenCalledWith(WaitingRoomEvents.WaitingRoomGameStarted, expect.any(Function));
 
         gateway.onModuleDestroy();
 
-        expect(waitingRoomService.off).toHaveBeenCalledWith(SocketEvents.WaitingRoomUpdated, expect.any(Function));
-        expect(waitingRoomService.off).toHaveBeenCalledWith(SocketEvents.WaitingRoomDirectoryUpdated, expect.any(Function));
+        expect(waitingRoomService.off).toHaveBeenCalledWith(WaitingRoomEvents.WaitingRoomUpdated, expect.any(Function));
+        expect(waitingRoomService.off).toHaveBeenCalledWith(WaitingRoomEvents.WaitingRoomDirectoryUpdated, expect.any(Function));
     });
 
     it('forwards waiting-room service events to sockets', () => {
-        handlers[SocketEvents.WaitingRoomUpdated]?.({
+        handlers[WaitingRoomEvents.WaitingRoomUpdated]?.({
             accessCode: 'ABC123',
             payload: { accessCode: 'ABC123' },
         });
-        handlers[SocketEvents.WaitingRoomMessageSent]?.({
+        handlers[WaitingRoomEvents.WaitingRoomMessageSent]?.({
             accessCode: 'ABC123',
             payload: { content: 'hello' },
         });
-        handlers[SocketEvents.WaitingRoomError]?.({
+        handlers[WaitingRoomEvents.WaitingRoomError]?.({
             socketId: 'socket-1',
             payload: { message: 'bad' },
         });
-        handlers[SocketEvents.WaitingRoomPlayerKicked]?.({
+        handlers[WaitingRoomEvents.WaitingRoomPlayerKicked]?.({
             accessCode: 'ABC123',
             kickedSocketId: 'socket-2',
         });
-        handlers[SocketEvents.WaitingRoomCancelled]?.({ accessCode: 'ABC123' });
-        handlers[SocketEvents.WaitingRoomGameStarted]?.({
+        handlers[WaitingRoomEvents.WaitingRoomCancelled]?.({ accessCode: 'ABC123' });
+        handlers[WaitingRoomEvents.WaitingRoomGameStarted]?.({
             accessCode: 'ABC123',
             sessionId: 'session-1',
             messages: [],
         });
-        handlers[SocketEvents.WaitingRoomDirectoryUpdated]?.({});
+        handlers[WaitingRoomEvents.WaitingRoomDirectoryUpdated]?.({});
 
-        expect(serverToEmit).toHaveBeenCalledWith(SocketEvents.WaitingRoomUpdated, { accessCode: 'ABC123' });
-        expect(serverToEmit).toHaveBeenCalledWith(SocketEvents.WaitingRoomMessageSent, { content: 'hello' });
-        expect(serverToEmit).toHaveBeenCalledWith(SocketEvents.WaitingRoomError, { message: 'bad' });
+        expect(serverToEmit).toHaveBeenCalledWith(WaitingRoomEvents.WaitingRoomUpdated, { accessCode: 'ABC123' });
+        expect(serverToEmit).toHaveBeenCalledWith(WaitingRoomEvents.WaitingRoomMessageSent, { content: 'hello' });
+        expect(serverToEmit).toHaveBeenCalledWith(WaitingRoomEvents.WaitingRoomError, { message: 'bad' });
         expect(serverToEmit).toHaveBeenCalledWith(
-            SocketEvents.WaitingRoomPlayerKicked,
+            WaitingRoomEvents.WaitingRoomPlayerKicked,
             { message: 'Vous avez ete exclu de la salle d attente par l organisateur.' },
         );
         expect(serverToEmit).toHaveBeenCalledWith(
-            SocketEvents.WaitingRoomCancelled,
+            WaitingRoomEvents.WaitingRoomCancelled,
             { message: 'La salle d attente a ete fermee.' },
         );
         expect(serverToEmit).toHaveBeenCalledWith(
-            SocketEvents.WaitingRoomGameStarted,
+            WaitingRoomEvents.WaitingRoomGameStarted,
             { accessCode: 'ABC123', sessionId: 'session-1', messages: [] },
         );
         expect(serverInSocketsLeave).toHaveBeenCalledWith(getWaitingRoomRoom('ABC123'));
-        expect(serverEmit).toHaveBeenCalledWith(SocketEvents.WaitingRoomDirectoryUpdated);
+        expect(serverEmit).toHaveBeenCalledWith(WaitingRoomEvents.WaitingRoomDirectoryUpdated);
     });
 
     it('delegates disconnect handling', () => {
@@ -140,7 +140,7 @@ describe('MatchWaitingRoomGateway', () => {
         expect(client.leave).toHaveBeenCalledWith(getWaitingRoomRoom('OLD999'));
         expect(waitingRoomService.createWaitingRoom).toHaveBeenCalledWith('socket-1', makeCreatePayload());
         expect(client.join).toHaveBeenCalledWith(getWaitingRoomRoom('ABC123'));
-        expect(client.emit).toHaveBeenCalledWith(SocketEvents.WaitingRoomUpdated, { accessCode: 'ABC123' });
+        expect(client.emit).toHaveBeenCalledWith(WaitingRoomEvents.WaitingRoomUpdated, { accessCode: 'ABC123' });
     });
 
     it('handles createWaitingRoom failures', async () => {
@@ -151,7 +151,7 @@ describe('MatchWaitingRoomGateway', () => {
 
         expect(logger.error).toHaveBeenCalled();
         expect(client.emit).toHaveBeenCalledWith(
-            SocketEvents.WaitingRoomError,
+            WaitingRoomEvents.WaitingRoomError,
             { message: 'Impossible de creer la salle d attente.' },
         );
     });
@@ -169,7 +169,7 @@ describe('MatchWaitingRoomGateway', () => {
 
         expect(client.leave).toHaveBeenCalledWith(getWaitingRoomRoom('OLD999'));
         expect(client.join).toHaveBeenCalledWith(getWaitingRoomRoom('ABC123'));
-        expect(client.emit).toHaveBeenCalledWith(SocketEvents.WaitingRoomUpdated, { accessCode: 'ABC123', players: [] });
+        expect(client.emit).toHaveBeenCalledWith(WaitingRoomEvents.WaitingRoomUpdated, { accessCode: 'ABC123', players: [] });
 
         (client.join as jest.Mock).mockClear();
         (client.emit as jest.Mock).mockClear();
@@ -208,7 +208,7 @@ describe('MatchWaitingRoomGateway', () => {
 
         expect(logger.error).toHaveBeenCalled();
         expect(client.emit).toHaveBeenCalledWith(
-            SocketEvents.WaitingRoomError,
+            WaitingRoomEvents.WaitingRoomError,
             { message: 'Impossible de lancer la partie.' },
         );
     });
