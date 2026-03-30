@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { WaitingRoomPreview } from '@common/game/waiting-room-preview.interface';
-import { SocketEvents } from '@common/socket-events';
+import { WaitingRoomEvents } from '@common/socket-events';
 import { environment } from 'src/environments/environment';
 
 type DirectoryState = 'idle' | 'loading' | 'loaded' | 'error';
@@ -27,7 +27,7 @@ export class WaitingRoomDirectoryService {
         }
 
         if (!this.listenersRegistered) {
-            this.socketManager.on(SocketEvents.WaitingRoomDirectoryUpdated, this.handleDirectoryUpdated);
+            this.socketManager.on(WaitingRoomEvents.WaitingRoomDirectoryUpdated, this.handleDirectoryUpdated);
             this.listenersRegistered = true;
         }
 
@@ -39,7 +39,7 @@ export class WaitingRoomDirectoryService {
             return;
         }
 
-        this.socketManager.off(SocketEvents.WaitingRoomDirectoryUpdated, this.handleDirectoryUpdated);
+        this.socketManager.off(WaitingRoomEvents.WaitingRoomDirectoryUpdated, this.handleDirectoryUpdated);
         this.listenersRegistered = false;
     }
 

@@ -2,10 +2,10 @@ import { MapService } from '@app/services/map/map.service';
 import { InitializedMatch, MatchLobbyPlayer } from '@common/game/match.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMapDetails } from '@common/maps/map.interface';
-import { GameSessionSnapshotPayload, SocketEvents } from '@common/socket-events';
+import { GameSessionSnapshotPayload, SessionSocketEvents } from '@common/socket-events';
 import { ATTACK_POSE_DURATION_MS, WALK_POSE_DURATION_MS } from './game-session.match';
-import { GameSessionService } from './game-session.service';
 import { TRANSITION_DURATION_MS } from './game-session.runtime';
+import { GameSessionService } from './game-session.service';
 
 const START_LEFT_X = 1;
 const START_RIGHT_X = 2;
@@ -99,7 +99,7 @@ describe('GameSessionService', () => {
         };
         service = new GameSessionService(mapService as unknown as MapService);
         snapshots = [];
-        service.on<GameSessionSnapshotPayload>(SocketEvents.GameSessionSnapshot, (payload) => {
+        service.on<GameSessionSnapshotPayload>(SessionSocketEvents.GameSessionSnapshot, (payload) => {
             snapshots.push({ sessionId: payload.sessionId, match: payload.match });
         });
     });

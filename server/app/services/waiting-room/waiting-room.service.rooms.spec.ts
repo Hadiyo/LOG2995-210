@@ -1,6 +1,6 @@
 import { ACCESS_CODE_LENGTH, MIN_PLAYERS_TO_START } from '@app/services/waiting-room/waiting-room.constants';
 import { MapSize } from '@common/maps/map.enums';
-import { SocketEvents } from '@common/socket-events';
+import { WaitingRoomEvents } from '@common/socket-events';
 import {
     createWaitingRoomServiceHarness,
     makeLobbyPlayer,
@@ -14,8 +14,8 @@ describe('WaitingRoomService rooms', () => {
     it('creates a waiting room, marks the organizer, and emits updates', async () => {
         const onUpdated = jest.fn();
         const onDirectory = jest.fn();
-        harness.service.on(SocketEvents.WaitingRoomUpdated, onUpdated);
-        harness.service.on(SocketEvents.WaitingRoomDirectoryUpdated, onDirectory);
+        harness.service.on(WaitingRoomEvents.WaitingRoomUpdated, onUpdated);
+        harness.service.on(WaitingRoomEvents.WaitingRoomDirectoryUpdated, onDirectory);
         harness.mapService.getMapById.mockResolvedValue(makeMap());
 
         const accessCode = await harness.service.createWaitingRoom('socket-org', {
@@ -96,7 +96,7 @@ describe('WaitingRoomService rooms', () => {
 
     it('rejects joins for missing rooms, full rooms, and duplicate avatars', async () => {
         const onError = jest.fn();
-        harness.service.on(SocketEvents.WaitingRoomError, onError);
+        harness.service.on(WaitingRoomEvents.WaitingRoomError, onError);
         harness.mapService.getMapById.mockResolvedValue(makeMap());
 
         expect(harness.service.joinWaitingRoom('socket-x', {
@@ -178,8 +178,8 @@ describe('WaitingRoomService rooms', () => {
     it('adds chat messages, trims content, and ignores blanks', async () => {
         const onMessage = jest.fn();
         const onError = jest.fn();
-        harness.service.on(SocketEvents.WaitingRoomMessageSent, onMessage);
-        harness.service.on(SocketEvents.WaitingRoomError, onError);
+        harness.service.on(WaitingRoomEvents.WaitingRoomMessageSent, onMessage);
+        harness.service.on(WaitingRoomEvents.WaitingRoomError, onError);
         harness.mapService.getMapById.mockResolvedValue(makeMap());
         const accessCode = await harness.service.createWaitingRoom('socket-org', {
             mapId: 'map-1',
@@ -207,8 +207,8 @@ describe('WaitingRoomService rooms', () => {
     it('cancels the room when the organizer leaves', async () => {
         const onCancelled = jest.fn();
         const onDirectory = jest.fn();
-        harness.service.on(SocketEvents.WaitingRoomCancelled, onCancelled);
-        harness.service.on(SocketEvents.WaitingRoomDirectoryUpdated, onDirectory);
+        harness.service.on(WaitingRoomEvents.WaitingRoomCancelled, onCancelled);
+        harness.service.on(WaitingRoomEvents.WaitingRoomDirectoryUpdated, onDirectory);
         harness.mapService.getMapById.mockResolvedValue(makeMap());
         const accessCode = await harness.service.createWaitingRoom('socket-org', {
             mapId: 'map-1',
@@ -244,8 +244,8 @@ describe('WaitingRoomService rooms', () => {
     it('only lets the organizer kick players and never allows kicking the organizer', async () => {
         const onError = jest.fn();
         const onKicked = jest.fn();
-        harness.service.on(SocketEvents.WaitingRoomError, onError);
-        harness.service.on(SocketEvents.WaitingRoomPlayerKicked, onKicked);
+        harness.service.on(WaitingRoomEvents.WaitingRoomError, onError);
+        harness.service.on(WaitingRoomEvents.WaitingRoomPlayerKicked, onKicked);
         harness.mapService.getMapById.mockResolvedValue(makeMap({ size: MapSize.M }));
         const accessCode = await harness.service.createWaitingRoom('socket-org', {
             mapId: 'map-1',
