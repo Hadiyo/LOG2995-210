@@ -152,10 +152,31 @@
   background-image: var(--object-flag-img);
 }
 
-.obj[data-obj='REGEN'] { background-image: var(--object-heal-img); }
-.obj[data-obj='ARENA'] { background-image: var(--object-fight-img); }
-.obj[data-obj='REGEN'][data-used='true'] { background-image: var(--object-heal-used-img); }
-.obj[data-obj='ARENA'][data-used='true'] { background-image: var(--object-fight-used-img); }
+.obj[data-obj='REGEN'] {
+  background-image: var(--object-heal-img);
+  animation: obj-ready-glow 2.5s infinite alternate ease-in-out;
+}
+.obj[data-obj='ARENA'] {
+  background-image: var(--object-fight-img);
+  animation: obj-ready-glow 2.5s infinite alternate ease-in-out;
+}
+.obj[data-obj='REGEN'][data-used='true'] {
+  background-image: var(--object-heal-used-img);
+  animation: none;
+}
+.obj[data-obj='ARENA'][data-used='true'] {
+  background-image: var(--object-fight-used-img);
+  animation: none;
+}
+
+@keyframes obj-ready-glow {
+  0% {
+    filter: drop-shadow(0 0 1px var(--accent-secondary));
+  }
+  100% {
+    filter: drop-shadow(0 0 5px var(--accent-secondary));
+  }
+}
 
 /* 2x2 objects span 4 tiles visually from top-left anchor */
 .obj[data-size='2x2'] {
