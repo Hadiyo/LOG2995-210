@@ -156,6 +156,11 @@ export class GameSessionInteractionService {
             return;
         }
 
+        if (this.hasActiveInteractionUi()) {
+            this.movementFeedback.set('Fermez d abord l interface d action avant de vous deplacer.');
+            return;
+        }
+
         const currentMatch = this.display.match();
         const localPlayer = this.getLocalMatchPlayer();
         const movementPointsRemaining = this.display.turnState()?.movementPointsRemaining ?? 0;
@@ -347,5 +352,9 @@ export class GameSessionInteractionService {
         }
 
         return object;
+    }
+
+    private hasActiveInteractionUi(): boolean {
+        return this.actionSelectionOpen() || !!this.actionContext() || this.sanctuaryPromptUiHold();
     }
 }
