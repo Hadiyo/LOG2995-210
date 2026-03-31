@@ -1,6 +1,5 @@
 import { GameSessionGateway } from '@app/gateways/game-session/game-session.gateway';
 import {
-    CombatSocketEvents,
     DebugTeleportPlayerPayload,
     EndGameTurnPayload,
     ForceEndDebugTurnPayload,
