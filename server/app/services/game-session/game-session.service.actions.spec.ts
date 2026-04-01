@@ -40,7 +40,7 @@ describe('GameSessionService actions', () => {
         expect(advanceSpy).toHaveBeenCalledWith(runtime);
     });
 
-    it('teleports the organizer in debug mode only to valid free cells', () => {
+    it('teleports the active player in debug mode only to valid free cells', () => {
         const runtime = makeRuntime({
             match: makeMatch({
                 debugMode: true,
@@ -60,12 +60,15 @@ describe('GameSessionService actions', () => {
         harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
         const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
 
-        expect(harness.service.debugTeleportPlayer('session-1', 'player-2', { x: 0, y: 1 })).toBe(false);
+        runtime.turnState.activePlayerId = 'player-2';
+        expect(harness.service.debugTeleportPlayer('session-1', 'player-2', { x: 2, y: 1 })).toBe(true);
+        expect(runtime.match.players.find((player) => player.id === 'player-2')?.position).toEqual({ x: 2, y: 1 });
+        runtime.turnState.activePlayerId = 'player-1';
         expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 9, y: 9 })).toBe(false);
         expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 1, y: 0 })).toBe(false);
         expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 2, y: 2 })).toBe(false);
-        expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 2, y: 1 })).toBe(true);
-        expect(runtime.match.players.find((player) => player.id === 'player-1')?.position).toEqual({ x: 2, y: 1 });
+        expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 2, y: 0 })).toBe(true);
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.position).toEqual({ x: 2, y: 0 });
         expect(runtime.match.players.find((player) => player.id === 'player-1')?.render?.facing).toBe('right');
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
     });

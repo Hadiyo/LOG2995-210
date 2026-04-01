@@ -308,7 +308,6 @@ export class GameSessionInteractionService {
         const localPlayer = this.getLocalMatchPlayer();
         if (!currentMatch ||
             !localPlayer ||
-            !localPlayer.isOrganizer ||
             !currentMatch.debugMode ||
             this.display.matchEndState() ||
             this.display.turnState()?.phase !== 'active' ||
