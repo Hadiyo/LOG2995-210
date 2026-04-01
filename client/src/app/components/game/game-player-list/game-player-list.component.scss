@@ -34,6 +34,8 @@
   --player-highlight: var(--accent-primary);
   --player-highlight-soft: color-mix(in srgb, var(--player-highlight) 22%, transparent);
   --player-highlight-strong: color-mix(in srgb, var(--player-highlight) 28%, var(--bg-main));
+  --player-team-color: transparent;
+  --player-team-soft: transparent;
   display: flex;
   flex-wrap: nowrap;
   gap: 6px;
@@ -44,6 +46,33 @@
   height: var(--player-row-height);
   box-sizing: border-box;
   min-width: 0;
+  background:
+    linear-gradient(90deg, var(--player-team-soft), transparent 34%),
+    var(--bg-surface, transparent);
+}
+
+.player::before {
+  content: '';
+  width: 4px;
+  align-self: stretch;
+  border-radius: 999px;
+  background: var(--player-team-color);
+  opacity: 0;
+}
+
+.player--team-a {
+  --player-team-color: #2f80ed;
+  --player-team-soft: color-mix(in srgb, #2f80ed 16%, transparent);
+}
+
+.player--team-b {
+  --player-team-color: #eb5757;
+  --player-team-soft: color-mix(in srgb, #eb5757 16%, transparent);
+}
+
+.player--team-a::before,
+.player--team-b::before {
+  opacity: 1;
 }
 
 .player--flag {
@@ -119,6 +148,30 @@
   background: rgba(255, 255, 255, 0.1);
   font-size: 0.7rem;
   white-space: nowrap;
+}
+
+.player__badge--team {
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  line-height: 1;
+}
+
+.player__badge--team-a,
+.player__badge--team-b {
+  background: color-mix(in srgb, var(--bg-main, #101010) 84%, white 16%);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.player__badge--team-a {
+  color: #2f80ed;
+}
+
+.player__badge--team-b {
+  color: #eb5757;
 }
 
 .player__badge--flag-icon {

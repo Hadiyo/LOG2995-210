@@ -79,6 +79,22 @@ export class GamePlayerListComponent {
       row.player.information.teamId === this.winnerTeamId;
   }
 
+  getTeamClass(teamId: string | null | undefined): string | null {
+    if (!teamId) {
+      return null;
+    }
+
+    return `player--team-${teamId.toLowerCase()}`;
+  }
+
+  getTeamBadgeClass(teamId: string | null | undefined): string | null {
+    if (!teamId) {
+      return null;
+    }
+
+    return `player__badge--team-${teamId.toLowerCase()}`;
+  }
+
   // Helper to identify if a row corresponds to the current player for styling.
   private get orderedPlayers(): readonly Player[] {
     if (this.turnOrder.length === 0) {

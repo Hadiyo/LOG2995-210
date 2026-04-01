@@ -114,6 +114,14 @@ export class GameMapGridComponent {
     return `${delay}s`;
   }
 
+  getTeamClass(teamId: string | null | undefined): string | null {
+    if (!teamId) {
+      return null;
+    }
+
+    return `player-layer--team-${teamId.toLowerCase()}`;
+  }
+
   // Helper to identify if a pose is expired based on server timestamp and duration.
   private isTransientPoseExpired(player: Player, pose: CharacterState): boolean {
     if (pose !== 'walk' && pose !== 'attack') return false;
