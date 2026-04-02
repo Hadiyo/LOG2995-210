@@ -1,4 +1,5 @@
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchSanctuaryState } from '@common/game/match.interface';
+import { buildTeamAssignments, buildVisibleObjects } from '@common/game/match.utils';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
 import { PlayerFacing, PlayerPose, PlayerRenderState } from '@common/player/player.interface';
@@ -19,11 +20,14 @@ export function buildInitializedMatchFromEditor(
     if (availableStartObjects.length < players.length) {
         throw new Error('La carte ne contient pas assez de points de depart pour les joueurs actifs.');
     }
+
     const shuffledStarts = shuffle(availableStartObjects, random);
+    const teamAssignments = buildTeamAssignments(players.length, map.mode, random);
     const initializedPlayers: MatchPlayer[] = players.map((player, index) => ({
         ...player,
         position: { ...shuffledStarts[index].position },
         startingPosition: { ...shuffledStarts[index].position },
+        teamId: teamAssignments[index],
         health: player.maxHealth,
         combatWins: 0,
         attackBonus: 0,
@@ -39,10 +43,12 @@ export function buildInitializedMatchFromEditor(
         mapSize: map.mapsize,
         debugMode: false,
         map: map.map.map((cell) => ({ ...cell, position: { ...cell.position } })),
-        objects: buildGameSessionVisibleObjects(map.objects, initializedPlayers),
+        objects: buildVisibleObjects(map.objects, initializedPlayers, null),
         allObjects: map.objects.map((object) => ({ ...object, position: { ...object.position } })),
         allStartingPoints: availableStartObjects.map((object) => ({ ...object.position })),
         players: initializedPlayers,
+        flagCarrierId: null,
+        pendingFlagTransfer: null,
         sanctuaryStates: buildGameSessionSanctuaryStates(map.objects),
         pendingSanctuaryChoice: null,
         endState: null,
@@ -124,7 +130,6 @@ export function isGameSessionSanctuaryObject(object: MapObject): boolean {
 export function isGameSessionSanctuaryActive(match: InitializedMatch, objectId: number): boolean {
     return (match.sanctuaryStates?.find((state) => state.objectId === objectId)?.cooldownTurnsRemaining ?? 0) === 0;
 }
-
 export function getGameSessionObjectCovering(objects: MapObject[], position: Vec2): MapObject | null {
     return objects.find((object) => getGameSessionObjectFootprint(object).some((tile) => samePosition(tile, position))) ?? null;
 }

@@ -1,5 +1,6 @@
+/* eslint-disable max-lines */
 import { ChatMessage } from '@common/chat/chat.interface';
-import { ObjectSize, ObjectType } from '@common/maps/map.enums';
+import { GameMode, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import {
     createGameSessionServiceHarness,
     makeMatch,
@@ -149,6 +150,104 @@ describe('GameSessionService actions', () => {
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
     });
 
+    it('refuses to close a door when the flag is on that tile in CTF', () => {
+        const runtime = makeRuntime({
+            match: makeMatch({
+                mode: GameMode.CTF,
+                map: [
+                    { position: { x: 0, y: 0 }, tileType: TileType.DIRT, isWalkable: true, isOccupied: false },
+                    { position: { x: 0, y: 1 }, tileType: TileType.DOOR, isWalkable: true, isOccupied: false },
+                ],
+                players: [
+                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, startingPosition: { x: 0, y: 0 }, teamId: 'A' }),
+                    makeMatchPlayer({ id: 'player-2', position: { x: 2, y: 0 }, startingPosition: { x: 1, y: 0 }, avatarId: 1, teamId: 'B' }),
+                ],
+                objects: [makeObject({ id: 3, type: ObjectType.FLAG, position: { x: 0, y: 1 } })],
+                allObjects: [makeObject({ id: 3, type: ObjectType.FLAG, position: { x: 0, y: 1 } })],
+            }),
+        });
+
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+        expect(harness.service.toggleDoor('session-1', 'player-1', { x: 0, y: 1 })).toBe(false);
+    });
+
+    it('requests and resolves a flag transfer between adjacent teammates in CTF', () => {
+        const serviceInternals = harness.getServiceInternals();
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
+        const runtime = makeRuntime({
+            match: makeMatch({
+                mode: GameMode.CTF,
+                players: [
+                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, startingPosition: { x: 0, y: 0 }, teamId: 'A' }),
+                    makeMatchPlayer({ id: 'player-2', position: { x: 1, y: 0 }, startingPosition: { x: 1, y: 0 }, avatarId: 1, teamId: 'A' }),
+                ],
+                flagCarrierId: 'player-1',
+            }),
+        });
+
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+
+        expect(harness.service.requestFlagTransfer('session-1', 'player-1', 'player-2')).toBe(true);
+        expect(runtime.match.pendingFlagTransfer).toEqual({
+            requesterId: 'player-1',
+            receiverId: 'player-2',
+            kind: 'offer',
+        });
+        expect(runtime.turnState.actionTaken).toBe(true);
+
+        expect(harness.service.resolveFlagTransfer('session-1', 'player-2', true)).toBe(true);
+        expect(runtime.match.pendingFlagTransfer).toBeNull();
+        expect(runtime.match.flagCarrierId).toBe('player-2');
+        expect(runtime.messages.at(-1)?.content).toContain('obtient le drapeau');
+        expect(emitSnapshotSpy).toHaveBeenCalled();
+    });
+
+    it('logs flag pickup and clears unanswered transfers when the turn advances', () => {
+        const serviceInternals = harness.getServiceInternals();
+        const advanceSpy = jest.spyOn(serviceInternals, 'advanceToNextTurn');
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
+
+        const pickupRuntime = makeRuntime({
+            match: makeMatch({
+                mode: GameMode.CTF,
+                players: [
+                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, startingPosition: { x: 0, y: 0 }, teamId: 'A' }),
+                    makeMatchPlayer({ id: 'player-2', position: { x: 2, y: 0 }, startingPosition: { x: 1, y: 0 }, avatarId: 1, teamId: 'B' }),
+                ],
+                objects: [makeObject({ id: 3, type: ObjectType.FLAG, position: { x: 1, y: 0 } })],
+                allObjects: [makeObject({ id: 3, type: ObjectType.FLAG, position: { x: 1, y: 0 } })],
+                flagCarrierId: null,
+            }),
+        });
+        harness.getPrivateState().sessions.set('pickup', pickupRuntime);
+        expect(harness.service.movePlayer('pickup', 'player-1', 'right')).toBe(true);
+        expect(pickupRuntime.messages.at(-1)?.content).toContain('ramasse le drapeau');
+
+        const transferRuntime = makeRuntime({
+            sessionId: 'transfer',
+            match: makeMatch({
+                mode: GameMode.CTF,
+                players: [
+                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, startingPosition: { x: 0, y: 0 }, teamId: 'A' }),
+                    makeMatchPlayer({ id: 'player-2', position: { x: 1, y: 0 }, startingPosition: { x: 1, y: 0 }, avatarId: 1, teamId: 'A' }),
+                ],
+                flagCarrierId: 'player-1',
+                pendingFlagTransfer: {
+                    requesterId: 'player-1',
+                    receiverId: 'player-2',
+                    kind: 'offer',
+                },
+            }),
+        });
+        transferRuntime.turnState.actionTaken = true;
+        harness.getPrivateState().sessions.set('transfer', transferRuntime);
+
+        expect(harness.service.endTurn('transfer', 'player-1')).toBe(true);
+        expect(advanceSpy).toHaveBeenCalledWith(transferRuntime);
+        expect(transferRuntime.match.pendingFlagTransfer).toBeNull();
+        expect(emitSnapshotSpy).toHaveBeenCalled();
+    });
+
     it('starts combat only for adjacent active players and finishes the match on the win threshold', () => {
         const serviceInternals = harness.getServiceInternals();
         const privateState = harness.getPrivateState();
@@ -188,6 +287,38 @@ describe('GameSessionService actions', () => {
         privateState.sessions.set('winner', winnerRuntime);
         expect(harness.service.startCombat('winner', 'player-1', 'player-2')).toBe(true);
         expect(privateState.sessions.has('winner')).toBe(false);
+    });
+
+    it('declares a team victory when the flag carrier returns to the starting tile', () => {
+        const privateState = harness.getPrivateState();
+        const runtime = makeRuntime({
+            sessionId: 'ctf-win',
+            match: makeMatch({
+                mode: GameMode.CTF,
+                players: [
+                    makeMatchPlayer({
+                        id: 'player-1', position: { x: 1, y: 0 }, startingPosition: { x: 0, y: 0 }, teamId: 'A', name: 'Alice',
+                    }),
+                    makeMatchPlayer({
+                        id: 'player-2', position: { x: 2, y: 0 }, startingPosition: { x: 1, y: 0 }, avatarId: 1, teamId: 'A', name: 'Bob',
+                    }),
+                    makeMatchPlayer({
+                        id: 'player-3', position: { x: 2, y: 2 }, startingPosition: { x: 2, y: 2 }, avatarId: 2, teamId: 'B', name: 'Cara',
+                    }),
+                    makeMatchPlayer({
+                        id: 'player-4', position: { x: 2, y: 1 }, startingPosition: { x: 2, y: 1 }, avatarId: 3, teamId: 'B', name: 'Dan',
+                    }),
+                ],
+                flagCarrierId: 'player-1',
+            }),
+        });
+
+        privateState.sessions.set('ctf-win', runtime);
+        expect(harness.service.movePlayer('ctf-win', 'player-1', 'left')).toBe(true);
+        expect(runtime.match.endState?.winnerKind).toBe('team');
+        expect(runtime.match.endState?.winnerTeamId).toBe('A');
+        expect(runtime.match.endState?.message).toContain('L equipe A remporte la partie');
+        expect(privateState.sessions.has('ctf-win')).toBe(false);
     });
 
     it('opens a pending sanctuary choice and resolves healing on the server', () => {

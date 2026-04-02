@@ -2,7 +2,13 @@
   <ul class="players" [style.transform]="'translateY(' + scrollOffsetPx + 'px)'">
     <!-- Loop through displayed rows which include players and placeholders, using trackBy for performance. -->
     @for (row of displayedRows; track row.key) {
-    <li class="player" [class.player--active]="isRowActive(row)" [class.player--placeholder]="!row.player">
+    <li
+      class="player"
+      [class.player--active]="isRowActive(row)"
+      [class.player--flag]="row.player?.state?.hasFlag"
+      [class.player--placeholder]="!row.player"
+      [ngClass]="getTeamClass(row.player?.information?.teamId)"
+    >
       <!-- If the row has a player, display their info; otherwise show placeholder text. -->
       @if (row.player; as player) {
       <span class="player__index">{{ row.listIndex }}</span>
@@ -30,6 +36,26 @@
         @if (player.information.isOrganizer) {
         <span class="player__badge" [attr.title]="player.id === activePlayerId ? 'Organisateur' : null">
           {{ player.id === activePlayerId ? 'Org.' : 'Organisateur' }}
+        </span>
+        }
+        @if (player.information.teamId) {
+        <span
+          class="player__badge player__badge--team"
+          [ngClass]="getTeamBadgeClass(player.information.teamId)"
+          [attr.title]="'Equipe ' + player.information.teamId"
+          [attr.aria-label]="'Equipe ' + player.information.teamId"
+        >
+          {{ player.information.teamId }}
+        </span>
+        }
+        @if (player.state.hasFlag) {
+        <span class="player__badge player__badge--flag-icon" title="Porte le drapeau" aria-label="Porte le drapeau">
+          ⚑
+        </span>
+        }
+        @if (isWinningTeamPlayer(row)) {
+        <span class="player__badge player__badge--active">
+          Gagnant
         </span>
         }
         <!-- Display active badge if it's the active player's turn. -->

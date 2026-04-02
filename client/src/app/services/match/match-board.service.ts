@@ -5,6 +5,7 @@ import {
     MatchSanctuaryState,
     MatchTileInspection,
 } from '@common/game/match.interface';
+import { buildVisibleObjects as buildMatchVisibleObjects } from '@common/game/match.utils';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, MapObject, Vec2 } from '@common/maps/map.interface';
 import { cloneVec2, manhattanDistance, positionKey, samePosition } from './match-geometry';
@@ -43,16 +44,13 @@ const DOUBLE_TILE_OFFSETS: Vec2[] = [
 export interface CombatAftermathResult {
     players: MatchPlayer[];
     respawnedPlayers: { playerId: string; position: Vec2 }[];
+    flagDroppedAt: Vec2 | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class MatchBoardService {
-    buildVisibleObjects(objects: MapObject[], players: MatchPlayer[]): MapObject[] {
-        const activeStarts = new Set(players.map((player) => positionKey(player.startingPosition)));
-
-        return objects
-            .filter((object) => object.type !== ObjectType.START || activeStarts.has(positionKey(object.position)))
-            .map((object) => ({ ...object, position: cloneVec2(object.position) }));
+    buildVisibleObjects(objects: MapObject[], players: MatchPlayer[], flagCarrierId: string | null): MapObject[] {
+        return buildMatchVisibleObjects(objects, players, flagCarrierId);
     }
 
     getPlayerAt(match: InitializedMatch, position: Vec2): MatchPlayer | null {
@@ -100,6 +98,7 @@ export class MatchBoardService {
                 id: player.id,
                 name: player.name,
                 avatarId: player.avatarId,
+                teamId: player.teamId ?? null,
             } : null,
         };
     }
@@ -123,11 +122,13 @@ export class MatchBoardService {
                 .filter((player) => !defeatedPlayerIdsSet.has(player.id))
                 .map((player) => positionKey(player.position)),
         );
-        const nextAllObjects = match.allObjects.map((object) => ({
+        let nextFlagCarrierId = match.flagCarrierId ?? null;
+        let nextAllObjects = match.allObjects.map((object) => ({
             ...object,
             position: cloneVec2(object.position),
         }));
         const respawnedPlayers: { playerId: string; position: Vec2 }[] = [];
+        let flagDroppedAt: Vec2 | null = null;
 
         const nextPlayers = match.players.map((player) => {
             if (!defeatedPlayerIdsSet.has(player.id)) {
@@ -137,6 +138,17 @@ export class MatchBoardService {
             const respawnPosition = this.findRespawnPosition(match, player.startingPosition, reservedPositions);
             reservedPositions.add(positionKey(respawnPosition));
             respawnedPlayers.push({ playerId: player.id, position: cloneVec2(respawnPosition) });
+
+            if (nextFlagCarrierId === player.id) {
+                nextFlagCarrierId = null;
+                const dropPosition = this.findNearestFreeTerrainTile(match, player.position, reservedPositions) ?? cloneVec2(player.position);
+                flagDroppedAt = cloneVec2(dropPosition);
+                nextAllObjects = nextAllObjects.map((object) =>
+                    object.type === ObjectType.FLAG
+                        ? { ...object, position: cloneVec2(dropPosition) }
+                        : object,
+                );
+            }
 
             return {
                 ...player,
@@ -149,7 +161,8 @@ export class MatchBoardService {
             ...match,
             players: nextPlayers,
             allObjects: nextAllObjects,
-            objects: this.buildVisibleObjects(nextAllObjects, nextPlayers),
+            flagCarrierId: nextFlagCarrierId,
+            objects: this.buildVisibleObjects(nextAllObjects, nextPlayers, nextFlagCarrierId),
         };
 
         return {
@@ -157,6 +170,7 @@ export class MatchBoardService {
             outcome: {
                 players: nextPlayers,
                 respawnedPlayers,
+                flagDroppedAt,
             },
         };
     }
@@ -171,6 +185,10 @@ export class MatchBoardService {
 
     areAdjacent(left: Vec2, right: Vec2): boolean {
         return Math.abs(left.x - right.x) + Math.abs(left.y - right.y) === 1;
+    }
+
+    isSameTeam(left: MatchPlayer, right: MatchPlayer): boolean {
+        return left.teamId !== null && left.teamId !== undefined && left.teamId === right.teamId;
     }
 
     private describeTile(cell: EditorCell): string[] {

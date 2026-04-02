@@ -46,6 +46,7 @@ export class EditorPlacementRulesService {
 
     /**
      * Object limits (editor-time validation)
+     * - FLAG: only in CTF, singleton
      * - START: depends on map size
      */
     getObjectLimit(type: ObjectType, size: MapSize, mode: GameMode): number {

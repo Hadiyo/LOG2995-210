@@ -30,17 +30,28 @@
 
       <!-- Optional player layer if a player occupies this cell -->
       @if (getPlayerAtCell(cell); as player) {
-        <span class="player-layer">
-          <app-character-sprite
-            [avatarId]="getAvatarId(player)"
-            [class.is-idle]="getPlayerState(player) === 'idle'"
-            [style.animationDelay]="getBreathingDelay(player.id)"
-            [state]="getPlayerState(player)"
-            [direction]="getPlayerDirection(player)"
-            [fitToHost]="true"
-            [smoothingEnabled]="true"
-            [ariaLabel]="'Avatar de ' + player.information.name"
-          />
+        <span class="player-layer" [ngClass]="getTeamClass(player.information.teamId)">
+          <span class="player-layer__avatar-frame">
+            <app-character-sprite
+              [avatarId]="getAvatarId(player)"
+              [class.is-idle]="getPlayerState(player) === 'idle'"
+              [style.animationDelay]="getBreathingDelay(player.id)"
+              [state]="getPlayerState(player)"
+              [direction]="getPlayerDirection(player)"
+              [fitToHost]="true"
+              [smoothingEnabled]="true"
+              [ariaLabel]="'Avatar de ' + player.information.name"
+            />
+            @if (player.state.hasFlag) {
+              <span
+                class="player-layer__flag-badge"
+                aria-label="Porte le drapeau"
+                title="Porte le drapeau"
+              >
+                ⚑
+              </span>
+            }
+          </span>
         </span>
       }
     </button>

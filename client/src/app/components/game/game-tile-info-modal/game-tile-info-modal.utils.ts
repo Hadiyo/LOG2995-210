@@ -76,7 +76,6 @@ function buildObjectDescription(object: MapObject, objectUsed: boolean): string 
   if (!objectUsed || (object.type !== ObjectType.REGEN && object.type !== ObjectType.ARENA)) {
     return OBJECT_DESCRIPTIONS[object.type] ?? null;
   }
-  
   return 'En recharge. Attendez qu’un tour complet de tous les joueurs se termine pour pouvoir l’activer à nouveau.';
 }
 
