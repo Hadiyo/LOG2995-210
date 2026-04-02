@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
+import { getTeamClass } from '@app/components/game/team-class.util';
 import { Player, PlayerStatus } from '@common/player/player.interface';
-import { getTeamClass } from '../team-class.util';
 
 const COLLAPSED_VISIBLE_ROWS = 2;
 const PLAYER_ROW_HEIGHT_PX = 46;

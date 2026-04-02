@@ -1,12 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CharacterSpriteComponent } from '@app/components/game/character-sprite/character-sprite.component';
+import { getTeamClass } from '@app/components/game/team-class.util';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
 import { positionKey } from '@app/services/match/match-geometry';
 import { TileType } from '@common/maps/map.enums';
 import { GameCell, MapObject } from '@common/maps/map.interface';
 import { Player, PlayerStatus } from '@common/player/player.interface';
-import { getTeamClass } from '../team-class.util';
 
 // Used to vary breathing animation delay across players (avoid sync look).
 const BREATHING_DELAY_VARIANTS = 5;
