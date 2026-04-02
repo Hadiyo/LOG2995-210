@@ -193,22 +193,30 @@ export class MatchStateService extends MatchSessionStore {
         }
 
         const nextFlagCarrierId = currentMatch.flagCarrierId === playerId ? null : (currentMatch.flagCarrierId ?? null);
-        const nextPendingFlagTransfer = currentMatch.pendingFlagTransfer?.requesterId === playerId ||
-                currentMatch.pendingFlagTransfer?.receiverId === playerId
-            ? null
-            : currentMatch.pendingFlagTransfer ?? null;
+        const nextPendingFlagTransfer = this.getPendingFlagTransferAfterPlayerRemoval(currentMatch, playerId);
         return {
             ...currentMatch,
             players: remainingPlayers,
             flagCarrierId: nextFlagCarrierId,
             objects: this.matchBoardService.buildVisibleObjects(currentMatch.allObjects, remainingPlayers, nextFlagCarrierId),
             pendingFlagTransfer: nextPendingFlagTransfer,
-            pendingSanctuaryChoice: currentMatch.pendingSanctuaryChoice?.playerId === playerId
-                ? null
-                : currentMatch.pendingSanctuaryChoice ?? null,
-            endState: remainingPlayers.length === 1 && !currentMatch.endState
-                ? this.matchSetupService.createNoWinnerEndState(remainingPlayers[0])
-                : currentMatch.endState ?? null,
+            pendingSanctuaryChoice: this.getPendingSanctuaryChoiceAfterPlayerRemoval(currentMatch, playerId),
+            endState: this.getEndStateAfterPlayerRemoval(currentMatch, remainingPlayers),
         };
+    }
+
+    private getPendingFlagTransferAfterPlayerRemoval(currentMatch: InitializedMatch, playerId: string) {
+        const pendingTransfer = currentMatch.pendingFlagTransfer ?? null;
+        return pendingTransfer?.requesterId === playerId || pendingTransfer?.receiverId === playerId ? null : pendingTransfer;
+    }
+
+    private getPendingSanctuaryChoiceAfterPlayerRemoval(currentMatch: InitializedMatch, playerId: string) {
+        return currentMatch.pendingSanctuaryChoice?.playerId === playerId ? null : (currentMatch.pendingSanctuaryChoice ?? null);
+    }
+
+    private getEndStateAfterPlayerRemoval(currentMatch: InitializedMatch, remainingPlayers: MatchPlayer[]) {
+        return remainingPlayers.length === 1 && !currentMatch.endState
+            ? this.matchSetupService.createNoWinnerEndState(remainingPlayers[0])
+            : currentMatch.endState ?? null;
     }
 }

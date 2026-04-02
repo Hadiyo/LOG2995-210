@@ -181,9 +181,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.interaction.inspectedTile, this.mapCells, this.mapObjects, this.players, this.inactiveSanctuaryObjectIds,
     );
     protected readonly chatMessages = toSignal(this.chatService.chat$, { initialValue: [] as ChatMessage[] });
-    protected readonly incomingFlagTransfer = computed(() => {
-        return buildIncomingFlagTransfer(this.match(), this.localPlayerId());
-    });
+    protected readonly incomingFlagTransfer = computed(() => buildIncomingFlagTransfer(this.match(), this.localPlayerId()));
 
     private matchEndRedirectState: MatchEndRedirectState = {
         intervalId: null,
