@@ -102,7 +102,6 @@ export class GameSessionSessionActions {
         if (!session) {
             return false;
         }
-
         const departingPlayer = this.getHumanDepartingPlayer(session, playerId);
         if (!departingPlayer) {
             return false;
