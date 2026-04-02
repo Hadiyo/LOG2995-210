@@ -92,7 +92,7 @@ export class GameSessionInteractionService {
         if (this.actionContext() === 'sanctuary') return 'Choisissez un sanctuaire adjacent en surbrillance.';
         if (this.actionContext() === 'combat') return 'Choisissez un adversaire adjacent pour engager le combat.';
         if (this.actionContext() === 'flag-transfer') return 'Choisissez un coequipier adjacent pour demander ou offrir le drapeau.';
-        if (this.actionContext() === 'door') return 'Choisissez une porte adjacente pour l ouvrir ou la fermer.';
+        if (this.actionContext() === 'door') return "Choisissez une porte adjacente pour l'ouvrir ou la fermer.";
         return '';
     }
 
@@ -110,7 +110,7 @@ export class GameSessionInteractionService {
 
     toggleActionMode(): void {
         if (this.hasLocalPendingSanctuaryChoice()) {
-            this.movementFeedback.set('Choisissez d abord comment utiliser le sanctuaire en attente.');
+            this.movementFeedback.set("Choisissez d'abord comment utiliser le sanctuaire en attente.");
             return;
         }
 
@@ -121,7 +121,7 @@ export class GameSessionInteractionService {
 
         const availableActions = this.availableActionContexts();
         if (availableActions.length === 0) {
-            this.movementFeedback.set('Aucune cible d action valide a portee.');
+            this.movementFeedback.set("Aucune cible d'action valide à porter.");
         } else if (availableActions.length === 1) {
             this.actionContext.set(availableActions[0].context);
         } else {
@@ -136,7 +136,7 @@ export class GameSessionInteractionService {
 
     endCurrentTurn(): void {
         if (this.hasLocalPendingSanctuaryChoice()) {
-            this.movementFeedback.set('Resolvez d abord le choix de sanctuaire avant de terminer le tour.');
+            this.movementFeedback.set("Resolvez d'abord le choix de sanctuaire avant de terminer le tour.");
             return;
         }
 
@@ -158,12 +158,12 @@ export class GameSessionInteractionService {
 
     moveLocal(direction: MovementDirection): void {
         if (this.hasLocalPendingSanctuaryChoice()) {
-            this.movementFeedback.set('Choisissez d abord comment utiliser le sanctuaire en attente.');
+            this.movementFeedback.set("Choisissez d'abord comment utiliser le sanctuaire en attente.");
             return;
         }
 
         if (this.hasActiveInteractionUi()) {
-            this.movementFeedback.set('Fermez d abord l interface d action avant de vous deplacer.');
+            this.movementFeedback.set("Fermez d'abord l'interface d'action avant de vous deplacer.");
             return;
         }
 

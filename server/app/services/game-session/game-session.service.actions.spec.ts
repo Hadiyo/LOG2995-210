@@ -317,7 +317,7 @@ describe('GameSessionService actions', () => {
         expect(harness.service.movePlayer('ctf-win', 'player-1', 'left')).toBe(true);
         expect(runtime.match.endState?.winnerKind).toBe('team');
         expect(runtime.match.endState?.winnerTeamId).toBe('A');
-        expect(runtime.match.endState?.message).toContain('L equipe A remporte la partie');
+        expect(runtime.match.endState?.message).toContain("L'équipe A remporte la partie");
         expect(privateState.sessions.has('ctf-win')).toBe(false);
     });
 

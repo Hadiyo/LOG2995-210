@@ -34,7 +34,7 @@ describe('WaitingRoomService start game', () => {
 
         expect(onError).toHaveBeenCalledWith({
             socketId: 'socket-2',
-            payload: { message: 'Seul l organisateur peut lancer la partie.' },
+            payload: { message: "Seul l'organisateur peut lancer la partie." },
         });
         expect(onError).toHaveBeenCalledWith({
             socketId: 'socket-org',
