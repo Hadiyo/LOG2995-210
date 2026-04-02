@@ -10,3 +10,18 @@ export const MAX_PLAYERS_BY_MAP_SIZE: Record<MapSize, number> = {
     [MapSize.M]: 4,
     [MapSize.L]: 6,
 };
+
+export const BOT_NAME_POOL = [
+    'Aegis',
+    'Bastion',
+    'Cipher',
+    'Drift',
+    'Ember',
+    'Flux',
+    'Glint',
+    'Halo',
+    'Ion',
+    'Jade',
+    'Kite',
+    'Lumen',
+] as const;

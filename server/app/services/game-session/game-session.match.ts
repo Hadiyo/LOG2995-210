@@ -1,5 +1,5 @@
-import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
-import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
+import { GameMode, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
 import { PlayerFacing, PlayerPose, PlayerRenderState } from '@common/player/player.interface';
 
@@ -16,10 +16,12 @@ export function buildInitializedMatchFromEditor(
         throw new Error('La carte ne contient pas assez de points de depart pour les joueurs actifs.');
     }
     const shuffledStarts = shuffle(availableStartObjects, random);
+    const teamAssignments = buildTeamAssignments(players.length, map.mode, random);
     const initializedPlayers: MatchPlayer[] = players.map((player, index) => ({
         ...player,
         position: { ...shuffledStarts[index].position },
         startingPosition: { ...shuffledStarts[index].position },
+        teamId: teamAssignments[index],
         health: player.maxHealth,
         combatWins: 0,
         render: createGameSessionInitialRenderState(),
@@ -32,10 +34,12 @@ export function buildInitializedMatchFromEditor(
         mapSize: map.mapsize,
         debugMode: false,
         map: map.map.map((cell) => ({ ...cell, position: { ...cell.position } })),
-        objects: buildGameSessionVisibleObjects(map.objects, initializedPlayers),
+        objects: buildGameSessionVisibleObjects(map.objects, initializedPlayers, null),
         allObjects: map.objects.map((object) => ({ ...object, position: { ...object.position } })),
         allStartingPoints: availableStartObjects.map((object) => ({ ...object.position })),
         players: initializedPlayers,
+        flagCarrierId: null,
+        pendingFlagTransfer: null,
         endState: null,
     };
 }
@@ -95,11 +99,39 @@ export function getGameSessionMovementCost(match: InitializedMatch, destination:
 export function buildGameSessionVisibleObjects(
     objects: InitializedMatch['allObjects'],
     players: MatchPlayer[],
+    flagCarrierId: string | null,
 ): MapObject[] {
     const activeStarts = new Set(players.map((player) => `${player.startingPosition.x}:${player.startingPosition.y}`));
     return objects
-        .filter((object) => object.type !== ObjectType.START || activeStarts.has(`${object.position.x}:${object.position.y}`))
+        .filter((object) => {
+            if (object.type === ObjectType.START) {
+                return activeStarts.has(`${object.position.x}:${object.position.y}`);
+            }
+
+            if (object.type === ObjectType.FLAG) {
+                return flagCarrierId === null;
+            }
+
+            return true;
+        })
         .map((object) => ({ ...object, position: { ...object.position } }));
+}
+
+export function resolveGameSessionFlagCarrier(match: InitializedMatch, playerId: string, position: Vec2): string | null {
+    if (match.flagCarrierId) {
+        return match.flagCarrierId;
+    }
+
+    if (match.mode !== GameMode.CTF) {
+        return null;
+    }
+
+    const flagObject = match.allObjects.find((object) => object.type === ObjectType.FLAG);
+    if (!flagObject) {
+        return null;
+    }
+
+    return samePosition(flagObject.position, position) ? playerId : null;
 }
 
 export function getGameSessionObjectCovering(objects: MapObject[], position: Vec2): MapObject | null {
@@ -130,4 +162,20 @@ function objectFootprint(object: MapObject): Vec2[] {
         { x: object.position.x, y: object.position.y + 1 },
         { x: object.position.x + 1, y: object.position.y + 1 },
     ];
+}
+
+function buildTeamAssignments(playerCount: number, mode: GameMode, random: () => number): (MatchTeamId | null)[] {
+    if (mode !== GameMode.CTF || playerCount < 2 || playerCount % 2 !== 0) {
+        return Array.from({ length: playerCount }, () => null);
+    }
+
+    const assignments: (MatchTeamId | null)[] = Array.from({ length: playerCount }, () => null);
+    const shuffledIndexes = shuffle(Array.from({ length: playerCount }, (_, index) => index), random);
+    const playersPerTeam = playerCount / 2;
+
+    shuffledIndexes.forEach((playerIndex, orderIndex) => {
+        assignments[playerIndex] = orderIndex < playersPerTeam ? 'A' : 'B';
+    });
+
+    return assignments;
 }

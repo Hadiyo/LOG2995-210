@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 import { MapService } from '@app/services/map/map.service';
 import { ChatMessage } from '@common/chat/chat.interface';
-import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchPendingFlagTransfer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { PlayerPose } from '@common/player/player.interface';
@@ -14,13 +14,13 @@ import {
     buildGameSessionVisibleObjects,
     getGameSessionDestination,
     getGameSessionMovementCost,
+    resolveGameSessionFlagCarrier,
     WALK_POSE_DURATION_MS,
 } from './game-session.match';
 import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
 import {
     ACTIVE_TURN_DURATION_MS,
     buildSession,
-    canStartCombat,
     CLASSIC_WIN_THRESHOLD,
     createActiveTurnState,
     createTransitionTurnState,
@@ -31,6 +31,10 @@ import {
     TRANSITION_DURATION_MS,
 } from './game-session.runtime';
 import { clearGameSessionTimers, tickGameSessionTimers } from './game-session.timers';
+import { planVirtualPlayerDecision } from './game-session.virtual-player';
+
+const VIRTUAL_PLAYER_MIN_DELAY_MS = 450;
+const VIRTUAL_PLAYER_DELAY_VARIANCE_MS = 450;
 
 @Injectable()
 export class GameSessionService {
@@ -66,8 +70,8 @@ export class GameSessionService {
             throw new NotFoundException('Game session not found');
         }
 
-        const playerExists = session.match.players.some((player) => player.id === playerId);
-        if (!playerExists) {
+        const player = session.match.players.find((candidate) => candidate.id === playerId) ?? null;
+        if (!player || player.controller === 'virtual') {
             throw new NotFoundException('Game player not found');
         }
 
@@ -151,6 +155,63 @@ export class GameSessionService {
         return true;
     }
 
+    requestFlagTransfer(sessionId: string, requesterId: string, receiverId: string): boolean {
+        const session = this.sessions.get(sessionId);
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== requesterId ||
+            session.turnState.actionTaken ||
+            session.match.endState) {
+            return false;
+        }
+
+        const pendingFlagTransfer = this.createPendingFlagTransfer(session.match, requesterId, receiverId);
+        if (!pendingFlagTransfer) {
+            return false;
+        }
+
+        session.match = { ...session.match, pendingFlagTransfer };
+        session.turnState = { ...session.turnState, actionTaken: true };
+        this.emitSnapshot(session);
+
+        const receiver = session.match.players.find((player) => player.id === receiverId) ?? null;
+        if (receiver?.controller === 'virtual') {
+            return this.resolveFlagTransfer(sessionId, receiverId, true);
+        }
+
+        return true;
+    }
+
+    resolveFlagTransfer(sessionId: string, receiverId: string, accepted: boolean): boolean {
+        const session = this.sessions.get(sessionId);
+        const pendingFlagTransfer = session?.match.pendingFlagTransfer ?? null;
+        if (!session || !pendingFlagTransfer || pendingFlagTransfer.receiverId !== receiverId || session.match.endState) {
+            return false;
+        }
+
+        const nextFlagCarrierId = this.resolveTransferredFlagCarrierId(session.match, pendingFlagTransfer, accepted);
+        session.match = {
+            ...session.match,
+            flagCarrierId: nextFlagCarrierId,
+            pendingFlagTransfer: null,
+            objects: buildGameSessionVisibleObjects(session.match.allObjects, session.match.players, nextFlagCarrierId),
+        };
+
+        if (accepted) {
+            const transferMessage = this.buildFlagTransferMessage(session.match, pendingFlagTransfer, nextFlagCarrierId);
+            if (transferMessage) {
+                session.messages.push(this.createSystemMessage(transferMessage));
+            }
+        }
+
+        if (this.finishCtfMatchIfFlagTransferWins(session, accepted, nextFlagCarrierId)) {
+            return true;
+        }
+
+        this.emitSnapshot(session);
+        return true;
+    }
+
     surrender(sessionId: string, playerId: string): boolean {
         const session = this.sessions.get(sessionId);
         if (!session) {
@@ -158,39 +219,35 @@ export class GameSessionService {
         }
 
         const departingPlayer = session.match.players.find((player) => player.id === playerId);
-        const organizerLeftWhileDebugEnabled = !!departingPlayer?.isOrganizer && session.match.debugMode;
+        if (!departingPlayer || departingPlayer.controller === 'virtual') {
+            return false;
+        }
 
+        const organizerLeftWhileDebugEnabled = !!departingPlayer.isOrganizer && session.match.debugMode;
         const nextPlayers = session.match.players.filter((player) => player.id !== playerId);
         if (nextPlayers.length === session.match.players.length) {
             return false;
         }
 
+        const nextFlagCarrierId = session.match.flagCarrierId === playerId ? null : (session.match.flagCarrierId ?? null);
+        const nextPendingFlagTransfer = this.clearPendingFlagTransfer(session.match.pendingFlagTransfer ?? null, playerId);
+        const nextAllObjects = session.match.allObjects.map((object) =>
+            session.match.flagCarrierId === playerId && object.type === ObjectType.FLAG
+                ? { ...object, position: { ...departingPlayer.position } }
+                : { ...object, position: { ...object.position } },
+        );
+
         session.match = {
             ...session.match,
             debugMode: organizerLeftWhileDebugEnabled ? false : session.match.debugMode,
             players: nextPlayers,
-            objects: buildGameSessionVisibleObjects(session.match.allObjects, nextPlayers),
+            allObjects: nextAllObjects,
+            flagCarrierId: nextFlagCarrierId,
+            pendingFlagTransfer: nextPendingFlagTransfer,
+            objects: buildGameSessionVisibleObjects(nextAllObjects, nextPlayers, nextFlagCarrierId),
         };
 
-        if (nextPlayers.length === 0) {
-            clearGameSessionTimers(session);
-            this.sessions.delete(sessionId);
-            return true;
-        }
-
-        if (nextPlayers.length === 1) {
-            const remainingPlayer = nextPlayers[0];
-            session.match = {
-                ...session.match,
-                endState: {
-                    id: crypto.randomUUID(),
-                    winnerKind: 'none',
-                    winnerPlayerId: null,
-                    message: `La partie se termine sans gagnant: ${remainingPlayer.name} est le dernier joueur encore en partie apres les abandons.`,
-                    resolvedAt: Date.now(),
-                },
-            };
-            this.finishMatch(session);
+        if (this.resolveSurrenderTerminalState(session, sessionId, nextPlayers)) {
             return true;
         }
 
@@ -204,6 +261,7 @@ export class GameSessionService {
 
         session.turnState = rebuildTurnStateAfterRosterChange(session.turnState, nextPlayers);
         this.emitSnapshot(session);
+        this.scheduleVirtualDecision(session);
         return true;
     }
 
@@ -214,10 +272,7 @@ export class GameSessionService {
             return false;
         }
 
-        session.match = {
-            ...session.match,
-            debugMode: !session.match.debugMode,
-        };
+        session.match = { ...session.match, debugMode: !session.match.debugMode };
         this.emitSnapshot(session);
         return true;
     }
@@ -248,11 +303,7 @@ export class GameSessionService {
             ...session.match,
             players: session.match.players.map((candidate) =>
                 candidate.id === playerId
-                    ? {
-                        ...candidate,
-                        position: { ...position },
-                        render: applyFacingTowardPosition(candidate, position).render,
-                    }
+                    ? { ...candidate, position: { ...position }, render: applyFacingTowardPosition(candidate, position).render }
                     : candidate,
             ),
         };
@@ -301,17 +352,43 @@ export class GameSessionService {
                 }
                 : player,
         );
+        const nextFlagCarrierId = resolveGameSessionFlagCarrier(session.match, playerId, destination);
+        const pickedUpFlag = session.match.flagCarrierId === null && nextFlagCarrierId === playerId;
+
         session.match = {
             ...session.match,
             players: nextPlayers,
-            objects: buildGameSessionVisibleObjects(session.match.allObjects, nextPlayers),
+            flagCarrierId: nextFlagCarrierId,
+            objects: buildGameSessionVisibleObjects(session.match.allObjects, nextPlayers, nextFlagCarrierId),
         };
+        if (pickedUpFlag) {
+            session.messages.push(this.createSystemMessage(`${movingPlayer.name} ramasse le drapeau.`));
+        }
         session.turnState = {
             ...session.turnState,
             movementPointsRemaining: session.turnState.movementPointsRemaining - cost,
             movementCount: session.turnState.movementCount + 1,
         };
+
+        if (this.isCtfWinner(session.match, playerId)) {
+            const winner = session.match.players.find((player) => player.id === playerId) ?? movingPlayer;
+            session.match = {
+                ...session.match,
+                endState: {
+                    id: crypto.randomUUID(),
+                    winnerKind: 'team',
+                    winnerPlayerId: winner.id,
+                    winnerTeamId: winner.teamId ?? null,
+                    message: `L equipe ${winner.teamId ?? '?'} remporte la partie: ${winner.name} ramene le drapeau a son point de depart.`,
+                    resolvedAt: Date.now(),
+                },
+            };
+            this.finishMatch(session);
+            return true;
+        }
+
         this.emitSnapshot(session);
+        this.scheduleVirtualDecision(session);
         return true;
     }
 
@@ -346,6 +423,7 @@ export class GameSessionService {
         };
         session.turnState = { ...session.turnState, actionTaken: true };
         this.emitSnapshot(session);
+        this.scheduleVirtualDecision(session);
         return true;
     }
 
@@ -357,6 +435,21 @@ export class GameSessionService {
 
         const { session, attacker, defender } = combatContext;
         const respawnPosition = resolveRespawnPosition(session.match, defenderId);
+        let nextFlagCarrierId = session.match.flagCarrierId ?? null;
+        let nextAllObjects = session.match.allObjects.map((object) => ({
+            ...object,
+            position: { ...object.position },
+        }));
+
+        if (session.match.flagCarrierId === defenderId) {
+            nextFlagCarrierId = null;
+            nextAllObjects = nextAllObjects.map((object) =>
+                object.type === ObjectType.FLAG
+                    ? { ...object, position: { ...defender.position } }
+                    : object,
+            );
+        }
+
         const nextPlayers = session.match.players.map((player) => {
             if (player.id === attackerId) {
                 return {
@@ -381,19 +474,19 @@ export class GameSessionService {
         session.match = {
             ...session.match,
             players: nextPlayers,
-            objects: buildGameSessionVisibleObjects(session.match.allObjects, nextPlayers),
+            allObjects: nextAllObjects,
+            flagCarrierId: nextFlagCarrierId,
+            objects: buildGameSessionVisibleObjects(nextAllObjects, nextPlayers, nextFlagCarrierId),
             endState: winner.combatWins >= CLASSIC_WIN_THRESHOLD ? {
                 id: crypto.randomUUID(),
                 winnerKind: 'player',
                 winnerPlayerId: winner.id,
+                winnerTeamId: null,
                 message: `${winner.name} remporte la partie avec ${winner.combatWins} victoires de combat.`,
                 resolvedAt: Date.now(),
             } : session.match.endState ?? null,
         };
-        session.turnState = {
-            ...session.turnState,
-            actionTaken: true,
-        };
+        session.turnState = { ...session.turnState, actionTaken: true };
 
         if (session.match.endState) {
             this.finishMatch(session);
@@ -401,6 +494,7 @@ export class GameSessionService {
         }
 
         this.emitSnapshot(session);
+        this.scheduleVirtualDecision(session);
         return true;
     }
 
@@ -424,12 +518,17 @@ export class GameSessionService {
         this.emitSnapshot(session);
         session.timerIntervalId = setInterval(() => tickGameSessionTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
         session.activeTurnTimeoutId = setTimeout(() => this.advanceToNextTurn(session), ACTIVE_TURN_DURATION_MS);
+        this.scheduleVirtualDecision(session);
     }
 
     private advanceToNextTurn(session: GameSessionRuntime): void {
         clearGameSessionTimers(session);
         if (session.turnState.order.length === 0) {
             return;
+        }
+
+        if (session.match.pendingFlagTransfer) {
+            session.match = { ...session.match, pendingFlagTransfer: null };
         }
 
         session.turnState = {
@@ -464,6 +563,256 @@ export class GameSessionService {
             turnState: session.turnState,
             messages: session.messages,
         });
+    }
+
+    private scheduleVirtualDecision(session: GameSessionRuntime): void {
+        if (session.virtualDecisionTimeoutId) {
+            clearTimeout(session.virtualDecisionTimeoutId);
+            session.virtualDecisionTimeoutId = null;
+        }
+
+        const activeVirtualPlayer = this.getActiveVirtualPlayer(session);
+        if (!activeVirtualPlayer || session.match.endState) {
+            return;
+        }
+
+        const delayMs = VIRTUAL_PLAYER_MIN_DELAY_MS + Math.floor(Math.random() * VIRTUAL_PLAYER_DELAY_VARIANCE_MS);
+        session.virtualDecisionTimeoutId = setTimeout(() => {
+            session.virtualDecisionTimeoutId = null;
+            this.performVirtualDecision(session.sessionId, activeVirtualPlayer.id);
+        }, delayMs);
+    }
+
+    private performVirtualDecision(sessionId: string, playerId: string): void {
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return;
+        }
+
+        const activeVirtualPlayer = this.getActiveVirtualPlayer(session);
+        if (!activeVirtualPlayer || activeVirtualPlayer.id !== playerId) {
+            return;
+        }
+
+        const decision = planVirtualPlayerDecision(session.match, session.turnState, activeVirtualPlayer);
+        switch (decision.kind) {
+            case 'combat':
+                if (!this.startCombat(sessionId, playerId, decision.targetId)) {
+                    this.endTurn(sessionId, playerId);
+                }
+                return;
+            case 'move':
+                if (!this.movePlayer(sessionId, playerId, decision.direction)) {
+                    this.endTurn(sessionId, playerId);
+                }
+                return;
+            case 'end-turn':
+                this.endTurn(sessionId, playerId);
+                return;
+            default:
+                return;
+        }
+    }
+
+    private getActiveVirtualPlayer(session: GameSessionRuntime): MatchPlayer | null {
+        if (session.turnState.phase !== 'active' || !session.turnState.activePlayerId) {
+            return null;
+        }
+
+        const activePlayer = session.match.players.find((player) => player.id === session.turnState.activePlayerId) ?? null;
+        return activePlayer?.controller === 'virtual' ? activePlayer : null;
+    }
+
+    private isCtfWinner(match: InitializedMatch, playerId: string): boolean {
+        if (match.mode !== GameMode.CTF || match.flagCarrierId !== playerId) {
+            return false;
+        }
+
+        const player = match.players.find((candidate) => candidate.id === playerId);
+        return !!player &&
+            player.position.x === player.startingPosition.x &&
+            player.position.y === player.startingPosition.y;
+    }
+
+    private getMissingCtfTeamId(mode: GameMode, players: MatchPlayer[]): MatchTeamId | null {
+        if (mode !== GameMode.CTF || players.length === 0) {
+            return null;
+        }
+
+        const teamAAlive = players.some((player) => player.teamId === 'A');
+        const teamBAlive = players.some((player) => player.teamId === 'B');
+        if (teamAAlive === teamBAlive) {
+            return null;
+        }
+
+        return teamAAlive ? 'B' : 'A';
+    }
+
+    private createPendingFlagTransfer(
+        match: InitializedMatch,
+        requesterId: string,
+        receiverId: string,
+    ): MatchPendingFlagTransfer | null {
+        if (match.mode !== GameMode.CTF || match.pendingFlagTransfer) {
+            return null;
+        }
+
+        const requester = match.players.find((player) => player.id === requesterId) ?? null;
+        const receiver = match.players.find((player) => player.id === receiverId) ?? null;
+        if (!requester || !receiver || requester.controller === 'virtual') {
+            return null;
+        }
+
+        const sameTeam = requester.teamId !== null && requester.teamId !== undefined && requester.teamId === receiver.teamId;
+        const adjacent = Math.abs(requester.position.x - receiver.position.x) + Math.abs(requester.position.y - receiver.position.y) === 1;
+        if (!sameTeam || !adjacent) {
+            return null;
+        }
+
+        const requesterHasFlag = match.flagCarrierId === requesterId;
+        const receiverHasFlag = match.flagCarrierId === receiverId;
+        if (requesterHasFlag === receiverHasFlag) {
+            return null;
+        }
+
+        return {
+            requesterId,
+            receiverId,
+            kind: requesterHasFlag ? 'offer' : 'request',
+        };
+    }
+
+    private clearPendingFlagTransfer(
+        pendingFlagTransfer: MatchPendingFlagTransfer | null,
+        playerId: string,
+    ): MatchPendingFlagTransfer | null {
+        if (!pendingFlagTransfer) {
+            return null;
+        }
+
+        return pendingFlagTransfer.requesterId === playerId || pendingFlagTransfer.receiverId === playerId
+            ? null
+            : pendingFlagTransfer;
+    }
+
+    private resolveTransferredFlagCarrierId(
+        match: InitializedMatch,
+        pendingFlagTransfer: MatchPendingFlagTransfer,
+        accepted: boolean,
+    ): string | null {
+        if (!accepted) {
+            return match.flagCarrierId ?? null;
+        }
+
+        return pendingFlagTransfer.kind === 'offer'
+            ? pendingFlagTransfer.receiverId
+            : pendingFlagTransfer.requesterId;
+    }
+
+    private buildFlagTransferMessage(
+        match: InitializedMatch,
+        pendingFlagTransfer: MatchPendingFlagTransfer,
+        nextFlagCarrierId: string | null,
+    ): string | null {
+        if (!nextFlagCarrierId) {
+            return null;
+        }
+
+        const receiver = match.players.find((player) => player.id === pendingFlagTransfer.receiverId) ?? null;
+        const requester = match.players.find((player) => player.id === pendingFlagTransfer.requesterId) ?? null;
+        if (!receiver || !requester) {
+            return null;
+        }
+
+        const giver = nextFlagCarrierId === receiver.id ? requester : receiver;
+        const beneficiary = nextFlagCarrierId === receiver.id ? receiver : requester;
+        return `${beneficiary.name} obtient le drapeau de ${giver.name}.`;
+    }
+
+    private finishCtfMatchIfFlagTransferWins(
+        session: GameSessionRuntime,
+        accepted: boolean,
+        nextFlagCarrierId: string | null,
+    ): boolean {
+        if (!accepted || !nextFlagCarrierId || !this.isCtfWinner(session.match, nextFlagCarrierId)) {
+            return false;
+        }
+
+        const winner = session.match.players.find((player) => player.id === nextFlagCarrierId) ?? null;
+        if (!winner) {
+            return false;
+        }
+
+        session.match = {
+            ...session.match,
+            endState: {
+                id: crypto.randomUUID(),
+                winnerKind: 'team',
+                winnerPlayerId: winner.id,
+                winnerTeamId: winner.teamId ?? null,
+                message: `L equipe ${winner.teamId ?? '?'} remporte la partie: ${winner.name} ramene le drapeau a son point de depart.`,
+                resolvedAt: Date.now(),
+            },
+        };
+        this.finishMatch(session);
+        return true;
+    }
+
+    private resolveSurrenderTerminalState(
+        session: GameSessionRuntime,
+        sessionId: string,
+        nextPlayers: MatchPlayer[],
+    ): boolean {
+        if (nextPlayers.length === 0) {
+            clearGameSessionTimers(session);
+            this.sessions.delete(sessionId);
+            return true;
+        }
+
+        const missingTeamId = this.getMissingCtfTeamId(session.match.mode, nextPlayers);
+        if (missingTeamId) {
+            session.match = {
+                ...session.match,
+                endState: {
+                    id: crypto.randomUUID(),
+                    winnerKind: 'none',
+                    winnerPlayerId: null,
+                    winnerTeamId: null,
+                    message: `La partie est annulee: l equipe ${missingTeamId} n'a plus aucun joueur suite a des abandons.`,
+                    resolvedAt: Date.now(),
+                },
+            };
+            this.finishMatch(session);
+            return true;
+        }
+
+        if (nextPlayers.length !== 1) {
+            return false;
+        }
+
+        const remainingPlayer = nextPlayers[0];
+        session.match = {
+            ...session.match,
+            endState: {
+                id: crypto.randomUUID(),
+                winnerKind: 'none',
+                winnerPlayerId: null,
+                winnerTeamId: null,
+                message: `La partie se termine sans gagnant: ${remainingPlayer.name} est le dernier joueur encore en partie apres les abandons.`,
+                resolvedAt: Date.now(),
+            },
+        };
+        this.finishMatch(session);
+        return true;
+    }
+
+    private createSystemMessage(content: string): ChatMessage {
+        return {
+            id: crypto.randomUUID(),
+            author: 'Journal',
+            content,
+            createdAt: new Date().toISOString(),
+        };
     }
 
     private getDoorToggleContext(
@@ -526,7 +875,20 @@ export class GameSessionService {
 
         const attacker = session.match.players.find((player) => player.id === attackerId);
         const defender = session.match.players.find((player) => player.id === defenderId);
-        if (!attacker || !defender || !canStartCombat(attacker, defender)) {
+        if (!attacker || !defender) {
+            return null;
+        }
+
+        const adjacent = Math.abs(attacker.position.x - defender.position.x) + Math.abs(attacker.position.y - defender.position.y) === 1;
+        if (!adjacent) {
+            return null;
+        }
+
+        const sameTeam = session.match.mode === GameMode.CTF &&
+            attacker.teamId !== null &&
+            attacker.teamId !== undefined &&
+            attacker.teamId === defender.teamId;
+        if (sameTeam) {
             return null;
         }
 
