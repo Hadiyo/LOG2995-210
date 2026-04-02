@@ -71,7 +71,7 @@ export class GameSessionLifecycle {
                     winnerKind: 'none',
                     winnerPlayerId: null,
                     winnerTeamId: null,
-                    message: `La partie est annulée: l'equipe ${missingTeamId} n'a plus aucun joueur suite à des abandons.`,
+                    message: `La partie est annulée: l'équipe ${missingTeamId} n'a plus aucun joueur suite à des abandons.`,
                     resolvedAt: Date.now(),
                 },
             };
@@ -314,7 +314,7 @@ export class GameSessionLifecycle {
                 winnerKind: 'team',
                 winnerPlayerId: winner.id,
                 winnerTeamId: winner.teamId ?? null,
-                message: `L'equipe ${winner.teamId ?? '?'} remporte la partie: ${winner.name} ramène le drapeau à son point de départ.`,
+                message: `L'équipe ${winner.teamId ?? '?'} remporte la partie: ${winner.name} ramène le drapeau à son point de départ.`,
                 resolvedAt: Date.now(),
             },
         };
