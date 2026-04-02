@@ -374,6 +374,11 @@ export class GameSessionService {
                     this.endTurn(sessionId, playerId);
                 }
                 return;
+            case 'toggle-door':
+                if (!this.toggleDoor(sessionId, playerId, decision.position)) {
+                    this.endTurn(sessionId, playerId);
+                }
+                return;
             case 'end-turn':
                 this.endTurn(sessionId, playerId);
                 return;
