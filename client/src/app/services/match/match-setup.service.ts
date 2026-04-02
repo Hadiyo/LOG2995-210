@@ -60,6 +60,9 @@ export class MatchSetupService {
                 startingPosition: cloneVec2(startObject.position),
                 health: player.maxHealth,
                 combatWins: 0,
+                attackBonus: 0,
+                defenseBonus: 0,
+                arenaBuffTurnsRemaining: 0,
                 render: {
                     facing: PlayerFacing.Front,
                     pose: PlayerPose.Idle,
@@ -78,6 +81,8 @@ export class MatchSetupService {
             allObjects: map.objects.map((object) => ({ ...object, position: cloneVec2(object.position) })),
             allStartingPoints: availableStartObjects.map((object) => cloneVec2(object.position)),
             players: initializedPlayers,
+            sanctuaryStates: this.matchBoardService.buildSanctuaryStates(map.objects),
+            pendingSanctuaryChoice: null,
             endState: null,
         };
     }
@@ -100,28 +105,11 @@ export class MatchSetupService {
             return null;
         }
 
-        const normalizedPlayers = match.players.map((player) => ({
-            ...player,
-            baseAttack: player.baseAttack ?? DEFAULT_PLAYER_ATTACK,
-            baseDefense: player.baseDefense ?? DEFAULT_PLAYER_DEFENSE,
-            health: player.health ?? player.maxHealth,
-            combatWins: player.combatWins ?? 0,
-            controller: player.controller ?? 'human',
-            render: {
-                facing: player.render?.facing ?? PlayerFacing.Front,
-                pose: player.render?.pose ?? PlayerPose.Idle,
-                ...(player.render?.poseStartedAt ? { poseStartedAt: player.render.poseStartedAt } : {}),
-                ...(player.render?.poseDurationMs !== undefined ? { poseDurationMs: player.render.poseDurationMs } : {}),
-            },
-        }));
-        const allObjects = (match.allObjects ?? match.objects).map((object) => ({
-            ...object,
-            position: cloneVec2(object.position),
-        }));
-        const allStartingPoints = (match.allStartingPoints ?? allObjects
-            .filter((object) => object.type === ObjectType.START)
-            .map((object) => object.position))
-            .map((position) => cloneVec2(position));
+        const normalizedPlayers = match.players.map((player) => this.normalizeMatchPlayer(player));
+        const allObjects = this.cloneAllObjects(match);
+        const allStartingPoints = this.buildAllStartingPoints(match, allObjects);
+        const sanctuaryStates = this.normalizeSanctuaryStates(match, allObjects);
+        const pendingSanctuaryChoice = this.normalizePendingSanctuaryChoice(match, normalizedPlayers, sanctuaryStates);
 
         return {
             ...match,
@@ -129,6 +117,8 @@ export class MatchSetupService {
             players: normalizedPlayers,
             allObjects,
             allStartingPoints,
+            sanctuaryStates,
+            pendingSanctuaryChoice,
             endState: match.endState ?? null,
             objects: this.matchBoardService.buildVisibleObjects(allObjects, normalizedPlayers),
         };
@@ -166,5 +156,73 @@ export class MatchSetupService {
     private getCharacterMaxHealth(character: Character): number {
         return CHARACTER_BASE_ATTRIBUTES.vie +
             (character.bonuses.plusTwo === 'vie' ? CHARACTER_PLUS_TWO_VALUE : 0);
+    }
+
+    private normalizeMatchPlayer(player: MatchPlayer): MatchPlayer {
+        return {
+            ...player,
+            baseAttack: player.baseAttack ?? DEFAULT_PLAYER_ATTACK,
+            baseDefense: player.baseDefense ?? DEFAULT_PLAYER_DEFENSE,
+            health: player.health ?? player.maxHealth,
+            combatWins: player.combatWins ?? 0,
+            attackBonus: player.attackBonus ?? 0,
+            defenseBonus: player.defenseBonus ?? 0,
+            arenaBuffTurnsRemaining: player.arenaBuffTurnsRemaining ?? 0,
+            controller: player.controller ?? 'human',
+            render: this.normalizePlayerRender(player),
+        };
+    }
+
+    private cloneAllObjects(match: InitializedMatch) {
+        return (match.allObjects ?? match.objects).map((object) => ({
+            ...object,
+            position: cloneVec2(object.position),
+        }));
+    }
+
+    private buildAllStartingPoints(match: InitializedMatch, allObjects: InitializedMatch['allObjects']) {
+        return (match.allStartingPoints ?? allObjects
+            .filter((object) => object.type === ObjectType.START)
+            .map((object) => object.position))
+            .map((position) => cloneVec2(position));
+    }
+
+    private normalizeSanctuaryStates(match: InitializedMatch, allObjects: InitializedMatch['allObjects']) {
+        const sanctuaryStateMap = new Map(
+            this.matchBoardService.buildSanctuaryStates(allObjects).map((state) => [state.objectId, state]),
+        );
+        for (const state of match.sanctuaryStates ?? []) {
+            if (!sanctuaryStateMap.has(state.objectId)) {
+                continue;
+            }
+
+            sanctuaryStateMap.set(state.objectId, {
+                objectId: state.objectId,
+                cooldownTurnsRemaining: Math.max(0, state.cooldownTurnsRemaining ?? 0),
+            });
+        }
+
+        return [...sanctuaryStateMap.values()];
+    }
+
+    private normalizePendingSanctuaryChoice(
+        match: InitializedMatch,
+        players: MatchPlayer[],
+        sanctuaryStates: NonNullable<InitializedMatch['sanctuaryStates']>,
+    ) {
+        return match.pendingSanctuaryChoice &&
+            players.some((player) => player.id === match.pendingSanctuaryChoice?.playerId) &&
+            sanctuaryStates.some((state) => state.objectId === match.pendingSanctuaryChoice?.objectId)
+            ? match.pendingSanctuaryChoice
+            : null;
+    }
+
+    private normalizePlayerRender(player: MatchPlayer): NonNullable<MatchPlayer['render']> {
+        return {
+            facing: player.render?.facing ?? PlayerFacing.Front,
+            pose: player.render?.pose ?? PlayerPose.Idle,
+            ...(player.render?.poseStartedAt ? { poseStartedAt: player.render.poseStartedAt } : {}),
+            ...(player.render?.poseDurationMs !== undefined ? { poseDurationMs: player.render.poseDurationMs } : {}),
+        };
     }
 }

@@ -38,6 +38,7 @@ export class GameMapGridComponent {
   @Input() reachableCellKeys: ReadonlySet<string> = new Set<string>();
   @Input() reachableOriginKey: string | null = null;
   @Input() actionTargetCellKeys: ReadonlySet<string> = new Set<string>();
+  @Input() inactiveSanctuaryObjectIds: ReadonlySet<number> = new Set<number>();
   // Emits tile index when user clicks a cell.
   @Output() cellClick = new EventEmitter<number>();
   @Output() cellContextMenu = new EventEmitter<{ event: MouseEvent; index: number }>();
@@ -79,6 +80,10 @@ export class GameMapGridComponent {
   getObjectAtCell(cell: GameCell): MapObject | null {
     return this.objects.find((object) =>
       object.position.x === cell.position.x && object.position.y === cell.position.y) ?? null;
+  }
+
+  isUsedSanctuary(object: MapObject): boolean {
+    return this.inactiveSanctuaryObjectIds.has(object.id);
   }
 
   // Fallback avatar id if missing.

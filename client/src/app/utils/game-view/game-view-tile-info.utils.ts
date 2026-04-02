@@ -10,6 +10,7 @@ export function createSelectedTileInfo(
     mapCells: Signal<readonly GameCell[]>,
     mapObjects: Signal<readonly MapObject[]>,
     players: Signal<readonly Player[]>,
+    inactiveSanctuaryObjectIds: Signal<ReadonlySet<number>>,
 ): Signal<GameTileInfoModalData | null> {
     return computed(() => {
         const tileDetails = inspectedTile();
@@ -23,6 +24,6 @@ export function createSelectedTileInfo(
                 candidate.position.y === tileDetails.position.y,
         );
 
-        return cell ? buildTileInfoModalData(cell, mapObjects(), players()) : null;
+        return cell ? buildTileInfoModalData(cell, mapObjects(), players(), inactiveSanctuaryObjectIds()) : null;
     });
 }

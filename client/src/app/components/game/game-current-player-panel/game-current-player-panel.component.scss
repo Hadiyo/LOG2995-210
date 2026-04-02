@@ -134,3 +134,15 @@ h3 {
     gap: 8px;
   }
 }
+
+@media (max-width: 980px) {
+  :host,
+  .player-info-content {
+    height: auto;
+  }
+
+  .player-info-content,
+  .player-avatar {
+    flex: 0 0 auto;
+  }
+}

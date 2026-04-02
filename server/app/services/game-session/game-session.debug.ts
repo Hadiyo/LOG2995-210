@@ -10,7 +10,6 @@ export function canUseDebugTeleport(
 ): session is GameSessionRuntime {
     return !!session &&
         !!player &&
-        player.isOrganizer &&
         session.match.debugMode &&
         session.turnState.phase === 'active' &&
         session.turnState.activePlayerId === playerId &&
