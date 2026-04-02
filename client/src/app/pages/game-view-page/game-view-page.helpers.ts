@@ -109,7 +109,7 @@ export function syncMatchEndRedirect(
         }
         endRedirectRemainingMs.set(0);
         matchState.endLocalSession(endState.message);
-        void router.navigate(['/home']);
+        void router.navigate(['/end-game']);
     }, MATCH_END_REDIRECT_DURATION_MS);
 
     return {

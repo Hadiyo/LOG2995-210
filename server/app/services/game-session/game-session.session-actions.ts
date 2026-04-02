@@ -1,6 +1,7 @@
 import { ChatMessage } from '@common/chat/chat.interface';
 import { buildVisibleObjects } from '@common/game/match.utils';
 import { ObjectType } from '@common/maps/map.enums';
+import { EndStatsService } from '../end-stats.service';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { applyFacingTowardPosition } from './game-session.render';
@@ -10,6 +11,7 @@ export class GameSessionSessionActions {
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly lifecycle: GameSessionLifecycle,
+        private readonly endStatsService: EndStatsService,
     ) {}
 
     endTurn(sessionId: string, playerId: string): boolean {
@@ -20,6 +22,8 @@ export class GameSessionSessionActions {
             session.match.pendingSanctuaryChoice) {
             return false;
         }
+
+        this.endStatsService.endTurn(sessionId);
 
         this.lifecycle.advanceToNextTurn(session);
         return true;

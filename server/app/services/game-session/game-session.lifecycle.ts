@@ -9,7 +9,7 @@ import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SessionSocketEvents } from '@common/socket-events';
 import { EventEmitter } from 'events';
-import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
+import { EndStatsService } from '../end-stats.service';
 import {
     ACTIVE_TURN_DURATION_MS,
     createActiveTurnState,
@@ -18,12 +18,14 @@ import {
     SNAPSHOT_TICK_MS,
     TRANSITION_DURATION_MS,
 } from './game-session.runtime';
+import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
 import { clearGameSessionTimers, tickGameSessionTimers } from './game-session.timers';
 
 export class GameSessionLifecycle {
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly events: EventEmitter,
+        private readonly endStatsService: EndStatsService,
     ) {}
 
     startTransition(session: GameSessionRuntime): void {
@@ -59,6 +61,7 @@ export class GameSessionLifecycle {
         if (nextPlayers.length === 0) {
             clearGameSessionTimers(session);
             this.sessions.delete(sessionId);
+            this.endStatsService.endSession(sessionId);
             return true;
         }
 
@@ -119,7 +122,7 @@ export class GameSessionLifecycle {
             pendingSanctuaryChoice: null,
         };
         this.emitSnapshot(session);
-        this.sessions.delete(session.sessionId);
+        this.events.emit(SessionSocketEvents.EndGame, session.sessionId);
     }
 
     emitSnapshot(session: GameSessionRuntime): void {

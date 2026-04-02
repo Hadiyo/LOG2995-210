@@ -1,7 +1,8 @@
-import { buildVisibleObjects, resolveFlagCarrier } from '@common/game/match.utils';
 import { MatchSanctuaryChoice } from '@common/game/match.interface';
+import { buildVisibleObjects, resolveFlagCarrier } from '@common/game/match.utils';
 import { ObjectType } from '@common/maps/map.enums';
 import { PlayerPose } from '@common/player/player.interface';
+import { EndStatsService } from '../end-stats.service';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import {
     ATTACK_POSE_DURATION_MS,
@@ -11,19 +12,20 @@ import {
 } from './game-session.match';
 import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
 import {
-    beginGameSessionSanctuaryChoice,
-    resolveGameSessionSanctuaryChoice,
-} from './game-session.sanctuary';
-import {
     CLASSIC_WIN_THRESHOLD,
     GameSessionRuntime,
     resolveRespawnPosition,
 } from './game-session.runtime';
+import {
+    beginGameSessionSanctuaryChoice,
+    resolveGameSessionSanctuaryChoice,
+} from './game-session.sanctuary';
 
 export class GameSessionActions {
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly lifecycle: GameSessionLifecycle,
+        private readonly endStatsService: EndStatsService,
     ) {}
 
     movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
@@ -45,6 +47,8 @@ export class GameSessionActions {
         if (cost === null || cost > session.turnState.movementPointsRemaining) {
             return false;
         }
+
+        this.endStatsService.visitTile(sessionId, destination, playerId);
 
         const nextPlayers = session.match.players.map((player) =>
             player.id === playerId
@@ -153,6 +157,8 @@ export class GameSessionActions {
             return false;
         }
 
+        this.endStatsService.useDoor(sessionId, position);
+
         const { session, player } = actionContext;
         const nextMap = session.match.map.map((cell) =>
             cell.position.x === position.x && cell.position.y === position.y
@@ -243,6 +249,8 @@ export class GameSessionActions {
             ...session.turnState,
             actionTaken: true,
         };
+
+        this.endStatsService.startCombat(sessionId, attackerId, defenderId);
 
         if (session.match.endState) {
             this.lifecycle.finishMatch(session);
