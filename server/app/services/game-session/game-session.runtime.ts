@@ -20,6 +20,7 @@ export interface GameSessionRuntime {
     transitionTimeoutId: NodeJS.Timeout | null;
     activeTurnTimeoutId: NodeJS.Timeout | null;
     timerIntervalId: NodeJS.Timeout | null;
+    virtualDecisionTimeoutId: NodeJS.Timeout | null;
 }
 
 export function buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[], messages: ChatMessage[] = []): GameSessionRuntime {
@@ -54,6 +55,7 @@ export function buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[],
         transitionTimeoutId: null,
         activeTurnTimeoutId: null,
         timerIntervalId: null,
+        virtualDecisionTimeoutId: null,
     };
 }
 

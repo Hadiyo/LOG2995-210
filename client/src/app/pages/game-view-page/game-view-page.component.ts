@@ -27,7 +27,7 @@ import { positionKey } from '@app/services/match/match-geometry';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { createPanelAvatarDirection, createPanelAvatarId, createPanelAvatarState } from '@app/utils/game-view/game-view-avatar.utils';
 import { getPhaseDescription, getPhaseHeadline } from '@app/utils/game-view/game-view-phase.utils';
-import { toGamePlayer } from '@app/utils/game-view/game-view-player.utils';
+import { getActivePanelPlayer, getVirtualPlayerBadgeLabel, toGamePlayer } from '@app/utils/game-view/game-view-player.utils';
 import { startLocalPoseRefreshClock, stopLocalPoseRefreshClock } from '@app/utils/game-view/game-view-pose-clock.utils';
 import { createSelectedTileInfo } from '@app/utils/game-view/game-view-tile-info.utils';
 import { ChatMessage } from '@common/chat/chat.interface';
@@ -156,18 +156,16 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.isTurnStatusPanelOpen() || this.display.turnState()?.phase === 'transition',
     );
     protected readonly canCloseTurnStatusOverlay = computed<boolean>(() => this.display.turnState()?.phase !== 'transition');
-    protected readonly activePanelName = computed<string | null>(() => {
-        const turnState = this.display.turnState();
-        if (!turnState) {
-            return null;
-        }
-
-        if (turnState.phase === 'active') {
-            return this.display.currentActivePlayer()?.name ?? null;
-        }
-
-        return this.display.transitionTargetPlayer()?.name ?? null;
-    });
+    protected readonly activePanelPlayer = computed<Player | null>(() =>
+        getActivePanelPlayer(
+            this.display.turnState()?.phase ?? null,
+            this.activePlayer(),
+            this.players(),
+            this.display.transitionTargetPlayer()?.id ?? null,
+        ),
+    );
+    protected readonly activePanelName = computed<string | null>(() => this.activePanelPlayer()?.information.name ?? null);
+    protected readonly activePanelBadge = computed<string | null>(() => getVirtualPlayerBadgeLabel(this.activePanelPlayer()?.information));
     protected readonly reachableCellKeys = computed<ReadonlySet<string>>(
         () => new Set<string>(this.display.reachableTiles().keys()),
     );

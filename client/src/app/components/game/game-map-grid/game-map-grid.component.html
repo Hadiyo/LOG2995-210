@@ -30,7 +30,11 @@
 
       <!-- Optional player layer if a player occupies this cell -->
       @if (getPlayerAtCell(cell); as player) {
-        <span class="player-layer" [ngClass]="getTeamClass(player.information.teamId)">
+        <span
+          class="player-layer"
+          [ngClass]="getTeamClass(player.information.teamId)"
+          [attr.title]="getVirtualPlayerTitle(player)"
+        >
           <span class="player-layer__avatar-frame">
             <app-character-sprite
               [avatarId]="getAvatarId(player)"
@@ -40,8 +44,15 @@
               [direction]="getPlayerDirection(player)"
               [fitToHost]="true"
               [smoothingEnabled]="true"
-              [ariaLabel]="'Avatar de ' + player.information.name"
+              [ariaLabel]="getAvatarAriaLabel(player)"
             />
+            @if (isVirtualPlayer(player)) {
+              <span
+                class="player-bot-icon"
+                [attr.data-virtual-profile]="getVirtualPlayerProfile(player)"
+                aria-hidden="true"
+              ></span>
+            }
             @if (player.state.hasFlag) {
               <span
                 class="player-layer__flag-badge"

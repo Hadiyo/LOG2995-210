@@ -1,5 +1,6 @@
 import { ChatMessage } from '@common/chat/chat.interface';
 import { buildVisibleObjects } from '@common/game/match.utils';
+import { MatchPlayer } from '@common/game/match.interface';
 import { ObjectType } from '@common/maps/map.enums';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { GameSessionLifecycle } from './game-session.lifecycle';
@@ -88,7 +89,10 @@ export class GameSessionSessionActions {
             return false;
         }
 
-        const departingPlayer = session.match.players.find((player) => player.id === playerId);
+        const departingPlayer = this.getHumanDepartingPlayer(session, playerId);
+        if (!departingPlayer) {
+            return false;
+        }
         const organizerLeftWhileDebugEnabled = !!departingPlayer?.isOrganizer && session.match.debugMode;
         const nextPlayers = session.match.players.filter((player) => player.id !== playerId);
         if (nextPlayers.length === session.match.players.length) {
@@ -191,5 +195,10 @@ export class GameSessionSessionActions {
         session.messages.push(message);
         this.lifecycle.emitSnapshot(session);
         return message;
+    }
+
+    private getHumanDepartingPlayer(session: GameSessionRuntime, playerId: string): MatchPlayer | null {
+        const departingPlayer = session.match.players.find((player) => player.id === playerId) ?? null;
+        return !departingPlayer || departingPlayer.controller === 'virtual' ? null : departingPlayer;
     }
 }
