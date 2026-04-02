@@ -1,5 +1,5 @@
 import { ChatMessage } from './chat/chat.interface';
-import { InitializedMatch, MatchLobbyPlayer } from './game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, VirtualPlayerProfile } from './game/match.interface';
 import { MatchTurnState } from './game/turn.interface';
 
 export enum SocketEvents {
@@ -49,6 +49,8 @@ export enum CombatSocketEvents {
     EndGameTurn = 'endGameTurn',
     StartCombat = 'startCombat',
     ToggleDoor = 'toggleDoor',
+    RequestFlagTransfer = 'requestFlagTransfer',
+    ResolveFlagTransfer = 'resolveFlagTransfer',
 }
 
 export enum WaitingRoomEvents {
@@ -56,6 +58,7 @@ export enum WaitingRoomEvents {
     JoinWaitingRoom = 'joinWaitingRoom',
     LeaveWaitingRoom = 'leaveWaitingRoom',
     KickWaitingRoomPlayer = 'kickWaitingRoomPlayer',
+    AddWaitingRoomVirtualPlayer = 'addWaitingRoomVirtualPlayer',
     SendWaitingRoomMessage = 'sendWaitingRoomMessage',
     StartWaitingRoomGame = 'startWaitingRoomGame',
 
@@ -103,6 +106,11 @@ export interface LeaveWaitingRoomPayload {
 export interface KickWaitingRoomPlayerPayload {
     accessCode: string;
     playerId: string;
+}
+
+export interface AddWaitingRoomVirtualPlayerPayload {
+    accessCode: string;
+    profile: VirtualPlayerProfile;
 }
 
 export interface SendWaitingRoomMessagePayload {
@@ -161,6 +169,18 @@ export interface ToggleDoorPayload {
 export interface SurrenderGamePayload {
     sessionId: string;
     playerId: string;
+}
+
+export interface RequestFlagTransferPayload {
+    sessionId: string;
+    playerId: string;
+    teammateId: string;
+}
+
+export interface ResolveFlagTransferPayload {
+    sessionId: string;
+    playerId: string;
+    accepted: boolean;
 }
 
 export interface ToggleDebugModePayload {

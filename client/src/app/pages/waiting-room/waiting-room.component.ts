@@ -69,6 +69,10 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     this.waitingRoomService.startGame();
   }
 
+  protected addVirtualPlayer(profile: 'aggressive' | 'defensive'): void {
+    this.waitingRoomService.addVirtualPlayer(profile);
+  }
+
   protected onMessageSubmit(content: string): void {
     this.waitingRoomService.sendMessage(content);
   }

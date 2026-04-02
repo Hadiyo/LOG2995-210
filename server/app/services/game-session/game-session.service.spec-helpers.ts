@@ -152,6 +152,7 @@ export const makeRuntime = (overrides: Partial<GameSessionRuntime> = {}): GameSe
     transitionTimeoutId: null,
     activeTurnTimeoutId: null,
     timerIntervalId: null,
+    virtualDecisionTimeoutId: null,
     ...overrides,
 });
 

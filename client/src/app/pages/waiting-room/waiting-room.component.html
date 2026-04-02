@@ -49,6 +49,9 @@
               @if (player.isOrganizer) {
                 <span class="badge badge--organizer">Organisateur</span>
               }
+              @if (player.controller === 'virtual') {
+                <span class="badge badge--virtual">JV · {{ player.virtualProfile === 'aggressive' ? 'Agressif' : 'Defensif' }}</span>
+              }
             </div>
 
             @if (isOrganizer && !player.isOrganizer) {
@@ -81,6 +84,16 @@
     </button>
 
     @if (isOrganizer) {
+      <button class="btn-secondary"
+              [disabled]="(isLocked$ | async) ?? false"
+              (click)="addVirtualPlayer('aggressive')">
+        + JV Agressif
+      </button>
+      <button class="btn-secondary"
+              [disabled]="(isLocked$ | async) ?? false"
+              (click)="addVirtualPlayer('defensive')">
+        + JV Defensif
+      </button>
       <button class="btn-primary"
               [disabled]="((players$ | async)?.length ?? 0) <= 1"
               (click)="startGame()">

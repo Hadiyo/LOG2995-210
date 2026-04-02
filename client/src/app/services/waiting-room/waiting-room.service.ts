@@ -5,6 +5,7 @@ import { SocketManagerService } from '@app/services/socket-manager/socket-manage
 import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
 import {
+  AddWaitingRoomVirtualPlayerPayload,
   CreateWaitingRoomPayload,
   JoinWaitingRoomPayload,
   KickWaitingRoomPlayerPayload,
@@ -87,6 +88,7 @@ export class WaitingRoomService {
       ...player,
       isOrganizer: true,
       controller: 'human',
+      virtualProfile: null,
     };
 
     this.socketManager.send<CreateWaitingRoomPayload>(WaitingRoomEvents.CreateWaitingRoom, {
@@ -105,6 +107,7 @@ export class WaitingRoomService {
       ...player,
       isOrganizer: false,
       controller: 'human',
+      virtualProfile: null,
     };
 
     this.socketManager.send<JoinWaitingRoomPayload>(WaitingRoomEvents.JoinWaitingRoom, {
@@ -160,6 +163,17 @@ export class WaitingRoomService {
     this.socketManager.send<KickWaitingRoomPlayerPayload>(WaitingRoomEvents.KickWaitingRoomPlayer, {
       accessCode: this.code,
       playerId: player.id,
+    });
+  }
+
+  addVirtualPlayer(profile: 'aggressive' | 'defensive'): void {
+    if (!this.code || !this.mePlayer?.isOrganizer) {
+      return;
+    }
+
+    this.socketManager.send<AddWaitingRoomVirtualPlayerPayload>(WaitingRoomEvents.AddWaitingRoomVirtualPlayer, {
+      accessCode: this.code,
+      profile,
     });
   }
 

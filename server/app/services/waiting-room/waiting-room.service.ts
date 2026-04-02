@@ -5,6 +5,7 @@ import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { WaitingRoomPreview } from '@common/game/waiting-room-preview.interface';
 import { MapSize } from '@common/maps/map.enums';
 import {
+    AddWaitingRoomVirtualPlayerPayload,
     CreateWaitingRoomPayload,
     JoinWaitingRoomPayload,
     KickWaitingRoomPlayerPayload,
@@ -15,6 +16,7 @@ import {
 import { Injectable } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import {
+    buildWaitingRoomVirtualPlayer,
     findWaitingRoomAccessCode,
     resolveUniqueWaitingRoomPlayerName,
 } from './waiting-room-player.utils';
@@ -155,6 +157,29 @@ export class WaitingRoomService {
         this.emitWaitingRoomUpdated(room);
         this.emitDirectoryUpdated();
         return true;
+    }
+
+    addVirtualPlayer(organizerSocketId: string, payload: AddWaitingRoomVirtualPlayerPayload): void {
+        const room = this.rooms.get(payload.accessCode);
+        if (!room) {
+            this.emitError(organizerSocketId, 'Salle introuvable.');
+            return;
+        }
+
+        if (room.organizerSocketId !== organizerSocketId) {
+            this.emitError(organizerSocketId, 'Seul l organisateur peut ajouter des joueurs virtuels.');
+            return;
+        }
+
+        if (room.isStarting || room.isLocked || room.players.length >= room.maxPlayers) {
+            this.emitError(organizerSocketId, 'La salle est verrouillee ou complete.');
+            return;
+        }
+
+        room.players.push(buildWaitingRoomVirtualPlayer(room, payload.profile));
+        this.updateLockState(room);
+        this.emitWaitingRoomUpdated(room);
+        this.emitDirectoryUpdated();
     }
 
     addMessage(socketId: string, payload: SendWaitingRoomMessagePayload): void {

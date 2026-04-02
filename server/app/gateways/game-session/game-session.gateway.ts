@@ -9,6 +9,8 @@ import {
     getGameSessionRoom,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
+    RequestFlagTransferPayload,
+    ResolveFlagTransferPayload,
     SessionSocketEvents,
     StartCombatPayload,
     SurrenderGamePayload,
@@ -180,6 +182,36 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
 
         if (!this.gameSessionService.toggleDoor(payload.sessionId, payload.playerId, payload.position)) {
             client.emit(SessionSocketEvents.GameSessionError, { message: 'Action de porte refusee.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(CombatSocketEvents.RequestFlagTransfer)
+    requestFlagTransfer(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: RequestFlagTransferPayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Transfert du drapeau refuse.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.requestFlagTransfer(payload.sessionId, payload.playerId, payload.teammateId)) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Transfert du drapeau refuse.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(CombatSocketEvents.ResolveFlagTransfer)
+    resolveFlagTransfer(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: ResolveFlagTransferPayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Reponse de transfert refusee.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.resolveFlagTransfer(payload.sessionId, payload.playerId, payload.accepted)) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Reponse de transfert refusee.' } satisfies GameSessionErrorPayload);
         }
     }
 
