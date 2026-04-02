@@ -160,7 +160,7 @@ export class CharacterCreationPageComponent implements OnInit {
     this.matchStateService.registerLocalPlayer(character, !accessCode);
     const localPlayer = this.matchStateService.localPlayer();
     if (!localPlayer) {
-      this.matchStateService.errorMessage.set("Impossible de preparer la salle d'attente.");
+      this.matchStateService.errorMessage.set("Impossible de préparer la salle d'attente.");
       return;
     }
 
@@ -169,7 +169,7 @@ export class CharacterCreationPageComponent implements OnInit {
     } else {
       const selectedMap = this.matchStateService.selectedMap();
       if (!selectedMap) {
-        this.matchStateService.errorMessage.set("Impossible de preparer la salle d'attente.");
+        this.matchStateService.errorMessage.set("Impossible de préparer la salle d'attente.");
         return;
       }
       this.waitingRoomService.initAsOrganizer(selectedMap.id, localPlayer);
