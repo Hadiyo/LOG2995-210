@@ -1,4 +1,4 @@
-import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchSanctuaryState } from '@common/game/match.interface';
 import { buildTeamAssignments, buildVisibleObjects } from '@common/game/match.utils';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
@@ -6,6 +6,10 @@ import { PlayerFacing, PlayerPose, PlayerRenderState } from '@common/player/play
 
 export const WALK_POSE_DURATION_MS = 180;
 export const ATTACK_POSE_DURATION_MS = 220;
+export const SANCTUARY_COOLDOWN_TURNS = 3;
+export const SANCTUARY_DOUBLE_OR_NOTHING_THRESHOLD = 0.5;
+export const ARENA_BUFF_TURNS = 2;
+export const SANCTUARY_HEAL_VALUE = 2;
 
 export function buildInitializedMatchFromEditor(
     map: EditorMapDetails,
@@ -26,6 +30,9 @@ export function buildInitializedMatchFromEditor(
         teamId: teamAssignments[index],
         health: player.maxHealth,
         combatWins: 0,
+        attackBonus: 0,
+        defenseBonus: 0,
+        arenaBuffTurnsRemaining: 0,
         render: createGameSessionInitialRenderState(),
     }));
 
@@ -42,6 +49,8 @@ export function buildInitializedMatchFromEditor(
         players: initializedPlayers,
         flagCarrierId: null,
         pendingFlagTransfer: null,
+        sanctuaryStates: buildGameSessionSanctuaryStates(map.objects),
+        pendingSanctuaryChoice: null,
         endState: null,
     };
 }
@@ -98,8 +107,31 @@ export function getGameSessionMovementCost(match: InitializedMatch, destination:
     return 1;
 }
 
+export function buildGameSessionVisibleObjects(
+    objects: InitializedMatch['allObjects'],
+    players: MatchPlayer[],
+): MapObject[] {
+    const activeStarts = new Set(players.map((player) => `${player.startingPosition.x}:${player.startingPosition.y}`));
+    return objects
+        .filter((object) => object.type !== ObjectType.START || activeStarts.has(`${object.position.x}:${object.position.y}`))
+        .map((object) => ({ ...object, position: { ...object.position } }));
+}
+
+export function buildGameSessionSanctuaryStates(objects: MapObject[]): MatchSanctuaryState[] {
+    return objects
+        .filter((object) => isGameSessionSanctuaryObject(object))
+        .map((object) => ({ objectId: object.id, cooldownTurnsRemaining: 0 }));
+}
+
+export function isGameSessionSanctuaryObject(object: MapObject): boolean {
+    return object.type === ObjectType.REGEN || object.type === ObjectType.ARENA;
+}
+
+export function isGameSessionSanctuaryActive(match: InitializedMatch, objectId: number): boolean {
+    return (match.sanctuaryStates?.find((state) => state.objectId === objectId)?.cooldownTurnsRemaining ?? 0) === 0;
+}
 export function getGameSessionObjectCovering(objects: MapObject[], position: Vec2): MapObject | null {
-    return objects.find((object) => objectFootprint(object).some((tile) => samePosition(tile, position))) ?? null;
+    return objects.find((object) => getGameSessionObjectFootprint(object).some((tile) => samePosition(tile, position))) ?? null;
 }
 
 export function shuffle<T>(values: readonly T[], random: () => number): T[] {
@@ -115,7 +147,7 @@ function samePosition(left: Vec2, right: Vec2): boolean {
     return left.x === right.x && left.y === right.y;
 }
 
-function objectFootprint(object: MapObject): Vec2[] {
+export function getGameSessionObjectFootprint(object: MapObject): Vec2[] {
     if (object.size !== ObjectSize.L) {
         return [{ ...object.position }];
     }

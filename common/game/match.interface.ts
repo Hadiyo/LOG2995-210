@@ -6,6 +6,7 @@ import { PlayerRenderState } from '../player/player.interface';
 export type MatchTeamId = 'A' | 'B';
 export type MatchPlayerController = 'human';
 export type MatchFlagTransferKind = 'offer' | 'request';
+export type MatchSanctuaryChoice = 'normal' | 'double-or-nothing' | 'cancel';
 
 export interface MatchLobbyPlayer {
     id: string;
@@ -27,6 +28,9 @@ export interface MatchPlayer extends MatchLobbyPlayer {
     teamId?: MatchTeamId | null;
     health: number;
     combatWins: number;
+    attackBonus?: number;
+    defenseBonus?: number;
+    arenaBuffTurnsRemaining?: number;
     render?: PlayerRenderState;
 }
 
@@ -67,6 +71,16 @@ export interface MatchEndState {
     resolvedAt: number;
 }
 
+export interface MatchSanctuaryState {
+    objectId: number;
+    cooldownTurnsRemaining: number;
+}
+
+export interface MatchPendingSanctuaryChoice {
+    playerId: string;
+    objectId: number;
+}
+
 export interface InitializedMatch {
     mapId: string;
     mapName: string;
@@ -80,5 +94,7 @@ export interface InitializedMatch {
     players: MatchPlayer[];
     flagCarrierId?: string | null;
     pendingFlagTransfer?: MatchPendingFlagTransfer | null;
+    sanctuaryStates?: MatchSanctuaryState[];
+    pendingSanctuaryChoice?: MatchPendingSanctuaryChoice | null;
     endState?: MatchEndState | null;
 }

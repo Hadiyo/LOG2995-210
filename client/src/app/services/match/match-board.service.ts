@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import {
     InitializedMatch,
     MatchPlayer,
+    MatchSanctuaryState,
     MatchTileInspection,
 } from '@common/game/match.interface';
 import { buildVisibleObjects as buildMatchVisibleObjects } from '@common/game/match.utils';
@@ -58,6 +59,20 @@ export class MatchBoardService {
 
     getObjectCovering(objects: MapObject[], position: Vec2): MapObject | null {
         return objects.find((object) => this.objectFootprint(object).some((tile) => samePosition(tile, position))) ?? null;
+    }
+
+    buildSanctuaryStates(objects: MapObject[]): MatchSanctuaryState[] {
+        return objects
+            .filter((object) => this.isSanctuaryObject(object))
+            .map((object) => ({ objectId: object.id, cooldownTurnsRemaining: 0 }));
+    }
+
+    isSanctuaryObject(object: MapObject): boolean {
+        return object.type === ObjectType.REGEN || object.type === ObjectType.ARENA;
+    }
+
+    isSanctuaryActive(match: InitializedMatch, objectId: number): boolean {
+        return (match.sanctuaryStates?.find((state) => state.objectId === objectId)?.cooldownTurnsRemaining ?? 0) === 0;
     }
 
     inspectTile(match: InitializedMatch, position: Vec2): MatchTileInspection | null {

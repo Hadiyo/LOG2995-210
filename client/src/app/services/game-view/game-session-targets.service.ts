@@ -71,16 +71,19 @@ export class GameSessionTargetsService {
     }
 
     getDoorActionTargets(): Set<string> {
+        return this.getDoorActionTargetsForPlayer(this.display.findPlayerById(this.display.localPlayer()?.id ?? null));
+    }
+
+    getDoorActionTargetsForPlayer(positionedPlayer: MatchPlayer | null): Set<string> {
         const currentMatch = this.display.match();
-        const localPlayer = this.display.findPlayerById(this.display.localPlayer()?.id ?? null);
-        if (!currentMatch || !localPlayer) {
+        if (!currentMatch || !positionedPlayer) {
             return new Set<string>();
         }
 
         const adjacentDoors = currentMatch.map.filter((cell) => {
             const isAdjacent =
-                Math.abs(cell.position.x - localPlayer.position.x) +
-                    Math.abs(cell.position.y - localPlayer.position.y) ===
+                Math.abs(cell.position.x - positionedPlayer.position.x) +
+                    Math.abs(cell.position.y - positionedPlayer.position.y) ===
                 1;
             const occupiedByPlayer = currentMatch.players.some(
                 (player) => player.position.x === cell.position.x && player.position.y === cell.position.y,
@@ -98,10 +101,35 @@ export class GameSessionTargetsService {
         return new Set(adjacentDoors.map((cell) => positionKey(cell.position)));
     }
 
+    getSanctuaryActionTargets(): Set<string> {
+        return this.getSanctuaryActionTargetsForPlayer(this.display.findPlayerById(this.display.localPlayer()?.id ?? null));
+    }
+
+    getSanctuaryActionTargetsForPlayer(positionedPlayer: MatchPlayer | null): Set<string> {
+        const currentMatch = this.display.match();
+        if (!currentMatch || !positionedPlayer) {
+            return new Set<string>();
+        }
+
+        return new Set(
+            currentMatch.allObjects
+                .filter((object) =>
+                    this.matchBoardService.isSanctuaryObject(object) &&
+                    this.matchBoardService.isSanctuaryActive(currentMatch, object.id) &&
+                    !(object.type === ObjectType.ARENA && (positionedPlayer.arenaBuffTurnsRemaining ?? 0) > 0) &&
+                    this.matchBoardService.objectFootprint(object)
+                        .some((tile) => this.matchBoardService.areAdjacent(positionedPlayer.position, tile)),
+                )
+                .flatMap((object) => this.matchBoardService.objectFootprint(object))
+                .map((position) => positionKey(position)),
+        );
+    }
+
     hasAnyActionTarget(player: MatchPlayer): boolean {
         return this.getCombatActionTargetsForPlayer(player).size > 0 ||
-            this.getDoorActionTargets().size > 0 ||
-            this.getFlagTransferTargetsForPlayer(player).size > 0;
+            this.getDoorActionTargetsForPlayer(player).size > 0 ||
+            this.getFlagTransferTargetsForPlayer(player).size > 0 ||
+            this.getSanctuaryActionTargetsForPlayer(player).size > 0;
     }
 
     hasAvailableMovement(player: MatchPlayer, movementPointsRemaining: number): boolean {

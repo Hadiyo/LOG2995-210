@@ -20,7 +20,12 @@
 
       <!-- Optional object layer if object exists on this cell -->
       @if (getObjectAtCell(cell); as object) {
-        <span class="obj" [attr.data-obj]="object.type" [attr.data-size]="object.size"></span>
+        <span
+          class="obj"
+          [attr.data-obj]="object.type"
+          [attr.data-size]="object.size"
+          [attr.data-used]="isUsedSanctuary(object) ? 'true' : null"
+        ></span>
       }
 
       <!-- Optional player layer if a player occupies this cell -->

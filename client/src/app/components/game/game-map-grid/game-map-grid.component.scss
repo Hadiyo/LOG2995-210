@@ -7,7 +7,7 @@
   display: grid;
   place-items: center;
   width: 100%;
-  height: 100%;
+  height: auto;
   min-height: 0;
 }
 
@@ -16,9 +16,10 @@
   --cols: 10;
   --rows: 10;
 
-  /* Keep full map visible: constrained by container, max size, and viewport height */
-  width: min(100%, var(--grid-max-size), calc(100dvh - var(--grid-viewport-offset)));
-  max-height: 100%;
+  /* Maps are square in the shared model, so size from width first and cap against viewport height. */
+  width: min(100%, calc(100dvh - var(--grid-viewport-offset)), var(--grid-max-size));
+  height: auto;
+  max-width: 100%;
   aspect-ratio: 1 / 1;
   margin: 0 auto;
 
@@ -202,8 +203,31 @@
   background-image: var(--object-flag-img);
 }
 
-.obj[data-obj='REGEN'] { background-image: var(--object-heal-img); }
-.obj[data-obj='ARENA'] { background-image: var(--object-fight-img); }
+.obj[data-obj='REGEN'] {
+  background-image: var(--object-heal-img);
+  animation: obj-ready-glow 2.5s infinite alternate ease-in-out;
+}
+.obj[data-obj='ARENA'] {
+  background-image: var(--object-fight-img);
+  animation: obj-ready-glow 2.5s infinite alternate ease-in-out;
+}
+.obj[data-obj='REGEN'][data-used='true'] {
+  background-image: var(--object-heal-used-img);
+  animation: none;
+}
+.obj[data-obj='ARENA'][data-used='true'] {
+  background-image: var(--object-fight-used-img);
+  animation: none;
+}
+
+@keyframes obj-ready-glow {
+  0% {
+    filter: drop-shadow(0 0 1px var(--accent-secondary));
+  }
+  100% {
+    filter: drop-shadow(0 0 5px var(--accent-secondary));
+  }
+}
 
 /* 2x2 objects span 4 tiles visually from top-left anchor */
 .obj[data-size='2x2'] {

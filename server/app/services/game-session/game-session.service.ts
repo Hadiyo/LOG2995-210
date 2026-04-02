@@ -1,7 +1,14 @@
 /* eslint-disable max-lines */
 import { MapService } from '@app/services/map/map.service';
 import { ChatMessage } from '@common/chat/chat.interface';
-import { InitializedMatch, MatchLobbyPlayer, MatchPendingFlagTransfer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
+import {
+    InitializedMatch,
+    MatchLobbyPlayer,
+    MatchPendingFlagTransfer,
+    MatchPlayer,
+    MatchSanctuaryChoice,
+    MatchTeamId,
+} from '@common/game/match.interface';
 import { buildVisibleObjects, resolveFlagCarrier } from '@common/game/match.utils';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
@@ -17,6 +24,11 @@ import {
     WALK_POSE_DURATION_MS,
 } from './game-session.match';
 import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
+import {
+    beginGameSessionSanctuaryChoice,
+    progressGameSessionSanctuaryEffects,
+    resolveGameSessionSanctuaryChoice,
+} from './game-session.sanctuary';
 import {
     ACTIVE_TURN_DURATION_MS,
     buildSession,
@@ -142,7 +154,10 @@ export class GameSessionService {
 
     endTurn(sessionId: string, playerId: string): boolean {
         const session = this.sessions.get(sessionId);
-        if (!session || session.turnState.phase !== 'active' || session.turnState.activePlayerId !== playerId) {
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== playerId ||
+            session.match.pendingSanctuaryChoice) {
             return false;
         }
 
@@ -241,57 +256,22 @@ export class GameSessionService {
                 nextPlayers,
                 nextFlagCarrierId,
             ),
+            pendingSanctuaryChoice: session.match.pendingSanctuaryChoice?.playerId === playerId
+                ? null
+                : session.match.pendingSanctuaryChoice ?? null,
         };
 
-        if (nextPlayers.length === 0) {
-            clearGameSessionTimers(session);
-            this.sessions.delete(sessionId);
-            return true;
-        }
-
-        const missingTeamId = this.getMissingCtfTeamId(session.match.mode, nextPlayers);
-        if (missingTeamId) {
-            session.match = {
-                ...session.match,
-                endState: {
-                    id: crypto.randomUUID(),
-                    winnerKind: 'none',
-                    winnerPlayerId: null,
-                    winnerTeamId: null,
-                    message: `La partie est annulee: l equipe ${missingTeamId} n'a plus aucun joueur suite a des abandons.`,
-                    resolvedAt: Date.now(),
-                },
-            };
-            this.finishMatch(session);
-            return true;
-        }
-
-        if (nextPlayers.length === 1) {
-            const remainingPlayer = nextPlayers[0];
-            session.match = {
-                ...session.match,
-                endState: {
-                    id: crypto.randomUUID(),
-                    winnerKind: 'none',
-                    winnerPlayerId: null,
-                    winnerTeamId: null,
-                    message: `La partie se termine sans gagnant: ${remainingPlayer.name} est le dernier joueur encore en partie apres les abandons.`,
-                    resolvedAt: Date.now(),
-                },
-            };
-            this.finishMatch(session);
-            return true;
-        }
-
-        const removedActivePlayer = session.turnState.activePlayerId === playerId ||
-            session.turnState.transitionTargetPlayerId === playerId;
-        if (removedActivePlayer) {
-            session.turnState = rebuildTurnStateAfterRosterChange(session.turnState, nextPlayers);
-            this.startTransition(session);
+        const removedTurnPlayer = this.isCurrentTurnPlayer(playerId, session.turnState);
+        if (this.finishSurrenderAfterRosterChange(session, sessionId, nextPlayers)) {
             return true;
         }
 
         session.turnState = rebuildTurnStateAfterRosterChange(session.turnState, nextPlayers);
+        if (removedTurnPlayer) {
+            this.startTransition(session);
+            return true;
+        }
+
         this.emitSnapshot(session);
         return true;
     }
@@ -362,7 +342,10 @@ export class GameSessionService {
 
     movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
         const session = this.sessions.get(sessionId);
-        if (!session || session.turnState.phase !== 'active' || session.turnState.activePlayerId !== playerId) {
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== playerId ||
+            session.match.pendingSanctuaryChoice) {
             return false;
         }
 
@@ -422,6 +405,56 @@ export class GameSessionService {
             };
             this.finishMatch(session);
             return true;
+        }
+
+        this.emitSnapshot(session);
+        return true;
+    }
+
+    useSanctuary(sessionId: string, playerId: string, sanctuaryId: number): boolean {
+        const session = this.sessions.get(sessionId);
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== playerId ||
+            session.turnState.actionTaken ||
+            session.match.endState) {
+            return false;
+        }
+
+        const pendingSanctuaryChoice = beginGameSessionSanctuaryChoice(session.match, playerId, sanctuaryId);
+        if (!pendingSanctuaryChoice) {
+            return false;
+        }
+
+        session.match = {
+            ...session.match,
+            pendingSanctuaryChoice,
+        };
+        this.emitSnapshot(session);
+        return true;
+    }
+
+    resolveSanctuaryChoice(sessionId: string, playerId: string, choice: MatchSanctuaryChoice): boolean {
+        const session = this.sessions.get(sessionId);
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== playerId ||
+            session.match.endState ||
+            session.match.pendingSanctuaryChoice?.playerId !== playerId) {
+            return false;
+        }
+
+        const resolution = resolveGameSessionSanctuaryChoice(session.match, choice, Math.random);
+        if (!resolution) {
+            return false;
+        }
+
+        session.match = resolution.nextMatch;
+        if (resolution.actionConsumed) {
+            session.turnState = {
+                ...session.turnState,
+                actionTaken: true,
+            };
         }
 
         this.emitSnapshot(session);
@@ -562,18 +595,63 @@ export class GameSessionService {
             return;
         }
 
-        if (session.match.pendingFlagTransfer) {
-            session.match = {
-                ...session.match,
-                pendingFlagTransfer: null,
-            };
-        }
-
+        const nextMatch = session.match.pendingFlagTransfer
+            ? { ...session.match, pendingFlagTransfer: null }
+            : session.match;
+        session.match = progressGameSessionSanctuaryEffects(nextMatch, session.turnState.activePlayerId);
         session.turnState = {
             ...session.turnState,
             currentTurnIndex: (session.turnState.currentTurnIndex + 1) % session.turnState.order.length,
         };
         this.startTransition(session);
+    }
+
+    private finishSurrenderAfterRosterChange(
+        session: GameSessionRuntime,
+        sessionId: string,
+        nextPlayers: MatchPlayer[],
+    ): boolean {
+        if (nextPlayers.length === 0) {
+            clearGameSessionTimers(session);
+            this.sessions.delete(sessionId);
+            return true;
+        }
+
+        const missingTeamId = this.getMissingCtfTeamId(session.match.mode, nextPlayers);
+        if (missingTeamId) {
+            session.match = {
+                ...session.match,
+                endState: {
+                    id: crypto.randomUUID(),
+                    winnerKind: 'none',
+                    winnerPlayerId: null,
+                    winnerTeamId: null,
+                    message: `La partie est annulee: l equipe ${missingTeamId} n'a plus aucun joueur suite a des abandons.`,
+                    resolvedAt: Date.now(),
+                },
+            };
+            this.finishMatch(session);
+            return true;
+        }
+
+        if (nextPlayers.length !== 1) {
+            return false;
+        }
+
+        const remainingPlayer = nextPlayers[0];
+        session.match = {
+            ...session.match,
+            endState: {
+                id: crypto.randomUUID(),
+                winnerKind: 'none',
+                winnerPlayerId: null,
+                winnerTeamId: null,
+                message: `La partie se termine sans gagnant: ${remainingPlayer.name} est le dernier joueur encore en partie apres les abandons.`,
+                resolvedAt: Date.now(),
+            },
+        };
+        this.finishMatch(session);
+        return true;
     }
 
     private finishMatch(session: GameSessionRuntime): void {
@@ -589,6 +667,11 @@ export class GameSessionService {
             activeTurnRemainingMs: 0,
             movementPointsRemaining: 0,
             actionTaken: true,
+            playerStates: session.turnState.playerStates.map((playerState) => ({ ...playerState, state: 'waiting' })),
+        };
+        session.match = {
+            ...session.match,
+            pendingSanctuaryChoice: null,
         };
         this.emitSnapshot(session);
         this.sessions.delete(session.sessionId);
@@ -613,6 +696,7 @@ export class GameSessionService {
             session.turnState.phase !== 'active' ||
             session.turnState.activePlayerId !== playerId ||
             session.turnState.actionTaken ||
+            session.match.pendingSanctuaryChoice ||
             session.match.endState) {
             return null;
         }
@@ -657,6 +741,7 @@ export class GameSessionService {
             session.turnState.phase !== 'active' ||
             session.turnState.activePlayerId !== attackerId ||
             session.turnState.actionTaken ||
+            session.match.pendingSanctuaryChoice ||
             session.match.endState) {
             return null;
         }
@@ -679,6 +764,10 @@ export class GameSessionService {
             attacker.teamId === null ||
             attacker.teamId === undefined ||
             attacker.teamId !== defender.teamId;
+    }
+
+    private isCurrentTurnPlayer(playerId: string, turnState: MatchTurnState): boolean {
+        return turnState.activePlayerId === playerId || turnState.transitionTargetPlayerId === playerId;
     }
 
     private isCtfWinner(match: InitializedMatch, playerId: string): boolean {

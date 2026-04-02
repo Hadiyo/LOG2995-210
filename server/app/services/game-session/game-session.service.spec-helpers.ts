@@ -10,7 +10,7 @@ import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
 export const ACTIVE_TURN_MS = 5000;
 export const MOVEMENT_POINTS_AFTER_MOVE = 3;
 
-export type GameSessionServiceInternals = GameSessionService & {
+export type GameSessionServiceInternals = {
     advanceToNextTurn: (...args: unknown[]) => unknown;
     emitSnapshot: (...args: unknown[]) => unknown;
     startTransition: (...args: unknown[]) => unknown;
@@ -41,6 +41,9 @@ export const makeMatchPlayer = (overrides: Partial<MatchPlayer> = {}): MatchPlay
     startingPosition: { x: 0, y: 0 },
     health: 6,
     combatWins: 0,
+    attackBonus: 0,
+    defenseBonus: 0,
+    arenaBuffTurnsRemaining: 0,
     render: {
         facing: PlayerFacing.Front,
         pose: PlayerPose.Idle,
@@ -114,6 +117,8 @@ export const makeMatch = (overrides: Partial<InitializedMatch> = {}): Initialize
         allStartingPoints: [{ x: 0, y: 0 }, { x: 1, y: 0 }],
         players,
         pendingFlagTransfer: null,
+        sanctuaryStates: [],
+        pendingSanctuaryChoice: null,
         endState: null,
         ...overrides,
     };

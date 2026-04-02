@@ -1,4 +1,5 @@
 :host {
+  --shared-action-panel-height: calc((var(--panel-padding) * 2) + 52px);
   --view-gap: 16px;
   --view-padding: 16px;
   --side-panel-left-width: 270px;
@@ -24,6 +25,7 @@
 }
 
 .panel {
+  box-sizing: border-box;
   border: 1px solid var(--border-soft);
   border-radius: var(--panel-radius);
   padding: var(--panel-padding);
@@ -34,10 +36,20 @@
   color: var(--accent-danger);
 }
 
+.map-column {
+  grid-area: map;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--view-gap);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .map-panel {
   position: relative;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   justify-items: center;
   align-content: start;
   gap: 10px;
@@ -60,19 +72,11 @@
   overflow: hidden;
 }
 
-.map-panel {
-  grid-area: map;
-}
-
 .side-panel--right {
   grid-area: right;
-  padding-bottom: 2px;
+  height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-}
-
-.side-panel--left {
-  overflow: hidden;
 }
 
 .panel--game-title {
@@ -88,7 +92,7 @@
 }
 
 .panel--player-info {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -96,7 +100,7 @@
 
 .panel--player-info__content {
   display: flex;
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
 }
@@ -191,7 +195,6 @@
 .panel__tab--active {
   background: color-mix(in srgb, var(--bg-main) 82%, transparent);
   color: var(--text-main);
-  box-shadow: none;
 }
 
 .panel__tab:focus-visible {
@@ -206,13 +209,13 @@
   align-items: stretch;
   gap: 10px;
   min-height: 0;
-  flex: 1 1 0;
+  flex: 1 1 auto;
   height: auto;
   overflow: hidden;
 }
 
 .messages app-game-chat-panel {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-height: 0;
   width: 100%;
 }
@@ -227,8 +230,16 @@
 }
 
 .panel--action-bar {
+  display: flex;
+  align-items: center;
   margin-top: auto;
   flex: 0 0 auto;
+  height: var(--shared-action-panel-height);
+}
+
+.panel--action-bar > app-game-action-bar {
+  display: block;
+  width: 100%;
 }
 
 .turn-status__headline {
@@ -312,6 +323,33 @@
   overflow: hidden;
 }
 
+.map-action-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 100%;
+  height: var(--shared-action-panel-height);
+  overflow: hidden;
+}
+
+.map-action-panel > app-game-map-action-prompt {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+.map-action-panel > .map-panel__hint {
+  max-width: 100%;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .map-panel__status-toggle {
   padding: 6px 14px;
   font-size: 0.88rem;
@@ -321,7 +359,7 @@
 
 .map-panel__board > app-game-map-grid {
   width: 100%;
-  height: 100%;
+  height: auto;
   max-width: 100%;
   min-height: 0;
   --grid-viewport-offset: 112px;
@@ -371,21 +409,6 @@
 
 .map-turn-status__close:hover {
   background: color-mix(in srgb, var(--bg-main) 58%, transparent);
-}
-
-.map-panel__action-picker {
-  display: grid;
-  gap: 8px;
-}
-
-.map-panel__action-picker p {
-  margin: 0;
-}
-
-.map-panel__action-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 .turn-order__details {
@@ -566,15 +589,17 @@
     overflow: visible;
   }
 
-  .side-panel--left {
-    display: flex;
+  .map-column {
+    overflow: visible;
   }
 
   .side-panel {
     overflow: visible;
   }
 
+  .side-panel--left,
   .side-panel--right {
+    height: auto;
     overflow: visible;
   }
 
@@ -595,7 +620,7 @@
   }
 }
 
-@media (max-height: 920px) {
+@media (min-width: 981px) and (max-height: 920px) {
   :host {
     --view-gap: 12px;
     --view-padding: 12px;
@@ -651,10 +676,6 @@
   .turn-order__detail {
     padding: 8px 10px;
     font-size: 0.88rem;
-  }
-
-  .turn-order__meta-item:nth-child(4) {
-    text-align: left;
   }
 
   .turn-status__meta {
