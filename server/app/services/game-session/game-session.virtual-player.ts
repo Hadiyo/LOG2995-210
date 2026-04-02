@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
-import { GameMode, ObjectType } from '@common/maps/map.enums';
+import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { Vec2 } from '@common/maps/map.interface';
 import { getGameSessionDestination, getGameSessionMovementCost } from './game-session.match';
 
@@ -10,6 +10,7 @@ export type MovementDirection = 'up' | 'down' | 'left' | 'right';
 export type VirtualPlayerDecision =
     | { kind: 'move'; direction: MovementDirection }
     | { kind: 'combat'; targetId: string }
+    | { kind: 'toggle-door'; position: Vec2 }
     | { kind: 'end-turn' };
 
 interface MoveCandidate {
@@ -51,6 +52,11 @@ interface AffordableMoveContext {
     target: Vec2;
 }
 
+interface StrategicTarget {
+    options?: PathOptions;
+    position: Vec2;
+}
+
 const DIRECTIONS: MovementDirection[] = ['up', 'down', 'left', 'right'];
 
 export function planVirtualPlayerDecision(
@@ -82,6 +88,10 @@ function planAggressiveDecision(
     if (chaseMove) {
         return chaseMove;
     }
+    const doorAction = buildDoorAction(match, turnState, player, getAggressiveTargets(match, player));
+    if (doorAction) {
+        return doorAction;
+    }
     return { kind: 'end-turn' };
 }
 
@@ -101,6 +111,10 @@ function planDefensiveDecision(
     }
     if (!turnState.actionTaken && adjacentEnemy) {
         return { kind: 'combat', targetId: adjacentEnemy.id };
+    }
+    const doorAction = buildDoorAction(match, turnState, player, getDefensiveTargets(match, player));
+    if (doorAction) {
+        return doorAction;
     }
     return { kind: 'end-turn' };
 }
@@ -142,7 +156,7 @@ function buildCtfMovement(
 }
 
 function buildMoveTowardClosestEnemy(match: InitializedMatch, turnState: MatchTurnState, player: MatchPlayer): VirtualPlayerDecision | null {
-    const enemies = getEnemies(match, player);
+    const enemies = getPrioritizedEnemies(match, player);
     const paths = enemies
         .map((enemy) => ({
             enemy,
@@ -152,6 +166,32 @@ function buildMoveTowardClosestEnemy(match: InitializedMatch, turnState: MatchTu
         .sort((left, right) => left.candidate.remainingPathLength - right.candidate.remainingPathLength);
 
     return paths[0] ? { kind: 'move', direction: paths[0].candidate.direction } : null;
+}
+
+function buildDoorAction(
+    match: InitializedMatch,
+    turnState: MatchTurnState,
+    player: MatchPlayer,
+    targets: StrategicTarget[],
+): VirtualPlayerDecision | null {
+    if (turnState.actionTaken) {
+        return null;
+    }
+
+    const candidates = getAdjacentClosedDoors(match, player.position)
+        .map((doorPosition) => buildDoorCandidate(match, player, doorPosition, targets))
+        .filter((candidate): candidate is { pathLength: number; position: Vec2 } => candidate !== null)
+        .sort((left, right) => {
+            if (left.pathLength !== right.pathLength) {
+                return left.pathLength - right.pathLength;
+            }
+            if (left.position.y !== right.position.y) {
+                return left.position.y - right.position.y;
+            }
+            return left.position.x - right.position.x;
+        });
+
+    return candidates[0] ? { kind: 'toggle-door', position: candidates[0].position } : null;
 }
 
 function buildRetreatMove(
@@ -328,6 +368,39 @@ function getReachableTiles(
     return visited;
 }
 
+function buildDoorCandidate(
+    match: InitializedMatch,
+    player: MatchPlayer,
+    doorPosition: Vec2,
+    targets: StrategicTarget[],
+): { pathLength: number; position: Vec2 } | null {
+    const matchWithOpenDoor = buildMatchWithOpenDoor(match, doorPosition);
+    const matchingTarget = targets
+        .map((target) => ({
+            path: findPath(matchWithOpenDoor, player.id, target.position, target.options),
+            target,
+        }))
+        .find(({ path }) => path.length > 0 && samePosition(path[0], doorPosition));
+
+    if (!matchingTarget) {
+        return null;
+    }
+
+    return {
+        pathLength: matchingTarget.path.length,
+        position: doorPosition,
+    };
+}
+
+function buildMatchWithOpenDoor(match: InitializedMatch, doorPosition: Vec2): InitializedMatch {
+    return {
+        ...match,
+        map: match.map.map((cell) =>
+            samePosition(cell.position, doorPosition) ? { ...cell, isWalkable: true } : cell,
+        ),
+    };
+}
+
 function findNearestEnterableTile(match: InitializedMatch, playerId: string, origin: Vec2): Vec2 | null {
     const candidates = match.map
         .filter((cell) => getGameSessionMovementCost(match, cell.position, playerId) !== null)
@@ -458,6 +531,78 @@ function getEnemies(match: InitializedMatch, player: MatchPlayer): MatchPlayer[]
         candidate.id !== player.id &&
         (match.mode !== GameMode.CTF || !isSameTeam(player, candidate)),
     );
+}
+
+function getPrioritizedEnemies(match: InitializedMatch, player: MatchPlayer): MatchPlayer[] {
+    return getEnemies(match, player).sort((left, right) => {
+        const leftPriority = match.flagCarrierId === left.id ? 0 : 1;
+        const rightPriority = match.flagCarrierId === right.id ? 0 : 1;
+        if (leftPriority !== rightPriority) {
+            return leftPriority - rightPriority;
+        }
+        return getDistance(player.position, left.position) - getDistance(player.position, right.position);
+    });
+}
+
+function getAggressiveTargets(match: InitializedMatch, player: MatchPlayer): StrategicTarget[] {
+    return [
+        ...getCtfTargets(match, player),
+        ...getPrioritizedEnemies(match, player).map((enemy) => ({
+            options: { stopAdjacent: true },
+            position: enemy.position,
+        })),
+    ];
+}
+
+function getDefensiveTargets(match: InitializedMatch, player: MatchPlayer): StrategicTarget[] {
+    return [
+        ...getCtfTargets(match, player),
+        ...getPrioritizedEnemies(match, player).map((enemy) => ({
+            options: { stopAdjacent: true },
+            position: enemy.position,
+        })),
+    ];
+}
+
+function getCtfTargets(match: InitializedMatch, player: MatchPlayer): StrategicTarget[] {
+    if (match.mode !== GameMode.CTF) {
+        return [];
+    }
+
+    if (match.flagCarrierId === player.id) {
+        return [{ position: player.startingPosition }];
+    }
+
+    const flagCarrier = match.flagCarrierId
+        ? match.players.find((candidate) => candidate.id === match.flagCarrierId) ?? null
+        : null;
+
+    if (flagCarrier && !isSameTeam(player, flagCarrier)) {
+        if (player.virtualProfile === 'defensive') {
+            const blockingTarget = findNearestEnterableTile(match, player.id, flagCarrier.startingPosition);
+            return [{ position: blockingTarget ?? flagCarrier.startingPosition }];
+        }
+
+        return [{ options: { stopAdjacent: true }, position: flagCarrier.position }];
+    }
+
+    if (!match.flagCarrierId) {
+        const flag = match.allObjects.find((object) => object.type === ObjectType.FLAG) ?? null;
+        if (flag) {
+            return [{ position: flag.position }];
+        }
+    }
+
+    return [];
+}
+
+function getAdjacentClosedDoors(match: InitializedMatch, origin: Vec2): Vec2[] {
+    return DIRECTIONS
+        .map((direction) => getGameSessionDestination(origin, direction))
+        .filter((position) => {
+            const cell = match.map.find((candidate) => samePosition(candidate.position, position)) ?? null;
+            return !!cell && cell.tileType === TileType.DOOR && !cell.isWalkable;
+        });
 }
 
 function getNearestEnemyDistance(position: Vec2, enemies: MatchPlayer[]): number {
