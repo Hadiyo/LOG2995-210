@@ -7,7 +7,7 @@
   display: grid;
   place-items: center;
   width: 100%;
-  height: auto;
+  height: 100%;
   min-height: 0;
 }
 
@@ -19,6 +19,7 @@
   /* Maps are square in the shared model, so size from width first and cap against viewport height. */
   width: min(100%, calc(100dvh - var(--grid-viewport-offset)), var(--grid-max-size));
   height: auto;
+  max-height: 100%;
   max-width: 100%;
   aspect-ratio: 1 / 1;
   margin: 0 auto;
