@@ -2,6 +2,7 @@ import { EndStatsService } from '@app/services/end-stats.service';
 import { MAXIMUM_WINS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
+import { MatchPlayer } from '@common/game/match.interface';
 import { buildVisibleObjects } from '@common/game/match.utils';
 import { GameMode, ObjectType } from '@common/maps/map.enums';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
@@ -101,8 +102,9 @@ export class GameSessionSessionActions {
         if (!session) {
             return false;
         }
-        const departingPlayer = session.match.players.find((player) => player.id === playerId);
-        if (!departingPlayer || departingPlayer.controller === 'virtual') {
+
+        const departingPlayer = this.getHumanDepartingPlayer(session, playerId);
+        if (!departingPlayer) {
             return false;
         }
         const organizerLeftWhileDebugEnabled = !!departingPlayer?.isOrganizer && session.match.debugMode;
@@ -274,5 +276,10 @@ export class GameSessionSessionActions {
         );
 
         this.lifecycle.resumeGameSessionTurn(session);
+    }
+
+    private getHumanDepartingPlayer(session: GameSessionRuntime, playerId: string): MatchPlayer | null {
+        const departingPlayer = session.match.players.find((player) => player.id === playerId) ?? null;
+        return !departingPlayer || departingPlayer.controller === 'virtual' ? null : departingPlayer;
     }
 }
