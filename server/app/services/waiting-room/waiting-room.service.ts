@@ -210,13 +210,13 @@ export class WaitingRoomService {
         }
 
         if (room.organizerSocketId !== organizerSocketId) {
-            this.emitError(organizerSocketId, 'Seul l organisateur peut exclure des joueurs.');
+            this.emitError(organizerSocketId, "Seul l'organisateur peut exclure des joueurs.");
             return;
         }
 
         const organizerId = room.socketToPlayerId.get(room.organizerSocketId);
         if (payload.playerId === organizerId) {
-            this.emitError(organizerSocketId, 'L organisateur ne peut pas etre exclu.');
+            this.emitError(organizerSocketId, "L'organisateur ne peut pas etre exclu.");
             return;
         }
 
@@ -244,7 +244,7 @@ export class WaitingRoomService {
         }
 
         if (room.organizerSocketId !== organizerSocketId) {
-            this.emitError(organizerSocketId, 'Seul l organisateur peut lancer la partie.');
+            this.emitError(organizerSocketId, "Seul l'organisateur peut lancer la partie.");
             return;
         }
 

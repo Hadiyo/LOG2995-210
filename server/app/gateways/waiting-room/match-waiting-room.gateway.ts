@@ -71,7 +71,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
             }
         } catch (error) {
             this.logger.error(`Impossible de creer la salle: ${error}`);
-            client.emit(WaitingRoomEvents.WaitingRoomError, { message: 'Impossible de creer la salle d attente.' });
+            client.emit(WaitingRoomEvents.WaitingRoomError, { message: "Impossible de créer la salle d'attente." });
         }
     }
 
@@ -180,7 +180,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
             const room = getWaitingRoomRoom(event.accessCode);
             this.server.in(event.kickedSocketId).socketsLeave(room);
             this.server.to(event.kickedSocketId).emit(WaitingRoomEvents.WaitingRoomPlayerKicked, {
-                message: 'Vous avez ete exclu de la salle d attente par l organisateur.',
+                message: "Vous avez été exclu de la salle d'attente par l'organisateur.",
             });
         };
         this.waitingRoomService.on(WaitingRoomEvents.WaitingRoomPlayerKicked, this.onKicked);
@@ -190,7 +190,7 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
         this.onCancelled = (event) => {
             const room = getWaitingRoomRoom(event.accessCode);
             this.server.to(room).emit(WaitingRoomEvents.WaitingRoomCancelled, {
-                message: 'La salle d attente a ete fermee.',
+                message: "La salle d'attente a été fermée.",
             });
             this.server.in(room).socketsLeave(room);
         };
