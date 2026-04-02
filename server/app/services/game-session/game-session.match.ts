@@ -1,5 +1,5 @@
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
-import { buildTeamAssignments, buildVisibleObjects, resolveFlagCarrier } from '@common/game/match.utils';
+import { buildTeamAssignments, buildVisibleObjects } from '@common/game/match.utils';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
 import { PlayerFacing, PlayerPose, PlayerRenderState } from '@common/player/player.interface';
