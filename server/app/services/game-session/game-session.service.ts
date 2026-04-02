@@ -1,3 +1,4 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import { MapService } from '@app/services/map/map.service';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
@@ -5,7 +6,6 @@ import { MatchTurnState } from '@common/game/turn.interface';
 import { SessionSocketEvents } from '@common/socket-events';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter } from 'events';
-import { EndStatsService } from '../end-stats.service';
 import { GameSessionActions } from './game-session.actions';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { buildSession, GameSessionRuntime } from './game-session.runtime';

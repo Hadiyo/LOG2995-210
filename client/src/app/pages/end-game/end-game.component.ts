@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 import { EndStatsComponent } from '@app/components/end-stats/end-stats.component';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { GAME_VIEW_CONSTANTS } from '@app/config/game-view.config';
@@ -17,6 +18,7 @@ export class EndGameComponent implements OnInit, OnDestroy {
   constructor(
     private readonly chatService: ChatService,
     private readonly waitingRoomService: WaitingRoomService,
+    private readonly router: Router,
   ) {}
 
   protected readonly chatMessages = toSignal(this.chatService.chat$, { initialValue: [] as ChatMessage[] });
@@ -44,5 +46,10 @@ export class EndGameComponent implements OnInit, OnDestroy {
         createdAt: new Date().toISOString(),
     };
     this.chatService.sendMessage(message);
-}
+  }
+
+  protected leaveSession(): void {
+    this.waitingRoomService.leaveGameSession();
+    void this.router.navigate(['/home']);
+  }
 }

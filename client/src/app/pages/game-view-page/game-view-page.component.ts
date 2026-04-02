@@ -10,11 +10,7 @@ import { GameMapGridComponent } from '@app/components/game/game-map-grid/game-ma
 import { GamePlayerListComponent } from '@app/components/game/game-player-list/game-player-list.component';
 import { GameSessionInfoPanelComponent } from '@app/components/game/game-session-info-panel/game-session-info-panel.component';
 import { GameTileInfoModalComponent } from '@app/components/game/game-tile-info-modal/game-tile-info-modal.component';
-import {
-    ACTIVE_TURN_DURATION_MS,
-    MILLISECONDS_PER_SECOND,
-    TRANSITION_DURATION_MS,
-} from '@app/config/game-session.config';
+import { ACTIVE_TURN_DURATION_MS, MILLISECONDS_PER_SECOND, TRANSITION_DURATION_MS } from '@app/config/game-session.config';
 import { GAME_VIEW_CONSTANTS } from '@app/config/game-view.config';
 import { MAP_SIZE_CONFIG } from '@app/config/map.config';
 import { ChatService } from '@app/services/chat/chat.service';

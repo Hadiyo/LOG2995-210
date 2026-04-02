@@ -1,3 +1,4 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import { ChatMessage } from '@common/chat/chat.interface';
 import {
     InitializedMatch,
@@ -9,7 +10,6 @@ import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SessionSocketEvents } from '@common/socket-events';
 import { EventEmitter } from 'events';
-import { EndStatsService } from '../end-stats.service';
 import {
     ACTIVE_TURN_DURATION_MS,
     createActiveTurnState,
@@ -51,6 +51,7 @@ export class GameSessionLifecycle {
             currentTurnIndex: (session.turnState.currentTurnIndex + 1) % session.turnState.order.length,
         };
         this.startTransition(session);
+        this.endStatsService.endTurn(session.sessionId);
     }
 
     finishSurrenderAfterRosterChange(

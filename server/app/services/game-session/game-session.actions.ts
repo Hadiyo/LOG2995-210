@@ -1,8 +1,8 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import { MatchSanctuaryChoice } from '@common/game/match.interface';
 import { buildVisibleObjects, resolveFlagCarrier } from '@common/game/match.utils';
 import { ObjectType } from '@common/maps/map.enums';
 import { PlayerPose } from '@common/player/player.interface';
-import { EndStatsService } from '../end-stats.service';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import {
     ATTACK_POSE_DURATION_MS,
@@ -64,6 +64,10 @@ export class GameSessionActions {
                 : player,
         );
         const nextFlagCarrierId = resolveFlagCarrier(session.match, playerId, destination);
+        if (nextFlagCarrierId) {
+            this.endStatsService.getFlag(sessionId, nextFlagCarrierId);
+        }
+
         const pickedUpFlag = session.match.flagCarrierId === null && nextFlagCarrierId === playerId;
         session.match = {
             ...session.match,
@@ -115,6 +119,8 @@ export class GameSessionActions {
         if (!pendingSanctuaryChoice) {
             return false;
         }
+
+        this.endStatsService.useSanctuary(sessionId, sanctuaryId);
 
         session.match = {
             ...session.match,

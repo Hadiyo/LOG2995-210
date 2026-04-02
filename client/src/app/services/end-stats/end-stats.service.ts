@@ -1,17 +1,21 @@
 import { Injectable } from '@angular/core';
+import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { EndStats } from '@common/game-session';
 import { SessionSocketEvents } from '@common/socket-events';
-import { SocketManagerService } from '../socket-manager/socket-manager.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class EndStatsService {
-  endStats: EndStats;
+  private _endStats: EndStats;
   
   constructor(
     private readonly socket: SocketManagerService,
   ) {}
+
+  get endStats(): EndStats {
+    return this._endStats;
+  }
 
   initEndStats() {
     if (!this.socket.isSocketAlive()) {
@@ -30,7 +34,6 @@ export class EndStatsService {
   }
 
   onEndGame = (payload: EndStats): void => {
-    this.endStats = payload;
-    console.log("payload: ", payload);
-  }
+    this._endStats = payload;
+  };
 }

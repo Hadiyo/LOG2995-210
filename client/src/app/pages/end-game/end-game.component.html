@@ -1,5 +1,7 @@
 <div class="end-game-container">
-    <app-end-stats></app-end-stats>
+    <app-end-stats
+        (onEmptyStats)="leaveSession()"
+    ></app-end-stats>
     <app-game-chat-panel class="chat"
         [messages]="chatMessages()"
         [notification]="null"
@@ -11,4 +13,8 @@
         (messageSubmit)="onChatMessageSubmit($event)"
     >
     </app-game-chat-panel>
+
+    <button class="btn-secondary" (click)="leaveSession()">
+        Quitter la partie
+    </button>
 </div>

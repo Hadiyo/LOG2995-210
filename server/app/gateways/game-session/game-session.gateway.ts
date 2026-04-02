@@ -50,7 +50,7 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
 
         this.onEndGame = (sessionId) => {
             this.server.to(getGameSessionRoom(sessionId)).emit(SessionSocketEvents.EndGame, this.endStatsService.endGame(sessionId));
-        }
+        };
         this.gameSessionService.on(SessionSocketEvents.EndGame, this.onEndGame);
     }
 

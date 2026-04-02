@@ -1,12 +1,12 @@
 import { effect, inject, Injectable, signal } from '@angular/core';
-import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
-import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
-import { MatchTurnState } from '@common/game/turn.interface';
-import { CombatOutcomeNotice, CombatStateService } from '@app/services/match/combat-state.service';
 import {
     COMBAT_NOTIFICATION_DURATION_MS,
     LocalCombatNotification,
 } from '@app/config/game-session.config';
+import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
+import { CombatOutcomeNotice, CombatStateService } from '@app/services/match/combat-state.service';
+import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
+import { MatchTurnState } from '@common/game/turn.interface';
 import { GameSessionDisplayService } from './game-session-display.service';
 import { GameSessionInteractionService } from './game-session-interaction.service';
 

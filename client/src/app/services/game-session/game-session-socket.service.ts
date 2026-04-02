@@ -3,6 +3,7 @@ import { ChatService } from '@app/services/chat/chat.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
+import { MatchSanctuaryChoice } from '@common/game/match.interface';
 import {
     CombatSocketEvents,
     DebugTeleportPlayerPayload,
@@ -10,19 +11,18 @@ import {
     ForceEndDebugTurnPayload,
     GameSessionErrorPayload,
     GameSessionSnapshotPayload,
-    RequestFlagTransferPayload,
-    ResolveFlagTransferPayload,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
+    RequestFlagTransferPayload,
+    ResolveFlagTransferPayload,
     ResolveSanctuaryChoicePayload,
     SessionSocketEvents,
     StartCombatPayload,
-    ToggleDoorPayload,
-    UseSanctuaryPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
+    ToggleDoorPayload,
+    UseSanctuaryPayload,
 } from '@common/socket-events';
-import { MatchSanctuaryChoice } from '@common/game/match.interface';
 
 @Injectable({ providedIn: 'root' })
 export class GameSessionSocketService {

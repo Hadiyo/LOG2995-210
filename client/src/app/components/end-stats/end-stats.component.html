@@ -9,6 +9,9 @@
             <p>Pourcentage de sanctuaires utilisés: {{ percentSanctuary }}%</p>
             <p>Pourcentage de portes utilisées: {{ percentDoor }}%</p>
             <p>Pourcentage de tuiles visitées: {{ percentTiles }}%</p>
+            @if (heldFlag) {
+                <p>Nombre de joueurs différents ayant détenu le drapeau: {{ heldFlag.length }}</p>
+            }
         </div>
         <div class="player-stats">
             <table class="player-table">

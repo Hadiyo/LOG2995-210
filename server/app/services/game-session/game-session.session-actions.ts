@@ -1,7 +1,7 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { buildVisibleObjects } from '@common/game/match.utils';
 import { ObjectType } from '@common/maps/map.enums';
-import { EndStatsService } from '../end-stats.service';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { applyFacingTowardPosition } from './game-session.render';
@@ -22,8 +22,6 @@ export class GameSessionSessionActions {
             session.match.pendingSanctuaryChoice) {
             return false;
         }
-
-        this.endStatsService.endTurn(sessionId);
 
         this.lifecycle.advanceToNextTurn(session);
         return true;
@@ -76,6 +74,7 @@ export class GameSessionSessionActions {
             if (transferMessage) {
                 session.messages.push(this.lifecycle.createSystemMessage(transferMessage));
             }
+            this.endStatsService.getFlag(sessionId, nextFlagCarrierId);
         }
 
         if (this.lifecycle.finishCtfMatchIfFlagTransferWins(session, accepted, nextFlagCarrierId)) {

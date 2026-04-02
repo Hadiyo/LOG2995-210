@@ -43,13 +43,14 @@ export interface EndStats {
     startTime: Date;
     endTime: Date | null;
     turns: number;
-    usedSanctuaries: string[];
+    usedSanctuaries: number[];
     totalSanctuaries: number;
     usedDoors: string[];
     totalDoors: number;
     visitedTiles: VisitedTiles[];
     totalTiles: number;
     playerStats: PlayerStats[];
+    heldFlag?: string[];
 }
 
 export interface PlayerStats {

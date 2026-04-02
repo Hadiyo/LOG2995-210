@@ -1,14 +1,13 @@
-import { EndStats, PlayerStats } from "@common/game-session";
-import { MatchLobbyPlayer } from "@common/game/match.interface";
-import { ObjectType, TileType } from "@common/maps/map.enums";
-import { Vec2 } from "@common/maps/map.interface";
-import { Injectable, Logger } from "@nestjs/common";
-import { MapService } from "./map/map.service";
+import { EndStats, PlayerStats } from '@common/game-session';
+import { MatchLobbyPlayer } from '@common/game/match.interface';
+import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
+import { Vec2 } from '@common/maps/map.interface';
+import { Injectable } from '@nestjs/common';
+import { MapService } from './map/map.service';
 
 @Injectable()
 export class EndStatsService {
     readonly sessions: Map<string, EndStats> = new Map<string, EndStats>();   
-    private readonly logger: Logger = new Logger(EndStatsService.name);
     
     constructor(
         private readonly mapService: MapService,
@@ -37,12 +36,13 @@ export class EndStatsService {
             endTime: null,
             turns: 1,
             usedSanctuaries: [],
-            totalSanctuaries: map.objects.filter((obj) => obj.type in [ObjectType.ARENA, ObjectType.REGEN]).length,
+            totalSanctuaries: map.objects.filter((obj) => [ObjectType.ARENA, ObjectType.REGEN].includes(obj.type)).length,
             usedDoors: [],
             totalDoors: map.map.filter((tile) => tile.tileType === TileType.DOOR).length,
             visitedTiles: [],
             totalTiles: map.mapsize * map.mapsize,
-            playerStats: playerStats,
+            playerStats,
+            heldFlag: map.mode === GameMode.CTF ? [] : undefined,
         };
 
         this.sessions.set(sessionId, emptyNewStats); 
@@ -80,7 +80,7 @@ export class EndStatsService {
         }
     }
 
-    useSanctuary(sessionId: string, sanctuaryId: string): void {
+    useSanctuary(sessionId: string, sanctuaryId: number): void {
         const session = this.sessions.get(sessionId);
         if (session) {
             if (!session.usedSanctuaries.includes(sanctuaryId)) {
@@ -93,14 +93,13 @@ export class EndStatsService {
         const session = this.sessions.get(sessionId);
         const tileKey = `${tilePosition.x},${tilePosition.y}`;
         if (session) {
-            const tile = session.visitedTiles.find((tile) => {
+            const targetTile = session.visitedTiles.find((tile) => {
                 return tile.position === tileKey;
             });
-            if (!tile) {
+            if (!targetTile) {
                 session.visitedTiles.push({ position: tileKey, players: [playerId] });
-            }
-            else if (!tile.players.includes(playerId)) {
-                tile.players.push(playerId);
+            } else if (!targetTile.players.includes(playerId)) {
+                targetTile.players.push(playerId);
             }
         }
     }
@@ -112,6 +111,13 @@ export class EndStatsService {
             if (!session.usedDoors.includes(door)) {
                 session.usedDoors.push(door);
             }
+        }
+    }
+
+    getFlag(sessionId: string, playerId: string): void {
+        const session = this.sessions.get(sessionId);
+        if (session && !session.heldFlag.includes(playerId)) {
+            session.heldFlag.push(playerId);
         }
     }
 
