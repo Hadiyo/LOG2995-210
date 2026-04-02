@@ -1,3 +1,4 @@
+import { ChatService } from '@app/services/chat/chat.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { PreviewImageFormat } from '@common/enum';
@@ -49,6 +50,7 @@ export function createWaitingRoomServiceHarness() {
     let service: WaitingRoomService;
     let mapService: { getMapById: jest.Mock; getAllMapsSummary: jest.Mock };
     let gameSessionService: { createSessionFromWaitingRoom: jest.Mock; destroySession: jest.Mock };
+    let chatService: { createMessage: jest.MockedFunction<ChatService['createMessage']> };
 
     beforeEach(() => {
         mapService = {
@@ -59,8 +61,26 @@ export function createWaitingRoomServiceHarness() {
             createSessionFromWaitingRoom: jest.fn(),
             destroySession: jest.fn(),
         };
+        chatService = {
+            createMessage: jest.fn((author: string, content: string, maxContentLength?: number) => {
+                const normalizedContent = typeof maxContentLength === 'number'
+                    ? content.trim().slice(0, maxContentLength)
+                    : content.trim();
 
-        service = new WaitingRoomService(mapService as never, gameSessionService as never);
+                if (!normalizedContent) {
+                    return null;
+                }
+
+                return {
+                    id: 'message-1',
+                    author,
+                    content: normalizedContent,
+                    createdAt: '2026-01-01T00:00:00.000Z',
+                };
+            }),
+        };
+
+        service = new WaitingRoomService(mapService as never, gameSessionService as never, chatService as never);
     });
 
     return {
@@ -72,6 +92,9 @@ export function createWaitingRoomServiceHarness() {
         },
         get gameSessionService() {
             return gameSessionService;
+        },
+        get chatService() {
+            return chatService;
         },
     };
 }

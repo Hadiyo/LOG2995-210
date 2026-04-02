@@ -1,7 +1,7 @@
 import { WritableSignal } from '@angular/core';
 import { Router } from '@angular/router';
-import { MATCH_END_REDIRECT_DURATION_MS, CLOCK_TICK_MS } from '@app/pages/game-view/game-session.constants';
-import { GameSessionInteractionService } from '@app/pages/game-view/game-session-interaction.service';
+import { CLOCK_TICK_MS, MATCH_END_REDIRECT_DURATION_MS } from '@app/config/game-session.config';
+import { GameSessionInteractionService } from '@app/services/game-view/game-session-interaction.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchEndState } from '@common/game/match.interface';

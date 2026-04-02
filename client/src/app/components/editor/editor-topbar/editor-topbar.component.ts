@@ -11,7 +11,6 @@ import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/maps/map-validation';
-import { GameMode, MapSize } from '@common/maps/map.enums';
 
 import { MouseButton } from '@common/mouse-events.enum';
 import { take } from 'rxjs';
@@ -31,13 +30,6 @@ import { take } from 'rxjs';
 })
 export class EditorTopbarComponent {
   /* =========================================================
-     Template helpers
-     ========================================================= */
-  // Expose enums so the template can compare values safely
-  readonly gameMode = GameMode;
-  readonly mapSize = MapSize;
-
-  /* =========================================================
      Dependencies
      ========================================================= */
   // Central editor state (single source of truth)
@@ -55,21 +47,6 @@ export class EditorTopbarComponent {
   readonly isRightClicking = computed(() => this.editorState.activeButton() === MouseButton.Right);
 
   readonly isShiftPressed = computed(() => this.editorState.isShiftPressed());
-
-  /* =========================================================
-     Mode & size options
-     ========================================================= */
-  // Game mode selection (mutually exclusive)
-  readonly modeOptions = [
-    { value: GameMode.CLASSIC, label: 'Classic' },
-  ] as const;
-
-  // Map size selection
-  readonly sizeOptions = [
-    { value: MapSize.S, label: '10×10' },
-    { value: MapSize.M, label: '15×15' },
-    { value: MapSize.L, label: '20×20' },
-  ] as const;
 
   readonly hasAttemptedSave = signal(false);
   readonly serverIssues = signal<MapValidationIssue[]>([]);

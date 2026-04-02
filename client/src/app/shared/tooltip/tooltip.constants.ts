@@ -21,7 +21,7 @@ export const TILES: TilePaletteItem[] = [
     { id: TileType.WATER, label: 'Eau', description: 'Tuile traversable qui prend deux points de mouvement.', cssVar: '--tile-water-img' },
     { id: TileType.ICE, label: 'Glace', description: 'Tuile traversable qui prend aucun point de mouvement.', cssVar: '--tile-ice-img' },
 ];
-    
+
 /* =========================================================
     Object palette configuration
     - Maps ObjectType enum to labels + theme color variables
@@ -32,5 +32,22 @@ export const OBJECTS: ObjectPaletteItem[] = [
         label: 'Point de depart',
         description: "Un joueur est assigne aleatoirement un point de depart au debut d'une partie.",
         cssVar: '--object-spawn-img',
+    },
+    {
+        id: ObjectType.FLAG,
+        label: 'Drapeau',
+        description: "L'objectif principal du mode CTF.",
+        cssVar: '--object-flag-img' },
+    {
+        id: ObjectType.REGEN,
+        label: 'Sanctuaire de soin',
+        description: 'Activer pour regagner 2 points de vie au joueur.',
+        cssVar: '--object-heal-img',
+    },
+    {
+        id: ObjectType.ARENA,
+        label: 'Sanctuaire de combat',
+        description: "Activer pour un bonus temporaire de +1 à l'attaque et à la défense. Ce bonus reste jusqu'à la fin du prochain tour.",
+        cssVar: '--object-fight-img',
     },
 ];

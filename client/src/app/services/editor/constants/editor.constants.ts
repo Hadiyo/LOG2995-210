@@ -10,4 +10,10 @@ export const START_LIMITS_BY_SIZE: Record<MapSize, number> = {
   [MapSize.L]: 6,
 };
 
+export const SANCTUARY_LIMITS_BY_SIZE: Record<MapSize, number> = {
+  [MapSize.S]: 1,
+  [MapSize.M]: 2,
+  [MapSize.L]: 4,
+};
+
 export const FLAG_LIMIT = 1;

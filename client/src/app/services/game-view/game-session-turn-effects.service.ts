@@ -6,7 +6,7 @@ import { CombatOutcomeNotice, CombatStateService } from '@app/services/match/com
 import {
     COMBAT_NOTIFICATION_DURATION_MS,
     LocalCombatNotification,
-} from './game-session.constants';
+} from '@app/config/game-session.config';
 import { GameSessionDisplayService } from './game-session-display.service';
 import { GameSessionInteractionService } from './game-session-interaction.service';
 

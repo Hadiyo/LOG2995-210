@@ -179,7 +179,7 @@ export class EditorCanvasComponent {
   }
 
   private updateTooltip(index: number) {
-    const object = this.editorState.getObjectAtIndex(index);
+    const object = this.editorState.objectLookUp().get(index) ?? null;
     if (!object) {
       this.tooltipText.set(null);
       return;

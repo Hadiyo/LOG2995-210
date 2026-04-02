@@ -5,6 +5,7 @@ import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/ma
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMapDetails, MapObject } from '@common/maps/map.interface';
+import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
 
 export const ACTIVE_TURN_MS = 5000;
 export const MOVEMENT_POINTS_AFTER_MOVE = 3;
@@ -41,8 +42,8 @@ export const makeMatchPlayer = (overrides: Partial<MatchPlayer> = {}): MatchPlay
     health: 6,
     combatWins: 0,
     render: {
-        facing: 'front',
-        pose: 'idle',
+        facing: PlayerFacing.Front,
+        pose: PlayerPose.Idle,
     },
     ...overrides,
 });

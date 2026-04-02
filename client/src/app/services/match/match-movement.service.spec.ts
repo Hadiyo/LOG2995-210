@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell } from '@common/maps/map.interface';
+import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
 import { MatchMovementService } from './match-movement.service';
 
 const createCells = (): EditorCell[] => {
@@ -49,6 +50,7 @@ const createPlayers = (): MatchPlayer[] => [
         startingPosition: { x: 1, y: 1 },
         health: 6,
         combatWins: 0,
+        render: { facing: PlayerFacing.Front, pose: PlayerPose.Idle },
     },
     {
         id: 'player-2',
@@ -66,6 +68,7 @@ const createPlayers = (): MatchPlayer[] => [
         startingPosition: { x: 5, y: 5 },
         health: 6,
         combatWins: 0,
+        render: { facing: PlayerFacing.Front, pose: PlayerPose.Idle },
     },
 ];
 
@@ -113,6 +116,16 @@ describe('MatchMovementService', () => {
         expect(service.getMovementCost(match, { x: 1, y: 2 }, 'player-1')).toBeNull();
         expect(service.getMovementCost(match, { x: 0, y: 1 }, 'player-1')).toBeNull();
         expect(service.getMovementCost(match, { x: -1, y: 1 }, 'player-1')).toBeNull();
+    });
+
+    it('should treat sanctuaries as blocked tiles for movement', () => {
+        const match = createMatch();
+        const sanctuary = { id: 3, type: ObjectType.REGEN, position: { x: 6, y: 1 }, size: ObjectSize.L };
+        match.objects = [...match.objects, sanctuary];
+        match.allObjects = [...match.allObjects, sanctuary];
+
+        expect(service.getMovementCost(match, { x: 6, y: 1 }, 'player-1')).toBeNull();
+        expect(service.getMovementCost(match, { x: 7, y: 2 }, 'player-1')).toBeNull();
     });
 
     it('should allow only cardinal moves within the remaining movement points', () => {

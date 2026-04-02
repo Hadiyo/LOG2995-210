@@ -1,7 +1,6 @@
+import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { MapService } from '@app/services/map/map.service';
-import { Injectable } from '@nestjs/common';
-import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { WaitingRoomPreview } from '@common/game/waiting-room-preview.interface';
 import { GameMode, MapSize } from '@common/maps/map.enums';
@@ -10,10 +9,16 @@ import {
     JoinWaitingRoomPayload,
     KickWaitingRoomPlayerPayload,
     SendWaitingRoomMessagePayload,
-    SocketEvents,
+    WaitingRoomEvents,
     WaitingRoomStatePayload,
 } from '@common/socket-events';
+import { Injectable } from '@nestjs/common';
 import { EventEmitter } from 'events';
+import {
+    findWaitingRoomAccessCode,
+    resolveUniqueWaitingRoomPlayerName,
+} from './waiting-room-player.utils';
+import { createWaitingRoomPreview } from './waiting-room-preview';
 import {
     ACCESS_CODE_CHARS,
     ACCESS_CODE_LENGTH,
@@ -21,11 +26,6 @@ import {
     MAX_PLAYERS_BY_MAP_SIZE,
     MIN_PLAYERS_TO_START,
 } from './waiting-room.constants';
-import {
-    findWaitingRoomAccessCode,
-    resolveUniqueWaitingRoomPlayerName,
-} from './waiting-room-player.utils';
-import { createWaitingRoomPreview } from './waiting-room-preview';
 import {
     WaitingRoom,
     WaitingRoomCancelledEvent,
@@ -45,13 +45,14 @@ export class WaitingRoomService {
     constructor(
         private readonly mapService: MapService,
         private readonly gameSessionService: GameSessionService,
+        private readonly chatService: ChatService,
     ) {}
 
-    on<T>(event: SocketEvents, callback: (payload: T) => void): void {
+    on<T>(event: WaitingRoomEvents, callback: (payload: T) => void): void {
         this.events.on(event, callback);
     }
 
-    off<T>(event: SocketEvents, callback: (payload: T) => void): void {
+    off<T>(event: WaitingRoomEvents, callback: (payload: T) => void): void {
         this.events.off(event, callback);
     }
 
@@ -171,20 +172,13 @@ export class WaitingRoomService {
             return;
         }
 
-        const content = payload.content.trim().slice(0, CHAT_MESSAGE_MAX_LENGTH);
-        if (!content) {
+        const message = this.chatService.createMessage(author, payload.content, CHAT_MESSAGE_MAX_LENGTH);
+        if (!message) {
             return;
         }
 
-        const message: ChatMessage = {
-            id: crypto.randomUUID(),
-            author,
-            content,
-            createdAt: new Date().toISOString(),
-        };
-
         room.messages.push(message);
-        this.events.emit(SocketEvents.WaitingRoomMessageSent, {
+        this.events.emit(WaitingRoomEvents.WaitingRoomMessageSent, {
             accessCode: room.accessCode,
             payload: message,
         } as WaitingRoomMessageSentEvent);
@@ -198,7 +192,7 @@ export class WaitingRoomService {
 
         if (socketId === room.organizerSocketId) {
             this.rooms.delete(accessCode);
-            this.events.emit(SocketEvents.WaitingRoomCancelled, { accessCode } as WaitingRoomCancelledEvent);
+            this.events.emit(WaitingRoomEvents.WaitingRoomCancelled, { accessCode } as WaitingRoomCancelledEvent);
             this.emitDirectoryUpdated();
             return;
         }
@@ -232,7 +226,7 @@ export class WaitingRoomService {
         room.players = room.players.filter((player) => player.id !== payload.playerId);
         if (kickedSocketId) {
             room.socketToPlayerId.delete(kickedSocketId);
-            this.events.emit(SocketEvents.WaitingRoomPlayerKicked, {
+            this.events.emit(WaitingRoomEvents.WaitingRoomPlayerKicked, {
                 accessCode: payload.accessCode,
                 kickedSocketId,
             } as WaitingRoomPlayerKickedEvent);
@@ -290,7 +284,7 @@ export class WaitingRoomService {
             }
 
             this.rooms.delete(accessCode);
-            this.events.emit(SocketEvents.WaitingRoomGameStarted, {
+            this.events.emit(WaitingRoomEvents.WaitingRoomGameStarted, {
                 accessCode,
                 sessionId,
                 messages: room.messages,
@@ -322,21 +316,21 @@ export class WaitingRoomService {
             return;
         }
 
-        this.events.emit(SocketEvents.WaitingRoomUpdated, {
+        this.events.emit(WaitingRoomEvents.WaitingRoomUpdated, {
             accessCode: room.accessCode,
             payload,
         } as WaitingRoomUpdatedEvent);
     }
 
     private emitError(socketId: string, message: string): void {
-        this.events.emit(SocketEvents.WaitingRoomError, {
+        this.events.emit(WaitingRoomEvents.WaitingRoomError, {
             socketId,
             payload: { message },
         } as WaitingRoomErrorEvent);
     }
 
     private emitDirectoryUpdated(): void {
-        this.events.emit(SocketEvents.WaitingRoomDirectoryUpdated, {
+        this.events.emit(WaitingRoomEvents.WaitingRoomDirectoryUpdated, {
             updatedAt: new Date().toISOString(),
         } as WaitingRoomDirectoryUpdatedEvent);
     }

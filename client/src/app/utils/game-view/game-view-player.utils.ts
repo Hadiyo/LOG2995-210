@@ -1,6 +1,6 @@
 import { CHARACTER_BASE_ATTRIBUTES } from '@common/character/character.model';
 import { MatchPlayer } from '@common/game/match.interface';
-import { Player, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerFacing, PlayerPose, PlayerStatus } from '@common/player/player.interface';
 
 export function toGamePlayer(
     player: MatchPlayer,
@@ -39,6 +39,11 @@ export function toGamePlayer(
             remainingActions: isActivePlayer && !actionTaken ? 1 : 0,
             remainingMovements: isActivePlayer ? movementPointsRemaining : 0,
         },
-        render: player.render ? { ...player.render } : {},
+        render: {
+            facing: player.render?.facing ?? PlayerFacing.Front,
+            pose: player.render?.pose ?? PlayerPose.Idle,
+            poseStartedAt: player.render?.poseStartedAt,
+            poseDurationMs: player.render?.poseDurationMs,
+        },
     };
 }

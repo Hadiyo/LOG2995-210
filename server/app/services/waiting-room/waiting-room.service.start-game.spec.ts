@@ -1,5 +1,5 @@
 import { GameMode, MapSize } from '@common/maps/map.enums';
-import { SocketEvents } from '@common/socket-events';
+import { WaitingRoomEvents } from '@common/socket-events';
 import {
     createWaitingRoomServiceHarness,
     makeLobbyPlayer,
@@ -13,9 +13,9 @@ describe('WaitingRoomService start game', () => {
         const onError = jest.fn();
         const onStarted = jest.fn();
         const onDirectory = jest.fn();
-        harness.service.on(SocketEvents.WaitingRoomError, onError);
-        harness.service.on(SocketEvents.WaitingRoomGameStarted, onStarted);
-        harness.service.on(SocketEvents.WaitingRoomDirectoryUpdated, onDirectory);
+        harness.service.on(WaitingRoomEvents.WaitingRoomError, onError);
+        harness.service.on(WaitingRoomEvents.WaitingRoomGameStarted, onStarted);
+        harness.service.on(WaitingRoomEvents.WaitingRoomDirectoryUpdated, onDirectory);
         harness.mapService.getMapById.mockResolvedValue(makeMap({ size: MapSize.M }));
         harness.gameSessionService.createSessionFromWaitingRoom.mockResolvedValue('session-99');
         const accessCode = await harness.service.createWaitingRoom('socket-org', {
@@ -59,7 +59,7 @@ describe('WaitingRoomService start game', () => {
 
     it('starts a waiting room only once even when requested twice quickly', async () => {
         const onStarted = jest.fn();
-        harness.service.on(SocketEvents.WaitingRoomGameStarted, onStarted);
+        harness.service.on(WaitingRoomEvents.WaitingRoomGameStarted, onStarted);
         harness.mapService.getMapById.mockResolvedValue(makeMap({ size: MapSize.M }));
 
         let resolveSessionCreation: ((sessionId: string) => void) | undefined;
@@ -101,7 +101,7 @@ describe('WaitingRoomService start game', () => {
 
     it('rejects CTF game start when the roster size is odd', async () => {
         const onError = jest.fn();
-        harness.service.on(SocketEvents.WaitingRoomError, onError);
+        harness.service.on(WaitingRoomEvents.WaitingRoomError, onError);
         harness.mapService.getMapById.mockResolvedValue(makeMap({ size: MapSize.M, mode: GameMode.CTF }));
 
         const accessCode = await harness.service.createWaitingRoom('socket-org', {
@@ -133,8 +133,8 @@ describe('WaitingRoomService start game', () => {
     it('cancels a started room cleanly if the organizer leaves during session creation', async () => {
         const onCancelled = jest.fn();
         const onStarted = jest.fn();
-        harness.service.on(SocketEvents.WaitingRoomCancelled, onCancelled);
-        harness.service.on(SocketEvents.WaitingRoomGameStarted, onStarted);
+        harness.service.on(WaitingRoomEvents.WaitingRoomCancelled, onCancelled);
+        harness.service.on(WaitingRoomEvents.WaitingRoomGameStarted, onStarted);
         harness.mapService.getMapById.mockResolvedValue(makeMap({ size: MapSize.M }));
 
         let resolveSessionCreation: ((sessionId: string) => void) | undefined;

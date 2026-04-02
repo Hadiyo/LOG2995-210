@@ -5,7 +5,7 @@ import { positionKey } from '@app/services/match/match-geometry';
 import { MatchBoardService } from '@app/services/match/match-board.service';
 import { MatchInteractionService } from '@app/services/match/match-interaction.service';
 import { MatchMovementService, MovementDirection } from '@app/services/match/match-movement.service';
-import { MOVEMENT_DIRECTIONS } from './game-session.constants';
+import { MOVEMENT_DIRECTIONS } from '@app/config/game-session.config';
 import { GameSessionDisplayService } from './game-session-display.service';
 
 @Injectable()

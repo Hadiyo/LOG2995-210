@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
-import { SocketEvents } from '@common/socket-events';
+import { WaitingRoomEvents } from '@common/socket-events';
 import { WaitingRoomService } from './waiting-room.service';
 
 describe('WaitingRoomService', () => {
@@ -39,7 +39,7 @@ describe('WaitingRoomService', () => {
 
     service.initAsOrganizer('map-1', player);
 
-    expect(socketManagerSpy.send).toHaveBeenCalledWith(SocketEvents.CreateWaitingRoom, {
+    expect(socketManagerSpy.send).toHaveBeenCalledWith(WaitingRoomEvents.CreateWaitingRoom, {
       mapId: 'map-1',
       player: jasmine.objectContaining({
         id: player.id,
@@ -56,7 +56,7 @@ describe('WaitingRoomService', () => {
     service.initWaitingRoom();
 
     expect(socketManagerSpy.send).toHaveBeenCalledTimes(1);
-    expect(socketManagerSpy.send).toHaveBeenCalledWith(SocketEvents.JoinWaitingRoom, {
+    expect(socketManagerSpy.send).toHaveBeenCalledWith(WaitingRoomEvents.JoinWaitingRoom, {
       accessCode: 'ABCD',
       player: jasmine.objectContaining({
         id: player.id,

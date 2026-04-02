@@ -106,7 +106,6 @@ export class MatchStateService extends MatchSessionStore {
         this.setPersistedMatch(nextMatch);
         return nextPlayers.find((player) => player.id === playerId) ?? null;
     }
-
     applyCombatAftermath(defeatedPlayerIds: string[]): CombatAftermathResult | null {
         const currentMatch = this.match();
         if (!currentMatch) {
