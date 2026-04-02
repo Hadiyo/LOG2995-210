@@ -111,6 +111,11 @@ export class GameSessionTurnEffectsService {
             return;
         }
 
+        if (this.interaction.hasLocalPendingSanctuaryChoice()) {
+            this.lastAutoEndedTurnKey = null;
+            return;
+        }
+
         const activePlayer = this.display.findPlayerById(currentTurnState.activePlayerId);
         const localPlayerId = this.display.localPlayer()?.id ?? null;
         if (!activePlayer || localPlayerId !== activePlayer.id || this.hasRemainingTurnOptions(activePlayer, currentTurnState)) {

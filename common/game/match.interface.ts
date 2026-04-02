@@ -4,6 +4,7 @@ import { EditorCell, MapObject, Vec2 } from '../maps/map.interface';
 import { PlayerRenderState } from '../player/player.interface';
 
 export type MatchPlayerController = 'human';
+export type MatchSanctuaryChoice = 'normal' | 'double-or-nothing' | 'cancel';
 
 export interface MatchLobbyPlayer {
     id: string;
@@ -24,6 +25,9 @@ export interface MatchPlayer extends MatchLobbyPlayer {
     startingPosition: Vec2;
     health: number;
     combatWins: number;
+    attackBonus?: number;
+    defenseBonus?: number;
+    arenaBuffTurnsRemaining?: number;
     render?: PlayerRenderState;
 }
 
@@ -56,6 +60,16 @@ export interface MatchEndState {
     resolvedAt: number;
 }
 
+export interface MatchSanctuaryState {
+    objectId: number;
+    cooldownTurnsRemaining: number;
+}
+
+export interface MatchPendingSanctuaryChoice {
+    playerId: string;
+    objectId: number;
+}
+
 export interface InitializedMatch {
     mapId: string;
     mapName: string;
@@ -67,5 +81,7 @@ export interface InitializedMatch {
     allObjects: MapObject[];
     allStartingPoints: Vec2[];
     players: MatchPlayer[];
+    sanctuaryStates?: MatchSanctuaryState[];
+    pendingSanctuaryChoice?: MatchPendingSanctuaryChoice | null;
     endState?: MatchEndState | null;
 }

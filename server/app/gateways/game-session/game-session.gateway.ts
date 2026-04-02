@@ -9,11 +9,13 @@ import {
     getGameSessionRoom,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
+    ResolveSanctuaryChoicePayload,
     SessionSocketEvents,
     StartCombatPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
     ToggleDoorPayload,
+    UseSanctuaryPayload,
 } from '@common/socket-events';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
 import {
@@ -165,6 +167,36 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
 
         if (!this.gameSessionService.startCombat(payload.sessionId, payload.playerId, payload.defenderId)) {
             client.emit(SessionSocketEvents.GameSessionError, { message: 'Combat refuse.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(CombatSocketEvents.UseSanctuary)
+    useSanctuary(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: UseSanctuaryPayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Action de sanctuaire refusee.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.useSanctuary(payload.sessionId, payload.playerId, payload.sanctuaryId)) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Action de sanctuaire refusee.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(CombatSocketEvents.ResolveSanctuaryChoice)
+    resolveSanctuaryChoice(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: ResolveSanctuaryChoicePayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Choix de sanctuaire refuse.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.resolveSanctuaryChoice(payload.sessionId, payload.playerId, payload.choice)) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Choix de sanctuaire refuse.' } satisfies GameSessionErrorPayload);
         }
     }
 
