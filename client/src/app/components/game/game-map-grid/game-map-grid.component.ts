@@ -6,6 +6,7 @@ import { positionKey } from '@app/services/match/match-geometry';
 import { TileType } from '@common/maps/map.enums';
 import { GameCell, MapObject } from '@common/maps/map.interface';
 import { Player, PlayerStatus } from '@common/player/player.interface';
+import { getTeamClass } from '../team-class.util';
 
 // Used to vary breathing animation delay across players (avoid sync look).
 const BREATHING_DELAY_VARIANTS = 5;
@@ -115,11 +116,7 @@ export class GameMapGridComponent {
   }
 
   getTeamClass(teamId: string | null | undefined): string | null {
-    if (!teamId) {
-      return null;
-    }
-
-    return `player-layer--team-${teamId.toLowerCase()}`;
+    return getTeamClass(teamId, 'player-layer--team-');
   }
 
   // Helper to identify if a pose is expired based on server timestamp and duration.

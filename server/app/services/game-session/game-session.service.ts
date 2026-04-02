@@ -9,13 +9,13 @@ import { SocketEvents } from '@common/socket-events';
 import { PlayerRenderState } from '@common/player/player.interface';
 import { EventEmitter } from 'events';
 import {
-    buildGameSessionVisibleObjects,
+    buildVisibleObjects,
     createGameSessionInitialRenderState,
     getGameSessionDestination,
     getGameSessionFacingToTarget,
     getGameSessionMovementCost,
     getGameSessionObjectCovering,
-    resolveGameSessionFlagCarrier,
+    resolveFlagCarrier,
 } from './game-session.match';
 import {
     ACTIVE_TURN_DURATION_MS,
@@ -187,7 +187,7 @@ export class GameSessionService {
             ...session.match,
             flagCarrierId: nextFlagCarrierId,
             pendingFlagTransfer: null,
-            objects: buildGameSessionVisibleObjects(session.match.allObjects, session.match.players, nextFlagCarrierId),
+            objects: buildVisibleObjects(session.match.allObjects, session.match.players, nextFlagCarrierId),
         };
 
         if (accepted) {
@@ -234,7 +234,7 @@ export class GameSessionService {
             allObjects: nextAllObjects,
             flagCarrierId: nextFlagCarrierId,
             pendingFlagTransfer: nextPendingFlagTransfer,
-            objects: buildGameSessionVisibleObjects(
+            objects: buildVisibleObjects(
                 nextAllObjects,
                 nextPlayers,
                 nextFlagCarrierId,
@@ -409,13 +409,13 @@ export class GameSessionService {
                 }
                 : player,
         );
-        const nextFlagCarrierId = resolveGameSessionFlagCarrier(session.match, playerId, destination);
+        const nextFlagCarrierId = resolveFlagCarrier(session.match, playerId, destination);
         const pickedUpFlag = session.match.flagCarrierId === null && nextFlagCarrierId === playerId;
         session.match = {
             ...session.match,
             players: nextPlayers,
             flagCarrierId: nextFlagCarrierId,
-            objects: buildGameSessionVisibleObjects(session.match.allObjects, nextPlayers, nextFlagCarrierId),
+            objects: buildVisibleObjects(session.match.allObjects, nextPlayers, nextFlagCarrierId),
         };
         if (pickedUpFlag) {
             session.messages.push(this.createSystemMessage(`${movingPlayer.name} ramasse le drapeau.`));
@@ -568,7 +568,7 @@ export class GameSessionService {
             players: nextPlayers,
             allObjects: nextAllObjects,
             flagCarrierId: nextFlagCarrierId,
-            objects: buildGameSessionVisibleObjects(nextAllObjects, nextPlayers, nextFlagCarrierId),
+            objects: buildVisibleObjects(nextAllObjects, nextPlayers, nextFlagCarrierId),
             endState: winner.combatWins >= CLASSIC_WIN_THRESHOLD ? {
                 id: crypto.randomUUID(),
                 winnerKind: 'player',
@@ -729,7 +729,7 @@ export class GameSessionService {
             return false;
         }
 
-        return match.mode !== 'CTF' ||
+        return match.mode !== GameMode.CTF ||
             attacker.teamId === null ||
             attacker.teamId === undefined ||
             attacker.teamId !== defender.teamId;

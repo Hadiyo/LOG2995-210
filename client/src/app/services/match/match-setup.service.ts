@@ -4,8 +4,9 @@ import {
     CHARACTER_BASE_ATTRIBUTES,
     CHARACTER_PLUS_TWO_VALUE,
 } from '@common/character/character.model';
-import { MatchEndState, InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
-import { GameMode, ObjectType } from '@common/maps/map.enums';
+import { MatchEndState, InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { buildTeamAssignments } from '@common/game/match.utils';
+import { ObjectType } from '@common/maps/map.enums';
 import { EditorMapDetails } from '@common/maps/map.interface';
 import { generateClientId } from '@app/utils/id.util';
 import {
@@ -51,7 +52,7 @@ export class MatchSetupService {
         }
 
         const shuffledStarts = shuffle(availableStartObjects, random);
-        const teamAssignments = this.buildTeamAssignments(players.length, map.mode, random);
+        const teamAssignments = buildTeamAssignments(players.length, map.mode, random);
         const initializedPlayers = players.map((player, index): MatchPlayer => {
             const startObject = shuffledStarts[index];
             return {
@@ -164,22 +165,4 @@ export class MatchSetupService {
         return CHARACTER_BASE_ATTRIBUTES.vie +
             (character.bonuses.plusTwo === 'vie' ? CHARACTER_PLUS_TWO_VALUE : 0);
     }
-
-    private buildTeamAssignments(playerCount: number, mode: GameMode, random: () => number): (MatchTeamId | null)[] {
-        if (mode !== GameMode.CTF || playerCount < 2 || playerCount % 2 !== 0) {
-            return Array.from({ length: playerCount }, () => null);
-        }
-
-        const assignments: (MatchTeamId | null)[] = Array.from({ length: playerCount }, () => null);
-        const shuffledIndexes = shuffle(playersToIndexes(playerCount), random);
-        const playersPerTeam = playerCount / 2;
-
-        shuffledIndexes.forEach((playerIndex, orderIndex) => {
-            assignments[playerIndex] = orderIndex < playersPerTeam ? 'A' : 'B';
-        });
-
-        return assignments;
-    }
 }
-
-const playersToIndexes = (count: number): number[] => Array.from({ length: count }, (_, index) => index);

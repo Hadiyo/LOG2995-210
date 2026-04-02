@@ -1,6 +1,7 @@
-import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { buildTeamAssignments, buildVisibleObjects, resolveFlagCarrier } from '@common/game/match.utils';
 import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
-import { GameMode, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { PlayerFacing, PlayerRenderState } from '@common/player/player.interface';
 
 export function buildInitializedMatchFromEditor(
@@ -31,7 +32,7 @@ export function buildInitializedMatchFromEditor(
         mapSize: map.mapsize,
         debugMode: false,
         map: map.map.map((cell) => ({ ...cell, position: { ...cell.position } })),
-        objects: buildGameSessionVisibleObjects(map.objects, initializedPlayers, null),
+        objects: buildVisibleObjects(map.objects, initializedPlayers, null),
         allObjects: map.objects.map((object) => ({ ...object, position: { ...object.position } })),
         allStartingPoints: availableStartObjects.map((object) => ({ ...object.position })),
         players: initializedPlayers,
@@ -64,44 +65,6 @@ export function getGameSessionMovementCost(match: InitializedMatch, destination:
     if (cell.tileType === TileType.ICE) return 0;
     if (cell.tileType === TileType.WATER) return 2;
     return 1;
-}
-
-export function buildGameSessionVisibleObjects(
-    objects: InitializedMatch['allObjects'],
-    players: MatchPlayer[],
-    flagCarrierId: string | null,
-): MapObject[] {
-    const activeStarts = new Set(players.map((player) => `${player.startingPosition.x}:${player.startingPosition.y}`));
-    return objects
-        .filter((object) => {
-            if (object.type === ObjectType.START) {
-                return activeStarts.has(`${object.position.x}:${object.position.y}`);
-            }
-
-            if (object.type === ObjectType.FLAG) {
-                return flagCarrierId === null;
-            }
-
-            return true;
-        })
-        .map((object) => ({ ...object, position: { ...object.position } }));
-}
-
-export function resolveGameSessionFlagCarrier(match: InitializedMatch, playerId: string, position: Vec2): string | null {
-    if (match.flagCarrierId) {
-        return match.flagCarrierId;
-    }
-
-    if (match.mode !== GameMode.CTF) {
-        return null;
-    }
-
-    const flagObject = match.allObjects.find((object) => object.type === ObjectType.FLAG);
-    if (!flagObject) {
-        return null;
-    }
-
-    return samePosition(flagObject.position, position) ? playerId : null;
 }
 
 export function createGameSessionInitialRenderState(): PlayerRenderState {
@@ -155,18 +118,4 @@ function objectFootprint(object: MapObject): Vec2[] {
     ];
 }
 
-function buildTeamAssignments(playerCount: number, mode: GameMode, random: () => number): (MatchTeamId | null)[] {
-    if (mode !== GameMode.CTF || playerCount < 2 || playerCount % 2 !== 0) {
-        return Array.from({ length: playerCount }, () => null);
-    }
-
-    const assignments: (MatchTeamId | null)[] = Array.from({ length: playerCount }, () => null);
-    const shuffledIndexes = shuffle(Array.from({ length: playerCount }, (_, index) => index), random);
-    const playersPerTeam = playerCount / 2;
-
-    shuffledIndexes.forEach((playerIndex, orderIndex) => {
-        assignments[playerIndex] = orderIndex < playersPerTeam ? 'A' : 'B';
-    });
-
-    return assignments;
-}
+export { buildTeamAssignments, buildVisibleObjects, resolveFlagCarrier };

@@ -10,6 +10,7 @@ import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
 import {
     HOME_RETURN_MESSAGE_STORAGE_KEY,
 } from './match-defaults';
+import { resolveFlagCarrier } from '@common/game/match.utils';
 import { MatchBoardService, CombatAftermathResult } from './match-board.service';
 import { MatchSessionStore } from './match-session.store';
 
@@ -94,7 +95,7 @@ export class MatchStateService extends MatchSessionStore {
         const nextPlayers = currentMatch.players.map((player) =>
             player.id === playerId ? { ...player, position } : player,
         );
-        const nextFlagCarrierId = this.matchBoardService.resolveFlagCarrier(currentMatch, playerId, position);
+        const nextFlagCarrierId = resolveFlagCarrier(currentMatch, playerId, position);
         const nextMatch = {
             ...currentMatch,
             players: nextPlayers,

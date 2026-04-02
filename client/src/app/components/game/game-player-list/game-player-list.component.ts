@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { Player, PlayerStatus } from '@common/player/player.interface';
+import { getTeamClass } from '../team-class.util';
 
 const COLLAPSED_VISIBLE_ROWS = 2;
 const PLAYER_ROW_HEIGHT_PX = 46;
@@ -80,19 +81,11 @@ export class GamePlayerListComponent {
   }
 
   getTeamClass(teamId: string | null | undefined): string | null {
-    if (!teamId) {
-      return null;
-    }
-
-    return `player--team-${teamId.toLowerCase()}`;
+    return getTeamClass(teamId, 'player--team-');
   }
 
   getTeamBadgeClass(teamId: string | null | undefined): string | null {
-    if (!teamId) {
-      return null;
-    }
-
-    return `player__badge--team-${teamId.toLowerCase()}`;
+    return getTeamClass(teamId, 'player__badge--team-');
   }
 
   // Helper to identify if a row corresponds to the current player for styling.

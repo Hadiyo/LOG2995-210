@@ -4,7 +4,8 @@ import {
     MatchPlayer,
     MatchTileInspection,
 } from '@common/game/match.interface';
-import { GameMode, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { buildVisibleObjects as buildMatchVisibleObjects } from '@common/game/match.utils';
+import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, MapObject, Vec2 } from '@common/maps/map.interface';
 import { cloneVec2, manhattanDistance, positionKey, samePosition } from './match-geometry';
 
@@ -48,38 +49,7 @@ export interface CombatAftermathResult {
 @Injectable({ providedIn: 'root' })
 export class MatchBoardService {
     buildVisibleObjects(objects: MapObject[], players: MatchPlayer[], flagCarrierId: string | null): MapObject[] {
-        const activeStarts = new Set(players.map((player) => positionKey(player.startingPosition)));
-
-        return objects
-            .filter((object) => {
-                if (object.type === ObjectType.START) {
-                    return activeStarts.has(positionKey(object.position));
-                }
-
-                if (object.type === ObjectType.FLAG) {
-                    return flagCarrierId === null;
-                }
-
-                return true;
-            })
-            .map((object) => ({ ...object, position: cloneVec2(object.position) }));
-    }
-
-    resolveFlagCarrier(match: InitializedMatch, playerId: string, position: Vec2): string | null {
-        if (match.flagCarrierId) {
-            return match.flagCarrierId;
-        }
-
-        if (match.mode !== GameMode.CTF) {
-            return null;
-        }
-
-        const flagObject = match.allObjects.find((object) => object.type === ObjectType.FLAG);
-        if (!flagObject) {
-            return null;
-        }
-
-        return samePosition(flagObject.position, position) ? playerId : null;
+        return buildMatchVisibleObjects(objects, players, flagCarrierId);
     }
 
     getPlayerAt(match: InitializedMatch, position: Vec2): MatchPlayer | null {
