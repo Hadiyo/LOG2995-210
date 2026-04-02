@@ -263,11 +263,11 @@ describe('WaitingRoomService rooms', () => {
 
         expect(onError).toHaveBeenCalledWith({
             socketId: 'socket-2',
-            payload: { message: 'Seul l organisateur peut exclure des joueurs.' },
+            payload: { message: "Seul l'organisateur peut exclure des joueurs." },
         });
         expect(onError).toHaveBeenCalledWith({
             socketId: 'socket-org',
-            payload: { message: 'L organisateur ne peut pas etre exclu.' },
+            payload: { message: "L'organisateur ne peut pas etre exclu." },
         });
         expect(onKicked).toHaveBeenCalledWith({
             accessCode,

@@ -193,7 +193,7 @@ export class WaitingRoomService {
       },
       error: () => {
         this.resetState();
-        this.errorSubject.next('Impossible de charger la salle d attente.');
+        this.errorSubject.next("Impossible de charger la salle d'attente.");
       },
     });
   }
