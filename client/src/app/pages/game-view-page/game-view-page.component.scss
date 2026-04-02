@@ -195,7 +195,6 @@
 .panel__tab--active {
   background: color-mix(in srgb, var(--bg-main) 82%, transparent);
   color: var(--text-main);
-  box-shadow: none;
 }
 
 .panel__tab:focus-visible {
@@ -359,10 +358,9 @@
 }
 
 .map-panel__board > app-game-map-grid {
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  min-height: 0;
+  align-self:stretch;
+  height:100%;
+  min-height:0;
   --grid-viewport-offset: 112px;
 }
 
@@ -492,6 +490,13 @@
 
 .match-end-modal h2 {
   margin: 0 0 8px;
+}
+
+.match-end-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 .combat-toast-stack {
@@ -670,10 +675,6 @@
   .turn-order__detail {
     padding: 8px 10px;
     font-size: 0.88rem;
-  }
-
-  .turn-order__meta-item:nth-child(4) {
-    text-align: left;
   }
 
   .turn-status__meta {

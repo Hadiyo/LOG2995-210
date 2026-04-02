@@ -42,6 +42,9 @@ export class GameSessionInteractionService {
         if (this.targets.getCombatActionTargets().size > 0) {
             options.push({ context: 'combat', label: 'Combat' });
         }
+        if (this.targets.getFlagTransferTargets().size > 0) {
+            options.push({ context: 'flag-transfer', label: 'Transferer drapeau' });
+        }
         if (this.targets.getDoorActionTargets().size > 0) {
             options.push({ context: 'door', label: 'Ouvrir/Fermer porte' });
         }
@@ -53,6 +56,8 @@ export class GameSessionInteractionService {
                 return this.targets.getSanctuaryActionTargets();
             case 'combat':
                 return this.targets.getCombatActionTargets();
+            case 'flag-transfer':
+                return this.targets.getFlagTransferTargets();
             case 'door':
                 return this.targets.getDoorActionTargets();
             default:
@@ -86,6 +91,7 @@ export class GameSessionInteractionService {
     actionHelperText(): string {
         if (this.actionContext() === 'sanctuary') return 'Choisissez un sanctuaire adjacent en surbrillance.';
         if (this.actionContext() === 'combat') return 'Choisissez un adversaire adjacent pour engager le combat.';
+        if (this.actionContext() === 'flag-transfer') return 'Choisissez un coequipier adjacent pour demander ou offrir le drapeau.';
         if (this.actionContext() === 'door') return 'Choisissez une porte adjacente pour l ouvrir ou la fermer.';
         return '';
     }
@@ -232,6 +238,8 @@ export class GameSessionInteractionService {
             this.handleSanctuaryAction(tile);
         } else if (this.actionContext() === 'combat') {
             this.handleCombatAction(tile);
+        } else if (this.actionContext() === 'flag-transfer') {
+            this.handleFlagTransferAction(tile);
         } else if (this.actionContext() === 'door') {
             this.handleDoorAction(tile);
         }
@@ -292,6 +300,20 @@ export class GameSessionInteractionService {
         this.clearActionSelection();
         this.closeInspection();
         this.movementFeedback.set(`Porte en (${tile.position.x}, ${tile.position.y}) actionnee.`);
+    }
+
+    private handleFlagTransferAction(tile: EditorCell): void {
+        const localPlayer = this.getLocalMatchPlayer();
+        const targetPlayer = this.display.playerAt(tile);
+        if (!localPlayer || !this.isActionTarget(tile) || !targetPlayer) {
+            this.movementFeedback.set('Action ignoree: transfert de drapeau impossible.');
+            return;
+        }
+
+        this.gameSessionSocket.requestFlagTransfer(localPlayer.id, targetPlayer.id);
+        this.clearActionSelection();
+        this.closeInspection();
+        this.movementFeedback.set(`Demande de transfert envoyee a ${targetPlayer.name}.`);
     }
 
     private shouldIgnoreMovementShortcut(event: KeyboardEvent): boolean {

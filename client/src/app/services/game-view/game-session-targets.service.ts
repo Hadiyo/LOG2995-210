@@ -3,6 +3,7 @@ import { MatchPlayer } from '@common/game/match.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { positionKey } from '@app/services/match/match-geometry';
 import { MatchBoardService } from '@app/services/match/match-board.service';
+import { MatchInteractionService } from '@app/services/match/match-interaction.service';
 import { MatchMovementService, MovementDirection } from '@app/services/match/match-movement.service';
 import { MOVEMENT_DIRECTIONS } from '@app/config/game-session.config';
 import { GameSessionDisplayService } from './game-session-display.service';
@@ -11,6 +12,7 @@ import { GameSessionDisplayService } from './game-session-display.service';
 export class GameSessionTargetsService {
     private readonly display = inject(GameSessionDisplayService);
     private readonly matchBoardService = inject(MatchBoardService);
+    private readonly matchInteractionService = inject(MatchInteractionService);
     private readonly movementService = inject(MatchMovementService);
 
     canUseAction(): boolean {
@@ -41,7 +43,28 @@ export class GameSessionTargetsService {
                 .filter((player) =>
                     player.id !== positionedPlayer.id &&
                     player.health > 0 &&
+                    (currentMatch.mode !== 'CTF' || !this.matchBoardService.isSameTeam(player, positionedPlayer)) &&
                     this.matchBoardService.areAdjacent(player.position, positionedPlayer.position),
+                )
+                .map((player) => positionKey(player.position)),
+        );
+    }
+
+    getFlagTransferTargets(): Set<string> {
+        return this.getFlagTransferTargetsForPlayer(this.display.findPlayerById(this.display.localPlayer()?.id ?? null));
+    }
+
+    getFlagTransferTargetsForPlayer(positionedPlayer: MatchPlayer | null): Set<string> {
+        const currentMatch = this.display.match();
+        if (!currentMatch || !positionedPlayer || currentMatch.mode !== GameMode.CTF) {
+            return new Set<string>();
+        }
+
+        return new Set(
+            currentMatch.players
+                .filter((player) =>
+                    player.id !== positionedPlayer.id &&
+                    this.matchInteractionService.requestFlagTransfer(currentMatch, positionedPlayer.id, player.id) !== null,
                 )
                 .map((player) => positionKey(player.position)),
         );
@@ -105,6 +128,7 @@ export class GameSessionTargetsService {
     hasAnyActionTarget(player: MatchPlayer): boolean {
         return this.getCombatActionTargetsForPlayer(player).size > 0 ||
             this.getDoorActionTargetsForPlayer(player).size > 0 ||
+            this.getFlagTransferTargetsForPlayer(player).size > 0 ||
             this.getSanctuaryActionTargetsForPlayer(player).size > 0;
     }
 

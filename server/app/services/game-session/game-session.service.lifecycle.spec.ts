@@ -10,7 +10,7 @@ import {
     makeTurnState,
     runtimeModule,
 } from './game-session.service.spec-helpers';
-import { ObjectType } from '@common/maps/map.enums';
+import { GameMode, ObjectType } from '@common/maps/map.enums';
 
 describe('GameSessionService lifecycle', () => {
     const harness = createGameSessionServiceHarness();
@@ -212,5 +212,32 @@ describe('GameSessionService lifecycle', () => {
         expect(emitSnapshotSpy).toHaveBeenCalledWith(inactiveRuntime);
         expect(harness.service.surrender('missing', 'player-1')).toBe(false);
         expect(harness.service.surrender('inactive', 'ghost')).toBe(false);
+    });
+
+    it('cancels a CTF match when a team has no remaining players after abandons', () => {
+        const privateState = harness.getPrivateState();
+        const runtime = makeRuntime({
+            sessionId: 'ctf-cancel',
+            match: makeMatch({
+                mode: GameMode.CTF,
+                players: [
+                    makeMatchPlayer({
+                        id: 'player-1', name: 'Alice', isOrganizer: true, teamId: 'A', position: { x: 0, y: 0 }, startingPosition: { x: 0, y: 0 },
+                    }),
+                    makeMatchPlayer({
+                        id: 'player-2', name: 'Bob', avatarId: 1, teamId: 'B', position: { x: 1, y: 0 }, startingPosition: { x: 1, y: 0 },
+                    }),
+                    makeMatchPlayer({
+                        id: 'player-3', name: 'Cara', avatarId: 2, teamId: 'B', position: { x: 2, y: 0 }, startingPosition: { x: 2, y: 0 },
+                    }),
+                ],
+            }),
+        });
+
+        privateState.sessions.set('ctf-cancel', runtime);
+        expect(harness.service.surrender('ctf-cancel', 'player-1')).toBe(true);
+        expect(runtime.match.endState?.winnerKind).toBe('none');
+        expect(runtime.match.endState?.message).toContain("La partie est annulee: l equipe A n'a plus aucun joueur");
+        expect(privateState.sessions.has('ctf-cancel')).toBe(false);
     });
 });

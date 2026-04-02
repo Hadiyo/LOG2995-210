@@ -1,7 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 import { generateClientId } from '@app/utils/id.util';
 import { MatchPlayer } from '@common/game/match.interface';
+import { GameMode } from '@common/maps/map.enums';
 import { manhattanDistance } from './match-geometry';
+import { MatchBoardService } from './match-board.service';
 import { MatchStateService } from './match-state.service';
 import { TurnStateService } from './turn-state.service';
 
@@ -20,6 +22,7 @@ export class CombatStateService {
     readonly lastCombatOutcome = signal<CombatOutcomeNotice | null>(null);
 
     constructor(
+        private readonly matchBoardService: MatchBoardService,
         private readonly matchStateService: MatchStateService,
         private readonly turnStateService: TurnStateService,
     ) {}
@@ -33,7 +36,12 @@ export class CombatStateService {
 
         const attacker = match.players.find((player) => player.id === attackerId) ?? null;
         const defender = match.players.find((player) => player.id === defenderId) ?? null;
-        if (!attacker || !defender || manhattanDistance(attacker.position, defender.position) !== 1) {
+        if (
+            !attacker ||
+            !defender ||
+            manhattanDistance(attacker.position, defender.position) !== 1 ||
+            (match.mode === GameMode.CTF && this.matchBoardService.isSameTeam(attacker, defender))
+        ) {
             return false;
         }
 
@@ -60,14 +68,17 @@ export class CombatStateService {
         const respawnMessage = defenderRespawn
             ? ` ${defender.name} reapparait en (${defenderRespawn.x}, ${defenderRespawn.y}).`
             : '';
+        const flagDropMessage = aftermath?.flagDroppedAt
+            ? ` Le drapeau tombe en (${aftermath.flagDroppedAt.x}, ${aftermath.flagDroppedAt.y}).`
+            : '';
 
         return {
             id: generateClientId(),
             attackerId: attacker.id,
             defenderId: defender.id,
-            attackerMessage: `Victoire contre ${defender.name}.`,
-            defenderMessage: `Defaite contre ${attacker.name}.${respawnMessage}`.trim(),
-            logMessage: `Combat termine: ${attacker.name} gagne contre ${defender.name}.${respawnMessage}`.trim(),
+            attackerMessage: `Victoire contre ${defender.name}.${flagDropMessage}`.trim(),
+            defenderMessage: `Defaite contre ${attacker.name}.${respawnMessage}${flagDropMessage}`.trim(),
+            logMessage: `Combat termine: ${attacker.name} gagne contre ${defender.name}.${respawnMessage}${flagDropMessage}`.trim(),
         };
     }
 }

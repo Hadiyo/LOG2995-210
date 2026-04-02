@@ -143,6 +143,7 @@ export class GameSessionTurnEffectsService {
     ): boolean {
         return !!currentMatch &&
             !currentMatch.endState &&
+            !currentMatch.pendingFlagTransfer &&
             !!currentTurnState &&
             currentTurnState.phase === 'active' &&
             !!currentTurnState.activePlayerId;

@@ -116,6 +116,7 @@ export const makeMatch = (overrides: Partial<InitializedMatch> = {}): Initialize
         allObjects: allObjects.map((object) => ({ ...object, position: { ...object.position } })),
         allStartingPoints: [{ x: 0, y: 0 }, { x: 1, y: 0 }],
         players,
+        pendingFlagTransfer: null,
         sanctuaryStates: [],
         pendingSanctuaryChoice: null,
         endState: null,
@@ -189,7 +190,7 @@ export function createGameSessionServiceHarness() {
             return service as unknown as GameSessionServicePrivateState;
         },
         getServiceInternals(): GameSessionServiceInternals {
-            return service as unknown as GameSessionServiceInternals;
+            return (service as unknown as { lifecycle: GameSessionServiceInternals }).lifecycle;
         },
     };
 }

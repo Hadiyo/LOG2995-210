@@ -86,11 +86,14 @@ export class EditorStateService {
 
     /**
      * Select an object to place:
+     * - FLAG is only available in CTF
      * - clears tile selection
      * - switches tool to applicator
      */
     selectObject(objectType: ObjectType): void {
-        if (objectType === ObjectType.FLAG && this.editorMap().mode !== GameMode.CTF) return;
+        if (objectType === ObjectType.FLAG && this.editorMap().mode !== GameMode.CTF) {
+            return;
+        }
 
         this.selectedObjectType.set(objectType);
         this.selectedTileType.set(null);
@@ -121,7 +124,22 @@ export class EditorStateService {
      * Change game mode.
      */
     setMode(mode: GameMode): void {
-        this.editorMap.update((currentMap) => ({ ...currentMap, mode }));
+        this.editorMap.update((currentMap) => {
+            const nextObjects = mode === GameMode.CTF
+                ? currentMap.objects
+                : currentMap.objects.filter((object) => object.type !== ObjectType.FLAG);
+
+            return {
+                ...currentMap,
+                mode,
+                objects: nextObjects,
+                map: this.occupancy.refreshOccupied(currentMap.map, nextObjects, currentMap.size),
+            };
+        });
+
+        if (mode !== GameMode.CTF) {
+            this.selectedObjectType.update((type) => (type === ObjectType.FLAG ? null : type));
+        }
     }
 
     /**
@@ -348,7 +366,9 @@ export class EditorStateService {
      * - placing overwrites intersecting objects (by design)
      */
     private placeObjectAtIndex(index: number, type: ObjectType): void {
-        if (type === ObjectType.FLAG && this.editorMap().mode !== GameMode.CTF) return;
+        if (type === ObjectType.FLAG && this.editorMap().mode !== GameMode.CTF) {
+            return;
+        }
 
         this.editorMap.update((currentMap) => {
             const cell = currentMap.map[index];

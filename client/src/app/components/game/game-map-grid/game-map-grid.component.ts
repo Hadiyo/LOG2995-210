@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CharacterSpriteComponent } from '@app/components/game/character-sprite/character-sprite.component';
+import { getTeamClass } from '@app/components/game/team-class.util';
 import { positionKey } from '@app/services/match/match-geometry';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
 import { TileType } from '@common/maps/map.enums';
@@ -110,6 +111,10 @@ export class GameMapGridComponent {
     const hash = Array.from(playerId).reduce((sum, char) => sum + char.charCodeAt(0), 0);
     const delay = (hash % BREATHING_DELAY_VARIANTS) * BREATHING_DELAY_STEP_SECONDS;
     return `${delay}s`;
+  }
+
+  getTeamClass(teamId: string | null | undefined): string | null {
+    return getTeamClass(teamId, 'player-layer--team-');
   }
 
   // Helper to identify if a pose is expired based on server timestamp and duration.

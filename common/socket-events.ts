@@ -51,6 +51,8 @@ export enum CombatSocketEvents {
     ResolveSanctuaryChoice = 'resolveSanctuaryChoice',
     StartCombat = 'startCombat',
     ToggleDoor = 'toggleDoor',
+    RequestFlagTransfer = 'requestFlagTransfer',
+    ResolveFlagTransfer = 'resolveFlagTransfer',
 }
 
 export enum WaitingRoomEvents {
@@ -170,6 +172,18 @@ export interface ToggleDoorPayload {
     sessionId: string;
     playerId: string;
     position: { x: number; y: number };
+}
+
+export interface RequestFlagTransferPayload {
+    sessionId: string;
+    playerId: string;
+    teammateId: string;
+}
+
+export interface ResolveFlagTransferPayload {
+    sessionId: string;
+    playerId: string;
+    accepted: boolean;
 }
 
 export interface SurrenderGamePayload {
