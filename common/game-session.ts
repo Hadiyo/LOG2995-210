@@ -1,4 +1,4 @@
-import { ChatMessage } from '@common/chat/chat.interface';
+import { ChatMessage } from './chat/chat.interface';
 import { GameMap } from './maps/map.interface';
 import { Player } from './player/player.interface';
 
@@ -31,4 +31,34 @@ export interface GameSessionSnapshot extends Game {
     messages: ChatMessage[];
     debugMode: boolean;
     createdAt: string;
+}
+
+// End stats interface 
+interface VisitedTiles {
+    position: string;
+    players: string[];
+}
+
+export interface EndStats {
+    startTime: Date;
+    endTime: Date | null;
+    turns: number;
+    usedSanctuaries: string[];
+    totalSanctuaries: number;
+    usedDoors: string[];
+    totalDoors: number;
+    visitedTiles: VisitedTiles[];
+    totalTiles: number;
+    playerStats: PlayerStats[];
+}
+
+export interface PlayerStats {
+    id: string;
+    name: string;
+    combats: number;
+    victories: number;
+    defeats: number;
+    damageTaken: number;
+    damageDealt: number;
+    percentTiles: number;
 }

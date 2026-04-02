@@ -1,6 +1,6 @@
-import { GameSessionService } from '@app/services/game-session/game-session.service';
-import { GameSessionRuntime } from '@app/services/game-session/game-session.runtime';
 import * as runtimeModule from '@app/services/game-session/game-session.runtime';
+import { GameSessionRuntime } from '@app/services/game-session/game-session.runtime';
+import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
@@ -158,13 +158,14 @@ export const makeRuntime = (overrides: Partial<GameSessionRuntime> = {}): GameSe
 export function createGameSessionServiceHarness() {
     let service: GameSessionService;
     let mapService: { getMapByIdForEditor: jest.Mock };
+    let statsService: {};
 
     beforeEach(() => {
         jest.useFakeTimers();
         mapService = {
             getMapByIdForEditor: jest.fn(),
         };
-        service = new GameSessionService(mapService as never);
+        service = new GameSessionService(mapService as never, statsService as never);
     });
 
     afterEach(() => {

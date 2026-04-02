@@ -8,6 +8,7 @@ import { PlayerPose } from '@common/player/player.interface';
 import { SessionSocketEvents } from '@common/socket-events';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter } from 'events';
+import { EndStatsService } from '../end-stats.service';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import {
     ATTACK_POSE_DURATION_MS,
@@ -37,7 +38,10 @@ export class GameSessionService {
     private readonly sessions = new Map<string, GameSessionRuntime>();
     private readonly events = new EventEmitter();
 
-    constructor(private readonly mapService: MapService) {}
+    constructor(
+        private readonly mapService: MapService,
+        private readonly endStatsService: EndStatsService
+    ) {}
 
     on<T>(event: SessionSocketEvents, callback: (payload: T) => void): void {
         this.events.on(event, callback);
@@ -53,6 +57,12 @@ export class GameSessionService {
         this.sessions.set(session.sessionId, session);
         this.emitSnapshot(session);
         this.startTransition(session);
+
+        await this.endStatsService.startGame(session.sessionId, mapId, players);
+
+        for (const player of session.match.players) {
+            this.endStatsService.visitTile(session.sessionId, player.startingPosition, player.id);
+        }
         return session.sessionId;
     }
 
@@ -148,6 +158,7 @@ export class GameSessionService {
         }
 
         this.advanceToNextTurn(session);
+        this.endStatsService.endTurn(sessionId);
         return true;
     }
 
@@ -174,7 +185,7 @@ export class GameSessionService {
 
         if (nextPlayers.length === 0) {
             clearGameSessionTimers(session);
-            this.sessions.delete(sessionId);
+            this.deleteSession(sessionId);
             return true;
         }
 
@@ -288,6 +299,8 @@ export class GameSessionService {
             return false;
         }
 
+        this.endStatsService.visitTile(sessionId, destination, playerId);
+
         const nextPlayers = session.match.players.map((player) =>
             player.id === playerId
                 ? {
@@ -320,6 +333,8 @@ export class GameSessionService {
         if (!actionContext) {
             return false;
         }
+
+        this.endStatsService.useDoor(sessionId, position);
 
         const { session, player } = actionContext;
         const nextMap = session.match.map.map((cell) =>
@@ -395,6 +410,8 @@ export class GameSessionService {
             actionTaken: true,
         };
 
+        this.endStatsService.startCombat(sessionId, attackerId, defenderId);
+        
         if (session.match.endState) {
             this.finishMatch(session);
             return true;
@@ -454,7 +471,12 @@ export class GameSessionService {
             actionTaken: true,
         };
         this.emitSnapshot(session);
-        this.sessions.delete(session.sessionId);
+        this.events.emit(SessionSocketEvents.EndGame, session.sessionId);
+    }
+
+    private deleteSession(sessionId: string) {
+        this.endStatsService.endSession(sessionId);
+        this.sessions.delete(sessionId);
     }
 
     private emitSnapshot(session: GameSessionRuntime): void {

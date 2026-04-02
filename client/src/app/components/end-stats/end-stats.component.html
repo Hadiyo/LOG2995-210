@@ -1,0 +1,60 @@
+<div>
+    <h2>Statistiques de fin de partie</h2>
+</div>
+<div>
+    @if (endStats) {
+        <div class="game-stats">
+            <p>Nombre de tours: {{ turns }}</p>
+            <p>Duration: {{ durationMinute }}:{{ durationSecond }}</p>
+            <p>Pourcentage de sanctuaires utilisés: {{ percentSanctuary }}%</p>
+            <p>Pourcentage de portes utilisées: {{ percentDoor }}%</p>
+            <p>Pourcentage de tuiles visitées: {{ percentTiles }}%</p>
+        </div>
+        <div class="player-stats">
+            <table class="player-table">
+                <thead>
+                <tr>
+                    <th><button (click)="sortPlayers('name')">Joueur</button></th>
+                    <th><button (click)="sortPlayers('combats')">Combats</button></th>
+                    <th><button (click)="sortPlayers('victories')">Victoires</button></th>
+                    <th><button (click)="sortPlayers('defeats')">Défaites</button></th>
+                    <th><button (click)="sortPlayers('damageTaken')">PV perdus</button></th>
+                    <th><button (click)="sortPlayers('damageDealt')">PV infligés</button></th>
+                    <th><button (click)="sortPlayers('percentTiles')">% Tuiles</button></th>
+                </tr>
+                </thead>
+            
+                <tbody>
+                @for (player of playerStats; track player.id) {
+                    <tr>
+                    <td>{{ player.name }}</td>
+                    <td>{{ player.combats }}</td>
+                    <td>{{ player.victories }}</td>
+                    <td>{{ player.defeats }}</td>
+                    <td>
+                        <div class="bar-container">
+                        <div class="bar red" [style.width.%]="player.damageTaken"></div>
+                        <span>{{ player.damageTaken }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="bar-container">
+                        <div class="bar green" [style.width.%]="player.damageDealt"></div>
+                        <span>{{ player.damageDealt }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="bar-container">
+                        <div class="bar blue" [style.width.%]="percentageTilePerPlayer(player)"></div>
+                        <span>{{ player.percentTiles }}%</span>
+                        </div>
+                    </td>
+                    </tr>
+                } 
+                </tbody>
+            </table>
+        </div>
+    } @else {
+        <p> Statisques non-trouvées </p>
+    }
+</div>

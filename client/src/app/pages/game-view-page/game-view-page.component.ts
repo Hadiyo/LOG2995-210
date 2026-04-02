@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, computed, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GameActionBarComponent } from '@app/components/game/game-action-bar/game-action-bar.component';
@@ -19,6 +19,7 @@ import {
 import { GAME_VIEW_CONSTANTS } from '@app/config/game-view.config';
 import { MAP_SIZE_CONFIG } from '@app/config/map.config';
 import { ChatService } from '@app/services/chat/chat.service';
+import { EndStatsService } from '@app/services/end-stats/end-stats.service';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
 import { GameSessionDisplayService } from '@app/services/game-view/game-session-display.service';
 import { GameSessionInteractionService } from '@app/services/game-view/game-session-interaction.service';
@@ -75,6 +76,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     private readonly router = inject(Router);
     private readonly gameSessionSocket = inject(GameSessionSocketService);
     private readonly chatService = inject(ChatService);
+    private readonly endStatsService = inject(EndStatsService);
 
     protected readonly endRedirectRemainingMs = signal(0);
     protected readonly errorMessage = computed(() => this.gameSessionSocket.errorMessage() || this.display.errorMessage());
@@ -193,10 +195,12 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.chatService.loadChatMessages(navigationMessages);
         this.gameSessionSocket.joinSession(sessionId, localPlayer.id);
         this.chatService.initChat();
+        this.endStatsService.initEndStats();
     }
 
     ngOnDestroy(): void {
         this.chatService.unsubscribeToSocketEvents();
+        this.endStatsService.unsubscribeToSocketEvents();
         this.effects.destroy();
         this.localPoseIntervalId = stopLocalPoseRefreshClock(this.localPoseIntervalId);
         this.clearMatchEndRedirect();
@@ -364,7 +368,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.matchEndRedirectTimeoutId = window.setTimeout(() => {
             this.clearMatchEndRedirect();
             this.matchState.endLocalSession(endState.message);
-            void this.router.navigate(['/home']);
+            void this.router.navigate(['/end-game']);
         }, MATCH_END_REDIRECT_DURATION_MS);
     }
 

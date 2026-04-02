@@ -42,6 +42,7 @@ export enum SessionSocketEvents {
     DebugTeleportPlayer = 'debugTeleportPlayer',
     GameSessionSnapshot = 'gameSessionSnapshot',
     GameSessionError = 'gameSessionError',
+    EndGame = 'endGame',
 }
 
 export enum CombatSocketEvents {

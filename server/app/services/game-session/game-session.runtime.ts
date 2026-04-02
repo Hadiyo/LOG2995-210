@@ -1,9 +1,9 @@
+import { buildTurnOrderFromPlayers } from '@app/services/game-session/game-session.turn';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMapDetails, Vec2 } from '@common/maps/map.interface';
-import { buildTurnOrderFromPlayers } from '@app/services/game-session/game-session.turn';
 import { buildInitializedMatchFromEditor, getGameSessionObjectCovering } from './game-session.match';
 
 export const TRANSITION_DURATION_MS = 3000;

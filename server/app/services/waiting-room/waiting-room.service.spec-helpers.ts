@@ -1,7 +1,7 @@
 import { ChatService } from '@app/services/chat/chat.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
-import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { PreviewImageFormat } from '@common/enum';
+import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import { EditorMap, MapSummary } from '@common/maps/map.interface';
 
@@ -51,6 +51,7 @@ export function createWaitingRoomServiceHarness() {
     let mapService: { getMapById: jest.Mock; getAllMapsSummary: jest.Mock };
     let gameSessionService: { createSessionFromWaitingRoom: jest.Mock; destroySession: jest.Mock };
     let chatService: { createMessage: jest.MockedFunction<ChatService['createMessage']> };
+    let endStatsService: {};
 
     beforeEach(() => {
         mapService = {
@@ -80,7 +81,7 @@ export function createWaitingRoomServiceHarness() {
             }),
         };
 
-        service = new WaitingRoomService(mapService as never, gameSessionService as never, chatService as never);
+        service = new WaitingRoomService(mapService as never, gameSessionService as never, chatService as never, endStatsService as never);
     });
 
     return {

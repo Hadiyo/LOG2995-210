@@ -1,0 +1,24 @@
+:host {
+    --panel-padding: 30px;
+}
+
+.end-game-container {
+    display: grid;
+    grid-template-columns: 70% 30%;
+    height: 100%;
+}
+
+.end-game-container app-end-stats {
+    grid-column: 1;
+}
+
+.chat {
+    display: flex;
+    grid-column: 2;
+    flex-direction: column;
+    min-height: 90vh;
+    height: 90vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: var(--panel-padding);
+}

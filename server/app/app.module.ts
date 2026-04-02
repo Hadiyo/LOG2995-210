@@ -13,6 +13,7 @@ import { MapGateway } from './gateways/map/map.gateway';
 import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
 import { MatchWaitingRoomGateway } from './gateways/waiting-room/match-waiting-room.gateway';
 import { ChatService } from './services/chat/chat.service';
+import { EndStatsService } from './services/end-stats.service';
 
 @Module({
     imports: [
@@ -39,6 +40,8 @@ import { ChatService } from './services/chat/chat.service';
         MatchWaitingRoomService,
         GameSessionGateway,
         ChatGateway,
-        ChatService],
+        ChatService,
+        EndStatsService,
+    ],
 })
 export class AppModule {}

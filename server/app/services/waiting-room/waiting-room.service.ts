@@ -14,6 +14,7 @@ import {
 } from '@common/socket-events';
 import { Injectable } from '@nestjs/common';
 import { EventEmitter } from 'events';
+import { EndStatsService } from '../end-stats.service';
 import {
     findWaitingRoomAccessCode,
     resolveUniqueWaitingRoomPlayerName,
@@ -46,6 +47,7 @@ export class WaitingRoomService {
         private readonly mapService: MapService,
         private readonly gameSessionService: GameSessionService,
         private readonly chatService: ChatService,
+        private readonly endStatsService: EndStatsService,
     ) {}
 
     on<T>(event: WaitingRoomEvents, callback: (payload: T) => void): void {
