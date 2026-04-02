@@ -9,6 +9,7 @@ export interface GameTileInfoModalData {
   tileCharacteristics: readonly string[];
   tileBlockingReason: string | null;
   objectType: ObjectType | null;
+  objectUsed: boolean;
   objectLabel: string | null;
   objectDescription: string | null;
   playerName: string | null;

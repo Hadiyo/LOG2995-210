@@ -1,7 +1,7 @@
 import { computed, inject, Injectable } from '@angular/core';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { MatchPlayer, MatchTileInspection } from '@common/game/match.interface';
-import { EditorCell, Vec2 } from '@common/maps/map.interface';
+import { EditorCell, MapObject, Vec2 } from '@common/maps/map.interface';
 import { MatchMovementService } from '@app/services/match/match-movement.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
@@ -32,6 +32,10 @@ export class GameSessionDisplayService {
             return new Map<string, number>();
         }
 
+        if (this.hasLocalPendingSanctuaryChoice()) {
+            return new Map<string, number>();
+        }
+
         return this.movementService.getReachableTiles(
             currentMatch,
             localPlayer.id,
@@ -48,6 +52,10 @@ export class GameSessionDisplayService {
 
     inspectTile(position: Vec2): MatchTileInspection | null {
         return this.matchState.inspectTile(position);
+    }
+
+    objectAt(position: Vec2): MapObject | null {
+        return this.matchState.getObjectCovering(position);
     }
 
     turnOrderedPlayers(): MatchPlayer[] {
@@ -81,6 +89,10 @@ export class GameSessionDisplayService {
 
     localPlayerStateLabel(): string {
         const localPlayer = this.localPlayer();
+        if (this.hasLocalPendingSanctuaryChoice()) {
+            return 'Choix sanctuaire';
+        }
+
         const playerState = this.turnState()?.playerStates.find((entry) => entry.playerId === localPlayer?.id)?.state ?? 'waiting';
 
         switch (playerState) {
@@ -101,7 +113,7 @@ export class GameSessionDisplayService {
 
     localActionAvailable(): boolean {
         const localPlayer = this.localPlayer();
-        return !!localPlayer && this.turnStateService.canPerformAction(localPlayer.id);
+        return !!localPlayer && !this.hasLocalPendingSanctuaryChoice() && this.turnStateService.canPerformAction(localPlayer.id);
     }
 
     findPlayerById(playerId: string | null): MatchPlayer | null {
@@ -110,6 +122,11 @@ export class GameSessionDisplayService {
         }
 
         return this.match()?.players.find((player) => player.id === playerId) ?? null;
+    }
+
+    hasLocalPendingSanctuaryChoice(): boolean {
+        const pendingChoice = this.match()?.pendingSanctuaryChoice;
+        return !!pendingChoice && pendingChoice.playerId === this.localPlayer()?.id;
     }
 
     private toCountdownSeconds(remainingMs: number): number {

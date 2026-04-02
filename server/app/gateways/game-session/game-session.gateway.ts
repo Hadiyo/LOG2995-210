@@ -10,11 +10,15 @@ import {
     getGameSessionRoom,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
+    RequestFlagTransferPayload,
+    ResolveFlagTransferPayload,
+    ResolveSanctuaryChoicePayload,
     SessionSocketEvents,
     StartCombatPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
     ToggleDoorPayload,
+    UseSanctuaryPayload,
 } from '@common/socket-events';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
 import {
@@ -177,6 +181,36 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
         }
     }
 
+    @SubscribeMessage(CombatSocketEvents.UseSanctuary)
+    useSanctuary(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: UseSanctuaryPayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Action de sanctuaire refusee.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.useSanctuary(payload.sessionId, payload.playerId, payload.sanctuaryId)) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Action de sanctuaire refusee.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(CombatSocketEvents.ResolveSanctuaryChoice)
+    resolveSanctuaryChoice(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: ResolveSanctuaryChoicePayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Choix de sanctuaire refuse.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.resolveSanctuaryChoice(payload.sessionId, payload.playerId, payload.choice)) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Choix de sanctuaire refuse.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
     @SubscribeMessage(CombatSocketEvents.ToggleDoor)
     toggleDoor(
         @ConnectedSocket() client: Socket,
@@ -189,6 +223,36 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
 
         if (!this.gameSessionService.toggleDoor(payload.sessionId, payload.playerId, payload.position)) {
             client.emit(SessionSocketEvents.GameSessionError, { message: 'Action de porte refusee.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(CombatSocketEvents.RequestFlagTransfer)
+    requestFlagTransfer(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: RequestFlagTransferPayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Transfert du drapeau refuse.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.requestFlagTransfer(payload.sessionId, payload.playerId, payload.teammateId)) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Transfert du drapeau refuse.' } satisfies GameSessionErrorPayload);
+        }
+    }
+
+    @SubscribeMessage(CombatSocketEvents.ResolveFlagTransfer)
+    resolveFlagTransfer(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: ResolveFlagTransferPayload,
+    ): void {
+        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Reponse de transfert refusee.' } satisfies GameSessionErrorPayload);
+            return;
+        }
+
+        if (!this.gameSessionService.resolveFlagTransfer(payload.sessionId, payload.playerId, payload.accepted)) {
+            client.emit(SessionSocketEvents.GameSessionError, { message: 'Reponse de transfert refusee.' } satisfies GameSessionErrorPayload);
         }
     }
 

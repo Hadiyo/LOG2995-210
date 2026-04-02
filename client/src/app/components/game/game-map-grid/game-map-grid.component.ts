@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CharacterSpriteComponent } from '@app/components/game/character-sprite/character-sprite.component';
+import { getTeamClass } from '@app/components/game/team-class.util';
 import { positionKey } from '@app/services/match/match-geometry';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
 import { TileType } from '@common/maps/map.enums';
@@ -38,6 +39,7 @@ export class GameMapGridComponent {
   @Input() reachableCellKeys: ReadonlySet<string> = new Set<string>();
   @Input() reachableOriginKey: string | null = null;
   @Input() actionTargetCellKeys: ReadonlySet<string> = new Set<string>();
+  @Input() inactiveSanctuaryObjectIds: ReadonlySet<number> = new Set<number>();
   // Emits tile index when user clicks a cell.
   @Output() cellClick = new EventEmitter<number>();
   @Output() cellContextMenu = new EventEmitter<{ event: MouseEvent; index: number }>();
@@ -81,6 +83,10 @@ export class GameMapGridComponent {
       object.position.x === cell.position.x && object.position.y === cell.position.y) ?? null;
   }
 
+  isUsedSanctuary(object: MapObject): boolean {
+    return this.inactiveSanctuaryObjectIds.has(object.id);
+  }
+
   // Fallback avatar id if missing.
   getAvatarId(player: Player): number {
     return player.information.avatarId ?? 0;
@@ -105,6 +111,10 @@ export class GameMapGridComponent {
     const hash = Array.from(playerId).reduce((sum, char) => sum + char.charCodeAt(0), 0);
     const delay = (hash % BREATHING_DELAY_VARIANTS) * BREATHING_DELAY_STEP_SECONDS;
     return `${delay}s`;
+  }
+
+  getTeamClass(teamId: string | null | undefined): string | null {
+    return getTeamClass(teamId, 'player-layer--team-');
   }
 
   // Helper to identify if a pose is expired based on server timestamp and duration.

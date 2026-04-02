@@ -5,14 +5,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { GameActionBarComponent } from '@app/components/game/game-action-bar/game-action-bar.component';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { GameCurrentPlayerPanelComponent } from '@app/components/game/game-current-player-panel/game-current-player-panel.component';
+import { GameMapActionPromptComponent } from '@app/components/game/game-map-action-prompt/game-map-action-prompt.component';
 import { GameMapGridComponent } from '@app/components/game/game-map-grid/game-map-grid.component';
 import { GamePlayerListComponent } from '@app/components/game/game-player-list/game-player-list.component';
 import { GameSessionInfoPanelComponent } from '@app/components/game/game-session-info-panel/game-session-info-panel.component';
 import { GameTileInfoModalComponent } from '@app/components/game/game-tile-info-modal/game-tile-info-modal.component';
 import {
     ACTIVE_TURN_DURATION_MS,
-    CLOCK_TICK_MS,
-    MATCH_END_REDIRECT_DURATION_MS,
     MILLISECONDS_PER_SECOND,
     TRANSITION_DURATION_MS,
 } from '@app/config/game-session.config';
@@ -33,17 +32,24 @@ import { toGamePlayer } from '@app/utils/game-view/game-view-player.utils';
 import { startLocalPoseRefreshClock, stopLocalPoseRefreshClock } from '@app/utils/game-view/game-view-pose-clock.utils';
 import { createSelectedTileInfo } from '@app/utils/game-view/game-view-tile-info.utils';
 import { ChatMessage } from '@common/chat/chat.interface';
-import { MatchEndState, MatchPlayer } from '@common/game/match.interface';
+import { MatchPlayer } from '@common/game/match.interface';
 import { MapSize } from '@common/maps/map.enums';
 import { GameCell } from '@common/maps/map.interface';
 import { Player, PlayerStatus } from '@common/player/player.interface';
-
+import {
+    buildChatMessage,
+    buildIncomingFlagTransfer,
+    clearMatchEndRedirect,
+    MatchEndRedirectState,
+    syncMatchEndRedirect,
+} from './game-view-page.helpers';
 @Component({
     selector: 'app-game-view-page',
     standalone: true,
     imports: [
         CommonModule,
         GameMapGridComponent,
+        GameMapActionPromptComponent,
         GamePlayerListComponent,
         GameActionBarComponent,
         GameChatPanelComponent,
@@ -53,12 +59,7 @@ import { Player, PlayerStatus } from '@common/player/player.interface';
     ],
     templateUrl: './game-view-page.component.html',
     styleUrls: ['./game-view-page.component.scss'],
-    providers: [
-        GameSessionDisplayService,
-        GameSessionInteractionService,
-        GameSessionTargetsService,
-        GameSessionTurnEffectsService,
-    ],
+    providers: [GameSessionDisplayService, GameSessionInteractionService, GameSessionTargetsService, GameSessionTurnEffectsService],
 })
 export class GameViewPageComponent implements OnInit, OnDestroy {
     private static readonly activeTurnDurationSeconds = ACTIVE_TURN_DURATION_MS / MILLISECONDS_PER_SECOND;
@@ -88,6 +89,9 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly nowMs = signal(Date.now());
     protected readonly mapCells = computed<readonly GameCell[]>(() => this.match()?.map ?? []);
     protected readonly mapObjects = computed(() => this.match()?.objects ?? []);
+    protected readonly inactiveSanctuaryObjectIds = computed<ReadonlySet<number>>(
+        () => new Set((this.match()?.sanctuaryStates ?? []).filter((state) => state.cooldownTurnsRemaining > 0).map((state) => state.objectId)),
+    );
     protected readonly cols = computed<number>(() => this.match()?.mapSize ?? MapSize.S);
     protected readonly rows = computed<number>(() => this.match()?.mapSize ?? MapSize.S);
     protected readonly maxPlayers = computed<number>(() => {
@@ -97,16 +101,20 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly turnOrder = computed<readonly string[]>(() => this.display.turnOrderedPlayers().map((player) => player.id));
     protected readonly players = computed<readonly Player[]>(() => {
         const currentTurnState = this.display.turnState();
+        const pendingSanctuaryPlayerId = this.match()?.pendingSanctuaryChoice?.playerId ?? null;
         return (this.match()?.players ?? []).map((player) =>
             toGamePlayer(
                 player,
                 currentTurnState?.activePlayerId ?? null,
-                currentTurnState?.actionTaken ?? true,
+                (currentTurnState?.actionTaken ?? true) || pendingSanctuaryPlayerId === player.id,
                 this.display.localMovementPointsRemaining(),
+                this.match()?.flagCarrierId ?? null,
             ),
         );
     });
     protected readonly activePlayerId = computed<string>(() => this.display.turnState()?.activePlayerId ?? '');
+    protected readonly winningTeamId = computed(() => this.display.matchEndState()?.winnerTeamId ?? null);
+    protected readonly winnerKind = computed(() => this.display.matchEndState()?.winnerKind ?? 'none');
     protected readonly activePlayer = computed<Player | null>(() =>
         this.players().find((player) => player.id === this.activePlayerId()) ?? null,
     );
@@ -121,11 +129,17 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     );
     protected readonly debugModeEnabled = computed<boolean>(() => this.match()?.debugMode ?? false);
     protected readonly canToggleDebugMode = computed<boolean>(() => this.currentPlayer()?.information.isOrganizer ?? false);
+    protected readonly hasLocalPendingSanctuaryChoice = computed<boolean>(() => this.interaction.hasLocalPendingSanctuaryChoice());
     protected readonly canEndTurn = computed<boolean>(() =>
-        this.canAct() || (this.debugModeEnabled() && (this.currentPlayer()?.information.isOrganizer ?? false)),
+        !this.hasLocalPendingSanctuaryChoice() &&
+        (this.canAct() || (this.debugModeEnabled() && (this.currentPlayer()?.information.isOrganizer ?? false))),
     );
-    protected readonly canAct = computed<boolean>(() => this.targets.isLocalPlayerTurn() && !this.display.matchEndState());
-    protected readonly canUseActionMode = computed<boolean>(() => this.interaction.canToggleActionMode());
+    protected readonly canAct = computed<boolean>(() =>
+        this.targets.isLocalPlayerTurn() && !this.display.matchEndState() && !this.hasLocalPendingSanctuaryChoice(),
+    );
+    protected readonly canUseActionMode = computed<boolean>(() =>
+        !this.hasLocalPendingSanctuaryChoice() && this.interaction.canToggleActionMode(),
+    );
     protected readonly actionModeEnabled = computed<boolean>(() =>
         this.interaction.actionSelectionOpen() || !!this.interaction.actionContext(),
     );
@@ -143,6 +157,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly showTurnStatusOverlay = computed<boolean>(() =>
         this.isTurnStatusPanelOpen() || this.display.turnState()?.phase === 'transition',
     );
+    protected readonly canCloseTurnStatusOverlay = computed<boolean>(() => this.display.turnState()?.phase !== 'transition');
     protected readonly activePanelName = computed<string | null>(() => {
         const turnState = this.display.turnState();
         if (!turnState) {
@@ -164,17 +179,31 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         return player ? positionKey(player.position) : null;
     });
     protected readonly turnDetails = computed<readonly MatchPlayer[]>(() => this.display.turnOrderedPlayers());
-    protected readonly selectedTileInfo = createSelectedTileInfo(this.interaction.inspectedTile, this.mapCells, this.mapObjects, this.players);
+    protected readonly selectedTileInfo = createSelectedTileInfo(
+        this.interaction.inspectedTile, this.mapCells, this.mapObjects, this.players, this.inactiveSanctuaryObjectIds,
+    );
     protected readonly chatMessages = toSignal(this.chatService.chat$, { initialValue: [] as ChatMessage[] });
+    protected readonly incomingFlagTransfer = computed(() => buildIncomingFlagTransfer(this.match(), this.localPlayerId()));
 
-    private matchEndRedirectTimeoutId: number | null = null;
-    private matchEndRedirectIntervalId: number | null = null;
-    private scheduledMatchEndId: string | null = null;
+    private matchEndRedirectState: MatchEndRedirectState = {
+        intervalId: null,
+        scheduledMatchEndId: null,
+        timeoutId: null,
+    };
     private localPoseIntervalId: number | null = null;
 
     constructor() {
         effect(() => {
-            this.syncMatchEndRedirect(this.display.matchEndState());
+            this.matchEndRedirectState = syncMatchEndRedirect(
+                this.display.matchEndState(),
+                {
+                    endRedirectRemainingMs: this.endRedirectRemainingMs,
+                    interaction: this.interaction,
+                    matchState: this.matchState,
+                    router: this.router,
+                    state: this.matchEndRedirectState,
+                },
+            );
         });
     }
 
@@ -203,7 +232,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.endStatsService.unsubscribeToSocketEvents();
         this.effects.destroy();
         this.localPoseIntervalId = stopLocalPoseRefreshClock(this.localPoseIntervalId);
-        this.clearMatchEndRedirect();
+        this.matchEndRedirectState = clearMatchEndRedirect(this.matchEndRedirectState, this.endRedirectRemainingMs);
     }
 
     protected endRedirectCountdownSeconds(): number {
@@ -253,9 +282,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         }
 
         const message: ChatMessage = {
-            author,
-            content,
-            createdAt: new Date().toISOString(),
+            ...buildChatMessage(author, content),
         };
         this.chatService.sendMessage(message);
     }
@@ -274,6 +301,26 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
 
     protected onToggleTurnStatusPanel(): void {
         this.isTurnStatusPanelOpen.update((open) => !open);
+    }
+
+    protected acceptIncomingFlagTransfer(): void {
+        const localPlayerId = this.localPlayerId();
+        if (!localPlayerId || !this.incomingFlagTransfer()) {
+            return;
+        }
+
+        this.gameSessionSocket.resolveFlagTransfer(localPlayerId, true);
+        this.interaction.movementFeedback.set('Transfert du drapeau accepte.');
+    }
+
+    protected refuseIncomingFlagTransfer(): void {
+        const localPlayerId = this.localPlayerId();
+        if (!localPlayerId || !this.incomingFlagTransfer()) {
+            return;
+        }
+
+        this.gameSessionSocket.resolveFlagTransfer(localPlayerId, false);
+        this.interaction.movementFeedback.set('Transfert du drapeau refuse.');
     }
 
     protected onToggleDebugMode(): void {
@@ -324,7 +371,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     }
 
     protected quitGame(): void {
-        this.clearMatchEndRedirect();
+        this.matchEndRedirectState = clearMatchEndRedirect(this.matchEndRedirectState, this.endRedirectRemainingMs);
         this.interaction.clearActionSelection();
         this.leaveMatch('Vous avez abandonne la partie. Retour a l accueil.');
         void this.router.navigate(['/home']);
@@ -342,47 +389,5 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         }
 
         this.matchState.abandonLocalPlayer(message);
-    }
-
-    private syncMatchEndRedirect(endState: MatchEndState | null): void {
-        if (!endState) {
-            this.clearMatchEndRedirect();
-            this.scheduledMatchEndId = null;
-            return;
-        }
-
-        if (this.scheduledMatchEndId === endState.id) {
-            return;
-        }
-
-        this.scheduledMatchEndId = endState.id;
-        this.interaction.clearActionSelection();
-        this.interaction.closeInspection();
-        this.clearMatchEndRedirect();
-
-        const redirectEndsAt = Date.now() + MATCH_END_REDIRECT_DURATION_MS;
-        this.endRedirectRemainingMs.set(MATCH_END_REDIRECT_DURATION_MS);
-        this.matchEndRedirectIntervalId = window.setInterval(() => {
-            this.endRedirectRemainingMs.set(Math.max(0, redirectEndsAt - Date.now()));
-        }, CLOCK_TICK_MS);
-        this.matchEndRedirectTimeoutId = window.setTimeout(() => {
-            this.clearMatchEndRedirect();
-            this.matchState.endLocalSession(endState.message);
-            void this.router.navigate(['/end-game']);
-        }, MATCH_END_REDIRECT_DURATION_MS);
-    }
-
-    private clearMatchEndRedirect(): void {
-        if (this.matchEndRedirectTimeoutId !== null) {
-            window.clearTimeout(this.matchEndRedirectTimeoutId);
-            this.matchEndRedirectTimeoutId = null;
-        }
-
-        if (this.matchEndRedirectIntervalId !== null) {
-            window.clearInterval(this.matchEndRedirectIntervalId);
-            this.matchEndRedirectIntervalId = null;
-        }
-
-        this.endRedirectRemainingMs.set(0);
     }
 }

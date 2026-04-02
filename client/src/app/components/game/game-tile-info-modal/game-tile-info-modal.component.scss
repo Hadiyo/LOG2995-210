@@ -167,8 +167,31 @@
 
 .section-preview--object[data-obj='START'] { background-image: var(--object-spawn-img); }
 .section-preview--object[data-obj='FLAG'] { background-image: var(--object-flag-img); }
-.section-preview--object[data-obj='REGEN'] { background-image: var(--object-heal-img); }
-.section-preview--object[data-obj='ARENA'] { background-image: var(--object-fight-img); }
+.section-preview--object[data-obj='REGEN'] {
+  background-image: var(--object-heal-img);
+  animation: obj-ready-glow 2.5s infinite alternate ease-in-out;
+}
+.section-preview--object[data-obj='ARENA'] {
+  background-image: var(--object-fight-img);
+  animation: obj-ready-glow 2.5s infinite alternate ease-in-out;
+}
+.section-preview--object[data-obj='REGEN'][data-used='true'] {
+  background-image: var(--object-heal-used-img);
+  animation: none;
+}
+.section-preview--object[data-obj='ARENA'][data-used='true'] {
+  background-image: var(--object-fight-used-img);
+  animation: none;
+}
+
+@keyframes obj-ready-glow {
+  0% {
+    filter: drop-shadow(0 0 1px var(--accent-secondary));
+  }
+  100% {
+    filter: drop-shadow(0 0 5px var(--accent-secondary));
+  }
+}
 
 @media (max-width: 720px) {
   .section-layout {

@@ -7,6 +7,7 @@ export function toGamePlayer(
     activePlayerId: string | null,
     actionTaken: boolean,
     movementPointsRemaining: number,
+    flagCarrierId: string | null,
 ): Player {
     const isActivePlayer = activePlayerId === player.id;
 
@@ -16,6 +17,7 @@ export function toGamePlayer(
             name: player.name,
             avatarId: player.avatarId,
             isOrganizer: player.isOrganizer,
+            teamId: player.teamId ?? null,
             dices: {
                 attack: player.attackDie,
                 defense: player.defenseDie,
@@ -29,10 +31,11 @@ export function toGamePlayer(
                 health: player.health,
                 maxHealth: player.maxHealth,
                 speed: player.speed,
-                attack: player.baseAttack,
-                defense: player.baseDefense,
+                attack: player.baseAttack + (player.attackBonus ?? 0),
+                defense: player.baseDefense + (player.defenseBonus ?? 0),
             },
             wins: player.combatWins,
+            hasFlag: flagCarrierId === player.id,
             remainingActions: isActivePlayer && !actionTaken ? 1 : 0,
             remainingMovements: isActivePlayer ? movementPointsRemaining : 0,
         },

@@ -21,7 +21,7 @@ export const TILES: TilePaletteItem[] = [
     { id: TileType.WATER, label: 'Eau', description: 'Tuile traversable qui prend deux points de mouvement.', cssVar: '--tile-water-img' },
     { id: TileType.ICE, label: 'Glace', description: 'Tuile traversable qui prend aucun point de mouvement.', cssVar: '--tile-ice-img' },
 ];
-    
+
 /* =========================================================
     Object palette configuration
     - Maps ObjectType enum to labels + theme color variables
@@ -33,10 +33,10 @@ export const OBJECTS: ObjectPaletteItem[] = [
         description: "Un joueur est assigne aleatoirement un point de depart au debut d'une partie.",
         cssVar: '--object-spawn-img',
     },
-    {   
-        id: ObjectType.FLAG, 
-        label: 'Drapeau', 
-        description: "L'objectif principal du mode CTF.", 
+    {
+        id: ObjectType.FLAG,
+        label: 'Drapeau',
+        description: "L'objectif principal du mode CTF.",
         cssVar: '--object-flag-img' },
     {
         id: ObjectType.REGEN,

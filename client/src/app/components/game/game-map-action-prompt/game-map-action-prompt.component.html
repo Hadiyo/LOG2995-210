@@ -1,0 +1,25 @@
+@if (prompt(); as prompt) {
+  <section class="prompt" [class.prompt--sanctuary]="prompt.variant === 'sanctuary'">
+    <div class="prompt__copy">
+      @if (prompt.title) {
+        <p class="prompt__title">{{ prompt.title }}</p>
+      }
+
+      <p class="prompt__message">{{ prompt.message }}</p>
+    </div>
+
+    <div class="prompt__actions">
+      @for (action of prompt.actions; track action.id) {
+        <button
+          type="button"
+          [ngClass]="['prompt__button', 'prompt__button--' + action.id]"
+          [attr.data-label]="action.label"
+          [disabled]="isActionDisabled(action.id)"
+          (click)="onSelect(action.id)"
+        >
+          <span class="prompt__button-text">{{ actionLabel(action) }}</span>
+        </button>
+      }
+    </div>
+  </section>
+}

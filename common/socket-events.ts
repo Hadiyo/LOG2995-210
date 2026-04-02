@@ -1,5 +1,5 @@
 import { ChatMessage } from './chat/chat.interface';
-import { InitializedMatch, MatchLobbyPlayer } from './game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from './game/match.interface';
 import { MatchTurnState } from './game/turn.interface';
 
 export enum SocketEvents {
@@ -48,8 +48,12 @@ export enum SessionSocketEvents {
 export enum CombatSocketEvents {
     MoveGamePlayer = 'moveGamePlayer',
     EndGameTurn = 'endGameTurn',
+    UseSanctuary = 'useSanctuary',
+    ResolveSanctuaryChoice = 'resolveSanctuaryChoice',
     StartCombat = 'startCombat',
     ToggleDoor = 'toggleDoor',
+    RequestFlagTransfer = 'requestFlagTransfer',
+    ResolveFlagTransfer = 'resolveFlagTransfer',
 }
 
 export enum WaitingRoomEvents {
@@ -147,6 +151,18 @@ export interface EndGameTurnPayload {
     playerId: string;
 }
 
+export interface UseSanctuaryPayload {
+    sessionId: string;
+    playerId: string;
+    sanctuaryId: number;
+}
+
+export interface ResolveSanctuaryChoicePayload {
+    sessionId: string;
+    playerId: string;
+    choice: MatchSanctuaryChoice;
+}
+
 export interface StartCombatPayload {
     sessionId: string;
     playerId: string;
@@ -157,6 +173,18 @@ export interface ToggleDoorPayload {
     sessionId: string;
     playerId: string;
     position: { x: number; y: number };
+}
+
+export interface RequestFlagTransferPayload {
+    sessionId: string;
+    playerId: string;
+    teammateId: string;
+}
+
+export interface ResolveFlagTransferPayload {
+    sessionId: string;
+    playerId: string;
+    accepted: boolean;
 }
 
 export interface SurrenderGamePayload {

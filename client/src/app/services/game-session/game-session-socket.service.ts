@@ -10,14 +10,19 @@ import {
     ForceEndDebugTurnPayload,
     GameSessionErrorPayload,
     GameSessionSnapshotPayload,
+    RequestFlagTransferPayload,
+    ResolveFlagTransferPayload,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
+    ResolveSanctuaryChoicePayload,
     SessionSocketEvents,
     StartCombatPayload,
+    ToggleDoorPayload,
+    UseSanctuaryPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
-    ToggleDoorPayload,
 } from '@common/socket-events';
+import { MatchSanctuaryChoice } from '@common/game/match.interface';
 
 @Injectable({ providedIn: 'root' })
 export class GameSessionSocketService {
@@ -77,6 +82,32 @@ export class GameSessionSocketService {
         } satisfies EndGameTurnPayload);
     }
 
+    useSanctuary(playerId: string, sanctuaryId: number): void {
+        const sessionId = this.sessionId();
+        if (!sessionId) {
+            return;
+        }
+
+        this.socketManager.send(CombatSocketEvents.UseSanctuary, {
+            sessionId,
+            playerId,
+            sanctuaryId,
+        } satisfies UseSanctuaryPayload);
+    }
+
+    resolveSanctuaryChoice(playerId: string, choice: MatchSanctuaryChoice): void {
+        const sessionId = this.sessionId();
+        if (!sessionId) {
+            return;
+        }
+
+        this.socketManager.send(CombatSocketEvents.ResolveSanctuaryChoice, {
+            sessionId,
+            playerId,
+            choice,
+        } satisfies ResolveSanctuaryChoicePayload);
+    }
+
     startCombat(playerId: string, defenderId: string): void {
         const sessionId = this.sessionId();
         if (!sessionId) {
@@ -101,6 +132,32 @@ export class GameSessionSocketService {
             playerId,
             position,
         } satisfies ToggleDoorPayload);
+    }
+
+    requestFlagTransfer(playerId: string, teammateId: string): void {
+        const sessionId = this.sessionId();
+        if (!sessionId) {
+            return;
+        }
+
+        this.socketManager.send(CombatSocketEvents.RequestFlagTransfer, {
+            sessionId,
+            playerId,
+            teammateId,
+        } satisfies RequestFlagTransferPayload);
+    }
+
+    resolveFlagTransfer(playerId: string, accepted: boolean): void {
+        const sessionId = this.sessionId();
+        if (!sessionId) {
+            return;
+        }
+
+        this.socketManager.send(CombatSocketEvents.ResolveFlagTransfer, {
+            sessionId,
+            playerId,
+            accepted,
+        } satisfies ResolveFlagTransferPayload);
     }
 
     surrender(playerId: string): void {
