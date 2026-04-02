@@ -190,7 +190,7 @@ export function createGameSessionServiceHarness() {
             return service as unknown as GameSessionServicePrivateState;
         },
         getServiceInternals(): GameSessionServiceInternals {
-            return service as unknown as GameSessionServiceInternals;
+            return (service as unknown as { lifecycle: GameSessionServiceInternals }).lifecycle;
         },
     };
 }
