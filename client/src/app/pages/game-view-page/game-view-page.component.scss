@@ -79,10 +79,6 @@
   overflow-y: auto;
 }
 
-.side-panel--left {
-  overflow: hidden;
-}
-
 .panel--game-title {
   padding-top: 10px;
   padding-bottom: 10px;
@@ -96,7 +92,7 @@
 }
 
 .panel--player-info {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -104,7 +100,7 @@
 
 .panel--player-info__content {
   display: flex;
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
 }
@@ -214,13 +210,13 @@
   align-items: stretch;
   gap: 10px;
   min-height: 0;
-  flex: 1 1 0;
+  flex: 1 1 auto;
   height: auto;
   overflow: hidden;
 }
 
 .messages app-game-chat-panel {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-height: 0;
   width: 100%;
 }
@@ -364,7 +360,7 @@
 
 .map-panel__board > app-game-map-grid {
   width: 100%;
-  height: 100%;
+  height: auto;
   max-width: 100%;
   min-height: 0;
   --grid-viewport-offset: 112px;
@@ -587,10 +583,6 @@
     overflow: visible;
   }
 
-  .side-panel--left {
-    display: flex;
-  }
-
   .map-column {
     overflow: visible;
   }
@@ -599,7 +591,9 @@
     overflow: visible;
   }
 
+  .side-panel--left,
   .side-panel--right {
+    height: auto;
     overflow: visible;
   }
 
@@ -620,7 +614,7 @@
   }
 }
 
-@media (max-height: 920px) {
+@media (min-width: 981px) and (max-height: 920px) {
   :host {
     --view-gap: 12px;
     --view-padding: 12px;
