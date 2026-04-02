@@ -30,6 +30,12 @@ interface SanctuaryResolveContext {
   sanctuaryType: SanctuaryType;
 }
 
+const SANCTUARY_ACTION_IDS = {
+  normal: 'normal',
+  doubleOrNothing: 'double-or-nothing',
+  cancel: 'cancel',
+} as const;
+
 const SANCTUARY_ACTION_LABELS = {
   normal: 'Normal',
   doubleOrNothing: 'Double ou rien',
@@ -102,9 +108,9 @@ export class GameMapActionPromptComponent implements OnDestroy {
         title: sanctuaryTitle,
         message: sanctuaryMessage,
         actions: [
-          { id: 'normal', label: SANCTUARY_ACTION_LABELS.normal },
-          { id: 'double-or-nothing', label: SANCTUARY_ACTION_LABELS.doubleOrNothing },
-          { id: 'cancel', label: SANCTUARY_ACTION_LABELS.cancel },
+          { id: SANCTUARY_ACTION_IDS.normal, label: SANCTUARY_ACTION_LABELS.normal },
+          { id: SANCTUARY_ACTION_IDS.doubleOrNothing, label: SANCTUARY_ACTION_LABELS.doubleOrNothing },
+          { id: SANCTUARY_ACTION_IDS.cancel, label: SANCTUARY_ACTION_LABELS.cancel },
         ],
       };
     }
@@ -129,12 +135,12 @@ export class GameMapActionPromptComponent implements OnDestroy {
       return;
     }
 
-    if (actionId === 'double-or-nothing') {
+    if (actionId === SANCTUARY_ACTION_IDS.doubleOrNothing) {
       this.startDoubleOrNothingReveal();
       return;
     }
 
-    if (actionId === 'normal' || actionId === 'cancel') {
+    if (actionId === SANCTUARY_ACTION_IDS.normal || actionId === SANCTUARY_ACTION_IDS.cancel) {
       this.interaction.resolveSanctuaryChoice(actionId);
       return;
     }
@@ -143,7 +149,7 @@ export class GameMapActionPromptComponent implements OnDestroy {
   }
 
   actionLabel(action: GameMapPromptAction): string {
-    if (action.id === 'double-or-nothing' && this.doubleOrNothingRevealLabel()) {
+    if (action.id === SANCTUARY_ACTION_IDS.doubleOrNothing && this.doubleOrNothingRevealLabel()) {
       return this.doubleOrNothingRevealLabel() ?? action.label;
     }
 
@@ -151,11 +157,14 @@ export class GameMapActionPromptComponent implements OnDestroy {
   }
 
   isDoubleOrNothingAction(actionId: GameMapPromptActionId): boolean {
-    return actionId === 'double-or-nothing';
+    return actionId === SANCTUARY_ACTION_IDS.doubleOrNothing;
   }
 
   isActionDisabled(actionId: GameMapPromptActionId): boolean {
-    const isSanctuaryAction = actionId === 'normal' || actionId === 'double-or-nothing' || actionId === 'cancel';
+    const isSanctuaryAction =
+      actionId === SANCTUARY_ACTION_IDS.normal ||
+      actionId === SANCTUARY_ACTION_IDS.doubleOrNothing ||
+      actionId === SANCTUARY_ACTION_IDS.cancel;
     return isSanctuaryAction && this.sanctuaryChoicePending();
   }
 
@@ -188,7 +197,7 @@ export class GameMapActionPromptComponent implements OnDestroy {
     this.sanctuaryChoicePending.set(true);
     this.interaction.setSanctuaryPromptUiHold(true);
     this.doubleOrNothingRevealLabel.set(GameMapActionPromptComponent.sanctuaryDoublePendingLabel);
-    this.interaction.resolveSanctuaryChoice('double-or-nothing');
+    this.interaction.resolveSanctuaryChoice(SANCTUARY_ACTION_IDS.doubleOrNothing);
 
     this.sanctuaryChoiceTimeoutId = window.setTimeout(() => {
       this.sanctuaryChoicePending.set(false);
