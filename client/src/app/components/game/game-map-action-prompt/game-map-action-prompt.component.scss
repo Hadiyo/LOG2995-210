@@ -131,7 +131,7 @@
 }
 
 .prompt__button--double-or-nothing::after {
-  content: 'Double ou rien';
+  content: attr(data-label);
   grid-area: 1 / 1;
   visibility: hidden;
   white-space: nowrap;

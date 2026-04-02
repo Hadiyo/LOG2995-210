@@ -13,6 +13,7 @@
         <button
           type="button"
           [ngClass]="['prompt__button', 'prompt__button--' + action.id]"
+          [attr.data-label]="action.label"
           [disabled]="isActionDisabled(action.id)"
           (click)="onSelect(action.id)"
         >

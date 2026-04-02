@@ -30,6 +30,12 @@ interface SanctuaryResolveContext {
   sanctuaryType: SanctuaryType;
 }
 
+const SANCTUARY_ACTION_LABELS = {
+  normal: 'Normal',
+  doubleOrNothing: 'Double ou rien',
+  cancel: 'Annuler',
+} as const;
+
 @Component({
   selector: 'app-game-map-action-prompt',
   standalone: true,
@@ -96,9 +102,9 @@ export class GameMapActionPromptComponent implements OnDestroy {
         title: sanctuaryTitle,
         message: sanctuaryMessage,
         actions: [
-          { id: 'normal', label: 'Normal' },
-          { id: 'double-or-nothing', label: 'Double ou rien' },
-          { id: 'cancel', label: 'Annuler' },
+          { id: 'normal', label: SANCTUARY_ACTION_LABELS.normal },
+          { id: 'double-or-nothing', label: SANCTUARY_ACTION_LABELS.doubleOrNothing },
+          { id: 'cancel', label: SANCTUARY_ACTION_LABELS.cancel },
         ],
       };
     }
