@@ -18,34 +18,8 @@ export function toGamePlayer(
 
     return {
         id: player.id,
-        information: {
-            name: player.name,
-            avatarId: player.avatarId,
-            isOrganizer: player.isOrganizer,
-            controller: player.controller,
-            virtualProfile: player.virtualProfile ?? null,
-            teamId: player.teamId ?? null,
-            dices: {
-                attack: player.attackDie,
-                defense: player.defenseDie,
-            },
-            bonus: player.speed > CHARACTER_BASE_ATTRIBUTES.rapidite ? 'speed' : 'life',
-        },
-        state: {
-            position: player.position,
-            status: player.health > 0 ? PlayerStatus.Active : PlayerStatus.Eliminated,
-            attributes: {
-                health: player.health,
-                maxHealth: player.maxHealth,
-                speed: player.speed,
-                attack: player.baseAttack + (player.attackBonus ?? 0),
-                defense: player.baseDefense + (player.defenseBonus ?? 0),
-            },
-            wins: player.combatWins,
-            hasFlag: flagCarrierId === player.id,
-            remainingActions: isActivePlayer && !actionTaken ? 1 : 0,
-            remainingMovements: isActivePlayer ? movementPointsRemaining : 0,
-        },
+        information: buildPlayerInformation(player),
+        state: buildPlayerState(player, isActivePlayer, actionTaken, movementPointsRemaining, flagCarrierId),
         render: {
             facing: player.render?.facing ?? PlayerFacing.Front,
             pose: player.render?.pose ?? PlayerPose.Idle,
@@ -76,4 +50,44 @@ export function getVirtualPlayerBadgeLabel(player: VirtualPlayerLike): string | 
     }
 
     return player.virtualProfile === 'defensive' ? 'JV defensif' : 'JV agressif';
+}
+
+function buildPlayerInformation(player: MatchPlayer): Player['information'] {
+    return {
+        name: player.name,
+        avatarId: player.avatarId,
+        isOrganizer: player.isOrganizer,
+        controller: player.controller,
+        virtualProfile: player.virtualProfile ?? null,
+        teamId: player.teamId ?? null,
+        dices: {
+            attack: player.attackDie,
+            defense: player.defenseDie,
+        },
+        bonus: player.speed > CHARACTER_BASE_ATTRIBUTES.rapidite ? 'speed' : 'life',
+    };
+}
+
+function buildPlayerState(
+    player: MatchPlayer,
+    isActivePlayer: boolean,
+    actionTaken: boolean,
+    movementPointsRemaining: number,
+    flagCarrierId: string | null,
+): Player['state'] {
+    return {
+        position: player.position,
+        status: player.health > 0 ? PlayerStatus.Active : PlayerStatus.Eliminated,
+        attributes: {
+            health: player.health,
+            maxHealth: player.maxHealth,
+            speed: player.speed,
+            attack: player.baseAttack + (player.attackBonus ?? 0),
+            defense: player.baseDefense + (player.defenseBonus ?? 0),
+        },
+        wins: player.combatWins,
+        hasFlag: flagCarrierId === player.id,
+        remainingActions: isActivePlayer && !actionTaken ? 1 : 0,
+        remainingMovements: isActivePlayer ? movementPointsRemaining : 0,
+    };
 }

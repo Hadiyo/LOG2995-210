@@ -170,7 +170,7 @@ describe('WaitingRoomService rooms', () => {
 
     it('rejects virtual player additions once the room is starting', async () => {
         const onError = jest.fn();
-        harness.service.on(SocketEvents.WaitingRoomError, onError);
+        harness.service.on(WaitingRoomEvents.WaitingRoomError, onError);
         harness.mapService.getMapById.mockResolvedValue(makeMap());
         const accessCode = await harness.service.createWaitingRoom('socket-org', {
             mapId: 'map-1',

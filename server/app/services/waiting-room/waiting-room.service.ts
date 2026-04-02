@@ -43,17 +43,13 @@ import {
 export class WaitingRoomService {
     private readonly rooms = new Map<string, WaitingRoom>();
     private readonly events = new EventEmitter();
-
     constructor(
         private readonly mapService: MapService,
-        private readonly gameSessionService: GameSessionService,
-        private readonly chatService: ChatService,
+        private readonly gameSessionService: GameSessionService, private readonly chatService: ChatService,
     ) {}
-
     on<T>(event: WaitingRoomEvents, callback: (payload: T) => void): void {
         this.events.on(event, callback);
     }
-
     off<T>(event: WaitingRoomEvents, callback: (payload: T) => void): void {
         this.events.off(event, callback);
     }
@@ -344,24 +340,15 @@ export class WaitingRoomService {
         if (!payload) {
             return;
         }
-
-        this.events.emit(WaitingRoomEvents.WaitingRoomUpdated, {
-            accessCode: room.accessCode,
-            payload,
-        } as WaitingRoomUpdatedEvent);
+        this.events.emit(WaitingRoomEvents.WaitingRoomUpdated, { accessCode: room.accessCode, payload } as WaitingRoomUpdatedEvent);
     }
 
     private emitError(socketId: string, message: string): void {
-        this.events.emit(WaitingRoomEvents.WaitingRoomError, {
-            socketId,
-            payload: { message },
-        } as WaitingRoomErrorEvent);
+        this.events.emit(WaitingRoomEvents.WaitingRoomError, { socketId, payload: { message } } as WaitingRoomErrorEvent);
     }
 
     private emitDirectoryUpdated(): void {
-        this.events.emit(WaitingRoomEvents.WaitingRoomDirectoryUpdated, {
-            updatedAt: new Date().toISOString(),
-        } as WaitingRoomDirectoryUpdatedEvent);
+        this.events.emit(WaitingRoomEvents.WaitingRoomDirectoryUpdated, { updatedAt: new Date().toISOString() } as WaitingRoomDirectoryUpdatedEvent);
     }
 
     private removePlayerBySocket(room: WaitingRoom, socketId: string): void {
