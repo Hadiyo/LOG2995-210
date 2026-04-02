@@ -175,6 +175,9 @@ export class MatchStateService extends MatchSessionStore {
             ...currentMatch,
             players: remainingPlayers,
             objects: this.matchBoardService.buildVisibleObjects(currentMatch.allObjects, remainingPlayers),
+            pendingSanctuaryChoice: currentMatch.pendingSanctuaryChoice?.playerId === playerId
+                ? null
+                : currentMatch.pendingSanctuaryChoice ?? null,
             endState: remainingPlayers.length === 1 && !currentMatch.endState
                 ? this.matchSetupService.createNoWinnerEndState(remainingPlayers[0])
                 : currentMatch.endState ?? null,

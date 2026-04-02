@@ -1,5 +1,5 @@
 import { ChatMessage } from '@common/chat/chat.interface';
-import { ObjectType } from '@common/maps/map.enums';
+import { ObjectSize, ObjectType } from '@common/maps/map.enums';
 import {
     createGameSessionServiceHarness,
     makeMatch,
@@ -8,9 +8,14 @@ import {
     makeRuntime,
     MOVEMENT_POINTS_AFTER_MOVE,
 } from './game-session.service.spec-helpers';
+import { ARENA_BUFF_TURNS, SANCTUARY_COOLDOWN_TURNS } from './game-session.match';
 
 describe('GameSessionService actions', () => {
     const harness = createGameSessionServiceHarness();
+    const REGEN_SANCTUARY_ID = 9;
+    const ARENA_SANCTUARY_ID = 11;
+    const DAMAGED_PLAYER_HEALTH = 4;
+    const HEALED_PLAYER_HEALTH = 6;
 
     it('toggles debug mode only for the organizer', () => {
         const runtime = makeRuntime();
@@ -35,7 +40,7 @@ describe('GameSessionService actions', () => {
         expect(advanceSpy).toHaveBeenCalledWith(runtime);
     });
 
-    it('teleports the organizer in debug mode only to valid free cells', () => {
+    it('teleports the active player in debug mode only to valid free cells', () => {
         const runtime = makeRuntime({
             match: makeMatch({
                 debugMode: true,
@@ -55,12 +60,15 @@ describe('GameSessionService actions', () => {
         harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
         const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
 
-        expect(harness.service.debugTeleportPlayer('session-1', 'player-2', { x: 0, y: 1 })).toBe(false);
+        runtime.turnState.activePlayerId = 'player-2';
+        expect(harness.service.debugTeleportPlayer('session-1', 'player-2', { x: 2, y: 1 })).toBe(true);
+        expect(runtime.match.players.find((player) => player.id === 'player-2')?.position).toEqual({ x: 2, y: 1 });
+        runtime.turnState.activePlayerId = 'player-1';
         expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 9, y: 9 })).toBe(false);
         expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 1, y: 0 })).toBe(false);
         expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 2, y: 2 })).toBe(false);
-        expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 2, y: 1 })).toBe(true);
-        expect(runtime.match.players.find((player) => player.id === 'player-1')?.position).toEqual({ x: 2, y: 1 });
+        expect(harness.service.debugTeleportPlayer('session-1', 'player-1', { x: 2, y: 0 })).toBe(true);
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.position).toEqual({ x: 2, y: 0 });
         expect(runtime.match.players.find((player) => player.id === 'player-1')?.render?.facing).toBe('right');
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
     });
@@ -180,5 +188,112 @@ describe('GameSessionService actions', () => {
         privateState.sessions.set('winner', winnerRuntime);
         expect(harness.service.startCombat('winner', 'player-1', 'player-2')).toBe(true);
         expect(privateState.sessions.has('winner')).toBe(false);
+    });
+
+    it('opens a pending sanctuary choice and resolves healing on the server', () => {
+        const sanctuary = makeObject({ id: REGEN_SANCTUARY_ID, type: ObjectType.REGEN, position: { x: 1, y: 0 }, size: ObjectSize.L });
+        const runtime = makeRuntime({
+            match: makeMatch({
+                players: [
+                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, health: DAMAGED_PLAYER_HEALTH }),
+                    makeMatchPlayer({ id: 'player-2', position: { x: 2, y: 2 }, avatarId: 1 }),
+                ],
+                objects: [
+                    makeObject({ id: 1, type: ObjectType.START, position: { x: 0, y: 0 } }),
+                    makeObject({ id: 2, type: ObjectType.START, position: { x: 2, y: 2 } }),
+                    sanctuary,
+                ],
+                allObjects: [
+                    makeObject({ id: 1, type: ObjectType.START, position: { x: 0, y: 0 } }),
+                    makeObject({ id: 2, type: ObjectType.START, position: { x: 2, y: 2 } }),
+                    sanctuary,
+                ],
+                sanctuaryStates: [{ objectId: REGEN_SANCTUARY_ID, cooldownTurnsRemaining: 0 }],
+            }),
+        });
+        const serviceInternals = harness.getServiceInternals();
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
+
+        expect(harness.service.useSanctuary('session-1', 'player-1', REGEN_SANCTUARY_ID)).toBe(true);
+        expect(runtime.match.pendingSanctuaryChoice).toEqual({ playerId: 'player-1', objectId: REGEN_SANCTUARY_ID });
+        expect(harness.service.endTurn('session-1', 'player-1')).toBe(false);
+
+        expect(harness.service.resolveSanctuaryChoice('session-1', 'player-1', 'normal')).toBe(true);
+        expect(runtime.match.pendingSanctuaryChoice).toBeNull();
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.health).toBe(HEALED_PLAYER_HEALTH);
+        expect(runtime.match.sanctuaryStates?.find((state) => state.objectId === REGEN_SANCTUARY_ID)?.cooldownTurnsRemaining)
+            .toBe(SANCTUARY_COOLDOWN_TURNS);
+        expect(runtime.turnState.actionTaken).toBe(true);
+        expect(emitSnapshotSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('cancels a sanctuary choice without consuming the action', () => {
+        const sanctuary = makeObject({ id: REGEN_SANCTUARY_ID, type: ObjectType.REGEN, position: { x: 1, y: 0 }, size: ObjectSize.L });
+        const runtime = makeRuntime({
+            match: makeMatch({
+                players: [
+                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, health: DAMAGED_PLAYER_HEALTH }),
+                    makeMatchPlayer({ id: 'player-2', position: { x: 2, y: 2 }, avatarId: 1 }),
+                ],
+                objects: [
+                    makeObject({ id: 1, type: ObjectType.START, position: { x: 0, y: 0 } }),
+                    makeObject({ id: 2, type: ObjectType.START, position: { x: 2, y: 2 } }),
+                    sanctuary,
+                ],
+                allObjects: [
+                    makeObject({ id: 1, type: ObjectType.START, position: { x: 0, y: 0 } }),
+                    makeObject({ id: 2, type: ObjectType.START, position: { x: 2, y: 2 } }),
+                    sanctuary,
+                ],
+                sanctuaryStates: [{ objectId: REGEN_SANCTUARY_ID, cooldownTurnsRemaining: 0 }],
+            }),
+        });
+        const serviceInternals = harness.getServiceInternals();
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+        jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
+
+        expect(harness.service.useSanctuary('session-1', 'player-1', REGEN_SANCTUARY_ID)).toBe(true);
+        expect(harness.service.resolveSanctuaryChoice('session-1', 'player-1', 'cancel')).toBe(true);
+        expect(runtime.match.pendingSanctuaryChoice).toBeNull();
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.health).toBe(DAMAGED_PLAYER_HEALTH);
+        expect(runtime.turnState.actionTaken).toBe(false);
+    });
+
+    it('ticks arena sanctuary cooldowns and temporary buffs when turns advance', () => {
+        const serviceInternals = harness.getServiceInternals();
+        const runtime = makeRuntime({
+            match: makeMatch({
+                players: [
+                    makeMatchPlayer({
+                        id: 'player-1',
+                        attackBonus: 1,
+                        defenseBonus: 1,
+                        arenaBuffTurnsRemaining: ARENA_BUFF_TURNS,
+                    }),
+                    makeMatchPlayer({ id: 'player-2', avatarId: 1 }),
+                ],
+                sanctuaryStates: [{ objectId: ARENA_SANCTUARY_ID, cooldownTurnsRemaining: SANCTUARY_COOLDOWN_TURNS }],
+            }),
+        });
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+        jest.spyOn(serviceInternals, 'startTransition').mockImplementation((() => undefined) as never);
+
+        runtime.turnState.activePlayerId = 'player-1';
+        serviceInternals.advanceToNextTurn(runtime);
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.arenaBuffTurnsRemaining).toBe(ARENA_BUFF_TURNS - 1);
+        expect(runtime.match.sanctuaryStates?.[0].cooldownTurnsRemaining).toBe(SANCTUARY_COOLDOWN_TURNS - 1);
+
+        runtime.turnState.activePlayerId = 'player-2';
+        serviceInternals.advanceToNextTurn(runtime);
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.arenaBuffTurnsRemaining).toBe(ARENA_BUFF_TURNS - 1);
+        expect(runtime.match.sanctuaryStates?.[0].cooldownTurnsRemaining).toBe(SANCTUARY_COOLDOWN_TURNS - 2);
+
+        runtime.turnState.activePlayerId = 'player-1';
+        serviceInternals.advanceToNextTurn(runtime);
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.arenaBuffTurnsRemaining).toBe(0);
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.attackBonus).toBe(0);
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.defenseBonus).toBe(0);
+        expect(runtime.match.sanctuaryStates?.[0].cooldownTurnsRemaining).toBe(0);
     });
 });

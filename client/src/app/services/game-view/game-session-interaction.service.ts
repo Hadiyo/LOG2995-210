@@ -1,19 +1,19 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { MatchPlayer, MatchTileInspection } from '@common/game/match.interface';
-import { EditorCell } from '@common/maps/map.interface';
-import { TileType } from '@common/maps/map.enums';
+import {
+    EDITABLE_TARGET_TAGS,
+    GameSessionActionContext,
+    GameSessionActionOption,
+    MOVEMENT_KEY_BINDINGS,
+} from '@app/config/game-session.config';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
-import { positionKey } from '@app/services/match/match-geometry';
 import { CombatStateService } from '@app/services/match/combat-state.service';
+import { positionKey } from '@app/services/match/match-geometry';
 import { MatchMovementService, MovementDirection } from '@app/services/match/match-movement.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
-import {
-    EDITABLE_TARGET_TAGS,
-    MOVEMENT_KEY_BINDINGS,
-    GameSessionActionContext,
-    GameSessionActionOption,
-} from '@app/config/game-session.config';
+import { MatchPlayer, MatchSanctuaryChoice, MatchTileInspection } from '@common/game/match.interface';
+import { ObjectType, TileType } from '@common/maps/map.enums';
+import { EditorCell } from '@common/maps/map.interface';
 import { GameSessionDisplayService } from './game-session-display.service';
 import { GameSessionTargetsService } from './game-session-targets.service';
 
@@ -30,11 +30,15 @@ export class GameSessionInteractionService {
     readonly movementFeedback = signal('');
     readonly actionContext = signal<GameSessionActionContext | null>(null);
     readonly actionSelectionOpen = signal(false);
+    readonly sanctuaryPromptUiHold = signal(false);
     readonly availableActionContexts = computed<GameSessionActionOption[]>(() => {
         if (!this.canUseAction()) {
             return [];
         }
         const options: GameSessionActionOption[] = [];
+        if (this.targets.getSanctuaryActionTargets().size > 0) {
+            options.push({ context: 'sanctuary', label: 'Sanctuaire' });
+        }
         if (this.targets.getCombatActionTargets().size > 0) {
             options.push({ context: 'combat', label: 'Combat' });
         }
@@ -45,6 +49,8 @@ export class GameSessionInteractionService {
     });
     readonly actionTargets = computed(() => {
         switch (this.actionContext()) {
+            case 'sanctuary':
+                return this.targets.getSanctuaryActionTargets();
             case 'combat':
                 return this.targets.getCombatActionTargets();
             case 'door':
@@ -78,6 +84,7 @@ export class GameSessionInteractionService {
     }
 
     actionHelperText(): string {
+        if (this.actionContext() === 'sanctuary') return 'Choisissez un sanctuaire adjacent en surbrillance.';
         if (this.actionContext() === 'combat') return 'Choisissez un adversaire adjacent pour engager le combat.';
         if (this.actionContext() === 'door') return 'Choisissez une porte adjacente pour l ouvrir ou la fermer.';
         return '';
@@ -88,10 +95,19 @@ export class GameSessionInteractionService {
     }
 
     canToggleActionMode(): boolean {
+        if (this.hasLocalPendingSanctuaryChoice()) {
+            return false;
+        }
+
         return !!this.actionContext() || this.actionSelectionOpen() || this.availableActionContexts().length > 0;
     }
 
     toggleActionMode(): void {
+        if (this.hasLocalPendingSanctuaryChoice()) {
+            this.movementFeedback.set('Choisissez d abord comment utiliser le sanctuaire en attente.');
+            return;
+        }
+
         if (this.actionContext() || this.actionSelectionOpen()) {
             this.clearActionSelection();
             return;
@@ -113,6 +129,11 @@ export class GameSessionInteractionService {
     }
 
     endCurrentTurn(): void {
+        if (this.hasLocalPendingSanctuaryChoice()) {
+            this.movementFeedback.set('Resolvez d abord le choix de sanctuaire avant de terminer le tour.');
+            return;
+        }
+
         const localPlayer = this.display.localPlayer();
         if (localPlayer) {
             const canForceEndTurn =
@@ -130,6 +151,16 @@ export class GameSessionInteractionService {
     }
 
     moveLocal(direction: MovementDirection): void {
+        if (this.hasLocalPendingSanctuaryChoice()) {
+            this.movementFeedback.set('Choisissez d abord comment utiliser le sanctuaire en attente.');
+            return;
+        }
+
+        if (this.hasActiveInteractionUi()) {
+            this.movementFeedback.set('Fermez d abord l interface d action avant de vous deplacer.');
+            return;
+        }
+
         const currentMatch = this.display.match();
         const localPlayer = this.getLocalMatchPlayer();
         const movementPointsRemaining = this.display.turnState()?.movementPointsRemaining ?? 0;
@@ -158,8 +189,48 @@ export class GameSessionInteractionService {
         return this.targets.hasAnyActionTarget(player);
     }
 
+    hasLocalPendingSanctuaryChoice(): boolean {
+        return this.display.hasLocalPendingSanctuaryChoice();
+    }
+
+    setSanctuaryPromptUiHold(isHeld: boolean): void {
+        this.sanctuaryPromptUiHold.set(isHeld);
+    }
+
+    sanctuaryPromptTitle(): string {
+        const sanctuary = this.getPendingSanctuaryObject();
+        return sanctuary?.type === ObjectType.REGEN ? 'Sanctuaire de soin' : sanctuary ? 'Sanctuaire de combat' : '';
+    }
+
+    sanctuaryPromptText(): string {
+        const sanctuary = this.getPendingSanctuaryObject();
+        if (!sanctuary) {
+            return '';
+        }
+
+        return sanctuary.type === ObjectType.REGEN
+            ? 'Choisissez : soin normal, double ou rien, ou annuler.'
+            : 'Choisissez : bonus normal, double ou rien, ou annuler.';
+    }
+
+    resolveSanctuaryChoice(choice: MatchSanctuaryChoice): void {
+        const localPlayer = this.getLocalMatchPlayer();
+        if (!localPlayer || !this.hasLocalPendingSanctuaryChoice()) {
+            return;
+        }
+
+        this.gameSessionSocket.resolveSanctuaryChoice(localPlayer.id, choice);
+        this.movementFeedback.set(
+            choice === 'cancel'
+                ? 'Utilisation du sanctuaire annulee.'
+                : 'Choix de sanctuaire envoye au serveur.',
+        );
+    }
+
     handleCellPrimaryAction(tile: EditorCell): void {
-        if (this.actionContext() === 'combat') {
+        if (this.actionContext() === 'sanctuary') {
+            this.handleSanctuaryAction(tile);
+        } else if (this.actionContext() === 'combat') {
             this.handleCombatAction(tile);
         } else if (this.actionContext() === 'door') {
             this.handleDoorAction(tile);
@@ -195,6 +266,21 @@ export class GameSessionInteractionService {
         this.movementFeedback.set(`Combat engage contre ${targetPlayer.name}.`);
     }
 
+    private handleSanctuaryAction(tile: EditorCell): void {
+        const localPlayer = this.getLocalMatchPlayer();
+        const sanctuary = this.display.objectAt(tile.position);
+        const isValidSanctuary = sanctuary && (sanctuary.type === ObjectType.REGEN || sanctuary.type === ObjectType.ARENA);
+        if (!localPlayer || !this.isActionTarget(tile) || !isValidSanctuary) {
+            this.movementFeedback.set('Action ignoree: cible invalide.');
+            return;
+        }
+
+        this.gameSessionSocket.useSanctuary(localPlayer.id, sanctuary.id);
+        this.clearActionSelection();
+        this.closeInspection();
+        this.movementFeedback.set('Choisissez comment utiliser ce sanctuaire.');
+    }
+
     private handleDoorAction(tile: EditorCell): void {
         const localPlayer = this.getLocalMatchPlayer();
         if (!localPlayer || !this.isActionTarget(tile)) {
@@ -222,7 +308,6 @@ export class GameSessionInteractionService {
         const localPlayer = this.getLocalMatchPlayer();
         if (!currentMatch ||
             !localPlayer ||
-            !localPlayer.isOrganizer ||
             !currentMatch.debugMode ||
             this.display.matchEndState() ||
             this.display.turnState()?.phase !== 'active' ||
@@ -252,5 +337,23 @@ export class GameSessionInteractionService {
 
     private getLocalMatchPlayer(): MatchPlayer | null {
         return this.display.findPlayerById(this.display.localPlayer()?.id ?? null);
+    }
+
+    private getPendingSanctuaryObject() {
+        const pendingChoice = this.display.match()?.pendingSanctuaryChoice;
+        if (!pendingChoice) {
+            return null;
+        }
+
+        const object = this.display.match()?.allObjects.find((candidate) => candidate.id === pendingChoice.objectId) ?? null;
+        if (!object || (object.type !== ObjectType.REGEN && object.type !== ObjectType.ARENA)) {
+            return null;
+        }
+
+        return object;
+    }
+
+    private hasActiveInteractionUi(): boolean {
+        return this.actionSelectionOpen() || !!this.actionContext() || this.sanctuaryPromptUiHold();
     }
 }
