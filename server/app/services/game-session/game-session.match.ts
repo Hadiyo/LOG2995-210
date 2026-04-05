@@ -159,3 +159,14 @@ export function getGameSessionObjectFootprint(object: MapObject): Vec2[] {
         { x: object.position.x + 1, y: object.position.y + 1 },
     ];
 }
+
+export function isPlayerOnIce(match: InitializedMatch, playerId: string): boolean {
+    const position = match.players.find((player) => player.id === playerId)?.position;
+    if(!position)
+        return false;
+    const cell = match.map.find((candidate) => samePosition(candidate.position, position));
+    if(!cell)
+        return false;
+    return (cell.tileType === TileType.ICE);
+}
+

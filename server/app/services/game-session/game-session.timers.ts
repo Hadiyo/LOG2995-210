@@ -1,8 +1,9 @@
+import { CombatSession } from '@common/combat/combat.interface';
 import { GameSessionRuntime } from './game-session.runtime';
 
-export function tickGameSessionTimers(
-    session: GameSessionRuntime,
-    emitSnapshot: (session: GameSessionRuntime) => void,
+export function tickGameSessionTimers<T extends GameSessionRuntime | CombatSession>(
+    session: T,
+    emitSnapshot: (session: T) => void,
 ): void {
     if (session.turnState.phase === 'transition' && session.turnState.transitionEndsAt !== null) {
         session.turnState = {
@@ -22,7 +23,7 @@ export function tickGameSessionTimers(
     }
 }
 
-export function clearGameSessionTimers(session: GameSessionRuntime): void {
+export function clearGameSessionTimers(session: GameSessionRuntime | CombatSession): void {
     if (session.transitionTimeoutId) {
         clearTimeout(session.transitionTimeoutId);
         session.transitionTimeoutId = null;

@@ -4,7 +4,7 @@ import { ObjectType } from '@common/maps/map.enums';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { applyFacingTowardPosition } from './game-session.render';
-import { GameSessionRuntime, rebuildTurnStateAfterRosterChange } from './game-session.runtime';
+import { GameSessionRuntime, rebuildTurnStateAfterRosterChange, resolveRespawnPosition } from './game-session.runtime';
 
 export class GameSessionSessionActions {
     constructor(
@@ -191,5 +191,31 @@ export class GameSessionSessionActions {
         session.messages.push(message);
         this.lifecycle.emitSnapshot(session);
         return message;
+    }
+
+    resolveCombatEnd(sessionId: string, winnerId: string, loserId: string): boolean {
+        const session = this.sessions.get(sessionId);
+        if(!session)
+            return false;
+
+        const winner = session.match.players.find((player) => player.id === winnerId);
+        const loser = session.match.players.find((player) => player.id === loserId);
+
+        if(!winner || !loser)
+            return false;
+
+        winner.combatWins += 1;
+        loser.health = loser.maxHealth;
+        loser.position = resolveRespawnPosition(session.match, loser.id);
+        return true;
+    }
+
+    setCombatWinner(sessionId: string, winnerId: string): boolean {
+        const session = this.sessions.get(sessionId);
+        if(!session)
+            return false;
+        const winner = session.match.players.find((player) => player.id === winnerId);
+        winner.combatWins += 1;
+        return true;
     }
 }

@@ -7,8 +7,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import { GameSessionActions } from './game-session.actions';
 import { GameSessionLifecycle } from './game-session.lifecycle';
-import { GameSessionSessionActions } from './game-session.session-actions';
 import { buildSession, GameSessionRuntime } from './game-session.runtime';
+import { GameSessionSessionActions } from './game-session.session-actions';
 import { clearGameSessionTimers } from './game-session.timers';
 
 @Injectable()
@@ -70,6 +70,15 @@ export class GameSessionService {
         };
     }
 
+    getSessionById(id: string): GameSessionRuntime {
+        return this.sessions.get(id);
+    }
+
+    getMatchFromSessionId(id: string): InitializedMatch | null {
+        return this.sessions.get(id).match;
+    }
+
+
     getPlayerIdForSocket(socketId: string, sessionId: string): string | null {
         return this.sessions.get(sessionId)?.socketToPlayerId.get(socketId) ?? null;
     }
@@ -91,6 +100,18 @@ export class GameSessionService {
             }
         }
 
+        return null;
+    }
+
+    getSocketFromPlayer(sessionId: string, playerId: string): string | null {
+        const session = this.sessions.get(sessionId);
+        if(!session)
+            return null;
+        for (const [socketId, pId] of session.socketToPlayerId) {
+            if (pId === playerId) {
+                return socketId;
+            }
+        }
         return null;
     }
 
@@ -174,4 +195,13 @@ export class GameSessionService {
     startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
         return this.actions.startCombat(sessionId, attackerId, defenderId);
     }
+
+    endCombat(sessionId: string, winnerId: string, loserId: string): boolean {
+        return this.sessionActions.resolveCombatEnd(sessionId, winnerId, loserId);
+    }
+
+    setWinner(sessionId: string, winnerId: string): boolean {
+        return this.sessionActions.setCombatWinner(sessionId, winnerId);
+    }
+
 }

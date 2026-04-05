@@ -9,10 +9,12 @@ import { WaitingRoomService as MatchWaitingRoomService } from '@app/services/wai
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { CombatGateway } from './gateways/combat/combat.gateway';
 import { MapGateway } from './gateways/map/map.gateway';
 import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
 import { MatchWaitingRoomGateway } from './gateways/waiting-room/match-waiting-room.gateway';
 import { ChatService } from './services/chat/chat.service';
+import { CombatService } from './services/combat/combat.service';
 
 @Module({
     imports: [
@@ -39,6 +41,8 @@ import { ChatService } from './services/chat/chat.service';
         MatchWaitingRoomService,
         GameSessionGateway,
         ChatGateway,
-        ChatService],
+        ChatService,
+        CombatService,
+        CombatGateway],
 })
 export class AppModule {}
