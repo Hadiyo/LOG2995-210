@@ -49,6 +49,7 @@ export class EditorTopbarComponent {
   readonly isShiftPressed = computed(() => this.editorState.isShiftPressed());
 
   readonly hasAttemptedSave = signal(false);
+  readonly isValidationDismissed = signal(false);
   readonly serverIssues = signal<MapValidationIssue[]>([]);
   readonly localValidation = computed(() => validateMap(this.editorState.editorMap()));
   readonly activeIssues = computed(() => {
@@ -56,7 +57,7 @@ export class EditorTopbarComponent {
     if (!localValidation.isValid) return localValidation.issues;
     return this.serverIssues();
   });
-  readonly shouldShowIssues = computed(() => this.hasAttemptedSave() && this.activeIssues().length > 0);
+  readonly shouldShowIssues = computed(() => !this.isValidationDismissed() && this.hasAttemptedSave() && this.activeIssues().length > 0);
   readonly isSaveActionValid = computed(() => this.localValidation().isValid && this.serverIssues().length === 0);
 
   /* =========================================================
@@ -100,11 +101,21 @@ export class EditorTopbarComponent {
     this.editorState.clearSelection();
   }
 
+  dismissValidationIssues(): void {
+    this.isValidationDismissed.set(true);
+  }
+
   /**
    * Save action.
    */
   async onSave(): Promise<void> {
+    if (!this.isSaveActionValid() && this.shouldShowIssues()) {
+      this.dismissValidationIssues();
+      return;
+    }
+
     this.hasAttemptedSave.set(true);
+    this.isValidationDismissed.set(false);
     this.serverIssues.set([]);
 
     const localValidation = this.localValidation();
