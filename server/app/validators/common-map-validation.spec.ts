@@ -295,22 +295,23 @@ describe('common map-validation (validateMap)', () => {
         expect(issueCodes(result)).toContain('START_ON_OPEN_DOOR_NOT_ALLOWED');
     });
 
-    it('should report DOOR_DOORWAY_BLOCKED when a blocking object covers a doorway tile', () => {
+    it('should report DOOR_DOORWAY_BLOCKED when two sanctuaries block both doorway tiles', () => {
         const fiveByFiveMapSize = Number('5') as MapSize;
         const result = validateMap(
             makeEditorMap({
                 size: fiveByFiveMapSize,
                 map: [
                     makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
-                    makeCell(TileType.WALL), makeCell(TileType.WALL), makeCell(TileType.DOOR), makeCell(TileType.WALL), makeCell(TileType.WALL),
-                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
-                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.WALL), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DOOR), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
+                    makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.WALL), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
                     makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT), makeCell(TileType.DIRT),
                 ],
                 objects: [
                     makeObject(ObjectType.START, 0, 0, 1),
-                    makeObject(ObjectType.START, 1, 0, 2),
-                    makeObject(ObjectType.REGEN, 1, 2, 2, ObjectSize.L), // covers (1,2),(2,2),(1,3),(2,3) — blocks south doorway
+                    makeObject(ObjectType.START, fourByFourMapSize, 0, 2),
+                    makeObject(ObjectType.REGEN, 0, 1, 2, ObjectSize.L), // covers (1,2) on the left side of the door
+                    makeObject(ObjectType.ARENA, threeByThreeMapSize, 1, threeByThreeMapSize, ObjectSize.L), // covers (3,2) on the right side of the door
                 ],
             }),
         );
