@@ -1,12 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, OnDestroy, signal } from '@angular/core';
-import { GameSessionActionContext } from '@app/config/game-session.config';
 import { GameSessionDisplayService } from '@app/services/game-view/game-session-display.service';
 import { GameSessionInteractionService } from '@app/services/game-view/game-session-interaction.service';
 import { MatchPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
 import { ObjectType } from '@common/maps/map.enums';
 
-type GameMapPromptActionId = GameSessionActionContext | MatchSanctuaryChoice;
+type GameMapPromptActionId = MatchSanctuaryChoice;
 
 interface GameMapPromptAction {
   id: GameMapPromptActionId;
@@ -114,20 +113,7 @@ export class GameMapActionPromptComponent implements OnDestroy {
         ],
       };
     }
-
-    if (!this.interaction.actionSelectionOpen()) {
-      return null;
-    }
-
-    return {
-      variant: 'action-select',
-      title: null,
-      message: 'Choisissez une action pour ce tour.',
-      actions: this.interaction.availableActionContexts().map((option) => ({
-        id: option.context,
-        label: option.label,
-      })),
-    };
+    return null;
   });
 
   onSelect(actionId: GameMapPromptActionId): void {
@@ -142,10 +128,7 @@ export class GameMapActionPromptComponent implements OnDestroy {
 
     if (actionId === SANCTUARY_ACTION_IDS.normal || actionId === SANCTUARY_ACTION_IDS.cancel) {
       this.interaction.resolveSanctuaryChoice(actionId);
-      return;
     }
-
-    this.interaction.selectActionContext(actionId);
   }
 
   actionLabel(action: GameMapPromptAction): string {
