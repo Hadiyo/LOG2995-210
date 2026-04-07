@@ -164,7 +164,16 @@ export const makeRuntime = (overrides: Partial<GameSessionRuntime> = {}): GameSe
 export function createGameSessionServiceHarness() {
     let service: GameSessionService;
     let mapService: { getMapByIdForEditor: jest.Mock };
-    let statsService: { startGame: jest.Mock; visitTile: jest.Mock };
+    let statsService: { 
+        startGame: jest.Mock; 
+        startCombat: jest.Mock;
+        visitTile: jest.Mock, 
+        useDoor: jest.Mock,
+        useSanctuary: jest.Mock,
+        getFlag: jest.Mock, 
+        endTurn: jest.Mock,
+        endSession: jest.Mock,
+    };
 
     beforeEach(() => {
         jest.useFakeTimers();
@@ -173,7 +182,13 @@ export function createGameSessionServiceHarness() {
         };
         statsService = {
             startGame: jest.fn(),
+            startCombat: jest.fn(),
             visitTile: jest.fn(),
+            useDoor: jest.fn(),
+            useSanctuary: jest.fn(),
+            getFlag: jest.fn(),
+            endTurn: jest.fn(),
+            endSession: jest.fn(),
         };
         service = new GameSessionService(mapService as never, statsService as never);
     });

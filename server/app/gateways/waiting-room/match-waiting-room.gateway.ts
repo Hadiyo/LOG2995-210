@@ -1,4 +1,3 @@
-import { EndStatsService } from '@app/services/end-stats.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import {
     WaitingRoomCancelledEvent,
@@ -40,7 +39,6 @@ export class MatchWaitingRoomGateway implements OnGatewayDisconnect, OnModuleDes
     private onDirectoryUpdated!: () => void;
 
     constructor(
-        private readonly endStatsService: EndStatsService,
         private readonly waitingRoomService: WaitingRoomService,
         private readonly logger: Logger = new Logger(MatchWaitingRoomGateway.name),
     ) {

@@ -1,3 +1,4 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import { MapService } from '@app/services/map/map.service';
 import { InitializedMatch, MatchLobbyPlayer } from '@common/game/match.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
@@ -89,6 +90,7 @@ const createDoorMap = (): EditorMapDetails => ({
 describe('GameSessionService', () => {
     let service: GameSessionService;
     let mapService: jest.Mocked<Pick<MapService, 'getMapByIdForEditor'>>;
+    let endStatsService: { startGame: jest.Mock, startCombat: jest.Mock, visitTile: jest.Mock, useDoor: jest.Mock };
     let snapshots: { sessionId: string; match: InitializedMatch }[];
 
     beforeEach(() => {
@@ -97,7 +99,13 @@ describe('GameSessionService', () => {
         mapService = {
             getMapByIdForEditor: jest.fn().mockResolvedValue(createMap()),
         };
-        service = new GameSessionService(mapService as unknown as MapService);
+        endStatsService = {
+            startGame: jest.fn().mockResolvedValue(null),
+            startCombat: jest.fn().mockReturnValue(null),
+            visitTile: jest.fn().mockReturnValue(null),
+            useDoor: jest.fn().mockReturnValue(null),
+        };
+        service = new GameSessionService(mapService as unknown as MapService, endStatsService as unknown as EndStatsService);
         snapshots = [];
         service.on<GameSessionSnapshotPayload>(SessionSocketEvents.GameSessionSnapshot, (payload) => {
             snapshots.push({ sessionId: payload.sessionId, match: payload.match });

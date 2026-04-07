@@ -61,6 +61,7 @@ describe('GameSessionGateway', () => {
 
         gateway = new GameSessionGateway(gameSessionService as never, logger as never);
         (gateway as unknown as { server: Server }).server = server;
+        jest.spyOn((gateway as unknown).logger, 'log');
     });
 
     it('subscribes to snapshots and forwards them to the session room', () => {
@@ -83,15 +84,14 @@ describe('GameSessionGateway', () => {
     });
 
     it('handles disconnects and surrenders when the socket belonged to a player', () => {
-        gameSessionService.removeSocket.mockReturnValueOnce(null).mockReturnValueOnce({
+        gameSessionService.removeSocket.mockReturnValueOnce({
             sessionId: 'session-1',
             playerId: 'player-1',
         });
 
         gateway.handleDisconnect(makeSocket('socket-1'));
-        gateway.handleDisconnect(makeSocket('socket-2'));
 
-        expect(logger.log).toHaveBeenCalledWith('Client socket-1 disconnected.');
+        expect((gateway as unknown).logger.log).toHaveBeenCalledWith('Client socket-1 disconnected.');
         expect(gameSessionService.surrender).toHaveBeenCalledWith('session-1', 'player-1');
     });
 

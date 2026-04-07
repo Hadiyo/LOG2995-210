@@ -1,10 +1,13 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, inject, OnDestroy, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { EndStatsComponent } from '@app/components/end-stats/end-stats.component';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { GAME_VIEW_CONSTANTS } from '@app/config/game-view.config';
 import { ChatService } from '@app/services/chat/chat.service';
+import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
+import { GameSessionDisplayService } from '@app/services/game-view/game-session-display.service';
+import { MatchStateService } from '@app/services/match/match-state.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { ChatMessage } from '@common/chat/chat.interface';
 
@@ -19,7 +22,11 @@ export class EndGameComponent implements OnInit, OnDestroy {
     private readonly chatService: ChatService,
     private readonly waitingRoomService: WaitingRoomService,
     private readonly router: Router,
+    private readonly gameSessionSocket: GameSessionSocketService,
+    private readonly matchState: MatchStateService,
   ) {}
+  
+  private readonly display = inject(GameSessionDisplayService);
 
   protected readonly chatMessages = toSignal(this.chatService.chat$, { initialValue: [] as ChatMessage[] });
 
@@ -48,8 +55,29 @@ export class EndGameComponent implements OnInit, OnDestroy {
     this.chatService.sendMessage(message);
   }
 
-  protected leaveSession(): void {
-    this.waitingRoomService.leaveGameSession();
+  @HostListener('window:beforeunload')
+  protected handleBrowserRefresh(): void {
+      if (!this.display.localPlayer()) {
+          return;
+      }
+
+      const message = this.display.matchEndState()?.message ??
+          'Rafraichissement detecte: la partie a ete consideree comme un abandon.';
+      this.leaveMatch(message);
+  }
+
+  protected leaveMatch(message: string): void {
+    const localPlayer = this.display.localPlayer();
+    if (localPlayer) {
+        this.gameSessionSocket.surrender(localPlayer.id);
+    }
+
+    if (this.display.matchEndState()) {
+        this.matchState.endLocalSession(message);
+        return;
+    }
+
+    this.matchState.abandonLocalPlayer(message);
     void this.router.navigate(['/home']);
   }
 }

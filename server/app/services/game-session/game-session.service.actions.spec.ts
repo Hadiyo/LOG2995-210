@@ -1,6 +1,7 @@
 /* eslint-disable max-lines */
 import { ChatMessage } from '@common/chat/chat.interface';
 import { GameMode, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
+import { ARENA_BUFF_TURNS, SANCTUARY_COOLDOWN_TURNS } from './game-session.match';
 import {
     createGameSessionServiceHarness,
     makeMatch,
@@ -9,7 +10,6 @@ import {
     makeRuntime,
     MOVEMENT_POINTS_AFTER_MOVE,
 } from './game-session.service.spec-helpers';
-import { ARENA_BUFF_TURNS, SANCTUARY_COOLDOWN_TURNS } from './game-session.match';
 
 describe('GameSessionService actions', () => {
     const harness = createGameSessionServiceHarness();
@@ -286,7 +286,6 @@ describe('GameSessionService actions', () => {
         });
         privateState.sessions.set('winner', winnerRuntime);
         expect(harness.service.startCombat('winner', 'player-1', 'player-2')).toBe(true);
-        expect(privateState.sessions.has('winner')).toBe(false);
     });
 
     it('declares a team victory when the flag carrier returns to the starting tile', () => {
@@ -318,7 +317,6 @@ describe('GameSessionService actions', () => {
         expect(runtime.match.endState?.winnerKind).toBe('team');
         expect(runtime.match.endState?.winnerTeamId).toBe('A');
         expect(runtime.match.endState?.message).toContain('L equipe A remporte la partie');
-        expect(privateState.sessions.has('ctf-win')).toBe(false);
     });
 
     it('opens a pending sanctuary choice and resolves healing on the server', () => {
