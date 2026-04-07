@@ -64,6 +64,7 @@ export enum CombatSocketEvents {
     AttackSnapshot = 'AttackSnapshot', 
     Disconnect = 'disconnect',
     StartTempCombat = 'startTemptCombat',
+    CombatSessionError = 'combatSessionError',
 }
 
 export enum WaitingRoomEvents {

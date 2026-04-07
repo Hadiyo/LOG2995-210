@@ -25,17 +25,17 @@ export class CombatGateway {
   @SubscribeMessage(CombatSocketEvents.StartTempCombat)
   startCombat(@ConnectedSocket() client: Socket, @MessageBody() payload: StartCombatPayload): void {
     if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
-        client.emit(SessionSocketEvents.GameSessionError, { message: 'Combat refusé.' } satisfies GameSessionErrorPayload);
+        client.emit(CombatSocketEvents.CombatSessionError, { message: 'Combat refusé.' } satisfies GameSessionErrorPayload);
         return;
     }
     const opponentSocket = this.getOpponentSocket(payload.sessionId, payload.defenderId);
     if(!opponentSocket){
-      client.emit(SessionSocketEvents.GameSessionError, { message: 'Adversaire indisponible.' } satisfies GameSessionErrorPayload);
+      client.emit(CombatSocketEvents.CombatSessionError, { message: 'Adversaire indisponible.' } satisfies GameSessionErrorPayload);
       return;
     }
     const session = this.combatService.createCombatSession(payload.playerId, payload.defenderId, payload.sessionId);
     if(!session){
-      client.emit(SessionSocketEvents.GameSessionError, { message: 'Combat impossible.' } satisfies GameSessionErrorPayload);
+      client.emit(CombatSocketEvents.CombatSessionError, { message: 'Combat impossible.' } satisfies GameSessionErrorPayload);
       return;
     }
     opponentSocket.join(session.id);
@@ -46,42 +46,50 @@ export class CombatGateway {
   @SubscribeMessage(CombatSocketEvents.SetStance)
   setCombatStance(@ConnectedSocket() client: Socket, @MessageBody() payload: StancePayload): void {
     if(!this.combatService.combatTurn(payload.combatId, payload.playerId, payload.stance)){
-      client.emit(SessionSocketEvents.GameSessionError, { message: 'Joueur interdit.' } satisfies GameSessionErrorPayload);
+      client.emit(CombatSocketEvents.CombatSessionError, { message: 'Joueur interdit.' } satisfies GameSessionErrorPayload);
       return;
     }
   }
 
   @OnEvent(CombatEvents.Turn)
   handleTurnSwitch(payload: CombatTurnSnapshot): void {
+    if(payload.combatId)
       this.server.to(payload.combatId).emit(CombatSocketEvents.TurnSnapshot, payload.turnState);
   }
 
   @OnEvent(CombatEvents.Statistics)
   handleCombatStatistics(payload: CombatSessionSnapshot): void {
-    this.server.to(payload.combatId).emit(CombatSocketEvents.AttackSnapshot, payload.statistics);
+    if(payload.combatId)
+      this.server.to(payload.combatId).emit(CombatSocketEvents.AttackSnapshot, payload.statistics);
   }
 
   @OnEvent(CombatEvents.Victory)
   handleVictory(payload: CombatResultSnapshot): void {
-    const newPayload = { winner: payload.winner, loser: payload.loser };
-    this.server.to(payload.combatId).emit(CombatSocketEvents.Victory, newPayload);
-    this.server.to(payload.gameSessionId).emit(SessionSocketEvents.CombatVictory, newPayload);
+    if(payload.combatId && payload.gameSessionId){
+      const newPayload = { winner: payload.winner, loser: payload.loser };
+      this.server.to(payload.combatId).emit(CombatSocketEvents.Victory, newPayload);
+      this.server.to(payload.gameSessionId).emit(SessionSocketEvents.CombatVictory, newPayload);
+    }
   }
 
   @OnEvent(CombatEvents.Tie)
   handleTie(payload: CombatResultSnapshot): void {
-    const newPayload = { player1: payload.winner, player2: payload.loser };
-    this.server.to(payload.combatId).emit(CombatSocketEvents.Tie, newPayload);
-    this.server.to(payload.gameSessionId).emit(SessionSocketEvents.CombatTie, newPayload);
+    if(payload.combatId && payload.gameSessionId){
+      const newPayload = { player1: payload.winner, player2: payload.loser };
+      this.server.to(payload.combatId).emit(CombatSocketEvents.Tie, newPayload);
+      this.server.to(payload.gameSessionId).emit(SessionSocketEvents.CombatTie, newPayload);
+    }
   }
 
   @OnEvent(CombatEvents.ClientDisconnect)
-  handleCombatDisconnect(payload: CombatResultSnapshot): void {
-    const newPayload = { winner: payload.winner, loser: payload.loser };
-    this.server.to(payload.combatId).emit(CombatSocketEvents.Disconnect, newPayload);
-    const socket = this.getOpponentSocket(payload.gameSessionId, payload.winner);
-    if(socket)
-      socket.leave(payload.combatId);
+  handleOpponentDisconnect(payload: CombatResultSnapshot): void {
+    if(payload.combatId && payload.gameSessionId){
+      const newPayload = { winner: payload.winner, loser: payload.loser };
+      this.server.to(payload.combatId).emit(CombatSocketEvents.Disconnect, newPayload);
+      const socket = this.getOpponentSocket(payload.gameSessionId, payload.winner);
+      if(socket)
+        socket.leave(payload.combatId);
+    }
   }
 
   private getOpponentSocket(gameSessionId: string, opponentId: string): Socket | undefined {
