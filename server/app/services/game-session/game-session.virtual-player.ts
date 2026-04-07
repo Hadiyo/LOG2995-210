@@ -3,7 +3,13 @@ import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { Vec2 } from '@common/maps/map.interface';
-import { getGameSessionDestination, getGameSessionMovementCost } from './game-session.match';
+import {
+    getGameSessionDestination,
+    getGameSessionMovementCost,
+    getGameSessionObjectFootprint,
+    isGameSessionSanctuaryActive,
+    isGameSessionSanctuaryObject,
+} from './game-session.match';
 
 export type MovementDirection = 'up' | 'down' | 'left' | 'right';
 
@@ -11,6 +17,7 @@ export type VirtualPlayerDecision =
     | { kind: 'move'; direction: MovementDirection }
     | { kind: 'combat'; targetId: string }
     | { kind: 'toggle-door'; position: Vec2 }
+    | { kind: 'use-sanctuary'; sanctuaryId: number }
     | { kind: 'end-turn' };
 
 interface MoveCandidate {
@@ -80,6 +87,10 @@ function planAggressiveDecision(
     if (!turnState.actionTaken && adjacentEnemy) {
         return { kind: 'combat', targetId: adjacentEnemy.id };
     }
+    const sanctuaryAction = buildSanctuaryAction(match, turnState, player);
+    if (sanctuaryAction) {
+        return sanctuaryAction;
+    }
     const ctfMove = buildCtfMovement(match, turnState, player);
     if (ctfMove) {
         return ctfMove;
@@ -105,6 +116,10 @@ function planDefensiveDecision(
     if (ctfMove) {
         return ctfMove;
     }
+    const sanctuaryAction = buildSanctuaryAction(match, turnState, player);
+    if (sanctuaryAction) {
+        return sanctuaryAction;
+    }
     const retreatMove = buildRetreatMove(match, turnState, player);
     if (retreatMove) {
         return retreatMove;
@@ -117,6 +132,25 @@ function planDefensiveDecision(
         return doorAction;
     }
     return { kind: 'end-turn' };
+}
+
+function buildSanctuaryAction(
+    match: InitializedMatch,
+    turnState: MatchTurnState,
+    player: MatchPlayer,
+): VirtualPlayerDecision | null {
+    if (turnState.actionTaken) {
+        return null;
+    }
+
+    const sanctuary = match.allObjects
+        .filter((object) => isGameSessionSanctuaryObject(object) && isGameSessionSanctuaryActive(match, object.id))
+        .filter((object) => object.type === ObjectType.REGEN
+            ? player.health < player.maxHealth
+            : (player.arenaBuffTurnsRemaining ?? 0) === 0)
+        .find((object) => getGameSessionObjectFootprint(object).some((tile) => areAdjacent(player.position, tile)));
+
+    return sanctuary ? { kind: 'use-sanctuary', sanctuaryId: sanctuary.id } : null;
 }
 
 function buildCtfMovement(
