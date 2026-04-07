@@ -362,6 +362,12 @@ export class GameSessionService {
             return;
         }
 
+        if (session.match.pendingSanctuaryChoice?.playerId === playerId) {
+            const choice = activeVirtualPlayer.virtualProfile === 'aggressive' ? 'double-or-nothing' : 'normal';
+            this.resolveSanctuaryChoice(sessionId, playerId, choice);
+            return;
+        }
+
         const decision = planVirtualPlayerDecision(session.match, session.turnState, activeVirtualPlayer);
         switch (decision.kind) {
             case 'combat':
@@ -376,6 +382,11 @@ export class GameSessionService {
                 return;
             case 'toggle-door':
                 if (!this.toggleDoor(sessionId, playerId, decision.position)) {
+                    this.endTurn(sessionId, playerId);
+                }
+                return;
+            case 'use-sanctuary':
+                if (!this.useSanctuary(sessionId, playerId, decision.sanctuaryId)) {
                     this.endTurn(sessionId, playerId);
                 }
                 return;
