@@ -78,7 +78,8 @@
             "app/services/map/map.service.ts",
             "app/validators/server-map-validation.ts",
             "app/gateways/map/map.gateway.ts",
-            "app/services/combat/combat.service.ts"
+            "app/services/combat/combat.service.ts",
+            "app/gateways/combat/combat.gateway.ts"
         ],
         "coverageThreshold": {
             "global": {

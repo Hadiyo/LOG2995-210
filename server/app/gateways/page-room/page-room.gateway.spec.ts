@@ -5,18 +5,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Socket } from 'socket.io';
 import { PageRoomGateway } from './page-room.gateway';
 
-describe('PageRoomGateway', () => {
-  let gateway: PageRoomGateway;
-
-  function createMockSocket(id: string) {
+export function createMockSocket(id: string) {
     const rooms = new Set<string>();
     return {
       id,
       rooms,
       join: jest.fn((room: string) => rooms.add(room)),
       leave: jest.fn((room: string) => rooms.delete(room)),
+      emit: jest.fn(),
     } as unknown as Socket;
   }
+
+describe('PageRoomGateway', () => {
+  let gateway: PageRoomGateway;
+
   const loggerMock = {
     log: jest.fn(),
   };
