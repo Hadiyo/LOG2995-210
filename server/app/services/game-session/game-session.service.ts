@@ -103,9 +103,9 @@ export class GameSessionService {
         return null;
     }
 
-    getSocketFromPlayer(sessionId: string, playerId: string): string | null {
+    getSocketFromPlayer(sessionId: string, playerId: string | undefined): string | null {
         const session = this.sessions.get(sessionId);
-        if(!session)
+        if(!session || !playerId)
             return null;
         for (const [socketId, pId] of session.socketToPlayerId) {
             if (pId === playerId) {
@@ -127,8 +127,9 @@ export class GameSessionService {
             if (playerStillConnected) {
                 return null;
             }
-
-            return { sessionId: session.sessionId, playerId };
+            const payload = { sessionId: session.sessionId, playerId };
+            this.events.emit(SessionSocketEvents.ClientDisconnect, payload.playerId);
+            return payload;
         }
 
         return null;
@@ -196,12 +197,12 @@ export class GameSessionService {
         return this.actions.startCombat(sessionId, attackerId, defenderId);
     }
 
-    endCombat(sessionId: string, winnerId: string, loserId: string): boolean {
-        return this.sessionActions.resolveCombatEnd(sessionId, winnerId, loserId);
+    endCombat(sessionId: string, winnerId: string, loserId: string): void {
+        this.sessionActions.resolveCombatEnd(sessionId, winnerId, loserId);
     }
 
-    setWinner(sessionId: string, winnerId: string): boolean {
-        return this.sessionActions.setCombatWinner(sessionId, winnerId);
+    setWinner(sessionId: string, winnerId: string): void {
+        this.sessionActions.setCombatWinner(sessionId, winnerId);
     }
 
 }

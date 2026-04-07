@@ -15,6 +15,13 @@ export class CombatGateway {
     private readonly combatService: CombatService, 
     private readonly gameSessionService: GameSessionService){}
 
+  handleDisconnect(client: Socket): void {
+    const rooms = Array.from(client.rooms);
+    const combatId = this.combatService.getCombatIdByRooms(rooms);
+    if(combatId)
+      client.leave(combatId);
+  }
+
   @SubscribeMessage(CombatSocketEvents.StartTempCombat)
   startCombat(@ConnectedSocket() client: Socket, @MessageBody() payload: StartCombatPayload): void {
     if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {

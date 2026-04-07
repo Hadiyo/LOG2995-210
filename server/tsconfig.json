@@ -21,6 +21,5 @@
       "@common/*": ["../common/*"],
       "@app/*": ["./app/*"]
     },
-    "types": ["jest"],
   },
 }

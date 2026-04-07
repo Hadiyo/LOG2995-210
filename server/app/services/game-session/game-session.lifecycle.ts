@@ -9,7 +9,6 @@ import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SessionSocketEvents } from '@common/socket-events';
 import { EventEmitter } from 'events';
-import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
 import {
     ACTIVE_TURN_DURATION_MS,
     createActiveTurnState,
@@ -18,6 +17,7 @@ import {
     SNAPSHOT_TICK_MS,
     TRANSITION_DURATION_MS,
 } from './game-session.runtime';
+import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
 import { clearGameSessionTimers, tickGameSessionTimers } from './game-session.timers';
 
 export class GameSessionLifecycle {
@@ -339,7 +339,7 @@ export class GameSessionLifecycle {
         }
 
         clearGameSessionTimers(session);
-        session.turnState = createActiveTurnState(session.turnState, activePlayer);
+        session.turnState = createActiveTurnState(session.turnState, activePlayer, ACTIVE_TURN_DURATION_MS);
         this.emitSnapshot(session);
         session.timerIntervalId = setInterval(() => tickGameSessionTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
         session.activeTurnTimeoutId = setTimeout(() => this.advanceToNextTurn(session), ACTIVE_TURN_DURATION_MS);
