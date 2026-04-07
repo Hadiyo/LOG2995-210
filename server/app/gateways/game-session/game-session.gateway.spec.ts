@@ -15,6 +15,7 @@ import {
     UseSanctuaryPayload,
     getGameSessionRoom,
 } from '@common/socket-events';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 
 const makeSocket = (id: string): Socket => ({
@@ -61,7 +62,7 @@ describe('GameSessionGateway', () => {
 
         gateway = new GameSessionGateway(gameSessionService as never, logger as never);
         (gateway as unknown as { server: Server }).server = server;
-        jest.spyOn((gateway as unknown).logger, 'log');
+        jest.spyOn(Logger.prototype, 'log');
     });
 
     it('subscribes to snapshots and forwards them to the session room', () => {
@@ -91,7 +92,7 @@ describe('GameSessionGateway', () => {
 
         gateway.handleDisconnect(makeSocket('socket-1'));
 
-        expect((gateway as unknown).logger.log).toHaveBeenCalledWith('Client socket-1 disconnected.');
+        expect(Logger.prototype.log).toHaveBeenCalledWith('Client socket-1 disconnected.');
         expect(gameSessionService.surrender).toHaveBeenCalledWith('session-1', 'player-1');
     });
 
