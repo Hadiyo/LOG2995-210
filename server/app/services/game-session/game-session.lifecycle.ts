@@ -9,16 +9,11 @@ import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SessionSocketEvents } from '@common/socket-events';
 import { EventEmitter } from 'events';
-import {
-    ACTIVE_TURN_DURATION_MS,
-    createActiveTurnState,
-    createTransitionTurnState,
-    GameSessionRuntime,
-    SNAPSHOT_TICK_MS,
-    TRANSITION_DURATION_MS,
-} from './game-session.runtime';
+import {createActiveTurnState,createTransitionTurnState } from './game-session.runtime';
 import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
 import { clearGameSessionTimers, tickGameSessionTimers } from './game-session.timers';
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
+import { ACTIVE_TURN_DURATION_MS, SNAPSHOT_TICK_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 
 export class GameSessionLifecycle {
     constructor(

@@ -1,8 +1,9 @@
-import { createActiveTurnState, createTransitionTurnState, initTurnState, SNAPSHOT_TICK_MS } from '@app/services/game-session/game-session.runtime';
+import { createActiveTurnState, createTransitionTurnState, initTurnState } from '@app/services/game-session/game-session.runtime';
 import { clearGameSessionTimers, tickGameSessionTimers } from '@app/services/game-session/game-session.timers';
 import { ACTIVE_COMBAT_TURN_DURATION_MS, COMBAT_TRANSITION_DURATION_MS } from '@app/utilities/combat/combat.constants';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import { CombatSession } from '@app/utilities/combat/combat.interface';
+import { SNAPSHOT_TICK_MS } from '@app/utilities/game/game.constants';
 import { MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnOrderEntry, MatchTurnState } from '@common/game/turn.interface';
 import { Injectable } from '@nestjs/common';

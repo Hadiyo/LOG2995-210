@@ -1,7 +1,7 @@
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { TileType } from '@common/maps/map.enums';
 import { getGameSessionObjectCovering } from './game-session.match';
-import { GameSessionRuntime } from './game-session.runtime';
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 
 export function canUseDebugTeleport(
     session: GameSessionRuntime | undefined,

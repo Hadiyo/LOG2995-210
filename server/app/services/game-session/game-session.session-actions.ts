@@ -4,7 +4,8 @@ import { ObjectType } from '@common/maps/map.enums';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { applyFacingTowardPosition } from './game-session.render';
-import { GameSessionRuntime, rebuildTurnStateAfterRosterChange, resolveRespawnPosition } from './game-session.runtime';
+import { rebuildTurnStateAfterRosterChange, resolveRespawnPosition } from './game-session.runtime';
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 
 export class GameSessionSessionActions {
     constructor(

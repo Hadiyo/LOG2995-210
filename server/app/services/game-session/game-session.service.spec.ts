@@ -3,9 +3,8 @@ import { InitializedMatch, MatchLobbyPlayer } from '@common/game/match.interface
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMapDetails } from '@common/maps/map.interface';
 import { GameSessionSnapshotPayload, SessionSocketEvents } from '@common/socket-events';
-import { ATTACK_POSE_DURATION_MS, WALK_POSE_DURATION_MS } from './game-session.match';
-import { TRANSITION_DURATION_MS } from './game-session.runtime';
 import { GameSessionService } from './game-session.service';
+import { ATTACK_POSE_DURATION_MS, TRANSITION_DURATION_MS, WALK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
 
 const START_LEFT_X = 1;
 const START_RIGHT_X = 2;

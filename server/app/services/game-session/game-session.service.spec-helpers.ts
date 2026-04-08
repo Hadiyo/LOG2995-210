@@ -1,6 +1,6 @@
 import * as runtimeModule from '@app/services/game-session/game-session.runtime';
-import { GameSessionRuntime } from '@app/services/game-session/game-session.runtime';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { InitializedMatch, MatchEndState, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';

@@ -9,7 +9,7 @@ import {
     makeRuntime,
     MOVEMENT_POINTS_AFTER_MOVE,
 } from './game-session.service.spec-helpers';
-import { ARENA_BUFF_TURNS, SANCTUARY_COOLDOWN_TURNS } from './game-session.match';
+import { ARENA_BUFF_TURNS, SANCTUARY_COOLDOWN_TURNS } from '@app/utilities/game/game.constants';
 
 describe('GameSessionService actions', () => {
     const harness = createGameSessionServiceHarness();

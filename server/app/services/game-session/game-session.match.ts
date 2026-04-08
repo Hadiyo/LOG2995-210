@@ -4,13 +4,6 @@ import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
 import { PlayerFacing, PlayerPose, PlayerRenderState } from '@common/player/player.interface';
 
-export const WALK_POSE_DURATION_MS = 180;
-export const ATTACK_POSE_DURATION_MS = 220;
-export const SANCTUARY_COOLDOWN_TURNS = 3;
-export const SANCTUARY_DOUBLE_OR_NOTHING_THRESHOLD = 0.5;
-export const ARENA_BUFF_TURNS = 2;
-export const SANCTUARY_HEAL_VALUE = 2;
-
 export function buildInitializedMatchFromEditor(
     map: EditorMapDetails,
     players: MatchLobbyPlayer[],

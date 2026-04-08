@@ -1,16 +1,18 @@
 import {
-    InitializedMatch,
-    MatchPendingSanctuaryChoice,
-    MatchSanctuaryChoice,
-    MatchPlayer,
-} from '@common/game/match.interface';
-import { ObjectType } from '@common/maps/map.enums';
-import { Vec2 } from '@common/maps/map.interface';
-import {
     ARENA_BUFF_TURNS,
     SANCTUARY_COOLDOWN_TURNS,
     SANCTUARY_DOUBLE_OR_NOTHING_THRESHOLD,
     SANCTUARY_HEAL_VALUE,
+} from '@app/utilities/game/game.constants';
+import {
+    InitializedMatch,
+    MatchPendingSanctuaryChoice,
+    MatchPlayer,
+    MatchSanctuaryChoice,
+} from '@common/game/match.interface';
+import { ObjectType } from '@common/maps/map.enums';
+import { Vec2 } from '@common/maps/map.interface';
+import {
     getGameSessionObjectFootprint,
     isGameSessionSanctuaryActive,
     isGameSessionSanctuaryObject,

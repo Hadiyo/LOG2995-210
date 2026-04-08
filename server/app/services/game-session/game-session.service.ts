@@ -7,9 +7,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import { GameSessionActions } from './game-session.actions';
 import { GameSessionLifecycle } from './game-session.lifecycle';
-import { buildSession, GameSessionRuntime } from './game-session.runtime';
+import { buildSession } from './game-session.runtime';
 import { GameSessionSessionActions } from './game-session.session-actions';
 import { clearGameSessionTimers } from './game-session.timers';
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 
 @Injectable()
 export class GameSessionService {
