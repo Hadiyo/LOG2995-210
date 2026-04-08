@@ -1,6 +1,6 @@
 import { CombatService } from '@app/services/combat/combat.service';
-import { CombatEvents } from '@app/services/combat/combat.service.utils';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
+import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import { CombatResultSnapshot, CombatSessionSnapshot, CombatTurnSnapshot, StancePayload } from '@common/combat/combat.interface';
 import { CombatSocketEvents, GameSessionErrorPayload, SessionSocketEvents, StartCombatPayload } from '@common/socket-events';
 import { OnEvent } from '@nestjs/event-emitter';
@@ -14,7 +14,7 @@ export class CombatGateway {
   constructor(
     private readonly combatService: CombatService, 
     private readonly gameSessionService: GameSessionService){}
-
+  
   handleDisconnect(client: Socket): void {
     const rooms = Array.from(client.rooms);
     const combatId = this.combatService.getCombatIdByRooms(rooms);

@@ -1,4 +1,4 @@
-import { CombatSession } from '@common/combat/combat.interface';
+import { CombatSession } from '@app/utilities/combat/combat.interface';
 import { GameSessionRuntime } from './game-session.runtime';
 
 export function tickGameSessionTimers<T extends GameSessionRuntime | CombatSession>(

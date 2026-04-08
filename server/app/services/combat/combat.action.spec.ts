@@ -5,7 +5,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { makeCombatPlayerStatistics, makeCombatSession, makeFighter, makeFighterPayload } from './combat-service.helper';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
-import { BONUS, CombatEvents, MIN_DIE_VALUE } from './combat.service.utils';
+import { CombatEvents } from '@app/utilities/combat/combat.enums';
+import { BONUS, MIN_DIE_VALUE } from '@app/utilities/combat/combat.constants';
 
 describe('CombatService', () => {
   let service: CombatService;

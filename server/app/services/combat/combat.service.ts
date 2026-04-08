@@ -1,15 +1,13 @@
-import {
-    BONUS,
-    CombatEvents,
-    MIN_DIE_VALUE,
-    ZERO,
-} from '@app/services/combat/combat.service.utils';
+
 import { isPlayerOnIce } from '@app/services/game-session/game-session.match';
 import { canStartCombat } from '@app/services/game-session/game-session.runtime';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { clearGameSessionTimers } from '@app/services/game-session/game-session.timers';
+import { BONUS, MIN_DIE_VALUE, ZERO } from '@app/utilities/combat/combat.constants';
+import { CombatEvents } from '@app/utilities/combat/combat.enums';
+import { CombatSession, Fighter } from '@app/utilities/combat/combat.interface';
 import { Die, DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
-import { CombatPlayerStatistics, CombatSession, Fighter, FighterStance } from '@common/combat/combat.interface';
+import { CombatPlayerStatistics, FighterStance } from '@common/combat/combat.interface';
 import { MatchPlayer } from '@common/game/match.interface';
 import { SessionSocketEvents } from '@common/socket-events';
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';

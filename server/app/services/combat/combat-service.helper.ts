@@ -1,5 +1,6 @@
 import { makeMatchPlayer, makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
-import { CombatPlayerStatistics, CombatSession, Fighter, FighterPayload } from '@common/combat/combat.interface';
+import { CombatSession, Fighter } from '@app/utilities/combat/combat.interface';
+import { CombatPlayerStatistics, FighterPayload } from '@common/combat/combat.interface';
 import { MatchPlayer } from '@common/game/match.interface';
 
 export const makeCombatSession = (overrides: Partial<CombatSession> = {}): CombatSession => ({

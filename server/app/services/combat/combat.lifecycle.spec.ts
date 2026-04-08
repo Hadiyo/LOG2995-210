@@ -14,7 +14,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { makeCombatSession, makeFighter } from './combat-service.helper';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
-import { CombatEvents } from './combat.service.utils';
+import { CombatEvents } from '@app/utilities/combat/combat.enums';
 
 describe('Combat Life Cycle', () => {
     let service: CombatService;

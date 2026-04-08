@@ -1,24 +1,6 @@
-import { MatchPlayer } from '../game/match.interface';
 import { MatchTurnState } from '../game/turn.interface';
 
 export type FighterStance = 'attack' | 'defense' | null;
-
-export interface Fighter {
-    stats: MatchPlayer,
-    combatStance: FighterStance,
-    hasPenalty: boolean,
-}
-
-export interface CombatSession {
-    id: string,
-    gameSessionId: string,
-    players: Fighter[],
-    winner?: MatchPlayer,
-    turnState: MatchTurnState,
-    transitionTimeoutId: NodeJS.Timeout | null;
-    activeTurnTimeoutId: NodeJS.Timeout | null;
-    timerIntervalId: NodeJS.Timeout | null;
-}
 
 export interface FighterPayload{
     id: string,

@@ -7,7 +7,7 @@ import { DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { Test } from '@nestjs/testing';
 import { TestingModule } from '@nestjs/testing/testing-module';
 import { makeCombatSession, makeFighter } from './combat-service.helper';
-import { CombatEvents } from './combat.service.utils';
+import { CombatEvents } from '@app/utilities/combat/combat.enums';
 
 describe('CombatService Helpers', () => {
     let service: CombatService;
