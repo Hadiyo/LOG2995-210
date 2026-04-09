@@ -110,11 +110,11 @@ describe('MatchWaitingRoomGateway', () => {
         expect(serverToEmit).toHaveBeenCalledWith(WaitingRoomEvents.WaitingRoomError, { message: 'bad' });
         expect(serverToEmit).toHaveBeenCalledWith(
             WaitingRoomEvents.WaitingRoomPlayerKicked,
-            { message: 'Vous avez ete exclu de la salle d attente par l organisateur.' },
+            { message: "Vous avez été exclu de la salle d'attente par l'organisateur." },
         );
         expect(serverToEmit).toHaveBeenCalledWith(
             WaitingRoomEvents.WaitingRoomCancelled,
-            { message: 'La salle d attente a ete fermee.' },
+            { message: "La salle d'attente a été fermée." },
         );
         expect(serverToEmit).toHaveBeenCalledWith(
             WaitingRoomEvents.WaitingRoomGameStarted,
@@ -152,7 +152,7 @@ describe('MatchWaitingRoomGateway', () => {
         expect(logger.error).toHaveBeenCalled();
         expect(client.emit).toHaveBeenCalledWith(
             WaitingRoomEvents.WaitingRoomError,
-            { message: 'Impossible de creer la salle d attente.' },
+            { message: "Impossible de créer la salle d'attente." },
         );
     });
 

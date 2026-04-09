@@ -369,7 +369,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected quitGame(): void {
         this.matchEndRedirectState = clearMatchEndRedirect(this.matchEndRedirectState, this.endRedirectRemainingMs);
         this.interaction.clearActionSelection();
-        this.leaveMatch('Vous avez abandonne la partie. Retour a l accueil.');
+        this.leaveMatch("Vous avez abandonné la partie. Retour a l'accueil.");
         void this.router.navigate(['/home']);
     }
 

@@ -235,6 +235,7 @@ describe('GameSessionService lifecycle', () => {
         privateState.sessions.set('ctf-cancel', runtime);
         expect(harness.service.surrender('ctf-cancel', 'player-1')).toBe(true);
         expect(runtime.match.endState?.winnerKind).toBe('none');
-        expect(runtime.match.endState?.message).toContain("La partie est annulee: l equipe A n'a plus aucun joueur");
+        expect(runtime.match.endState?.message).toContain("La partie est annulée: l'équipe A n'a plus aucun joueur");
+        // expect(privateState.sessions.has('ctf-cancel')).toBe(false);
     });
 });

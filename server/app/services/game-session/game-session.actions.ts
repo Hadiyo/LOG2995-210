@@ -93,7 +93,7 @@ export class GameSessionActions {
                     winnerKind: 'team',
                     winnerPlayerId: winner.id,
                     winnerTeamId: winner.teamId ?? null,
-                    message: `L equipe ${winner.teamId ?? '?'} remporte la partie: ${winner.name} ramene le drapeau a son point de depart.`,
+                    message: `L'équipe ${winner.teamId ?? '?'} remporte la partie: ${winner.name} ramène le drapeau à son point de départ.`,
                     resolvedAt: Date.now(),
                 },
             };

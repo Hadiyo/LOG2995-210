@@ -186,12 +186,12 @@ describe('MatchStateService', () => {
         localStorage.setItem('pendingMatchLocalPlayer', JSON.stringify(organizer));
         localStorage.setItem('pendingMatchTurnState', JSON.stringify(createTurnState(persistedMatch.players)));
 
-        service.endLocalSession('Retour a l accueil avec explication.');
+        service.endLocalSession("Retour à l'accueil avec explication.");
 
         expect(service.localPlayer()).toBeNull();
         expect(service.match()).toBeNull();
         expect(turnStateService.turnState()).toBeNull();
-        expect(service.consumeHomeReturnMessage()).toBe('Retour a l accueil avec explication.');
+        expect(service.consumeHomeReturnMessage()).toBe("Retour à l'accueil avec explication.");
         expect(service.consumeHomeReturnMessage()).toBeNull();
     });
 
