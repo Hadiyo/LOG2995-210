@@ -16,6 +16,7 @@ import { ChatMessage } from '@common/chat/chat.interface';
   imports: [EndStatsComponent, GameChatPanelComponent],
   templateUrl: './end-game.component.html',
   styleUrl: './end-game.component.scss',
+  providers: [GameSessionDisplayService],
 })
 export class EndGameComponent implements OnInit, OnDestroy {
   constructor(
