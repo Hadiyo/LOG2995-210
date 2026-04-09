@@ -88,6 +88,11 @@
   margin-top: 0;
 }
 
+.actions-name {
+  margin-top: 8px;
+  justify-content: flex-start;
+}
+
 .section-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -289,14 +294,14 @@
 
 .input-with-actions {
   display: grid;
-  grid-template-columns: auto auto auto;
+  grid-template-columns: minmax(0, 20rem) auto;
   justify-content: start;
-  gap: 8px;
+  gap: 32px;
   align-items: stretch;
 }
 
 .input-with-actions input {
-  width: 20ch;
+  width: 100%;
 }
 
 .mini-btn {
@@ -343,10 +348,6 @@ h3 {
     cursor: not-allowed;
     filter: grayscale(60%);
   }
-}
-
-.btn-generate-name {
-  color: var(--accent-primary);
 }
 
 .btn-clear-name {
