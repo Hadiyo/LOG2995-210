@@ -258,7 +258,7 @@ export class GameSessionInteractionService {
     private handleCombatAction(tile: EditorCell): void {
         const localPlayer = this.getLocalMatchPlayer();
         const targetPlayer = this.display.playerAt(tile);
-        if (!localPlayer || !this.isActionTarget(tile) || !targetPlayer) {
+        if (!localPlayer || !targetPlayer) {
             this.movementFeedback.set('Action ignoree: cible invalide.');
             return;
         }
@@ -268,7 +268,6 @@ export class GameSessionInteractionService {
             return;
         }
 
-        this.gameSessionSocket.startCombat(localPlayer.id, targetPlayer.id);
         this.clearActionSelection();
         this.closeInspection();
         this.movementFeedback.set(`Combat engage contre ${targetPlayer.name}.`);

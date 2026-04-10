@@ -161,13 +161,17 @@
         @if (interaction.hasLocalPendingSanctuaryChoice() || interaction.actionSelectionOpen() || interaction.sanctuaryPromptUiHold()) {
           <app-game-map-action-prompt />
         } @else {
-          @if (interaction.actionContext()) {
+          @if (combat.hasActiveCombat()) {
+            <p class="map-panel__hint">Combat en cours: choisissez une posture.</p>
+          } @else if (interaction.actionContext()) {
             <p class="map-panel__hint">{{ interaction.actionHelperText() }}</p>
           } @else {
             <p class="map-panel__hint">Les cases surlignees indiquent les deplacements atteignables avec vos points restants.</p>
           }
         }
       </section>
+
+      <app-game-combat-panel />
     </div>
 
     <aside class="side-panel side-panel--right">

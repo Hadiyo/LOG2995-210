@@ -111,6 +111,11 @@ export class GameSessionTurnEffectsService {
             return;
         }
 
+        if (this.combatStateService.hasActiveCombat()) {
+            this.lastAutoEndedTurnKey = null;
+            return;
+        }
+
         if (this.interaction.hasLocalPendingSanctuaryChoice()) {
             this.lastAutoEndedTurnKey = null;
             return;

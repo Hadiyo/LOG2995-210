@@ -1,0 +1,71 @@
+<section class="combat-round-log" aria-label="Details du combat">
+  <header class="combat-round-log__header">
+    <div>
+      <p class="combat-round-log__eyebrow">Historique</p>
+      <h3>Details du combat</h3>
+    </div>
+    <p class="combat-round-log__copy">Les rounds les plus recents restent visibles ici.</p>
+  </header>
+
+  <div #viewport class="combat-round-log__viewport" (scroll)="onScroll()">
+    @if (!logs.length) {
+      <div class="combat-round-log__empty">Aucun detail de round pour le moment.</div>
+    } @else {
+      @for (round of logs; track trackRound($index, round)) {
+        <article class="combat-round-log__round">
+          <header class="combat-round-log__round-header">
+            <span class="combat-round-log__round-chip">Round {{ round.round }}</span>
+            <span class="combat-round-log__round-state" [class.combat-round-log__round-state--pending]="round.status === 'pending'">
+              {{ round.status === 'pending' ? 'En attente' : 'Resolue' }}
+            </span>
+          </header>
+
+          <div class="combat-round-log__fighters">
+            @for (fighter of round.fighters; track fighter.fighterId) {
+              <section class="combat-round-log__fighter">
+                <div class="combat-round-log__fighter-header">
+                  <div>
+                    <h4>{{ fighter.fighterName }}</h4>
+                    <p>{{ fighter.isLocal ? 'Vous' : 'Adversaire' }}</p>
+                  </div>
+                  <span class="combat-round-log__stance">{{ stanceLabel(fighter.stance) }}</span>
+                </div>
+
+                <div class="combat-round-log__table" role="table" aria-label="Resultats pour {{ fighter.fighterName }}">
+                  <div class="combat-round-log__table-head" role="row">
+                    <span>Type</span>
+                    <span>Base</span>
+                    <span>Post.</span>
+                    <span>De</span>
+                    <span>Pen.</span>
+                    <span>Total</span>
+                  </div>
+
+                  <div class="combat-round-log__table-row" role="row">
+                    <span>ATQ</span>
+                    <span>{{ fighter.attack.base }}</span>
+                    <span>{{ signedValue(fighter.attack.postureBonus) }}</span>
+                    <span>{{ fighter.attack.dieType }} {{ displayValue(fighter.attack.dieValue) }}</span>
+                    <span>{{ signedValue(fighter.attack.penalty) }}</span>
+                    <span>{{ breakdownTotal(fighter.attack) }}</span>
+                  </div>
+
+                  <div class="combat-round-log__table-row" role="row">
+                    <span>DEF</span>
+                    <span>{{ fighter.defense.base }}</span>
+                    <span>{{ signedValue(fighter.defense.postureBonus) }}</span>
+                    <span>{{ fighter.defense.dieType }} {{ displayValue(fighter.defense.dieValue) }}</span>
+                    <span>{{ signedValue(fighter.defense.penalty) }}</span>
+                    <span>{{ breakdownTotal(fighter.defense) }}</span>
+                  </div>
+                </div>
+
+                <p class="combat-round-log__result">{{ resultLabel(round, $index === 0 ? 0 : 1) }}</p>
+              </section>
+            }
+          </div>
+        </article>
+      }
+    }
+  </div>
+</section>

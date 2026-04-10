@@ -1,0 +1,185 @@
+:host {
+  display: block;
+  min-height: 0;
+}
+
+.combat-round-log {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 92%, transparent);
+  border-radius: var(--panel-radius);
+  background: color-mix(in srgb, var(--bg-main) 62%, transparent);
+  overflow: hidden;
+}
+
+.combat-round-log__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 88%, transparent);
+}
+
+.combat-round-log__eyebrow,
+.combat-round-log__copy,
+.combat-round-log__empty,
+.combat-round-log__fighter-header p,
+.combat-round-log__result,
+.combat-round-log__header h3,
+.combat-round-log__fighter-header h4 {
+  margin: 0;
+}
+
+.combat-round-log__eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent-primary) 70%, var(--text-main));
+}
+
+.combat-round-log__header h3 {
+  font-size: 1rem;
+}
+
+.combat-round-log__copy {
+  max-width: 260px;
+  color: color-mix(in srgb, var(--text-main) 72%, transparent);
+  font-size: 0.8rem;
+  line-height: 1.25;
+  text-align: right;
+}
+
+.combat-round-log__viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.combat-round-log__empty {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  color: color-mix(in srgb, var(--text-main) 72%, transparent);
+  font-size: 0.9rem;
+}
+
+.combat-round-log__round {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 88%, transparent);
+  border-radius: var(--panel-radius);
+  background: color-mix(in srgb, var(--bg-panel) 82%, transparent);
+}
+
+.combat-round-log__round-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.combat-round-log__round-chip,
+.combat-round-log__round-state,
+.combat-round-log__stance {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 88%, transparent);
+  border-radius: var(--panel-radius);
+  background: color-mix(in srgb, var(--bg-main) 78%, transparent);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.combat-round-log__round-state--pending {
+  color: color-mix(in srgb, var(--accent-primary) 76%, var(--text-main));
+}
+
+.combat-round-log__fighters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.combat-round-log__fighter {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 88%, transparent);
+  border-radius: var(--panel-radius);
+  background: color-mix(in srgb, var(--bg-main) 54%, transparent);
+}
+
+.combat-round-log__fighter-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.combat-round-log__fighter-header h4 {
+  font-size: 0.96rem;
+  line-height: 1.1;
+}
+
+.combat-round-log__fighter-header p {
+  color: color-mix(in srgb, var(--text-main) 68%, transparent);
+  font-size: 0.78rem;
+}
+
+.combat-round-log__table {
+  display: grid;
+  gap: 4px;
+}
+
+.combat-round-log__table-head,
+.combat-round-log__table-row {
+  display: grid;
+  grid-template-columns: 42px repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  align-items: center;
+}
+
+.combat-round-log__table-head {
+  color: color-mix(in srgb, var(--text-main) 62%, transparent);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.combat-round-log__table-row {
+  padding: 6px 8px;
+  border-radius: calc(var(--panel-radius) - 2px);
+  background: color-mix(in srgb, var(--bg-panel) 74%, transparent);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.combat-round-log__result {
+  color: color-mix(in srgb, var(--text-main) 80%, transparent);
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+@media (max-width: 980px) {
+  .combat-round-log__header {
+    flex-direction: column;
+  }
+
+  .combat-round-log__copy {
+    max-width: none;
+    text-align: left;
+  }
+
+  .combat-round-log__fighters {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { MapApiService } from '@app/services/map/map-api.service';
 import { AvatarId } from '@common/character/character.model';
-import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
+import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, MapSize, TileType } from '@common/maps/map.enums';
 import { EditorCell } from '@common/maps/map.interface';
@@ -14,12 +14,11 @@ const FAST_SPEED = 8;
 const DEFAULT_SPEED = 6;
 const STARTING_HEALTH = 6;
 const ACTIVE_TURN_MS = 30000;
-const WIN_THRESHOLD = 3;
 
 const createGrid = (): EditorCell[] =>
     Array.from({ length: MapSize.S * MapSize.S }, (_, index) => ({
         position: { x: index % MapSize.S, y: Math.floor(index / MapSize.S) },
-        tileType: TileType.DIRT,
+        tileType: TileType.WATER,
         isWalkable: true,
         isOccupied: false,
     }));
@@ -91,6 +90,20 @@ const createTurnState = (): MatchTurnState => ({
     ],
 });
 
+const createLocalPlayer = (): MatchLobbyPlayer => ({
+    id: 'attacker',
+    name: 'Attacker',
+    avatarId: 0,
+    speed: FAST_SPEED,
+    maxHealth: STARTING_HEALTH,
+    baseAttack: 4,
+    baseDefense: 4,
+    attackDie: 'D6',
+    defenseDie: 'D4',
+    isOrganizer: true,
+    controller: 'human',
+});
+
 describe('CombatStateService', () => {
     let service: CombatStateService;
     let matchStateService: MatchStateService;
@@ -110,57 +123,59 @@ describe('CombatStateService', () => {
         service = TestBed.inject(CombatStateService);
         matchStateService = TestBed.inject(MatchStateService);
         turnStateService = TestBed.inject(TurnStateService);
+        matchStateService.localPlayer.set(createLocalPlayer());
     });
 
     afterEach(() => {
+        service.closeCombat();
         turnStateService.clear();
         localStorage.clear();
     });
 
-    it('resolves Sprint 2 combat immediately in favour of the attacker', () => {
+    it('opens a horizontal combat preview without mutating the match state', () => {
         matchStateService.match.set(createMatch());
         turnStateService.turnState.set(createTurnState());
 
         expect(service.startCombat('attacker', 'defender')).toBeTrue();
-        expect(turnStateService.turnState()?.phase).toBe('active');
-        expect(turnStateService.turnState()?.actionTaken).toBeTrue();
-        expect(matchStateService.match()?.players.find((player) => player.id === 'attacker')?.combatWins).toBe(1);
-        expect(matchStateService.match()?.players.find((player) => player.id === 'defender')?.health).toBe(STARTING_HEALTH);
-        expect(service.lastCombatOutcome()?.attackerMessage).toContain('Victoire contre Defender');
+
+        const panelState = service.panelState();
+        expect(service.hasActiveCombat()).toBeTrue();
+        expect(panelState?.orientation).toBe('horizontal');
+        expect(panelState?.fighters.map((fighter) => fighter.name)).toEqual(['Attacker', 'Defender']);
+        expect(panelState?.fighters[0].facing).toBe(PlayerFacing.Right);
+        expect(panelState?.fighters[1].facing).toBe(PlayerFacing.Left);
+        expect(panelState?.fighters[0].isLocal).toBeTrue();
+        expect(panelState?.fighters[0].tileType).toBe(TileType.WATER);
+        expect(turnStateService.turnState()?.actionTaken).toBeFalse();
+        expect(matchStateService.match()?.players.find((player) => player.id === 'attacker')?.combatWins).toBe(0);
     });
 
-    it('stores the combat update and respawns the defender', () => {
-        matchStateService.match.set(createMatch());
-        turnStateService.turnState.set(createTurnState());
-        matchStateService.match.update((match) =>
-            match ? {
-                ...match,
-                players: match.players.map((player) =>
-                    player.id === 'defender' ? { ...player, startingPosition: { x: STARTING_HEALTH, y: STARTING_HEALTH } } : player,
-                ),
-            } : match,
-        );
-
-        expect(service.startCombat('attacker', 'defender')).toBeTrue();
-
-        expect(service.lastCombatUpdate()).toContain('Attacker gagne contre Defender');
-        expect(service.lastCombatOutcome()?.defenderMessage).toContain('Defaite contre Attacker');
-        expect(matchStateService.match()?.players.find((player) => player.id === 'defender')?.position)
-            .toEqual({ x: STARTING_HEALTH, y: STARTING_HEALTH });
-    });
-
-    it('ends the match when the attacker reaches the third combat win', () => {
+    it('opens a vertical combat preview when the fighters are stacked', () => {
         const match = createMatch();
-        match.players[0].combatWins = WIN_THRESHOLD - 1;
+        match.players[1].position = { x: 1, y: 2 };
         matchStateService.match.set(match);
         turnStateService.turnState.set(createTurnState());
 
-        service.startCombat('attacker', 'defender');
+        expect(service.startCombat('attacker', 'defender')).toBeTrue();
 
-        expect(matchStateService.match()?.players.find((player) => player.id === 'attacker')?.combatWins).toBe(WIN_THRESHOLD);
-        expect(matchStateService.match()?.endState?.winnerKind).toBe('player');
-        expect(matchStateService.match()?.endState?.winnerPlayerId).toBe('attacker');
-        expect(matchStateService.match()?.endState?.message).toContain('Attacker remporte la partie');
+        const panelState = service.panelState();
+        expect(panelState?.orientation).toBe('vertical');
+        expect(panelState?.fighters[0].facing).toBe(PlayerFacing.Right);
+        expect(panelState?.fighters[1].facing).toBe(PlayerFacing.Left);
     });
 
+    it('stores the selected local stance and clears the preview cleanly', () => {
+        matchStateService.match.set(createMatch());
+        turnStateService.turnState.set(createTurnState());
+        service.startCombat('attacker', 'defender');
+
+        service.selectStance('attack');
+        expect(service.localSelectedStance()).toBe('attack');
+        expect(service.footerMessage()).toContain('offensive');
+
+        service.closeCombat();
+        expect(service.hasActiveCombat()).toBeFalse();
+        expect(service.panelState()).toBeNull();
+        expect(service.localSelectedStance()).toBeNull();
+    });
 });

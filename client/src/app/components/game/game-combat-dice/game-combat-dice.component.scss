@@ -1,0 +1,141 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.combat-dice {
+  box-sizing: border-box;
+  height: 100%;
+  display: grid;
+  align-content: center;
+  gap: 18px;
+  justify-items: center;
+  width: 100%;
+  padding: 14px 10px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 92%, transparent);
+  border-radius: var(--panel-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 24%),
+    color-mix(in srgb, var(--bg-main) 72%, transparent);
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.combat-dice__slot {
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+
+.combat-dice__die {
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: var(--text-main);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(8, 12, 20, 0.42);
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.28));
+}
+
+.combat-dice__die::before,
+.combat-dice__die::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.combat-dice__die::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 40%);
+  opacity: 0.7;
+}
+
+.combat-dice__die::after {
+  border: 1px solid color-mix(in srgb, currentColor 22%, rgba(255, 255, 255, 0.18));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.combat-dice__die-label {
+  position: relative;
+  z-index: 1;
+  font-size: 1.08rem;
+  line-height: 1;
+}
+
+.combat-dice__die--d6 {
+  width: 68px;
+  height: 68px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, color-mix(in srgb, currentColor 14%, #1b2432), color-mix(in srgb, currentColor 26%, #0b111b));
+}
+
+.combat-dice__die--d6::before,
+.combat-dice__die--d6::after {
+  border-radius: 14px;
+}
+
+.combat-dice__die--d4 {
+  width: 76px;
+  height: 66px;
+  background: linear-gradient(160deg, color-mix(in srgb, currentColor 16%, #1b2432), color-mix(in srgb, currentColor 30%, #0b111b));
+  clip-path: polygon(50% 2%, 6% 96%, 94% 96%);
+}
+
+.combat-dice__die--d4::before,
+.combat-dice__die--d4::after {
+  clip-path: polygon(50% 2%, 6% 96%, 94% 96%);
+}
+
+.combat-dice__die--d4 .combat-dice__die-label {
+  transform: translateY(6px);
+}
+
+.combat-dice__die--green {
+  color: var(--accent-success);
+}
+
+.combat-dice__die--blue {
+  color: var(--accent-secondary);
+}
+
+.combat-dice__slot--top .combat-dice__die {
+  transform: rotate(-9deg);
+}
+
+.combat-dice__slot--bottom .combat-dice__die {
+  transform: rotate(8deg);
+}
+
+.combat-dice--right .combat-dice__slot--top .combat-dice__die {
+  transform: rotate(9deg);
+}
+
+.combat-dice--right .combat-dice__slot--bottom .combat-dice__die {
+  transform: rotate(-8deg);
+}
+
+@media (max-width: 820px) {
+  .combat-dice {
+    gap: 12px;
+    padding: 10px 8px;
+  }
+
+  .combat-dice__die--d6 {
+    width: 56px;
+    height: 56px;
+  }
+
+  .combat-dice__die--d4 {
+    width: 64px;
+    height: 54px;
+  }
+
+  .combat-dice__die-label {
+    font-size: 0.92rem;
+  }
+}
