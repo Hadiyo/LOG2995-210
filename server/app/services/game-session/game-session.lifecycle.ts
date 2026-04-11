@@ -1,4 +1,4 @@
-import { activateTurn, advanceToNextTurn, startTimerTransition } from '@app/services/timer/turn.timers';
+import { activateTurn, advanceToNextTurn, clearTimers, startTimerTransition } from '@app/services/timer/turn.timers';
 import { ACTIVE_TURN_DURATION_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
@@ -14,7 +14,6 @@ import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SessionSocketEvents } from '@common/socket-events';
 import { EventEmitter } from 'events';
 import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
-import { clearGameSessionTimers } from './game-session.timers';
 
 export class GameSessionLifecycle {
     private readonly startTimerConfig: TimerConfig<GameSessionRuntime> = {
@@ -49,7 +48,7 @@ export class GameSessionLifecycle {
         nextPlayers: MatchPlayer[],
     ): boolean {
         if (nextPlayers.length === 0) {
-            clearGameSessionTimers(session);
+            clearTimers(session);
             this.sessions.delete(sessionId);
             return true;
         }
@@ -92,7 +91,7 @@ export class GameSessionLifecycle {
     }
 
     finishMatch(session: GameSessionRuntime): void {
-        clearGameSessionTimers(session);
+        clearTimers(session);
         session.turnState = {
             ...session.turnState,
             phase: 'transition',
