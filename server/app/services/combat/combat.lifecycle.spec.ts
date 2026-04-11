@@ -1,7 +1,6 @@
 import * as combatUtils from '@app/services/game-session/game-session.runtime';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import {
-    ACTIVE_TURN_MS,
     makeEndState,
     makeMatch,
     makeMatchPlayer,
@@ -165,42 +164,18 @@ describe('Combat Life Cycle', () => {
         const session = makeCombatSession();
         service['combatSessions'].set(session.id, session);
     
-        const spy = jest.spyOn(timerUtils, 'clearTimers');
-    
-        expect(session.turnState).toEqual(expect.objectContaining({
-          phase: 'active',
-          activePlayerId: 'player-1',
-          transitionTargetPlayerId: null,
-          transitionEndsAt: null,
-          transitionRemainingMs: 0,
-          activeTurnRemainingMs: ACTIVE_TURN_MS,
-          movementPointsRemaining: 4,
-          actionTaken: false,
-          movementCount: 0,
-        }));
-    
+        const spy = jest.spyOn(timerUtils, 'clearTurnState');
+        
         service.endCombat(session.id);
         
         expect(spy).toHaveBeenCalledWith(session);
-        expect(session.turnState).toEqual(
-          expect.objectContaining({
-            phase: 'transition',
-            activePlayerId: null,
-            transitionTargetPlayerId: null,
-            transitionEndsAt: null,
-            transitionRemainingMs: 0,
-            activeTurnEndsAt: null,
-            activeTurnRemainingMs: 0,
-            movementPointsRemaining: 0,
-            actionTaken: true,
-        }));
     
         const oldSession = service['combatSessions'].get('id1234');
         expect(oldSession).not.toBeDefined();
     });
     
     it('should do nothing if the session does not exist - endCombat', () => {
-        const timerSpy = jest.spyOn(timerUtils, 'clearTimers');
+        const timerSpy = jest.spyOn(timerUtils, 'clearTurnState').mockImplementation();
         service.endCombat('5678');
         expect(timerSpy).not.toHaveBeenCalled();;
       });

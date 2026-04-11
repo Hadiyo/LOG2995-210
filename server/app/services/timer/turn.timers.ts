@@ -76,6 +76,25 @@ export function tickTimers<T extends TurnCapableSession>(
     }
 }
 
+export function clearTurnState<TSession extends TurnCapableSession>(
+    session: TSession,
+): void {
+    clearTimers(session);
+    session.turnState = {
+        ...session.turnState,
+        phase: 'transition',
+        activePlayerId: null,
+        transitionTargetPlayerId: null,
+        transitionEndsAt: null,
+        transitionRemainingMs: 0,
+        activeTurnEndsAt: null,
+        activeTurnRemainingMs: 0,
+        movementPointsRemaining: 0,
+        actionTaken: true,
+        playerStates: session.turnState.playerStates.map((playerState) => ({ ...playerState, state: 'waiting' })),
+    };
+}
+
 export function clearTimers<T extends Timers>(session: T): void {
     if (session.transitionTimeoutId) {
         clearTimeout(session.transitionTimeoutId);

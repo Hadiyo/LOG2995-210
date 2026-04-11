@@ -1,4 +1,4 @@
-import { activateTurn, advanceToNextTurn, clearTimers, startTimerTransition } from '@app/services/timer/turn.timers';
+import { activateTurn, advanceToNextTurn, clearTimers, clearTurnState, startTimerTransition } from '@app/services/timer/turn.timers';
 import { ACTIVE_TURN_DURATION_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
@@ -91,20 +91,7 @@ export class GameSessionLifecycle {
     }
 
     finishMatch(session: GameSessionRuntime): void {
-        clearTimers(session);
-        session.turnState = {
-            ...session.turnState,
-            phase: 'transition',
-            activePlayerId: null,
-            transitionTargetPlayerId: null,
-            transitionEndsAt: null,
-            transitionRemainingMs: 0,
-            activeTurnEndsAt: null,
-            activeTurnRemainingMs: 0,
-            movementPointsRemaining: 0,
-            actionTaken: true,
-            playerStates: session.turnState.playerStates.map((playerState) => ({ ...playerState, state: 'waiting' })),
-        };
+        clearTurnState(session);
         session.match = {
             ...session.match,
             pendingSanctuaryChoice: null,

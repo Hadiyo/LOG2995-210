@@ -2,7 +2,7 @@
 import { isPlayerOnIce } from '@app/services/game-session/game-session.match';
 import { canStartCombat } from '@app/services/game-session/game-session.runtime';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
-import { clearTimers } from '@app/services/timer/turn.timers';
+import { clearTurnState } from '@app/services/timer/turn.timers';
 import { BONUS, MIN_DIE_VALUE, ZERO } from '@app/utilities/combat/combat.constants';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import { CombatSession, Fighter } from '@app/utilities/combat/combat.interface';
@@ -82,19 +82,7 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
     endCombat(sessionId: string): void {
         const session = this.combatSessions.get(sessionId);
         if(session){
-            clearTimers(session);
-            session.turnState = {
-                ...session.turnState,
-                phase: 'transition',
-                activePlayerId: null,
-                transitionTargetPlayerId: null,
-                transitionEndsAt: null,
-                transitionRemainingMs: 0,
-                activeTurnEndsAt: null,
-                activeTurnRemainingMs: 0,
-                movementPointsRemaining: 0,
-                actionTaken: true,
-            };
+            clearTurnState(session);
             this.combatSessions.delete(session.id);
         }
     }
