@@ -3,11 +3,11 @@ import { CombatService } from '@app/services/combat/combat.service';
 import * as matchutils from '@app/services/game-session/game-session.match';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { makeMatch, makeMatchPlayer, makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
+import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import { DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { Test } from '@nestjs/testing';
 import { TestingModule } from '@nestjs/testing/testing-module';
 import { makeCombatSession, makeFighter } from './combat-service.helper';
-import { CombatEvents } from '@app/utilities/combat/combat.enums';
 
 describe('CombatService Helpers', () => {
     let service: CombatService;
@@ -147,8 +147,8 @@ describe('CombatService Helpers', () => {
     });
 
     it('should roll with D4 if the die is a D4 string - rollDie', () => {
-        const randomValue = 0.5;
-        jest.spyOn(Math, 'random').mockReturnValue(randomValue);
+        const RANDOM_VALUE = 0.5;
+        jest.spyOn(Math, 'random').mockReturnValue(RANDOM_VALUE);
 
         const result = service['rollDie']('D4');
 
@@ -157,8 +157,8 @@ describe('CombatService Helpers', () => {
     });
 
     it('should roll D6 if the die string is D6 - rollDie', () => {
-        const randomValue = 0.5;
-        jest.spyOn(Math, 'random').mockReturnValue(randomValue);
+        const RANDOM_VALUE = 0.5;
+        jest.spyOn(Math, 'random').mockReturnValue(RANDOM_VALUE);
 
         const result = service['rollDie']('D6');
 
@@ -175,8 +175,8 @@ describe('CombatService Helpers', () => {
     });
 
     it('should never exceed the maximum number of die sides - rollDie', () => {
-        const randomValue = 0.9999;
-        jest.spyOn(Math, 'random').mockReturnValue(randomValue);
+        const RANDOM_VALUE = 0.9999;
+        jest.spyOn(Math, 'random').mockReturnValue(RANDOM_VALUE);
 
         const resultD4 = service['rollDie']('D4');
         const resultD6 = service['rollDie']('D6');
@@ -186,8 +186,8 @@ describe('CombatService Helpers', () => {
     });
 
     it('should produce an integer only', () => {
-        const randomValue = 0.42;
-        jest.spyOn(Math, 'random').mockReturnValue(randomValue);
+        const RANDOM_VALUE = 0.42;
+        jest.spyOn(Math, 'random').mockReturnValue(RANDOM_VALUE);
         const result = service['rollDie']('D6');
         expect(Number.isInteger(result)).toBe(true);
     });
