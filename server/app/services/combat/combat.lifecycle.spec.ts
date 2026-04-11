@@ -8,13 +8,13 @@ import {
     makeRuntime,
     makeTurnState,
 } from '@app/services/game-session/game-session.service.spec-helpers';
-import * as timerUtils from '@app/services/game-session/game-session.timers';
+import * as timerUtils from '@app/services/timer/turn.timers';
+import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import { SessionSocketEvents } from '@common/socket-events';
 import { Test, TestingModule } from '@nestjs/testing';
 import { makeCombatSession, makeFighter } from './combat-service.helper';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
-import { CombatEvents } from '@app/utilities/combat/combat.enums';
 
 describe('Combat Life Cycle', () => {
     let service: CombatService;
@@ -165,7 +165,7 @@ describe('Combat Life Cycle', () => {
         const session = makeCombatSession();
         service['combatSessions'].set(session.id, session);
     
-        const spy = jest.spyOn(timerUtils, 'clearGameSessionTimers');
+        const spy = jest.spyOn(timerUtils, 'clearTimers');
     
         expect(session.turnState).toEqual(expect.objectContaining({
           phase: 'active',
@@ -200,7 +200,7 @@ describe('Combat Life Cycle', () => {
     });
     
     it('should do nothing if the session does not exist - endCombat', () => {
-        const timerSpy = jest.spyOn(timerUtils, 'clearGameSessionTimers');
+        const timerSpy = jest.spyOn(timerUtils, 'clearTimers');
         service.endCombat('5678');
         expect(timerSpy).not.toHaveBeenCalled();;
       });

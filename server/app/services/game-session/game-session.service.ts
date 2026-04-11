@@ -1,4 +1,6 @@
 import { MapService } from '@app/services/map/map.service';
+import { clearTimers } from '@app/services/timer/turn.timers';
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
@@ -9,8 +11,6 @@ import { GameSessionActions } from './game-session.actions';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { buildSession } from './game-session.runtime';
 import { GameSessionSessionActions } from './game-session.session-actions';
-import { clearGameSessionTimers } from './game-session.timers';
-import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 
 @Injectable()
 export class GameSessionService {
@@ -142,7 +142,7 @@ export class GameSessionService {
             return;
         }
 
-        clearGameSessionTimers(session);
+        clearTimers(session);
         this.sessions.delete(sessionId);
     }
 
