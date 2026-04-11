@@ -7,11 +7,13 @@ import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import { BONUS, MIN_DIE_VALUE } from '@app/utilities/combat/combat.constants';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('CombatService', () => {
   let service: CombatService;
   let gameSessionMock: Partial<GameSessionService>;
   let turnServiceMock: Partial<CombatTurnService>;
+  let eventEmitterMock: Partial<EventEmitter2>;
   let emitSpy: jest.SpyInstance;
 
   beforeEach(async () => {
@@ -30,19 +32,23 @@ describe('CombatService', () => {
       advanceToNextTurn: jest.fn(),
     };
 
+    eventEmitterMock = {
+      emit: jest.fn(),
+      on: jest.fn(),
+      off: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [CombatService,
         { provide: GameSessionService, useValue: gameSessionMock },
         { provide: CombatTurnService, useValue: turnServiceMock },
+        { provide: EventEmitter2, useValue: eventEmitterMock },
       ],
     }).compile();
 
     service = module.get<CombatService>(CombatService);
 
-    // To spy on the private event emitter
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    emitSpy = jest.spyOn<any, any>(service['event'], 'emit');
-    emitSpy.mockImplementation(jest.fn());
+    emitSpy = jest.spyOn(eventEmitterMock, 'emit');
 
     jest.clearAllMocks();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,6 +89,10 @@ describe('CombatService', () => {
     const spy3 = jest.spyOn(service as any, 'endCombat').mockImplementation();
 
     const result = service.evaluateCombatResult(session, [combatStatistics1, combatStatistics2]);
+    expect(emitSpy).toHaveBeenCalledWith(CombatEvents.Statistics, {
+      combatId: session.id,
+      statistics: [combatStatistics1, combatStatistics2],
+    });
     expect(spy).toHaveBeenCalledWith(
       session.gameSessionId, 
       session.players[0].stats.id, 
@@ -110,6 +120,10 @@ describe('CombatService', () => {
     const spy3 = jest.spyOn(service as any, 'endCombat').mockImplementation();
 
     const result = service.evaluateCombatResult(session, [combatStatistics1, combatStatistics2]);
+    expect(emitSpy).toHaveBeenCalledWith(CombatEvents.Statistics, {
+      combatId: session.id,
+      statistics: [combatStatistics1, combatStatistics2],
+    });
     expect(spy).toHaveBeenCalledWith(
       session.gameSessionId, 
       session.players[1].stats.id, 
@@ -137,6 +151,10 @@ describe('CombatService', () => {
 
     const result = service.evaluateCombatResult(session, [combatStatistics1, combatStatistics2]);
 
+    expect(emitSpy).toHaveBeenCalledWith(CombatEvents.Statistics, {
+      combatId: session.id,
+      statistics: [combatStatistics1, combatStatistics2],
+    });
     expect(spy2).toHaveBeenCalledWith(
       CombatEvents.Tie, 
       session, 
@@ -154,7 +172,7 @@ describe('CombatService', () => {
     const combatStatistics2 = makeCombatPlayerStatistics({ attacker: makeFighterPayload({id: 'player2'})});
     const attacks = [combatStatistics1, combatStatistics2];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const spy = jest.spyOn(service as any, 'setCombatStance').mockReturnValueOnce(true).mockReturnValueOnce(true);
+    const spy = jest.spyOn(service as any, 'clearCombatStance').mockReturnValueOnce(true).mockReturnValueOnce(true);
     const spy1 = jest.spyOn(service, 'switchCombatTurn').mockReturnValue(true);
 
     const result = service.evaluateCombatResult(session, attacks);
@@ -176,7 +194,7 @@ describe('CombatService', () => {
     const combatStatistics2 = makeCombatPlayerStatistics({ attacker: makeFighterPayload({id: 'player2'})});
     const attacks = [combatStatistics1, combatStatistics2];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const spy = jest.spyOn(service as any, 'setCombatStance').mockReturnValueOnce(false).mockReturnValueOnce(false);
+    const spy = jest.spyOn(service as any, 'clearCombatStance').mockReturnValueOnce(false).mockReturnValueOnce(false);
     const spy1 = jest.spyOn(service, 'switchCombatTurn').mockReturnValue(true);
 
     const result = service.evaluateCombatResult(session, attacks);
@@ -187,7 +205,7 @@ describe('CombatService', () => {
     expect(result).toBe(false);
   });
 
-  it('should set the maximum and minimum dice roll for players if debugMode is on - attack', () => {
+  it('should give the instigator maximum attack and the defender minimum defense if debugMode is on - attack', () => {
     const session = makeCombatSession({players: [
       makeFighter({}, { id: 'player1', attackDie:'D4'}),
       makeFighter({}, { id: 'player2'}),
@@ -204,7 +222,7 @@ describe('CombatService', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('should set the maximum die to D6 if the attacker die is D6 and debug is on', () => {
+  it('should give the instigator maximum attack with D6 if debug is on', () => {
     const session = makeCombatSession({players: [
       makeFighter({}, { id: 'player1', attackDie:'D6'}),
       makeFighter({}, { id: 'player2'}),
@@ -218,6 +236,23 @@ describe('CombatService', () => {
 
     expect(result.attackRoll).toBe(DIE_D6_SIDES);
     expect(result.defenseRoll).toBe(MIN_DIE_VALUE);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('should give the non-instigator minimum attack and the instigator maximum defense if debugMode is on', () => {
+    const session = makeCombatSession({players: [
+      makeFighter({}, { id: 'player1', defenseDie: 'D4' }),
+      makeFighter({}, { id: 'player2', attackDie:'D6' }),
+    ]});
+    const match = makeMatch({debugMode: true});
+    jest.spyOn(gameSessionMock, 'getMatchFromSessionId').mockReturnValue(match);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const spy = jest.spyOn(service as any, 'rollDie');
+
+    const result = service['attack'](session, session.players[1], false, session.players[0], false);
+
+    expect(result.attackRoll).toBe(MIN_DIE_VALUE);
+    expect(result.defenseRoll).toBe(DIE_D4_SIDES);
     expect(spy).not.toHaveBeenCalled();
   });
 

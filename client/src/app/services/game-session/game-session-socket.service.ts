@@ -24,6 +24,16 @@ import {
 } from '@common/socket-events';
 import { MatchSanctuaryChoice } from '@common/game/match.interface';
 
+type CombatVictoryPayload = {
+    loser: string;
+    winner: string;
+};
+
+type CombatTiePayload = {
+    player1: string;
+    player2: string;
+};
+
 @Injectable({ providedIn: 'root' })
 export class GameSessionSocketService {
     private static readonly debugToggleGuardMs = 400;
@@ -51,6 +61,7 @@ export class GameSessionSocketService {
         }
 
         this.sessionId.set(sessionId);
+        this.errorMessage.set('');
         this.socketManager.send(SessionSocketEvents.JoinGameSession, {
             sessionId,
             playerId,
@@ -114,7 +125,8 @@ export class GameSessionSocketService {
             return;
         }
 
-        this.socketManager.send(CombatSocketEvents.StartCombat, {
+        this.errorMessage.set('');
+        this.socketManager.send(CombatSocketEvents.StartTempCombat, {
             sessionId,
             playerId,
             defenderId,
@@ -228,6 +240,21 @@ export class GameSessionSocketService {
         this.socketManager.on<GameSessionErrorPayload>(SessionSocketEvents.GameSessionError, (payload) => {
             this.clearDebugToggleGuard();
             this.errorMessage.set(payload.message);
+        });
+
+        this.socketManager.on<GameSessionErrorPayload>(CombatSocketEvents.CombatSessionError, (payload) => {
+            this.errorMessage.set(payload.message);
+        });
+
+        this.socketManager.on<CombatVictoryPayload>(SessionSocketEvents.CombatVictory, (payload) => {
+            this.errorMessage.set('');
+            this.matchState.registerCombatVictory(payload.winner);
+            this.matchState.applyCombatAftermath([payload.loser]);
+        });
+
+        this.socketManager.on<CombatTiePayload>(SessionSocketEvents.CombatTie, (payload) => {
+            this.errorMessage.set('');
+            this.matchState.applyCombatAftermath([payload.player1, payload.player2]);
         });
     }
 

@@ -5,6 +5,7 @@ import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
 import { GameSessionDisplayService } from '@app/services/game-view/game-session-display.service';
 import { GameSessionInteractionService } from '@app/services/game-view/game-session-interaction.service';
+import { CombatStateService } from '@app/services/match/combat-state.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { startLocalPoseRefreshClock, stopLocalPoseRefreshClock } from '@app/utils/game-view/game-view-pose-clock.utils';
 import { ChatMessage } from '@common/chat/chat.interface';
@@ -43,6 +44,7 @@ export type GameViewPageInitContext = {
 
 export type GameViewPageDestroyContext = {
     chatService: ChatService;
+    combat: CombatStateService;
     effects: { destroy(): void };
     endRedirectRemainingMs: WritableSignal<number>;
     localPoseIntervalId: number | null;
@@ -113,6 +115,7 @@ export function initializeGameViewPage(context: GameViewPageInitContext): number
 
 export function destroyGameViewPage(context: GameViewPageDestroyContext): MatchEndRedirectState {
     context.chatService.unsubscribeToSocketEvents();
+    context.combat.closeCombat();
     context.effects.destroy();
     stopLocalPoseRefreshClock(context.localPoseIntervalId);
     return clearMatchEndRedirect(context.matchEndRedirectState, context.endRedirectRemainingMs);

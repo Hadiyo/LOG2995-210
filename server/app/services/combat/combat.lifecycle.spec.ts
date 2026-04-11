@@ -15,12 +15,13 @@ import { makeCombatSession, makeFighter } from './combat-service.helper';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('Combat Life Cycle', () => {
     let service: CombatService;
     let gameSessionMock: Partial<GameSessionService>;
     let turnServiceMock: Partial<CombatTurnService>;
-    let emitSpy: jest.SpyInstance;
+    let eventEmitterMock: Partial<EventEmitter2>;
 
     beforeEach(async () => {
 
@@ -39,19 +40,21 @@ describe('Combat Life Cycle', () => {
             initCombatTurnState: jest.fn(),
         };
 
+        eventEmitterMock = {
+            emit: jest.fn(),
+            on: jest.fn(),
+            off: jest.fn(),
+        };
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [CombatService,
             { provide: GameSessionService, useValue: gameSessionMock },
             { provide: CombatTurnService, useValue: turnServiceMock },
+            { provide: EventEmitter2, useValue: eventEmitterMock },
             ],
         }).compile();
 
         service = module.get<CombatService>(CombatService);
-
-        // To spy on the private event emitter
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        emitSpy = jest.spyOn<any, any>(service['event'], 'emit');
-        emitSpy.mockImplementation(jest.fn());
 
         jest.clearAllMocks();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,11 +68,27 @@ describe('Combat Life Cycle', () => {
         expect(spy).toHaveBeenCalledWith(SessionSocketEvents.ClientDisconnect, handler);
     });
 
+    it('should subscribe to combat timeout events on Module Init', () => {
+        const spy = jest.spyOn(eventEmitterMock, 'on');
+
+        service.onModuleInit();
+
+        expect(spy).toHaveBeenCalledWith(CombatEvents.Timeout, expect.any(Function));
+    });
+
     it('should unsubscribe from Client Disconnect event on Module Destroy', () => {
         const handler = jest.spyOn(service as never, 'handleDisconnect').mockImplementation();
         const spy = jest.spyOn(gameSessionMock, 'off');
         service.onModuleDestroy();
         expect(spy).toHaveBeenCalledWith(SessionSocketEvents.ClientDisconnect, handler);
+    });
+
+    it('should unsubscribe from combat timeout events on Module Destroy', () => {
+        const spy = jest.spyOn(eventEmitterMock, 'off');
+
+        service.onModuleDestroy();
+
+        expect(spy).toHaveBeenCalledWith(CombatEvents.Timeout, expect.any(Function));
     });
 
     it('should return null if game does not exist - createCombatSession', () => {
@@ -223,7 +242,9 @@ describe('Combat Life Cycle', () => {
     it('should call all combat logic if both player stances are both defined - combatTurn', () => {
         const session = makeCombatSession();
         session.players[0].combatStance = 'attack';
+        session.players[0].hasSelectedStance = true;
         session.players[1].combatStance = 'defense';
+        session.players[1].hasSelectedStance = true;
         service['combatSessions'].set(session.id, session);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'setCombatStance').mockReturnValue(true);
@@ -246,7 +267,9 @@ describe('Combat Life Cycle', () => {
     it('should switch combat turn if one of the player stance is undefined - combatTurn', () => {
         const session = makeCombatSession();
         session.players[0].combatStance = 'attack';
+        session.players[0].hasSelectedStance = true;
         session.players[1].combatStance = null;
+        session.players[1].hasSelectedStance = false;
         service['combatSessions'].set(session.id, session);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'setCombatStance').mockReturnValue(true);
@@ -336,5 +359,13 @@ describe('Combat Life Cycle', () => {
         expect(spy2).toHaveBeenCalledWith(combat.gameSessionId, player2.stats.id);
         expect(spy3).toHaveBeenCalledWith(CombatEvents.ClientDisconnect, combat, player2.stats.id, player1.stats.id);
         expect(spy).toHaveBeenCalledWith(combat.id);
+    });
+
+    it('should submit a null stance when the active combat turn times out', () => {
+        const combatTurnSpy = jest.spyOn(service, 'combatTurn').mockReturnValue(false);
+
+        service['handleTurnTimeout']({ combatId: 'combat-1', playerId: 'player-1' });
+
+        expect(combatTurnSpy).toHaveBeenCalledWith('combat-1', 'player-1', null);
     });
 });

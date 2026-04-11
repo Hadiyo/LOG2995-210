@@ -62,31 +62,31 @@ describe('CombatGateway', () => {
     expect(socket.leave).not.toHaveBeenCalled();
   });
 
-  it('should return and emit an error message if the client id is not part of a game session - startCombat', () => {
+  it('should return and emit an error message if the client id is not part of a game session - startCombat', async () => {
     const socket = createMockSocket('1234');
     const payload = {sessionId: '1555', playerId: '8906', defenderId: '0000'};
     jest.spyOn(gameSessionServiceMock, 'getPlayerIdForSocket').mockReturnValue('hjsj');
 
-    gateway.startCombat(socket, payload);
+    await gateway.startCombat(socket, payload);
 
     expect(socket.emit).toHaveBeenCalledWith(CombatSocketEvents.CombatSessionError, { message: 'Combat refusé.' });
     expect(socket.join).not.toHaveBeenCalled();
   });
 
-  it('should return and emit an error message if the opponents socket cannot be found - startCombat', () => {
+  it('should return and emit an error message if the opponents socket cannot be found - startCombat', async () => {
     const socket = createMockSocket('1234');
     const payload = {sessionId: '1555', playerId: '8906', defenderId: '0000'};
     jest.spyOn(gameSessionServiceMock, 'getPlayerIdForSocket').mockReturnValue('8906');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     jest.spyOn(gateway as any, 'getOpponentSocket').mockReturnValue(undefined);
 
-    gateway.startCombat(socket, payload);
+    await gateway.startCombat(socket, payload);
 
     expect(socket.emit).toHaveBeenCalledWith(CombatSocketEvents.CombatSessionError, { message: 'Adversaire indisponible.' });
     expect(socket.join).not.toHaveBeenCalled();
   });
 
-  it('should return an emit an error message if the combat session was not successfully created - startCombat', () => {
+  it('should return an emit an error message if the combat session was not successfully created - startCombat', async () => {
     const socket1 = createMockSocket('1234');
     const socket2 = createMockSocket('8975');
     const payload = {sessionId: '1555', playerId: '8906', defenderId: '0000'};
@@ -95,13 +95,13 @@ describe('CombatGateway', () => {
     jest.spyOn(gateway as any, 'getOpponentSocket').mockReturnValue(socket2);
     jest.spyOn(combatServiceMock, 'createCombatSession').mockReturnValue(undefined);
 
-    gateway.startCombat(socket1, payload);
+    await gateway.startCombat(socket1, payload);
 
     expect(socket1.emit).toHaveBeenCalledWith(CombatSocketEvents.CombatSessionError, { message: 'Combat impossible.' });
     expect(socket1.join).not.toHaveBeenCalled();
   });
 
-  it('should join the clients and the opponents socket to the combat session and start the game - startCombat', () => {
+  it('should join the clients and the opponents socket to the combat session and start the game - startCombat', async () => {
     const socket1 = createMockSocket('1234');
     const socket2 = createMockSocket('8975');
     const session = makeCombatSession();
@@ -112,7 +112,7 @@ describe('CombatGateway', () => {
     jest.spyOn(combatServiceMock, 'createCombatSession').mockReturnValue(session);
     const spy = jest.spyOn(combatServiceMock, 'startCombat');
 
-    gateway.startCombat(socket1, payload);
+    await gateway.startCombat(socket1, payload);
 
     expect(socket1.emit).not.toHaveBeenCalled();
     expect(socket1.join).toHaveBeenCalledWith(session.id);

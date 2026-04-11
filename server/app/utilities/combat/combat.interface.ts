@@ -5,6 +5,7 @@ import { MatchTurnState } from '@common/game/turn.interface';
 export interface Fighter {
     stats: MatchPlayer,
     combatStance: FighterStance,
+    hasSelectedStance: boolean,
     hasPenalty: boolean,
 }
 

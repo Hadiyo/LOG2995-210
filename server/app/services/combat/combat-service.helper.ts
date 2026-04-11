@@ -20,6 +20,7 @@ export const makeFighter = (
 ): Fighter => ({
   stats: makeMatchPlayer(statsOverrides),
   combatStance: null,
+  hasSelectedStance: false,
   hasPenalty: false,
   ...overrides,
 });

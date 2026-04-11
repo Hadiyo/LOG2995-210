@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
-import { CombatRoundBreakdown, CombatRoundLog, CombatStanceChoice } from '@app/services/match/combat-state.service';
+import { CombatRoundBreakdown, CombatRoundLog, CombatStanceChoice } from '@app/services/match/combat-state.models';
 
 @Component({
     selector: 'app-game-combat-round-log',

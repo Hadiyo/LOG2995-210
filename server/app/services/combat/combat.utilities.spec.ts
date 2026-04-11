@@ -8,11 +8,13 @@ import { Test } from '@nestjs/testing';
 import { TestingModule } from '@nestjs/testing/testing-module';
 import { makeCombatSession, makeFighter } from './combat-service.helper';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('CombatService Helpers', () => {
     let service: CombatService;
     let gameSessionMock: Partial<GameSessionService>;
     let turnServiceMock: Partial<CombatTurnService>;
+    let eventEmitterMock: Partial<EventEmitter2>;
     let emitSpy: jest.SpyInstance;
 
     beforeEach(async () => {
@@ -31,19 +33,23 @@ describe('CombatService Helpers', () => {
             advanceToNextTurn: jest.fn(),
         };
 
+        eventEmitterMock = {
+            emit: jest.fn(),
+            on: jest.fn(),
+            off: jest.fn(),
+        };
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [CombatService,
             { provide: GameSessionService, useValue: gameSessionMock },
             { provide: CombatTurnService, useValue: turnServiceMock },
+            { provide: EventEmitter2, useValue: eventEmitterMock },
             ],
         }).compile();
 
         service = module.get<CombatService>(CombatService);
 
-        // To spy on the private event emitter
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        emitSpy = jest.spyOn<any, any>(service['event'], 'emit');
-        emitSpy.mockImplementation(jest.fn());
+        emitSpy = jest.spyOn(eventEmitterMock, 'emit');
 
         jest.clearAllMocks();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,6 +97,7 @@ describe('CombatService Helpers', () => {
         expect(fighter).toEqual({
             stats: player,
             combatStance: null,
+            hasSelectedStance: false,
             hasPenalty: false,
         });
     });
@@ -102,6 +109,7 @@ describe('CombatService Helpers', () => {
         expect(fighter).toEqual({
             stats: undefined,
             combatStance: null,
+            hasSelectedStance: false,
             hasPenalty: false,
         });
     });
@@ -129,6 +137,8 @@ describe('CombatService Helpers', () => {
             players: [makeFighter({stats: makeMatchPlayer({id:'player1'})})]});
         const result = service['setCombatStance'](session, 'player1', 'attack');
         expect(result).toBe(true);
+        expect(session.players[0].combatStance).toBe('attack');
+        expect(session.players[0].hasSelectedStance).toBe(true);
     });
 
     it('should emit the correct payload - emitCombatResultSnapshot', () => {

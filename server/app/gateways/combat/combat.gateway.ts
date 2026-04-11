@@ -23,7 +23,7 @@ export class CombatGateway {
   }
 
   @SubscribeMessage(CombatSocketEvents.StartTempCombat)
-  startCombat(@ConnectedSocket() client: Socket, @MessageBody() payload: StartCombatPayload): void {
+  async startCombat(@ConnectedSocket() client: Socket, @MessageBody() payload: StartCombatPayload): Promise<void> {
     if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
         client.emit(CombatSocketEvents.CombatSessionError, { message: 'Combat refusé.' } satisfies GameSessionErrorPayload);
         return;
@@ -38,8 +38,12 @@ export class CombatGateway {
       client.emit(CombatSocketEvents.CombatSessionError, { message: 'Combat impossible.' } satisfies GameSessionErrorPayload);
       return;
     }
-    opponentSocket.join(session.id);
-    client.join(session.id);
+
+    await Promise.all([
+      Promise.resolve(opponentSocket.join(session.id)),
+      Promise.resolve(client.join(session.id)),
+    ]);
+
     this.combatService.startCombat(session);
   }
 
@@ -97,6 +101,18 @@ export class CombatGateway {
     if(!opponentSocketId){
       return undefined;
     }
-    return this.server.sockets.sockets.get(opponentSocketId);
+    return this.getSocketRegistry().get(opponentSocketId);
+  }
+
+  private getSocketRegistry(): Map<string, Socket> {
+    const serverWithRegistry = this.server as unknown as {
+      sockets?: Map<string, Socket> | { sockets?: Map<string, Socket> };
+    };
+    const registry = serverWithRegistry.sockets;
+    if (registry instanceof Map) {
+      return registry;
+    }
+
+    return registry?.sockets ?? new Map<string, Socket>();
   }
 }

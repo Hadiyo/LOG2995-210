@@ -6,7 +6,6 @@ import {
     MOVEMENT_KEY_BINDINGS,
 } from '@app/config/game-session.config';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
-import { CombatStateService } from '@app/services/match/combat-state.service';
 import { positionKey } from '@app/services/match/match-geometry';
 import { MatchMovementService, MovementDirection } from '@app/services/match/match-movement.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
@@ -19,7 +18,6 @@ import { GameSessionTargetsService } from './game-session-targets.service';
 
 @Injectable()
 export class GameSessionInteractionService {
-    private readonly combatStateService = inject(CombatStateService);
     private readonly display = inject(GameSessionDisplayService);
     private readonly gameSessionSocket = inject(GameSessionSocketService);
     private readonly matchState = inject(MatchStateService);
@@ -263,11 +261,7 @@ export class GameSessionInteractionService {
             return;
         }
 
-        if (!this.combatStateService.startCombat(localPlayer.id, targetPlayer.id)) {
-            this.movementFeedback.set('Action ignoree: combat impossible.');
-            return;
-        }
-
+        this.gameSessionSocket.startCombat(localPlayer.id, targetPlayer.id);
         this.clearActionSelection();
         this.closeInspection();
         this.movementFeedback.set(`Combat engage contre ${targetPlayer.name}.`);

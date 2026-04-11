@@ -21,6 +21,9 @@
           class="combat-stage-layout__dice"
           [attackDie]="panel.fighters[0].attackDie"
           [defenseDie]="panel.fighters[0].defenseDie"
+          [attackValue]="panel.fighters[0].attackRollValue"
+          [defenseValue]="panel.fighters[0].defenseRollValue"
+          [rollToken]="panel.fighters[0].rollToken"
           side="left"
         />
 
@@ -39,7 +42,11 @@
               <article
                 class="combat-stage__tile"
                 [class.combat-stage__tile--local]="fighter.isLocal"
+                [class.combat-stage__tile--attacking]="fighter.pose === 'attack'"
+                [class.combat-stage__tile--dead]="fighter.pose === 'dead'"
+                [class.combat-stage__tile--hit]="fighter.isHit"
                 [ngClass]="getTeamClass(fighter.teamId)"
+                [attr.data-facing]="fighter.facing"
                 [attr.data-tile]="fighter.tileType"
                 [attr.data-door-open]="fighter.tileType === tileType.DOOR && fighter.isDoorOpen ? 'true' : null"
                 [attr.data-door-closed]="fighter.tileType === tileType.DOOR && !fighter.isDoorOpen ? 'true' : null"
@@ -47,6 +54,7 @@
                 <div class="combat-stage__sprite">
                   <app-character-sprite
                     [avatarId]="fighter.avatarId"
+                    [class.is-idle]="fighter.pose === 'idle'"
                     [state]="fighter.pose"
                     [direction]="fighter.facing"
                     [fitToHost]="true"
@@ -55,6 +63,14 @@
                   />
                 </div>
               </article>
+            }
+
+            @if (combat.endingNotice(); as ending) {
+              <div class="combat-stage__ending">
+                <p class="combat-stage__ending-eyebrow">Combat termine</p>
+                <h3 class="combat-stage__ending-title">{{ getEndingTitle(ending) }}</h3>
+                <p class="combat-stage__ending-message">{{ getEndingMessage(ending) }}</p>
+              </div>
             }
           </div>
 
@@ -94,6 +110,9 @@
           class="combat-stage-layout__dice"
           [attackDie]="panel.fighters[1].attackDie"
           [defenseDie]="panel.fighters[1].defenseDie"
+          [attackValue]="panel.fighters[1].attackRollValue"
+          [defenseValue]="panel.fighters[1].defenseRollValue"
+          [rollToken]="panel.fighters[1].rollToken"
           side="right"
         />
       </div>
@@ -108,6 +127,7 @@
             type="button"
             class="combat-shell__button"
             [class.combat-shell__button--active]="combat.localSelectedStance() === 'attack'"
+            [disabled]="!combat.canSelectStance()"
             (click)="selectAttackStance()"
           >
             Posture offensive
@@ -116,6 +136,7 @@
             type="button"
             class="combat-shell__button"
             [class.combat-shell__button--active]="combat.localSelectedStance() === 'defense'"
+            [disabled]="!combat.canSelectStance()"
             (click)="selectDefenseStance()"
           >
             Posture defensive

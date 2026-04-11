@@ -1,13 +1,23 @@
 <div class="combat-dice" [class.combat-dice--right]="side === 'right'">
   <div class="combat-dice__slot combat-dice__slot--top">
-    <div class="combat-dice__die" [ngClass]="[getDieShapeClass(attackDie), getDieColorClass(attackDie)]" [attr.aria-label]="attackDie">
-      <span class="combat-dice__die-label">{{ attackDie }}</span>
+    <div
+      class="combat-dice__die"
+      [class.combat-dice__die--rolling]="isRolling"
+      [ngClass]="[getDieShapeClass(attackDie), getDieColorClass(attackDie)]"
+      [attr.aria-label]="dieAriaLabel(attackDie, attackValue)"
+    >
+      <span class="combat-dice__die-label">{{ attackDisplay }}</span>
     </div>
   </div>
 
   <div class="combat-dice__slot combat-dice__slot--bottom">
-    <div class="combat-dice__die" [ngClass]="[getDieShapeClass(defenseDie), getDieColorClass(defenseDie)]" [attr.aria-label]="defenseDie">
-      <span class="combat-dice__die-label">{{ defenseDie }}</span>
+    <div
+      class="combat-dice__die"
+      [class.combat-dice__die--rolling]="isRolling"
+      [ngClass]="[getDieShapeClass(defenseDie), getDieColorClass(defenseDie)]"
+      [attr.aria-label]="dieAriaLabel(defenseDie, defenseValue)"
+    >
+      <span class="combat-dice__die-label">{{ defenseDisplay }}</span>
     </div>
   </div>
 </div>

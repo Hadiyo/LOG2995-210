@@ -1,11 +1,14 @@
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { MapApiService } from '@app/services/map/map-api.service';
+import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { AvatarId } from '@common/character/character.model';
+import { CombatPlayerStatistics } from '@common/combat/combat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, MapSize, TileType } from '@common/maps/map.enums';
 import { EditorCell } from '@common/maps/map.interface';
 import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
+import { CombatSocketEvents } from '@common/socket-events';
 import { CombatStateService } from './combat-state.service';
 import { MatchStateService } from './match-state.service';
 import { TurnStateService } from './turn-state.service';
@@ -13,7 +16,14 @@ import { TurnStateService } from './turn-state.service';
 const FAST_SPEED = 8;
 const DEFAULT_SPEED = 6;
 const STARTING_HEALTH = 6;
-const ACTIVE_TURN_MS = 30000;
+const ACTIVE_TURN_MS = 9000;
+const TRANSITION_TURN_MS = 3000;
+const DICE_ROLL_DURATION_MS = 1000;
+const ATTACK_POSE_DURATION_MS = 900;
+const HIT_REACTION_DURATION_MS = 280;
+const OUTCOME_RESOLUTION_GRACE_MS = 500;
+const COMBAT_END_DEAD_FRAME_MS = 1000;
+const COMBAT_END_LINGER_MS = 1000;
 
 const createGrid = (): EditorCell[] =>
     Array.from({ length: MapSize.S * MapSize.S }, (_, index) => ({
@@ -66,27 +76,31 @@ const createMatch = (mode: GameMode = GameMode.CLASSIC): InitializedMatch => ({
     players: createPlayers(),
 });
 
-const createTurnState = (): MatchTurnState => ({
-    matchId: 'map-1',
+const createCombatTurnState = (
+    activePlayerId: string | null,
+    currentTurnIndex: number,
+    phase: MatchTurnState['phase'] = 'active',
+): MatchTurnState => ({
+    matchId: 'combat-1',
     hasStarted: true,
     order: [
         { playerId: 'attacker', speed: FAST_SPEED },
         { playerId: 'defender', speed: DEFAULT_SPEED },
     ],
-    currentTurnIndex: 0,
-    phase: 'active',
-    activePlayerId: 'attacker',
-    transitionTargetPlayerId: null,
-    transitionEndsAt: null,
-    transitionRemainingMs: 0,
-    activeTurnEndsAt: Date.now() + ACTIVE_TURN_MS,
-    activeTurnRemainingMs: ACTIVE_TURN_MS,
-    movementPointsRemaining: 3,
+    currentTurnIndex,
+    phase,
+    activePlayerId,
+    transitionTargetPlayerId: phase === 'transition' ? 'attacker' : null,
+    transitionEndsAt: phase === 'transition' ? Date.now() + TRANSITION_TURN_MS : null,
+    transitionRemainingMs: phase === 'transition' ? TRANSITION_TURN_MS : 0,
+    activeTurnEndsAt: phase === 'active' ? Date.now() + ACTIVE_TURN_MS : null,
+    activeTurnRemainingMs: phase === 'active' ? ACTIVE_TURN_MS : 0,
+    movementPointsRemaining: 0,
     actionTaken: false,
     movementCount: 0,
     playerStates: [
-        { playerId: 'attacker', state: 'active' },
-        { playerId: 'defender', state: 'waiting' },
+        { playerId: 'attacker', state: activePlayerId === 'attacker' ? 'active' : 'waiting' },
+        { playerId: 'defender', state: activePlayerId === 'defender' ? 'active' : 'waiting' },
     ],
 });
 
@@ -107,75 +121,197 @@ const createLocalPlayer = (): MatchLobbyPlayer => ({
 describe('CombatStateService', () => {
     let service: CombatStateService;
     let matchStateService: MatchStateService;
-    let turnStateService: TurnStateService;
+    let socketManager: jasmine.SpyObj<SocketManagerService>;
+    let listeners: Map<string, (payload: unknown) => void>;
 
     beforeEach(() => {
         localStorage.clear();
+        listeners = new Map<string, (payload: unknown) => void>();
+        socketManager = jasmine.createSpyObj<SocketManagerService>('SocketManagerService', ['on', 'send']);
+        socketManager.on.and.callFake(<T>(event: string, handler: (payload: T) => void) => {
+            listeners.set(event, handler as (payload: unknown) => void);
+        });
+
         TestBed.configureTestingModule({
             providers: [
                 MatchStateService,
                 TurnStateService,
                 CombatStateService,
+                { provide: SocketManagerService, useValue: socketManager },
                 { provide: MapApiService, useValue: jasmine.createSpyObj<MapApiService>('MapApiService', ['getMapById']) },
             ],
         });
 
         service = TestBed.inject(CombatStateService);
         matchStateService = TestBed.inject(MatchStateService);
-        turnStateService = TestBed.inject(TurnStateService);
         matchStateService.localPlayer.set(createLocalPlayer());
     });
 
     afterEach(() => {
         service.closeCombat();
-        turnStateService.clear();
         localStorage.clear();
     });
 
-    it('opens a horizontal combat preview without mutating the match state', () => {
+    it('opens the combat panel from a backend turn snapshot', () => {
         matchStateService.match.set(createMatch());
-        turnStateService.turnState.set(createTurnState());
 
-        expect(service.startCombat('attacker', 'defender')).toBeTrue();
+        emitSocketEvent(CombatSocketEvents.TurnSnapshot, createCombatTurnState('attacker', 0));
 
         const panelState = service.panelState();
         expect(service.hasActiveCombat()).toBeTrue();
+        expect(panelState?.id).toBe('combat-1');
         expect(panelState?.orientation).toBe('horizontal');
         expect(panelState?.fighters.map((fighter) => fighter.name)).toEqual(['Attacker', 'Defender']);
         expect(panelState?.fighters[0].facing).toBe(PlayerFacing.Right);
         expect(panelState?.fighters[1].facing).toBe(PlayerFacing.Left);
         expect(panelState?.fighters[0].isLocal).toBeTrue();
         expect(panelState?.fighters[0].tileType).toBe(TileType.WATER);
-        expect(turnStateService.turnState()?.actionTaken).toBeFalse();
-        expect(matchStateService.match()?.players.find((player) => player.id === 'attacker')?.combatWins).toBe(0);
+        expect(panelState?.countdownSeconds).toBe(9);
+        expect(service.canSelectStance()).toBeTrue();
+        expect(service.roundLogs()[0].status).toBe('pending');
     });
 
-    it('opens a vertical combat preview when the fighters are stacked', () => {
-        const match = createMatch();
-        match.players[1].position = { x: 1, y: 2 };
-        matchStateService.match.set(match);
-        turnStateService.turnState.set(createTurnState());
-
-        expect(service.startCombat('attacker', 'defender')).toBeTrue();
-
-        const panelState = service.panelState();
-        expect(panelState?.orientation).toBe('vertical');
-        expect(panelState?.fighters[0].facing).toBe(PlayerFacing.Right);
-        expect(panelState?.fighters[1].facing).toBe(PlayerFacing.Left);
-    });
-
-    it('stores the selected local stance and clears the preview cleanly', () => {
+    it('sends the chosen stance to the combat socket and updates the pending log', () => {
         matchStateService.match.set(createMatch());
-        turnStateService.turnState.set(createTurnState());
-        service.startCombat('attacker', 'defender');
 
+        emitSocketEvent(CombatSocketEvents.TurnSnapshot, createCombatTurnState('attacker', 0));
         service.selectStance('attack');
+
         expect(service.localSelectedStance()).toBe('attack');
         expect(service.footerMessage()).toContain('offensive');
+        expect(service.roundLogs()[0].fighters[0].stance).toBe('attack');
+        expect(socketManager.send).toHaveBeenCalledWith(
+            CombatSocketEvents.SetStance,
+            jasmine.objectContaining({ combatId: 'combat-1', playerId: 'attacker', stance: 'attack' }),
+        );
+    });
 
-        service.closeCombat();
+    it('resolves backend attack statistics into a round log and updates fighter health', fakeAsync(() => {
+        matchStateService.match.set(createMatch());
+
+        emitSocketEvent(CombatSocketEvents.TurnSnapshot, createCombatTurnState('attacker', 0));
+        service.selectStance('attack');
+        emitSocketEvent(CombatSocketEvents.AttackSnapshot, createAttackStatistics());
+
+        const resolvedRound = service.roundLogs()[0];
+        expect(resolvedRound.status).toBe('resolved');
+        expect(resolvedRound.fighters[0].stance).toBe('attack');
+        expect(resolvedRound.fighters[0].attack.postureBonus).toBe(2);
+        expect(resolvedRound.fighters[1].stance).toBe('defense');
+        expect(resolvedRound.fighters[1].defense.postureBonus).toBe(2);
+        expect(resolvedRound.fighters[0].damage).toBe(3);
+        expect(service.panelState()?.fighters[0].pose).toBe(PlayerPose.Idle);
+        expect(service.panelState()?.fighters[0].attackRollValue).toBe(4);
+        expect(service.canSelectStance()).toBeFalse();
+
+        tick(DICE_ROLL_DURATION_MS);
+
+        expect(service.panelState()?.fighters[0].pose).toBe(PlayerPose.Attack);
+
+        tick(ATTACK_POSE_DURATION_MS);
+
+        expect(service.panelState()?.fighters[1].isHit).toBeTrue();
+
+        tick(HIT_REACTION_DURATION_MS);
+
+        const panelState = service.panelState();
+        expect(panelState?.fighters[0].currentHealth).toBe(5);
+        expect(panelState?.fighters[1].currentHealth).toBe(3);
+        expect(panelState?.round).toBe(2);
+        expect(service.localSelectedStance()).toBeNull();
+        expect(service.canSelectStance()).toBeTrue();
+    }));
+
+    it('keeps the panel open briefly before storing a victory notice when combat ends', fakeAsync(() => {
+        matchStateService.match.set(createMatch());
+
+        emitSocketEvent(CombatSocketEvents.TurnSnapshot, createCombatTurnState('attacker', 0));
+        emitSocketEvent(CombatSocketEvents.Victory, { winner: 'attacker', loser: 'defender' });
+
+        expect(service.hasActiveCombat()).toBeTrue();
+        expect(service.endingNotice()).toBeNull();
+
+        tick(OUTCOME_RESOLUTION_GRACE_MS + COMBAT_END_DEAD_FRAME_MS);
+        expect(service.endingNotice()?.attackerMessage).toContain('Victoire contre Defender');
+
+        tick(COMBAT_END_LINGER_MS);
+
         expect(service.hasActiveCombat()).toBeFalse();
         expect(service.panelState()).toBeNull();
-        expect(service.localSelectedStance()).toBeNull();
-    });
+        expect(service.lastCombatOutcome()?.attackerMessage).toContain('Victoire contre Defender');
+    }));
+
+    it('waits for the lethal round animation before closing the combat panel', fakeAsync(() => {
+        matchStateService.match.set(createMatch());
+
+        emitSocketEvent(CombatSocketEvents.TurnSnapshot, createCombatTurnState('attacker', 0));
+        emitSocketEvent(CombatSocketEvents.AttackSnapshot, createLethalAttackStatistics());
+        emitSocketEvent(CombatSocketEvents.Victory, { winner: 'attacker', loser: 'defender' });
+
+        expect(service.hasActiveCombat()).toBeTrue();
+        expect(service.endingNotice()).toBeNull();
+
+        tick(DICE_ROLL_DURATION_MS + ATTACK_POSE_DURATION_MS);
+        expect(service.hasActiveCombat()).toBeTrue();
+        expect(service.endingNotice()).toBeNull();
+
+        tick(HIT_REACTION_DURATION_MS);
+        expect(service.panelState()?.fighters[1].pose).toBe(PlayerPose.Dead);
+        expect(service.endingNotice()).toBeNull();
+
+        tick(COMBAT_END_DEAD_FRAME_MS);
+        expect(service.endingNotice()?.attackerMessage).toContain('Victoire contre Defender');
+
+        tick(COMBAT_END_LINGER_MS);
+        expect(service.hasActiveCombat()).toBeFalse();
+        expect(service.lastCombatOutcome()?.attackerMessage).toContain('Victoire contre Defender');
+    }));
+
+    function emitSocketEvent<T>(event: string, payload: T): void {
+        const listener = listeners.get(event);
+        expect(listener).withContext(`Missing listener for ${event}`).toBeDefined();
+        listener?.(payload);
+    }
+
+    function createAttackStatistics(): CombatPlayerStatistics[] {
+        return [
+            {
+                attacker: { id: 'attacker', health: 5 },
+                victim: { id: 'defender', health: 3 },
+                attackRoll: 4,
+                defenseRoll: 1,
+                attack: 10,
+                defense: 7,
+            },
+            {
+                attacker: { id: 'defender', health: 3 },
+                victim: { id: 'attacker', health: 5 },
+                attackRoll: 2,
+                defenseRoll: 1,
+                attack: 6,
+                defense: 5,
+            },
+        ];
+    }
+
+    function createLethalAttackStatistics(): CombatPlayerStatistics[] {
+        return [
+            {
+                attacker: { id: 'attacker', health: 5 },
+                victim: { id: 'defender', health: 0 },
+                attackRoll: 4,
+                defenseRoll: 1,
+                attack: 10,
+                defense: 3,
+            },
+            {
+                attacker: { id: 'defender', health: 0 },
+                victim: { id: 'attacker', health: 5 },
+                attackRoll: 1,
+                defenseRoll: 1,
+                attack: 5,
+                defense: 5,
+            },
+        ];
+    }
 });

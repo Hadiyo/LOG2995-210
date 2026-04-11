@@ -53,7 +53,10 @@ export class CombatTurnService {
         this.emitTurnSnapshot(session);
         session.timerIntervalId = setInterval(() => tickGameSessionTimers(session,
             (candidate) => this.emitTurnSnapshot(candidate)), SNAPSHOT_TICK_MS);
-        session.activeTurnTimeoutId = setTimeout(() => this.advanceToNextTurn(session), ACTIVE_COMBAT_TURN_DURATION_MS);
+        session.activeTurnTimeoutId = setTimeout(
+            () => this.event.emit(CombatEvents.Timeout, { combatId: session.id, playerId: activePlayerId }),
+            ACTIVE_COMBAT_TURN_DURATION_MS,
+        );
     }
 
     private emitTurnSnapshot(session: CombatSession): void {

@@ -106,6 +106,7 @@
 }
 
 .combat-stage {
+  position: relative;
   display: grid;
   gap: 0;
   border: 1px solid color-mix(in srgb, var(--accent-primary) 26%, var(--border-soft));
@@ -153,6 +154,46 @@
   isolation: isolate;
 }
 
+.combat-stage__ending {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 3;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, var(--border-soft));
+  border-radius: var(--panel-radius);
+  background: color-mix(in srgb, var(--bg-panel) 86%, rgba(8, 12, 20, 0.4));
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.combat-stage__ending-eyebrow,
+.combat-stage__ending-title,
+.combat-stage__ending-message {
+  margin: 0;
+}
+
+.combat-stage__ending-eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent-primary) 74%, var(--text-main));
+}
+
+.combat-stage__ending-title {
+  margin-top: 2px;
+  font-size: 1.1rem;
+  line-height: 1.1;
+}
+
+.combat-stage__ending-message {
+  margin-top: 4px;
+  font-size: 0.86rem;
+  color: color-mix(in srgb, var(--text-main) 86%, transparent);
+}
+
 .combat-stage__tile::before,
 .combat-stage__tile::after {
   content: '';
@@ -185,6 +226,29 @@
 
 .combat-stage__tile--local {
   box-shadow: inset 0 0 0 3px rgba(250, 204, 21, 0.7);
+}
+
+.combat-stage__tile--attacking .combat-stage__sprite {
+  animation: combat-fighter-lunge-right 900ms cubic-bezier(0.22, 0.76, 0.34, 1) 2 alternate;
+}
+
+.combat-stage__tile--attacking[data-facing='left'] .combat-stage__sprite {
+  animation-name: combat-fighter-lunge-left;
+}
+
+.combat-stage__tile--attacking::after {
+  background:
+    linear-gradient(180deg, rgba(6, 10, 18, 0.16) 0%, rgba(6, 10, 18, 0.04) 28%, rgba(6, 10, 18, 0.36) 100%),
+    radial-gradient(circle at center, color-mix(in srgb, var(--accent-primary) 20%, transparent), transparent 58%);
+}
+
+.combat-stage__tile--dead .combat-stage__sprite {
+  opacity: 0.68;
+  filter: grayscale(0.4);
+}
+
+.combat-stage__tile--hit::after {
+  animation: combat-hit-flash 280ms ease-out 2;
 }
 
 .combat-stage__tile--team-a .combat-stage__sprite::after,
@@ -223,6 +287,17 @@
   height: 100%;
   display: block;
   filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.42));
+}
+
+.combat-stage__sprite app-character-sprite.is-idle {
+  transform-origin: bottom center;
+  animation: combat-avatar-breathe 2.8s ease-in-out infinite;
+}
+
+.combat-stage__tile--attacking .combat-stage__sprite app-character-sprite {
+  filter:
+    drop-shadow(0 18px 22px rgba(0, 0, 0, 0.42))
+    drop-shadow(0 0 12px color-mix(in srgb, var(--accent-primary) 26%, transparent));
 }
 
 .combat-stage-strip {
@@ -350,6 +425,56 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes combat-avatar-breathe {
+  0% {
+    transform: scaleY(1);
+  }
+
+  50% {
+    transform: scaleY(1.015);
+  }
+
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes combat-fighter-lunge-right {
+  from {
+    transform: translateX(0) scale(1);
+  }
+
+  to {
+    transform: translateX(12px) scale(1.05);
+  }
+}
+
+@keyframes combat-fighter-lunge-left {
+  from {
+    transform: translateX(0) scale(1);
+  }
+
+  to {
+    transform: translateX(-12px) scale(1.05);
+  }
+}
+
+@keyframes combat-hit-flash {
+  0% {
+    box-shadow: inset 0 0 0 0 transparent;
+  }
+
+  50% {
+    box-shadow:
+      inset 0 0 0 3px rgba(248, 113, 113, 0.74),
+      0 0 18px rgba(248, 113, 113, 0.22);
+  }
+
+  100% {
+    box-shadow: inset 0 0 0 0 transparent;
   }
 }
 

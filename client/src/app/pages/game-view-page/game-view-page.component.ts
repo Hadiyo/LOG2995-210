@@ -240,6 +240,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void {
         this.matchEndRedirectState = destroyGameViewPage({
             chatService: this.chatService,
+            combat: this.combat,
             effects: this.effects,
             endRedirectRemainingMs: this.endRedirectRemainingMs,
             localPoseIntervalId: this.localPoseIntervalId,
