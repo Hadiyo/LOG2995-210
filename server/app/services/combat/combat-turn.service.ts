@@ -19,12 +19,13 @@ export class CombatTurnService {
 
     private readonly activateTurnConfig: TimerConfig<CombatSession> = {
         emitSnapshot: (session) => this.emitTurnSnapshot(session),
-        onTransitionEnd: (session) => this.advanceToNextTurn(session),
+        onTransitionEnd: (session) => this.emitTimeOutPayload(session),
         transitionDuration: ACTIVE_COMBAT_TURN_DURATION_MS,
     };
     
     constructor(private readonly event: EventEmitter2){
         this.emitTurnSnapshot = this.emitTurnSnapshot.bind(this);
+        this.emitTimeOutPayload = this.emitTimeOutPayload.bind(this);
     }
     
     startTransition(session: CombatSession): void {
@@ -49,7 +50,7 @@ export class CombatTurnService {
 
     private getActivePlayer(session: CombatSession): MatchPlayer | null {
         const activePlayerId = session.turnState.order[session.turnState.currentTurnIndex]?.playerId ?? null;
-        if(activePlayerId)
+        if(!activePlayerId)
             return null;
         const activePlayer = session.players.find((player) => player.stats.id === activePlayerId) ?? null;
         if (!activePlayer) {
@@ -66,6 +67,14 @@ export class CombatTurnService {
             defenderId: session.players[1]?.stats.id ?? '',
             round: session.round,
             turnState: session.turnState,
+        });
+    }
+
+    private emitTimeOutPayload(session: CombatSession): void {
+        const activePlayerId = session.turnState.order[session.turnState.currentTurnIndex]?.playerId ?? null;
+        this.event.emit(CombatEvents.Timeout, {
+            combatId: session.id,
+            playerId: activePlayerId,
         });
     }
 }

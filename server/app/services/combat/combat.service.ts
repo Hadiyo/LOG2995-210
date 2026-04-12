@@ -11,7 +11,7 @@ import { CombatPlayerStatistics, FighterStance } from '@common/combat/combat.int
 import { MatchPlayer } from '@common/game/match.interface';
 import { SessionSocketEvents } from '@common/socket-events';
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { CombatTurnService } from './combat-turn.service';
 
 type CombatTimeoutPayload = {
@@ -30,13 +30,16 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
 
     onModuleInit() {
         this.gameSessionService.on(SessionSocketEvents.ClientDisconnect, this.handleDisconnect);
-        this.event.on(CombatEvents.Timeout, this.handleTurnTimeout);
     }
 
     onModuleDestroy() {
         this.gameSessionService.off(SessionSocketEvents.ClientDisconnect, this.handleDisconnect);
-        this.event.off(CombatEvents.Timeout, this.handleTurnTimeout);
     }
+
+    @OnEvent(CombatEvents.Timeout)
+    handleTurnTimeout( payload: CombatTimeoutPayload): void {
+        this.combatTurn(payload.combatId, payload.playerId, null);
+    };
 
     getCombatIdByRooms(rooms: string[]): string | undefined {
         return rooms.find((room) => this.combatSessions.has(room));
@@ -310,10 +313,6 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
             this.emitCombatResultSnapshot(CombatEvents.ClientDisconnect, combat, opponent.stats.id, playerId);
         }
         this.endCombat(combat.id);
-    };
-
-    private handleTurnTimeout = ({ combatId, playerId }: CombatTimeoutPayload) => {
-        this.combatTurn(combatId, playerId, null);
     };
 
 }
