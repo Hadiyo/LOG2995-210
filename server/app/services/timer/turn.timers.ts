@@ -109,3 +109,43 @@ export function clearTimers<T extends Timers>(session: T): void {
         session.timerIntervalId = null;
     }
 }
+
+export function pauseTimer<TSession extends TurnCapableSession>(session: TSession): void {
+    clearTimers(session);
+    session.turnState = {
+        ...session.turnState,
+        activePlayerId: null,
+        transitionTargetPlayerId: null,
+        playerStates: session.turnState.playerStates.map(player => ({
+            ...player,
+            state: 'waiting',
+        })),
+    };
+}
+
+export function resumeTimers<TSession extends TurnCapableSession>(
+    session: TSession,
+    config: TimerConfig<TSession>,
+): void {
+    let remainingTime = 0;
+    clearTimers(session);
+
+    if (session.turnState.phase === 'active') {
+        remainingTime = Math.max(0, session.turnState.activeTurnEndsAt - Date.now());
+        session.turnState.activeTurnEndsAt = remainingTime;
+    }
+
+    if (session.turnState.phase === 'transition') {
+        remainingTime = Math.max(0, session.turnState.transitionEndsAt - Date.now());
+        session.turnState.transitionEndsAt = remainingTime;
+    }
+
+    if (remainingTime <= 0) {
+        config.onTransitionEnd(session);
+        return;
+    }
+    config.emitSnapshot(session);
+    session.timerIntervalId = setInterval(() => tickTimers(session, (candidate) => config.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
+    session.activeTurnTimeoutId = setTimeout(() => config.onTransitionEnd(session), remainingTime);
+}
+

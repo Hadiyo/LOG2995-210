@@ -1,4 +1,4 @@
-import { activateTurn, advanceToNextTurn, clearTimers, clearTurnState, startTimerTransition } from '@app/services/timer/turn.timers';
+import { activateTurn, advanceToNextTurn, clearTimers, clearTurnState, resumeTimers, startTimerTransition } from '@app/services/timer/turn.timers';
 import { ACTIVE_TURN_DURATION_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
@@ -327,6 +327,10 @@ export class GameSessionLifecycle {
     advanceToNextTurn(session: GameSessionRuntime): void {
         advanceToNextTurn(session, this.setNextMatch);
         startTimerTransition(session, this.startTimerConfig);
+    }
+
+    resumeGameSessionTurn(session: GameSessionRuntime): void {
+        resumeTimers(session, this.activateTurnConfig);
     }
 
     private activateTurn(session: GameSessionRuntime): void {

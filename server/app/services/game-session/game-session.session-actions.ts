@@ -1,3 +1,4 @@
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { buildVisibleObjects } from '@common/game/match.utils';
 import { ObjectType } from '@common/maps/map.enums';
@@ -5,7 +6,6 @@ import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { applyFacingTowardPosition } from './game-session.render';
 import { rebuildTurnStateAfterRosterChange, resolveRespawnPosition } from './game-session.runtime';
-import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 
 export class GameSessionSessionActions {
     constructor(
@@ -208,6 +208,11 @@ export class GameSessionSessionActions {
         winner.combatWins += 1;
         loser.health = loser.maxHealth;
         loser.position = resolveRespawnPosition(session.match, loser.id);
+        
+        if(session.turnState.activePlayerId === winnerId)
+            this.lifecycle.resumeGameSessionTurn(session);
+        else
+            this.lifecycle.advanceToNextTurn(session);
         return true;
     }
 

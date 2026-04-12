@@ -1,14 +1,14 @@
-import { buildVisibleObjects, resolveFlagCarrier } from '@common/game/match.utils';
+import { ATTACK_POSE_DURATION_MS, CLASSIC_WIN_THRESHOLD, WALK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { MatchSanctuaryChoice } from '@common/game/match.interface';
+import { buildVisibleObjects, resolveFlagCarrier } from '@common/game/match.utils';
 import { ObjectType } from '@common/maps/map.enums';
 import { PlayerPose } from '@common/player/player.interface';
 import { GameSessionLifecycle } from './game-session.lifecycle';
-import {getGameSessionDestination, getGameSessionMovementCost } from './game-session.match';
+import { getGameSessionDestination, getGameSessionMovementCost } from './game-session.match';
 import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
-import { beginGameSessionSanctuaryChoice,resolveGameSessionSanctuaryChoice } from './game-session.sanctuary';
-import {resolveRespawnPosition } from './game-session.runtime';
-import { GameSessionRuntime } from '@app/utilities/game/game.interface';
-import { ATTACK_POSE_DURATION_MS, CLASSIC_WIN_THRESHOLD, WALK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
+import { resolveRespawnPosition } from './game-session.runtime';
+import { beginGameSessionSanctuaryChoice, resolveGameSessionSanctuaryChoice } from './game-session.sanctuary';
 
 export class GameSessionActions {
     constructor(
@@ -172,6 +172,17 @@ export class GameSessionActions {
     }
 
     startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
+        // const session = this.sessions.get(sessionId);
+        // if (!session ||
+        //     session.turnState.phase !== 'active' ||
+        //     session.turnState.activePlayerId !== attackerId ||
+        //     session.turnState.actionTaken ||
+        //     session.match.pendingSanctuaryChoice ||
+        //     session.match.endState) {
+        //     return null;
+        // }
+        // pauseTimer(session);
+        // should return the sessionId to notify other players that a combat has started between two players
         const combatContext = this.lifecycle.getCombatContext(sessionId, attackerId, defenderId);
         if (!combatContext) {
             return false;
