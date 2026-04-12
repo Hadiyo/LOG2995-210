@@ -18,9 +18,7 @@ export function createMockServer() {
   return {
     to: jest.fn(() => ({ emit })),
     emit,
-    sockets: {
-      sockets: socketsMap,
-    },
+    sockets: socketsMap,
   };
 }
 

@@ -59,9 +59,12 @@ export class CombatTurnService {
     }
 
     private emitTurnSnapshot(session: CombatSession): void {
-        // CombatTurnSnapshot
         this.event.emit(CombatEvents.Turn, {
             combatId: session.id,
+            gameSessionId: session.gameSessionId,
+            attackerId: session.players[0]?.stats.id ?? '',
+            defenderId: session.players[1]?.stats.id ?? '',
+            round: session.round,
             turnState: session.turnState,
         });
     }

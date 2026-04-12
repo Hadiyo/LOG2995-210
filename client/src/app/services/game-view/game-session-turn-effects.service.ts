@@ -1,12 +1,13 @@
 import { effect, inject, Injectable, signal } from '@angular/core';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
-import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
-import { MatchTurnState } from '@common/game/turn.interface';
-import { CombatOutcomeNotice, CombatStateService } from '@app/services/match/combat-state.service';
 import {
     COMBAT_NOTIFICATION_DURATION_MS,
     LocalCombatNotification,
 } from '@app/config/game-session.config';
+import { CombatOutcomeNotice } from '@app/services/match/combat-state.models';
+import { CombatStateService } from '@app/services/match/combat-state.service';
+import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
+import { MatchTurnState } from '@common/game/turn.interface';
 import { GameSessionDisplayService } from './game-session-display.service';
 import { GameSessionInteractionService } from './game-session-interaction.service';
 
@@ -107,6 +108,11 @@ export class GameSessionTurnEffectsService {
         const currentMatch = this.display.match();
         const currentTurnState = this.display.turnState();
         if (!this.shouldEvaluateAutoTurnEnd(currentMatch, currentTurnState) || !currentTurnState) {
+            this.lastAutoEndedTurnKey = null;
+            return;
+        }
+
+        if (this.combatStateService.hasActiveCombat()) {
             this.lastAutoEndedTurnKey = null;
             return;
         }

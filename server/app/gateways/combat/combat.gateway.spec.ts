@@ -4,7 +4,7 @@ import { CombatService } from '@app/services/combat/combat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
 import { CombatSessionSnapshot, CombatTurnSnapshot, StancePayload } from '@common/combat/combat.interface';
-import { CombatSocketEvents, SessionSocketEvents } from '@common/socket-events';
+import { CombatSocketEvents, getGameSessionRoom, SessionSocketEvents } from '@common/socket-events';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Server } from 'socket.io';
 import { CombatGateway } from './combat.gateway';
@@ -62,31 +62,31 @@ describe('CombatGateway', () => {
     expect(socket.leave).not.toHaveBeenCalled();
   });
 
-  it('should return and emit an error message if the client id is not part of a game session - startCombat', () => {
+  it('should return and emit an error message if the client id is not part of a game session - startCombat', async () => {
     const socket = createMockSocket('1234');
     const payload = {sessionId: '1555', playerId: '8906', defenderId: '0000'};
     jest.spyOn(gameSessionServiceMock, 'getPlayerIdForSocket').mockReturnValue('hjsj');
 
-    gateway.startCombat(socket, payload);
+    await gateway.startCombat(socket, payload);
 
     expect(socket.emit).toHaveBeenCalledWith(CombatSocketEvents.CombatSessionError, { message: 'Combat refusé.' });
     expect(socket.join).not.toHaveBeenCalled();
   });
 
-  it('should return and emit an error message if the opponents socket cannot be found - startCombat', () => {
+  it('should return and emit an error message if the opponents socket cannot be found - startCombat', async () => {
     const socket = createMockSocket('1234');
     const payload = {sessionId: '1555', playerId: '8906', defenderId: '0000'};
     jest.spyOn(gameSessionServiceMock, 'getPlayerIdForSocket').mockReturnValue('8906');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     jest.spyOn(gateway as any, 'getOpponentSocket').mockReturnValue(undefined);
 
-    gateway.startCombat(socket, payload);
+    await gateway.startCombat(socket, payload);
 
     expect(socket.emit).toHaveBeenCalledWith(CombatSocketEvents.CombatSessionError, { message: 'Adversaire indisponible.' });
     expect(socket.join).not.toHaveBeenCalled();
   });
 
-  it('should return an emit an error message if the combat session was not successfully created - startCombat', () => {
+  it('should return an emit an error message if the combat session was not successfully created - startCombat', async () => {
     const socket1 = createMockSocket('1234');
     const socket2 = createMockSocket('8975');
     const payload = {sessionId: '1555', playerId: '8906', defenderId: '0000'};
@@ -95,13 +95,13 @@ describe('CombatGateway', () => {
     jest.spyOn(gateway as any, 'getOpponentSocket').mockReturnValue(socket2);
     jest.spyOn(combatServiceMock, 'createCombatSession').mockReturnValue(undefined);
 
-    gateway.startCombat(socket1, payload);
+    await gateway.startCombat(socket1, payload);
 
     expect(socket1.emit).toHaveBeenCalledWith(CombatSocketEvents.CombatSessionError, { message: 'Combat impossible.' });
     expect(socket1.join).not.toHaveBeenCalled();
   });
 
-  it('should join the clients and the opponents socket to the combat session and start the game - startCombat', () => {
+  it('should join the clients and the opponents socket to the combat session and start the game - startCombat', async () => {
     const socket1 = createMockSocket('1234');
     const socket2 = createMockSocket('8975');
     const session = makeCombatSession();
@@ -112,7 +112,7 @@ describe('CombatGateway', () => {
     jest.spyOn(combatServiceMock, 'createCombatSession').mockReturnValue(session);
     const spy = jest.spyOn(combatServiceMock, 'startCombat');
 
-    gateway.startCombat(socket1, payload);
+    await gateway.startCombat(socket1, payload);
 
     expect(socket1.emit).not.toHaveBeenCalled();
     expect(socket1.join).toHaveBeenCalledWith(session.id);
@@ -141,14 +141,39 @@ describe('CombatGateway', () => {
   });
 
   it('should send the payload if the combatId is valid - handleTurnSwitch', () => {
-    const payload: CombatTurnSnapshot = { combatId: '6745', turnState: makeTurnState()};
+    const payload: CombatTurnSnapshot = {
+      combatId: '6745',
+      gameSessionId: 'game-1',
+      attackerId: 'player-1',
+      defenderId: 'player-2',
+      round: 3,
+      turnState: makeTurnState(),
+    };
     gateway.handleTurnSwitch(payload);
-    expect(server.to).toHaveBeenCalledWith(payload.combatId);
-    expect(server.emit).toHaveBeenCalledWith(CombatSocketEvents.TurnSnapshot, payload.turnState);
+    expect(server.to).toHaveBeenNthCalledWith(1, payload.combatId);
+    expect(server.emit).toHaveBeenNthCalledWith(1, CombatSocketEvents.TurnSnapshot, payload.turnState);
+    expect(server.to).toHaveBeenNthCalledWith(2, getGameSessionRoom(payload.gameSessionId));
+    expect(server.emit).toHaveBeenNthCalledWith(2, SessionSocketEvents.CombatWaitingSnapshot, {
+      combatId: payload.combatId,
+      gameSessionId: payload.gameSessionId,
+      attackerId: payload.attackerId,
+      defenderId: payload.defenderId,
+      activePlayerId: payload.turnState.activePlayerId,
+      phase: payload.turnState.phase,
+      round: payload.round,
+      countdownSeconds: expect.any(Number),
+    });
   });
 
   it('should not send the payload if the combatId is not valid but send an error message - handleTurnSwitch', () => {
-    const payload: CombatTurnSnapshot = { combatId: undefined, turnState: makeTurnState()};
+    const payload: CombatTurnSnapshot = {
+      combatId: undefined as unknown as string,
+      gameSessionId: undefined as unknown as string,
+      attackerId: 'player-1',
+      defenderId: 'player-2',
+      round: 1,
+      turnState: makeTurnState(),
+    };
     gateway.handleTurnSwitch(payload);
     expect(server.to).not.toHaveBeenCalledWith(undefined);
     expect(server.emit).not.toHaveBeenCalledWith(CombatSocketEvents.TurnSnapshot, payload.turnState);
@@ -177,7 +202,7 @@ describe('CombatGateway', () => {
     const newPayload = { winner: payload.winner, loser: payload.loser };
     gateway.handleVictory(payload);
     expect(server.to).toHaveBeenNthCalledWith(1, payload.combatId);
-    expect(server.to).toHaveBeenNthCalledWith(2, payload.gameSessionId);
+    expect(server.to).toHaveBeenNthCalledWith(2, getGameSessionRoom(payload.gameSessionId));
     expect(server.emit).toHaveBeenNthCalledWith(1, CombatSocketEvents.Victory, newPayload);
     expect(server.emit).toHaveBeenNthCalledWith(2, SessionSocketEvents.CombatVictory, newPayload);
   });
@@ -197,7 +222,7 @@ describe('CombatGateway', () => {
     const newPayload = { player1: payload.winner, player2: payload.loser };
     gateway.handleTie(payload);
     expect(server.to).toHaveBeenNthCalledWith(1, payload.combatId);
-    expect(server.to).toHaveBeenNthCalledWith(2, payload.gameSessionId);
+    expect(server.to).toHaveBeenNthCalledWith(2, getGameSessionRoom(payload.gameSessionId));
     expect(server.emit).toHaveBeenNthCalledWith(1, CombatSocketEvents.Tie, newPayload);
     expect(server.emit).toHaveBeenNthCalledWith(2, SessionSocketEvents.CombatTie, newPayload);
   });

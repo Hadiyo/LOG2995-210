@@ -44,6 +44,7 @@ export enum SessionSocketEvents {
     GameSessionError = 'gameSessionError',
     CombatVictory = 'combatVictory',
     CombatTie = 'combatTie',
+    CombatWaitingSnapshot = 'combatWaitingSnapshot',
     ClientDisconnect = 'clientDisconnect',
 
 }

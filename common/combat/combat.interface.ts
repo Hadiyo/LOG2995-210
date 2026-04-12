@@ -23,7 +23,22 @@ export interface CombatSessionSnapshot {
 
 export interface CombatTurnSnapshot {
     combatId: string,
+    gameSessionId: string,
+    attackerId: string,
+    defenderId: string,
+    round: number,
     turnState: MatchTurnState,
+}
+
+export interface CombatWaitingSnapshot {
+    combatId: string,
+    gameSessionId: string,
+    attackerId: string,
+    defenderId: string,
+    activePlayerId: string | null,
+    phase: MatchTurnState['phase'],
+    round: number,
+    countdownSeconds: number,
 }
 
 export interface CombatResultSnapshot {

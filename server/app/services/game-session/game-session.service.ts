@@ -76,7 +76,7 @@ export class GameSessionService {
     }
 
     getMatchFromSessionId(id: string): InitializedMatch | null {
-        return this.sessions.get(id).match;
+        return this.sessions.get(id)?.match ?? null;
     }
 
 

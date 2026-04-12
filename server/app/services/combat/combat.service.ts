@@ -14,21 +14,28 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CombatTurnService } from './combat-turn.service';
 
+type CombatTimeoutPayload = {
+    combatId: string;
+    playerId: string;
+};
+
 @Injectable()
 export class CombatService implements OnModuleInit, OnModuleDestroy {
     private readonly combatSessions = new Map<string, CombatSession>();
-    private readonly event = new EventEmitter2();
     constructor(
         private readonly gameSessionService: GameSessionService,
         private readonly turnService: CombatTurnService,
+        private readonly event: EventEmitter2,
     ){}
 
     onModuleInit() {
         this.gameSessionService.on(SessionSocketEvents.ClientDisconnect, this.handleDisconnect);
+        this.event.on(CombatEvents.Timeout, this.handleTurnTimeout);
     }
 
     onModuleDestroy() {
         this.gameSessionService.off(SessionSocketEvents.ClientDisconnect, this.handleDisconnect);
+        this.event.off(CombatEvents.Timeout, this.handleTurnTimeout);
     }
 
     getCombatIdByRooms(rooms: string[]): string | undefined {
@@ -42,6 +49,10 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
             }
         }
         return undefined;
+    }
+
+    getCombatSession(combatId: string): CombatSession | undefined {
+        return this.combatSessions.get(combatId);
     }
 
     createCombatSession(attackerId: string, defenderId: string, gameSessionId: string): CombatSession | null {
@@ -65,6 +76,7 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         const session: CombatSession = {
             id: newId,
             gameSessionId,
+            round: 1,
             players: [player1, player2],
             turnState,
             transitionTimeoutId: null,
@@ -96,7 +108,7 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         const currentPlayer = session.players.find(p => p.stats.id === playerId);
         const otherPlayer = session.players.find(p => p.stats.id !== playerId);
 
-        if(currentPlayer.combatStance && otherPlayer.combatStance){
+        if(currentPlayer.hasSelectedStance && otherPlayer.hasSelectedStance){
             const isCurrPlayerOnIce = this.isFighterOnIce(session.gameSessionId, currentPlayer.stats.id);
             const isOtherPlayerOnIce = this.isFighterOnIce(session.gameSessionId, otherPlayer.stats.id);
 
@@ -117,25 +129,29 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         const otherPlayer = session.players.find(p => p.stats.id === attacks[1].attacker.id);
 
         if(currentPlayer.stats.health > ZERO && otherPlayer.stats.health === ZERO){
+            this.emitCombatStatistics(session.id, attacks);
             this.gameSessionService.endCombat(session.gameSessionId, currentPlayer.stats.id, otherPlayer.stats.id);
             this.emitCombatResultSnapshot(CombatEvents.Victory, session, currentPlayer.stats.id, otherPlayer.stats.id);
             this.endCombat(session.id);
         } else if (otherPlayer.stats.health > ZERO && currentPlayer.stats.health === ZERO){
+            this.emitCombatStatistics(session.id, attacks);
             this.gameSessionService.endCombat(session.gameSessionId, otherPlayer.stats.id, currentPlayer.stats.id);
             this.emitCombatResultSnapshot(CombatEvents.Victory, session, otherPlayer.stats.id, currentPlayer.stats.id);
             this.endCombat(session.id);
         } else if (otherPlayer.stats.health === ZERO && currentPlayer.stats.health === ZERO){
+            this.emitCombatStatistics(session.id, attacks);
             this.emitCombatResultSnapshot(CombatEvents.Tie, session, currentPlayer.stats.id, otherPlayer.stats.id);
             this.endCombat(session.id);
         } else {
-            const isStanceSet1 = this.setCombatStance(session, currentPlayer.stats.id, null);
-            const isStanceSet2 = this.setCombatStance(session, otherPlayer.stats.id, null);
+            const isStanceSet1 = this.clearCombatStance(session, currentPlayer.stats.id);
+            const isStanceSet2 = this.clearCombatStance(session, otherPlayer.stats.id);
 
             if(!isStanceSet1 || !isStanceSet2)
                 return false;
 
+            session.round += 1;
             this.switchCombatTurn(session, currentPlayer.stats.id);
-            this.event.emit(CombatEvents.Statistics, { combatId: session.id, statistics: attacks });
+            this.emitCombatStatistics(session.id, attacks);
         }
         return true;
     }
@@ -153,6 +169,7 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         return {
             stats: player,
             combatStance: null,
+            hasSelectedStance: false,
             hasPenalty: false,
         };
     }
@@ -164,16 +181,8 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         defender: Fighter,
         isDefenderOnIce: boolean,
     ): CombatPlayerStatistics {
-        let attackRoll = 0;
-        let defenseRoll = 0;
-
-        if(this.gameSessionService.getMatchFromSessionId(session.id)?.debugMode){
-            attackRoll = attacker.stats.attackDie === 'D4' ? DIE_D4_SIDES : DIE_D6_SIDES;
-            defenseRoll = MIN_DIE_VALUE;
-        } else {
-            attackRoll = this.rollDie(attacker.stats.attackDie);
-            defenseRoll = this.rollDie(defender.stats.defenseDie);
-        }
+        const attackRoll = this.getAttackRoll(session, attacker);
+        const defenseRoll = this.getDefenseRoll(session, defender);
 
         const attackBonus = attacker.combatStance === 'attack' ? BONUS : ZERO;
         const defenseBonus = defender.combatStance === 'defense' ? BONUS : ZERO;
@@ -188,7 +197,7 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
 
         let victim = defender;
 
-        if(damage >= 0){
+        if(damage > ZERO){
             victim = this.updatePlayerHealth(session.id, defender.stats.id, damage);
             if(!victim) victim = defender;
         }
@@ -211,6 +220,18 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         if(!player)
             return false;
         player.combatStance = stance;
+        player.hasSelectedStance = true;
+        return true;
+    }
+
+    private clearCombatStance(session: CombatSession, playerId: string): boolean {
+        const player = session.players.find((candidate) => candidate.stats.id === playerId);
+        if (!player) {
+            return false;
+        }
+
+        player.combatStance = null;
+        player.hasSelectedStance = false;
         return true;
     }
 
@@ -224,11 +245,43 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         });
     }
 
+    private emitCombatStatistics(combatId: string, statistics: CombatPlayerStatistics[]): void {
+        this.event.emit(CombatEvents.Statistics, { combatId, statistics });
+    }
+
     private rollDie(die: Die): number {
         if(die === 'D4')
             return Math.floor(Math.random() * DIE_D4_SIDES) + 1;
         else
             return Math.floor(Math.random() * DIE_D6_SIDES) + 1;
+    }
+
+    private getAttackRoll(session: CombatSession, attacker: Fighter): number {
+        if (!this.isDebugModeEnabled(session)) {
+            return this.rollDie(attacker.stats.attackDie);
+        }
+
+        return this.isCombatInstigator(session, attacker.stats.id) ? this.getMaxRoll(attacker.stats.attackDie) : MIN_DIE_VALUE;
+    }
+
+    private getDefenseRoll(session: CombatSession, defender: Fighter): number {
+        if (!this.isDebugModeEnabled(session)) {
+            return this.rollDie(defender.stats.defenseDie);
+        }
+
+        return this.isCombatInstigator(session, defender.stats.id) ? this.getMaxRoll(defender.stats.defenseDie) : MIN_DIE_VALUE;
+    }
+
+    private isDebugModeEnabled(session: CombatSession): boolean {
+        return !!this.gameSessionService.getMatchFromSessionId(session.gameSessionId)?.debugMode;
+    }
+
+    private isCombatInstigator(session: CombatSession, playerId: string): boolean {
+        return session.players[0]?.stats.id === playerId;
+    }
+
+    private getMaxRoll(die: Die): number {
+        return die === 'D4' ? DIE_D4_SIDES : DIE_D6_SIDES;
     }
 
     private isFighterOnIce(matchId: string, playerId: string): boolean {
@@ -257,6 +310,10 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
             this.emitCombatResultSnapshot(CombatEvents.ClientDisconnect, combat, opponent.stats.id, playerId);
         }
         this.endCombat(combat.id);
+    };
+
+    private handleTurnTimeout = ({ combatId, playerId }: CombatTimeoutPayload) => {
+        this.combatTurn(combatId, playerId, null);
     };
 
 }

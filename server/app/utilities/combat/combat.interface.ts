@@ -6,12 +6,14 @@ import { MatchTurnState } from '@common/game/turn.interface';
 export interface Fighter {
     stats: MatchPlayer,
     combatStance: FighterStance,
+    hasSelectedStance: boolean,
     hasPenalty: boolean,
 }
 
 export interface CombatSession extends Timers {
     id: string,
     gameSessionId: string,
+    round: number,
     players: Fighter[],
     winner?: MatchPlayer,
     turnState: MatchTurnState,
