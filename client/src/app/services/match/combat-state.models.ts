@@ -41,6 +41,7 @@ export interface CombatPanelFighter {
     isDoorOpen: boolean;
     facing: PlayerFacing;
     pose: PlayerPose;
+    isDefending: boolean;
     isHit: boolean;
     teamId: string | null;
     isLocal: boolean;

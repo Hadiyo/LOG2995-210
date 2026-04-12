@@ -207,6 +207,7 @@ describe('CombatStateService', () => {
         tick(DICE_ROLL_DURATION_MS);
 
         expect(service.panelState()?.fighters[0].pose).toBe(PlayerPose.Attack);
+        expect(service.panelState()?.fighters[1].isDefending).toBeTrue();
 
         tick(ATTACK_POSE_DURATION_MS);
 

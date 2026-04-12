@@ -10,9 +10,6 @@
         <div class="combat-shell__meta">
           <span class="combat-shell__chip">Round {{ panel.round }}</span>
           <span class="combat-shell__chip combat-shell__chip--timer">{{ panel.countdownSeconds }} s</span>
-          <button type="button" class="combat-shell__close" aria-label="Fermer le combat" (click)="closeCombat()">
-            ×
-          </button>
         </div>
       </header>
 
@@ -43,6 +40,7 @@
                 class="combat-stage__tile"
                 [class.combat-stage__tile--local]="fighter.isLocal"
                 [class.combat-stage__tile--attacking]="fighter.pose === 'attack'"
+                [class.combat-stage__tile--defending]="fighter.isDefending"
                 [class.combat-stage__tile--dead]="fighter.pose === 'dead'"
                 [class.combat-stage__tile--hit]="fighter.isHit"
                 [ngClass]="getTeamClass(fighter.teamId)"

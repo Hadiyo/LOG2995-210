@@ -22,13 +22,24 @@
 
           <div class="combat-round-log__fighters">
             @for (fighter of round.fighters; track fighter.fighterId) {
-              <section class="combat-round-log__fighter">
+              <section
+                class="combat-round-log__fighter"
+                [class.combat-round-log__fighter--win]="fighterOutcome(round, $index === 0 ? 0 : 1) === 'win'"
+                [class.combat-round-log__fighter--lose]="fighterOutcome(round, $index === 0 ? 0 : 1) === 'lose'"
+                [class.combat-round-log__fighter--draw]="fighterOutcome(round, $index === 0 ? 0 : 1) === 'draw'"
+              >
                 <div class="combat-round-log__fighter-header">
                   <div>
                     <h4>{{ fighter.fighterName }}</h4>
                     <p>{{ fighter.isLocal ? 'Vous' : 'Adversaire' }}</p>
                   </div>
-                  <span class="combat-round-log__stance">{{ stanceLabel(fighter.stance) }}</span>
+                  <span
+                    class="combat-round-log__stance"
+                    [class.combat-round-log__stance--attack]="fighter.stance === 'attack'"
+                    [class.combat-round-log__stance--defense]="fighter.stance === 'defense'"
+                  >
+                    {{ stanceLabel(fighter.stance) }}
+                  </span>
                 </div>
 
                 <div class="combat-round-log__table" role="table" aria-label="Resultats pour {{ fighter.fighterName }}">
@@ -41,26 +52,67 @@
                     <span>Total</span>
                   </div>
 
-                  <div class="combat-round-log__table-row" role="row">
+                  <div
+                    class="combat-round-log__table-row"
+                    [class.combat-round-log__table-row--positive]="attackSucceeded(round, $index === 0 ? 0 : 1) === true"
+                    [class.combat-round-log__table-row--negative]="attackSucceeded(round, $index === 0 ? 0 : 1) === false"
+                    role="row"
+                  >
                     <span>ATQ</span>
                     <span>{{ fighter.attack.base }}</span>
-                    <span>{{ signedValue(fighter.attack.postureBonus) }}</span>
-                    <span>{{ fighter.attack.dieType }} {{ displayValue(fighter.attack.dieValue) }}</span>
-                    <span>{{ signedValue(fighter.attack.penalty) }}</span>
-                    <span>{{ breakdownTotal(fighter.attack) }}</span>
+                    <span [class.combat-round-log__value--positive]="fighter.attack.postureBonus > 0">{{ signedValue(fighter.attack.postureBonus) }}</span>
+                    <span class="combat-round-log__die" [class]="dieClass(fighter.attack.dieType)">{{ fighter.attack.dieType }} {{ displayValue(fighter.attack.dieValue) }}</span>
+                    <span [class.combat-round-log__value--negative]="fighter.attack.penalty < 0">{{ signedValue(fighter.attack.penalty) }}</span>
+                    <span
+                      class="combat-round-log__total"
+                      [class.combat-round-log__value--positive]="attackSucceeded(round, $index === 0 ? 0 : 1) === true"
+                      [class.combat-round-log__value--negative]="attackSucceeded(round, $index === 0 ? 0 : 1) === false"
+                    >
+                      {{ breakdownTotal(fighter.attack) }}
+                    </span>
                   </div>
 
-                  <div class="combat-round-log__table-row" role="row">
+                  <div
+                    class="combat-round-log__table-row"
+                    [class.combat-round-log__table-row--positive]="defenseSucceeded(round, $index === 0 ? 0 : 1) === true"
+                    [class.combat-round-log__table-row--negative]="defenseSucceeded(round, $index === 0 ? 0 : 1) === false"
+                    role="row"
+                  >
                     <span>DEF</span>
                     <span>{{ fighter.defense.base }}</span>
-                    <span>{{ signedValue(fighter.defense.postureBonus) }}</span>
-                    <span>{{ fighter.defense.dieType }} {{ displayValue(fighter.defense.dieValue) }}</span>
-                    <span>{{ signedValue(fighter.defense.penalty) }}</span>
-                    <span>{{ breakdownTotal(fighter.defense) }}</span>
+                    <span [class.combat-round-log__value--positive]="fighter.defense.postureBonus > 0">{{ signedValue(fighter.defense.postureBonus) }}</span>
+                    <span class="combat-round-log__die" [class]="dieClass(fighter.defense.dieType)">{{ fighter.defense.dieType }} {{ displayValue(fighter.defense.dieValue) }}</span>
+                    <span [class.combat-round-log__value--negative]="fighter.defense.penalty < 0">{{ signedValue(fighter.defense.penalty) }}</span>
+                    <span
+                      class="combat-round-log__total"
+                      [class.combat-round-log__value--positive]="defenseSucceeded(round, $index === 0 ? 0 : 1) === true"
+                      [class.combat-round-log__value--negative]="defenseSucceeded(round, $index === 0 ? 0 : 1) === false"
+                    >
+                      {{ breakdownTotal(fighter.defense) }}
+                    </span>
                   </div>
                 </div>
 
-                <p class="combat-round-log__result">{{ resultLabel(round, $index === 0 ? 0 : 1) }}</p>
+                <div class="combat-round-log__result">
+                  @if (fighter.attackDelta === null || fighter.damage === null) {
+                    <p>{{ resultLabel(round, $index === 0 ? 0 : 1) }}</p>
+                  } @else {
+                    <span
+                      class="combat-round-log__metric"
+                      [class.combat-round-log__metric--positive]="fighter.attackDelta > 0"
+                      [class.combat-round-log__metric--negative]="fighter.attackDelta < 0"
+                    >
+                      Diff {{ signedValue(fighter.attackDelta) }}
+                    </span>
+                    <span
+                      class="combat-round-log__metric"
+                      [class.combat-round-log__metric--positive]="fighter.damage > 0"
+                      [class.combat-round-log__metric--neutral]="fighter.damage === 0"
+                    >
+                      {{ damageLabel(round, $index === 0 ? 0 : 1) }}
+                    </span>
+                  }
+                </div>
               </section>
             }
           </div>

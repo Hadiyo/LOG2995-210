@@ -2,11 +2,9 @@ import { computed, effect, Injectable, signal } from '@angular/core';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { CombatPlayerStatistics, StancePayload } from '@common/combat/combat.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
-import { PlayerPose } from '@common/player/player.interface';
 import { CombatSocketEvents } from '@common/socket-events';
 import {
     CombatOutcomeNotice,
-    CombatPanelFighter,
     CombatPanelState,
     CombatResultPayload,
     CombatRoundLog,
@@ -15,18 +13,20 @@ import {
 } from './combat-state.models';
 import { MatchStateService } from './match-state.service';
 import {
+    advanceCombatRoundState,
+    applyResolvedDamageState,
+    applyResolvedDiceState,
+    applyResolvedStanceAnimationState,
+    buildCombatPanelStateFromTurnSnapshot,
+    createCombatForfeitNotice,
+    getCombatFooterMessage,
+} from './combat-state.reducers';
+import {
     createPendingRoundLog,
-    createCombatPanelFighter,
     createResolvedRoundLog as buildResolvedRoundLog,
     createTieNotice,
     createVictoryNotice,
     getDamageTakenByFighterId,
-    getCountdownSeconds,
-    getCombatOrientation,
-    getOrderedCombatPlayers,
-    getTileTypeForCombatPlayer,
-    isOpenDoorForCombatPlayer,
-    resolveCombatParticipants,
     getUpdatedHealthByFighterId,
     upsertRoundLog,
 } from './combat-state.utils';
@@ -34,7 +34,8 @@ const DICE_ROLL_DURATION_MS = 1000;
 const ATTACK_POSE_DURATION_MS = 900;
 const HIT_REACTION_DURATION_MS = 280;
 const OUTCOME_RESOLUTION_GRACE_MS = 500;
-const COMBAT_END_DEAD_FRAME_MS = 1000; const COMBAT_END_LINGER_MS = 1000;
+const COMBAT_END_DEAD_FRAME_MS = 1000;
+const COMBAT_END_LINGER_MS = 1000;
 const ROUND_RESOLUTION_DURATION_MS = DICE_ROLL_DURATION_MS + ATTACK_POSE_DURATION_MS + HIT_REACTION_DURATION_MS;
 @Injectable({ providedIn: 'root' })
 export class CombatStateService {
@@ -55,32 +56,13 @@ export class CombatStateService {
             && turnState.phase === 'active'
             && turnState.activePlayerId === localPlayerId;
     });
-    readonly footerMessage = computed(() => {
-        if (!this.hasActiveCombat()) {
-            return '';
-        }
-
-        if (this.endingNotice()) {
-            return 'Fin du combat.';
-        }
-
-        if (this.isResolvingRound()) {
-            return 'Resolution du round en cours...';
-        }
-
-        if (!this.canSelectStance()) {
-            return 'En attente du prochain choix de posture.';
-        }
-        const selectedStance = this.localSelectedStance();
-        if (selectedStance === 'attack') {
-            return 'Posture offensive selectionnee.';
-        }
-
-        if (selectedStance === 'defense') {
-            return 'Posture defensive selectionnee.';
-        }
-        return 'Choisissez une posture pour preparer le combat.';
-    });
+    readonly footerMessage = computed(() => getCombatFooterMessage({
+        canSelectStance: this.canSelectStance(),
+        endingNotice: this.endingNotice(),
+        hasActiveCombat: this.hasActiveCombat(),
+        isResolvingRound: this.isResolvingRound(),
+        selectedStance: this.localSelectedStance(),
+    }));
 
     private readonly combatTurnState = signal<MatchTurnState | null>(null);
     private pendingOutcomeNotice: CombatOutcomeNotice | null = null;
@@ -120,35 +102,22 @@ export class CombatStateService {
 
     private handleTurnSnapshot(turnState: MatchTurnState): void {
         const match = this.matchStateService.match();
-        const participants = match ? resolveCombatParticipants(match.players, turnState) : null;
-        if (!participants) {
+        if (!match) {
             return;
         }
-
-        const currentPanelState = this.panelState();
-        const currentHealthByFighterId = new Map(
-            currentPanelState?.fighters.map((fighter) => [fighter.id, fighter.currentHealth]) ?? [],
-        );
-        const [attacker, defender] = participants;
-        const orientation = getCombatOrientation(attacker, defender);
         const localPlayerId = this.matchStateService.localPlayer()?.id ?? null;
-        const orderedPlayers = getOrderedCombatPlayers(attacker, defender, orientation);
+        const currentPanelState = this.panelState();
         const isNewCombat = currentPanelState?.id !== turnState.matchId;
-        const round = isNewCombat ? 1 : (currentPanelState?.round ?? 1);
-        const previousFightersById = new Map(currentPanelState?.fighters.map((fighter) => [fighter.id, fighter]) ?? []);
-        const fighters = orderedPlayers.map((player, index) =>
-            createCombatPanelFighter({
-                player,
-                index,
-                orientation,
-                localPlayerId,
-                currentHealth: currentHealthByFighterId.get(player.id) ?? player.health,
-                previousFighter: previousFightersById.get(player.id) ?? null,
-                tileType: getTileTypeForCombatPlayer(match, player),
-                isDoorOpen: isOpenDoorForCombatPlayer(match, player),
-                keepAnimatedPose: this.isResolvingRound(),
-            }),
-        ) as [CombatPanelFighter, CombatPanelFighter];
+        const nextPanelState = buildCombatPanelStateFromTurnSnapshot({
+            currentPanelState,
+            keepAnimatedPose: this.isResolvingRound(),
+            localPlayerId,
+            match,
+            turnState,
+        });
+        if (!nextPanelState) {
+            return;
+        }
 
         if (isNewCombat) {
             this.clearAnimationTimers();
@@ -160,15 +129,7 @@ export class CombatStateService {
         }
 
         this.combatTurnState.set(turnState);
-        this.panelState.set({
-            id: turnState.matchId,
-            attackerId: attacker.id,
-            defenderId: defender.id,
-            orientation,
-            round,
-            countdownSeconds: getCountdownSeconds(turnState),
-            fighters,
-        });
+        this.panelState.set(nextPanelState);
         if (!this.isResolvingRound()) {
             this.syncPendingRoundLog();
         }
@@ -186,65 +147,21 @@ export class CombatStateService {
 
         const updatedHealthByFighterId = getUpdatedHealthByFighterId(statistics);
         const damageTakenByFighterId = getDamageTakenByFighterId(statistics);
-        const resolvedFightersById = new Map(
-            resolvedRoundLog.fighters.map((fighter) => [fighter.fighterId, fighter]),
-        );
         this.roundLogs.update((roundLogs) => upsertRoundLog(roundLogs, resolvedRoundLog));
 
         this.clearAnimationTimers();
         this.isResolvingRound.set(true);
         this.localSelectedStance.set(null);
-        this.panelState.update((panelState) => {
-            if (!panelState) {
-                return panelState;
-            }
-            return {
-                ...panelState,
-                fighters: panelState.fighters.map((fighter) => ({
-                    ...fighter,
-                    attackRollValue: resolvedFightersById.get(fighter.id)?.attack.dieValue ?? fighter.attackRollValue,
-                    defenseRollValue: resolvedFightersById.get(fighter.id)?.defense.dieValue ?? fighter.defenseRollValue,
-                    rollToken: fighter.rollToken + 1,
-                    pose: PlayerPose.Idle,
-                    isHit: false,
-                })) as [CombatPanelFighter, CombatPanelFighter],
-            };
-        });
+        this.panelState.update((panelState) => panelState ? applyResolvedDiceState(panelState, resolvedRoundLog) : panelState);
 
         this.animationTimeoutIds.push(window.setTimeout(() => {
-            this.panelState.update((panelState) => {
-                if (!panelState) {
-                    return panelState;
-                }
-                return {
-                    ...panelState,
-                    fighters: panelState.fighters.map((fighter) => ({
-                        ...fighter,
-                        pose: resolvedFightersById.get(fighter.id)?.stance === 'attack' ? PlayerPose.Attack : PlayerPose.Idle,
-                    })) as [CombatPanelFighter, CombatPanelFighter],
-                };
-            });
+            this.panelState.update((panelState) => panelState ? applyResolvedStanceAnimationState(panelState, resolvedRoundLog) : panelState);
         }, DICE_ROLL_DURATION_MS));
 
         this.animationTimeoutIds.push(window.setTimeout(() => {
-            this.panelState.update((panelState) => {
-                if (!panelState) {
-                    return panelState;
-                }
-
-                return {
-                    ...panelState,
-                    fighters: panelState.fighters.map((fighter) => {
-                        const nextHealth = updatedHealthByFighterId.get(fighter.id) ?? fighter.currentHealth;
-                        return {
-                            ...fighter,
-                            currentHealth: nextHealth,
-                            pose: nextHealth <= 0 ? PlayerPose.Dead : PlayerPose.Idle,
-                            isHit: (damageTakenByFighterId.get(fighter.id) ?? 0) > 0,
-                        };
-                    }) as [CombatPanelFighter, CombatPanelFighter],
-                };
-            });
+            this.panelState.update((panelState) =>
+                panelState ? applyResolvedDamageState(panelState, damageTakenByFighterId, updatedHealthByFighterId) : panelState,
+            );
         }, DICE_ROLL_DURATION_MS + ATTACK_POSE_DURATION_MS));
 
         this.animationTimeoutIds.push(window.setTimeout(() => {
@@ -284,24 +201,12 @@ export class CombatStateService {
             this.resetCombatState();
             return;
         }
-
-        const missingOpponent = panelState.fighters.find((fighter) =>
-            fighter.id !== localPlayer.id && !matchPlayers.some((player) => player.id === fighter.id),
-        );
-        if (!missingOpponent) {
+        const notice = createCombatForfeitNotice(localPlayer, matchPlayers, panelState);
+        if (!notice) {
             return;
         }
-
-        const localPlayerName = matchPlayers.find((player) => player.id === localPlayer.id)?.name ?? localPlayer.name;
-        this.lastCombatOutcome.set({
-            id: `${localPlayer.id}:${missingOpponent.id}:${Date.now()}`,
-            attackerId: localPlayer.id,
-            defenderId: missingOpponent.id,
-            attackerMessage: `Victoire contre ${missingOpponent.name} par abandon.`,
-            defenderMessage: `Defaite contre ${localPlayerName} par abandon.`,
-            logMessage: `${missingOpponent.name} abandonne le combat.`,
-        });
-        this.lastCombatUpdate.set(`${missingOpponent.name} abandonne le combat.`);
+        this.lastCombatOutcome.set(notice);
+        this.lastCombatUpdate.set(notice.logMessage);
         this.resetCombatState();
     }
 
@@ -327,19 +232,7 @@ export class CombatStateService {
             this.startCombatEnding(pendingOutcomeNotice);
             return;
         }
-        this.panelState.update((panelState) =>
-            panelState
-                ? {
-                    ...panelState,
-                    round: panelState.round + 1,
-                    fighters: panelState.fighters.map((fighter) => ({
-                        ...fighter,
-                        isHit: false,
-                        pose: fighter.currentHealth <= 0 ? PlayerPose.Dead : PlayerPose.Idle,
-                    })) as [CombatPanelFighter, CombatPanelFighter],
-                }
-                : panelState,
-        );
+        this.panelState.update((panelState) => panelState ? advanceCombatRoundState(panelState) : panelState);
         this.syncPendingRoundLog();
     }
 

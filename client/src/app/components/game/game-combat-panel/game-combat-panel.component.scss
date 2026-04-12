@@ -28,7 +28,6 @@
     color-mix(in srgb, var(--bg-panel) 94%, var(--bg-main));
   box-shadow: 0 24px 56px rgba(0, 0, 0, 0.34);
   backdrop-filter: blur(12px);
-  pointer-events: auto;
   animation: combat-shell-enter 180ms ease-out;
 }
 
@@ -236,6 +235,15 @@
   animation-name: combat-fighter-lunge-left;
 }
 
+.combat-stage__tile--defending .combat-stage__sprite {
+  --combat-retreat-offset: -12px;
+  animation: combat-fighter-retreat 900ms cubic-bezier(0.22, 0.76, 0.34, 1) 2 alternate;
+}
+
+.combat-stage__tile--defending[data-facing='left'] .combat-stage__sprite {
+  --combat-retreat-offset: 12px;
+}
+
 .combat-stage__tile--attacking::after {
   background:
     linear-gradient(180deg, rgba(6, 10, 18, 0.16) 0%, rgba(6, 10, 18, 0.04) 28%, rgba(6, 10, 18, 0.36) 100%),
@@ -243,8 +251,8 @@
 }
 
 .combat-stage__tile--dead .combat-stage__sprite {
-  opacity: 0.68;
-  filter: grayscale(0.4);
+  opacity: 1;
+  filter: none;
 }
 
 .combat-stage__tile--hit::after {
@@ -406,7 +414,7 @@
   transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 
-.combat-shell__button:hover {
+.combat-shell__button:hover:not(:disabled) {
   transform: translateY(-1px);
   background: color-mix(in srgb, var(--accent-primary) 16%, var(--bg-panel));
 }
@@ -414,6 +422,11 @@
 .combat-shell__button--active {
   border-color: color-mix(in srgb, #7bf2c3 68%, var(--accent-primary));
   background: color-mix(in srgb, #7bf2c3 16%, var(--bg-panel));
+}
+
+.combat-shell__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @keyframes combat-shell-enter {
@@ -459,6 +472,16 @@
 
   to {
     transform: translateX(-12px) scale(1.05);
+  }
+}
+
+@keyframes combat-fighter-retreat {
+  from {
+    transform: translateX(0) scale(1);
+  }
+
+  to {
+    transform: translateX(var(--combat-retreat-offset, -12px)) scale(0.98);
   }
 }
 

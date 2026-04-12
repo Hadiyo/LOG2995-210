@@ -289,8 +289,9 @@ export function createCombatPanelFighter(options: CombatPanelFighterOptions): Co
         tileType,
         isDoorOpen,
         facing: index === 0 ? PlayerFacing.Right : PlayerFacing.Left,
-        pose: keepAnimatedPose ? (previousFighter?.pose ?? PlayerPose.Idle) : PlayerPose.Idle,
-        isHit: keepAnimatedPose ? (previousFighter?.isHit ?? false) : false,
+        pose: getRetainedCombatState(keepAnimatedPose, previousFighter?.pose, PlayerPose.Idle),
+        isDefending: getRetainedCombatState(keepAnimatedPose, previousFighter?.isDefending, false),
+        isHit: getRetainedCombatState(keepAnimatedPose, previousFighter?.isHit, false),
         teamId: player.teamId ?? null,
         isLocal: player.id === localPlayerId,
     };
@@ -308,4 +309,12 @@ export function isOpenDoorForCombatPlayer(match: InitializedMatch | null, player
         candidate.position.x === player.position.x && candidate.position.y === player.position.y,
     ) ?? null;
     return !!cell && cell.tileType === TileType.DOOR && cell.isWalkable;
+}
+
+function getRetainedCombatState<T>(keepAnimatedPose: boolean, previousValue: T | null | undefined, fallback: T): T {
+    if (!keepAnimatedPose) {
+        return fallback;
+    }
+
+    return previousValue ?? fallback;
 }
