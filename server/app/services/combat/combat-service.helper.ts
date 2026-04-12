@@ -6,6 +6,7 @@ import { MatchPlayer } from '@common/game/match.interface';
 export const makeCombatSession = (overrides: Partial<CombatSession> = {}): CombatSession => ({
     id: 'id1234',
     gameSessionId: 'game1234',
+    round: 1,
     players: [makeFighter({}, { id: 'player1'}), makeFighter({}, { id: 'player2'})],
     turnState: makeTurnState(),
     transitionTimeoutId: null,

@@ -12,6 +12,7 @@ export interface Fighter {
 export interface CombatSession {
     id: string,
     gameSessionId: string,
+    round: number,
     players: Fighter[],
     winner?: MatchPlayer,
     turnState: MatchTurnState,

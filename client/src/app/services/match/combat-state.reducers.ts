@@ -1,6 +1,7 @@
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { PlayerPose } from '@common/player/player.interface';
+import { CombatWaitingSnapshot } from '@common/combat/combat.interface';
 import {
     CombatOutcomeNotice,
     CombatPanelFighter,
@@ -8,6 +9,7 @@ import {
     CombatRoundFighterLog,
     CombatRoundLog,
     CombatStanceChoice,
+    CombatWaitingState,
 } from './combat-state.models';
 import {
     createCombatPanelFighter,
@@ -204,6 +206,28 @@ export function createCombatForfeitNotice(
         attackerMessage: `Victoire contre ${missingOpponent.name} par abandon.`,
         defenderMessage: `Defaite contre ${localPlayerName} par abandon.`,
         logMessage: `${missingOpponent.name} abandonne le combat.`,
+    };
+}
+
+export function createCombatWaitingState(
+    snapshot: CombatWaitingSnapshot,
+    players: readonly MatchPlayer[],
+): CombatWaitingState {
+    const attacker = players.find((player) => player.id === snapshot.attackerId) ?? null;
+    const defender = players.find((player) => player.id === snapshot.defenderId) ?? null;
+    const activePlayer = players.find((player) => player.id === snapshot.activePlayerId) ?? null;
+    return {
+        combatId: snapshot.combatId,
+        gameSessionId: snapshot.gameSessionId,
+        attackerId: snapshot.attackerId,
+        defenderId: snapshot.defenderId,
+        activePlayerId: snapshot.activePlayerId,
+        attackerName: attacker?.name ?? snapshot.attackerId,
+        defenderName: defender?.name ?? snapshot.defenderId,
+        activePlayerName: activePlayer?.name ?? snapshot.activePlayerId,
+        phase: snapshot.phase,
+        round: snapshot.round,
+        countdownSeconds: snapshot.countdownSeconds,
     };
 }
 

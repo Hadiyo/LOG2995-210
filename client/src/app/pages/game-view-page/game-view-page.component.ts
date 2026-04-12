@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { GameActionBarComponent } from '@app/components/game/game-action-bar/game-action-bar.component';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { GameCombatPanelComponent } from '@app/components/game/game-combat-panel/game-combat-panel.component';
+import { GameCombatWaitingPanelComponent } from '@app/components/game/game-combat-waiting-panel/game-combat-waiting-panel.component';
 import { GameCurrentPlayerPanelComponent } from '@app/components/game/game-current-player-panel/game-current-player-panel.component';
 import { GameMapActionPromptComponent } from '@app/components/game/game-map-action-prompt/game-map-action-prompt.component';
 import { GameMapGridComponent } from '@app/components/game/game-map-grid/game-map-grid.component';
@@ -62,6 +63,7 @@ import {
         CommonModule,
         GameMapGridComponent,
         GameCombatPanelComponent,
+        GameCombatWaitingPanelComponent,
         GameMapActionPromptComponent,
         GamePlayerListComponent,
         GameActionBarComponent,
@@ -225,6 +227,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        this.combat.closeCombat();
         this.localPoseIntervalId = initializeGameViewPage({
             chatService: this.chatService,
             display: this.display,

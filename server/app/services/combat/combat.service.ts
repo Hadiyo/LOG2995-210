@@ -51,6 +51,10 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         return undefined;
     }
 
+    getCombatSession(combatId: string): CombatSession | undefined {
+        return this.combatSessions.get(combatId);
+    }
+
     createCombatSession(attackerId: string, defenderId: string, gameSessionId: string): CombatSession | null {
         const game = this.gameSessionService.getSessionById(gameSessionId);
 
@@ -72,6 +76,7 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         const session: CombatSession = {
             id: newId,
             gameSessionId,
+            round: 1,
             players: [player1, player2],
             turnState,
             transitionTimeoutId: null,
@@ -156,6 +161,7 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
             if(!isStanceSet1 || !isStanceSet2)
                 return false;
 
+            session.round += 1;
             this.switchCombatTurn(session, currentPlayer.stats.id);
             this.emitCombatStatistics(session.id, attacks);
         }

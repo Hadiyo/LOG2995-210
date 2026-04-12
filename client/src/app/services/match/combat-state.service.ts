@@ -1,8 +1,9 @@
 import { computed, effect, Injectable, signal } from '@angular/core';
+import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { CombatPlayerStatistics, StancePayload } from '@common/combat/combat.interface';
+import { CombatPlayerStatistics, CombatWaitingSnapshot, StancePayload } from '@common/combat/combat.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
-import { CombatSocketEvents } from '@common/socket-events';
+import { CombatSocketEvents, SessionSocketEvents } from '@common/socket-events';
 import {
     CombatOutcomeNotice,
     CombatPanelState,
@@ -10,6 +11,7 @@ import {
     CombatRoundLog,
     CombatStanceChoice,
     CombatTiePayload,
+    CombatWaitingState,
 } from './combat-state.models';
 import { MatchStateService } from './match-state.service';
 import {
@@ -19,6 +21,7 @@ import {
     applyResolvedStanceAnimationState,
     buildCombatPanelStateFromTurnSnapshot,
     createCombatForfeitNotice,
+    createCombatWaitingState,
     getCombatFooterMessage,
 } from './combat-state.reducers';
 import {
@@ -42,10 +45,21 @@ export class CombatStateService {
     readonly lastCombatUpdate = signal('');
     readonly lastCombatOutcome = signal<CombatOutcomeNotice | null>(null);
     readonly panelState = signal<CombatPanelState | null>(null);
+    readonly waitingState = signal<CombatWaitingState | null>(null);
     readonly endingNotice = signal<CombatOutcomeNotice | null>(null);
     readonly roundLogs = signal<CombatRoundLog[]>([]);
     readonly localSelectedStance = signal<CombatStanceChoice>(null);
     readonly hasActiveCombat = computed(() => this.panelState() !== null);
+    readonly hasWaitingCombat = computed(() => {
+        const waitingState = this.waitingState();
+        const localPlayerId = this.matchStateService.localPlayer()?.id ?? null;
+        const currentSessionId = this.gameSessionSocket.sessionId();
+        return !!waitingState
+            && waitingState.gameSessionId === currentSessionId
+            && !this.hasActiveCombat()
+            && waitingState.attackerId !== localPlayerId
+            && waitingState.defenderId !== localPlayerId;
+    });
     readonly isResolvingRound = signal(false);
     readonly canSelectStance = computed(() => {
         const turnState = this.combatTurnState();
@@ -55,6 +69,21 @@ export class CombatStateService {
             && !!turnState
             && turnState.phase === 'active'
             && turnState.activePlayerId === localPlayerId;
+    });
+    readonly timerLabel = computed(() => {
+        const turnState = this.combatTurnState();
+        const panelState = this.panelState();
+        if (!turnState || !panelState) {
+            return '';
+        }
+        if (turnState.phase === 'transition') {
+            return 'Resolution du tour';
+        }
+        const activeFighter = panelState.fighters.find((fighter) => fighter.id === turnState.activePlayerId) ?? null;
+        if (activeFighter?.isLocal) {
+            return 'Votre tour';
+        }
+        return 'Tour de l’adversaire';
     });
     readonly footerMessage = computed(() => getCombatFooterMessage({
         canSelectStance: this.canSelectStance(),
@@ -68,6 +97,7 @@ export class CombatStateService {
     private pendingOutcomeNotice: CombatOutcomeNotice | null = null;
     private animationTimeoutIds: number[] = [];
     constructor(
+        private readonly gameSessionSocket: GameSessionSocketService,
         private readonly matchStateService: MatchStateService,
         private readonly socketManager: SocketManagerService,
     ) {
@@ -98,6 +128,9 @@ export class CombatStateService {
         this.socketManager.on<CombatPlayerStatistics[]>(CombatSocketEvents.AttackSnapshot, (statistics) => this.handleAttackSnapshot(statistics));
         this.socketManager.on<CombatResultPayload>(CombatSocketEvents.Victory, (payload) => this.handleVictory(payload));
         this.socketManager.on<CombatTiePayload>(CombatSocketEvents.Tie, (payload) => this.handleTie(payload));
+        this.socketManager.on<CombatWaitingSnapshot>(SessionSocketEvents.CombatWaitingSnapshot, (snapshot) => this.handleWaitingSnapshot(snapshot));
+        this.socketManager.on<CombatResultPayload>(SessionSocketEvents.CombatVictory, () => this.clearWaitingCombat());
+        this.socketManager.on<CombatTiePayload>(SessionSocketEvents.CombatTie, () => this.clearWaitingCombat());
     }
 
     private handleTurnSnapshot(turnState: MatchTurnState): void {
@@ -129,10 +162,22 @@ export class CombatStateService {
         }
 
         this.combatTurnState.set(turnState);
+        this.waitingState.set(null);
         this.panelState.set(nextPanelState);
         if (!this.isResolvingRound()) {
             this.syncPendingRoundLog();
         }
+    }
+
+    private handleWaitingSnapshot(snapshot: CombatWaitingSnapshot): void {
+        if (snapshot.gameSessionId !== this.gameSessionSocket.sessionId()) {
+            return;
+        }
+        const players = this.matchStateService.match()?.players ?? [];
+        if (!players.some((player) => player.id === snapshot.attackerId) || !players.some((player) => player.id === snapshot.defenderId)) {
+            return;
+        }
+        this.waitingState.set(createCombatWaitingState(snapshot, players));
     }
 
     private handleAttackSnapshot(statistics: CombatPlayerStatistics[]): void {
@@ -213,6 +258,7 @@ export class CombatStateService {
     private resetCombatState(): void {
         this.clearAnimationTimers();
         this.pendingOutcomeNotice = null;
+        this.waitingState.set(null);
         this.endingNotice.set(null);
         this.isResolvingRound.set(false);
         this.combatTurnState.set(null);
@@ -274,5 +320,9 @@ export class CombatStateService {
             this.lastCombatUpdate.set(notice.logMessage);
             this.resetCombatState();
         }, COMBAT_END_DEAD_FRAME_MS + COMBAT_END_LINGER_MS));
+    }
+
+    private clearWaitingCombat(): void {
+        this.waitingState.set(null);
     }
 }

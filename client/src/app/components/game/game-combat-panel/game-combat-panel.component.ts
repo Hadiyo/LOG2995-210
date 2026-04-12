@@ -21,6 +21,7 @@ export class GameCombatPanelComponent {
     protected readonly panelState = computed<CombatPanelState | null>(() => this.combat.panelState());
     protected readonly roundLogs = computed<readonly CombatRoundLog[]>(() => this.combat.roundLogs());
     protected readonly isHorizontal = computed(() => this.panelState()?.orientation === 'horizontal');
+    protected readonly timerLabel = computed(() => this.combat.timerLabel());
 
     protected closeCombat(): void {
         this.combat.closeCombat();

@@ -1,4 +1,6 @@
 import { fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { signal } from '@angular/core';
+import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
 import { MapApiService } from '@app/services/map/map-api.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
 import { AvatarId } from '@common/character/character.model';
@@ -8,7 +10,7 @@ import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, MapSize, TileType } from '@common/maps/map.enums';
 import { EditorCell } from '@common/maps/map.interface';
 import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
-import { CombatSocketEvents } from '@common/socket-events';
+import { CombatSocketEvents, SessionSocketEvents } from '@common/socket-events';
 import { CombatStateService } from './combat-state.service';
 import { MatchStateService } from './match-state.service';
 import { TurnStateService } from './turn-state.service';
@@ -76,6 +78,14 @@ const createMatch = (mode: GameMode = GameMode.CLASSIC): InitializedMatch => ({
     players: createPlayers(),
 });
 
+const createSpectatorMatch = (): InitializedMatch => ({
+    ...createMatch(),
+    players: [
+        ...createPlayers(),
+        createPlayer('spectator', 'Spectator', DEFAULT_SPEED, { x: 3, y: 1 }, 2),
+    ],
+});
+
 const createCombatTurnState = (
     activePlayerId: string | null,
     currentTurnIndex: number,
@@ -118,8 +128,17 @@ const createLocalPlayer = (): MatchLobbyPlayer => ({
     controller: 'human',
 });
 
+const createSpectatorLocalPlayer = (): MatchLobbyPlayer => ({
+    ...createLocalPlayer(),
+    id: 'spectator',
+    name: 'Spectator',
+    avatarId: 2,
+    isOrganizer: false,
+});
+
 describe('CombatStateService', () => {
     let service: CombatStateService;
+    let gameSessionSocketService: Pick<GameSessionSocketService, 'sessionId'>;
     let matchStateService: MatchStateService;
     let socketManager: jasmine.SpyObj<SocketManagerService>;
     let listeners: Map<string, (payload: unknown) => void>;
@@ -128,6 +147,9 @@ describe('CombatStateService', () => {
         localStorage.clear();
         listeners = new Map<string, (payload: unknown) => void>();
         socketManager = jasmine.createSpyObj<SocketManagerService>('SocketManagerService', ['on', 'send']);
+        gameSessionSocketService = {
+            sessionId: signal<string | null>('session-1'),
+        };
         socketManager.on.and.callFake(<T>(event: string, handler: (payload: T) => void) => {
             listeners.set(event, handler as (payload: unknown) => void);
         });
@@ -137,6 +159,7 @@ describe('CombatStateService', () => {
                 MatchStateService,
                 TurnStateService,
                 CombatStateService,
+                { provide: GameSessionSocketService, useValue: gameSessionSocketService },
                 { provide: SocketManagerService, useValue: socketManager },
                 { provide: MapApiService, useValue: jasmine.createSpyObj<MapApiService>('MapApiService', ['getMapById']) },
             ],
@@ -241,6 +264,57 @@ describe('CombatStateService', () => {
         expect(service.panelState()).toBeNull();
         expect(service.lastCombatOutcome()?.attackerMessage).toContain('Victoire contre Defender');
     }));
+
+    it('shows a waiting combat panel for non-participants and clears it on combat end', () => {
+        matchStateService.match.set(createSpectatorMatch());
+        matchStateService.localPlayer.set(createSpectatorLocalPlayer());
+
+        emitSocketEvent(SessionSocketEvents.CombatWaitingSnapshot, {
+            combatId: 'combat-1',
+            gameSessionId: 'session-1',
+            attackerId: 'attacker',
+            defenderId: 'defender',
+            activePlayerId: 'attacker',
+            phase: 'active',
+            round: 3,
+            countdownSeconds: 6,
+        });
+
+        expect(service.hasWaitingCombat()).toBeTrue();
+        expect(service.waitingState()).toEqual(jasmine.objectContaining({
+            gameSessionId: 'session-1',
+            attackerName: 'Attacker',
+            defenderName: 'Defender',
+            activePlayerName: 'Attacker',
+            phase: 'active',
+            round: 3,
+            countdownSeconds: 6,
+        }));
+
+        emitSocketEvent(SessionSocketEvents.CombatVictory, { winner: 'attacker', loser: 'defender' });
+
+        expect(service.hasWaitingCombat()).toBeFalse();
+        expect(service.waitingState()).toBeNull();
+    });
+
+    it('ignores waiting combat snapshots from another session', () => {
+        matchStateService.match.set(createSpectatorMatch());
+        matchStateService.localPlayer.set(createSpectatorLocalPlayer());
+
+        emitSocketEvent(SessionSocketEvents.CombatWaitingSnapshot, {
+            combatId: 'combat-1',
+            gameSessionId: 'old-session',
+            attackerId: 'attacker',
+            defenderId: 'defender',
+            activePlayerId: 'attacker',
+            phase: 'active',
+            round: 3,
+            countdownSeconds: 6,
+        });
+
+        expect(service.hasWaitingCombat()).toBeFalse();
+        expect(service.waitingState()).toBeNull();
+    });
 
     it('waits for the lethal round animation before closing the combat panel', fakeAsync(() => {
         matchStateService.match.set(createMatch());

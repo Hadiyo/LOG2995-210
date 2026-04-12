@@ -165,6 +165,7 @@ describe('Combat Life Cycle', () => {
         expect(result).toEqual({
           id: '1111-2222-3333-4444-5555',
           gameSessionId: '1234',
+          round: 1,
           players: [player1, player2],
           turnState,
           transitionTimeoutId: null,

@@ -21,6 +21,20 @@ export interface CombatTiePayload {
     player2: string;
 }
 
+export interface CombatWaitingState {
+    combatId: string;
+    gameSessionId: string;
+    attackerId: string;
+    defenderId: string;
+    activePlayerId: string | null;
+    attackerName: string;
+    defenderName: string;
+    activePlayerName: string | null;
+    phase: 'active' | 'transition';
+    round: number;
+    countdownSeconds: number;
+}
+
 export type CombatStanceChoice = 'attack' | 'defense' | null;
 export type CombatPanelOrientation = 'horizontal' | 'vertical';
 

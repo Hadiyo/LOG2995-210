@@ -1,11 +1,19 @@
 import { CombatService } from '@app/services/combat/combat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
-import { CombatResultSnapshot, CombatSessionSnapshot, CombatTurnSnapshot, StancePayload } from '@common/combat/combat.interface';
-import { CombatSocketEvents, GameSessionErrorPayload, SessionSocketEvents, StartCombatPayload } from '@common/socket-events';
+import {
+  CombatResultSnapshot,
+  CombatSessionSnapshot,
+  CombatTurnSnapshot,
+  CombatWaitingSnapshot,
+  StancePayload,
+} from '@common/combat/combat.interface';
+import { CombatSocketEvents, GameSessionErrorPayload, getGameSessionRoom, SessionSocketEvents, StartCombatPayload } from '@common/socket-events';
 import { OnEvent } from '@nestjs/event-emitter';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+
+const MILLISECONDS_PER_SECOND = 1000;
 
 @WebSocketGateway({ namespace: '/api' })
 export class CombatGateway {
@@ -59,6 +67,9 @@ export class CombatGateway {
   handleTurnSwitch(payload: CombatTurnSnapshot): void {
     if(payload.combatId)
       this.server.to(payload.combatId).emit(CombatSocketEvents.TurnSnapshot, payload.turnState);
+    if(payload.gameSessionId){
+      this.server.to(getGameSessionRoom(payload.gameSessionId)).emit(SessionSocketEvents.CombatWaitingSnapshot, this.createWaitingSnapshot(payload));
+    }
   }
 
   @OnEvent(CombatEvents.Statistics)
@@ -72,7 +83,7 @@ export class CombatGateway {
     if(payload.combatId && payload.gameSessionId){
       const newPayload = { winner: payload.winner, loser: payload.loser };
       this.server.to(payload.combatId).emit(CombatSocketEvents.Victory, newPayload);
-      this.server.to(payload.gameSessionId).emit(SessionSocketEvents.CombatVictory, newPayload);
+      this.server.to(getGameSessionRoom(payload.gameSessionId)).emit(SessionSocketEvents.CombatVictory, newPayload);
     }
   }
 
@@ -81,7 +92,7 @@ export class CombatGateway {
     if(payload.combatId && payload.gameSessionId){
       const newPayload = { player1: payload.winner, player2: payload.loser };
       this.server.to(payload.combatId).emit(CombatSocketEvents.Tie, newPayload);
-      this.server.to(payload.gameSessionId).emit(SessionSocketEvents.CombatTie, newPayload);
+      this.server.to(getGameSessionRoom(payload.gameSessionId)).emit(SessionSocketEvents.CombatTie, newPayload);
     }
   }
 
@@ -114,5 +125,21 @@ export class CombatGateway {
     }
 
     return registry?.sockets ?? new Map<string, Socket>();
+  }
+
+  private createWaitingSnapshot(payload: CombatTurnSnapshot): CombatWaitingSnapshot {
+    const remainingMs = payload.turnState.phase === 'active'
+      ? payload.turnState.activeTurnRemainingMs
+      : payload.turnState.transitionRemainingMs;
+    return {
+      combatId: payload.combatId,
+      gameSessionId: payload.gameSessionId,
+      attackerId: payload.attackerId,
+      defenderId: payload.defenderId,
+      activePlayerId: payload.turnState.activePlayerId,
+      phase: payload.turnState.phase,
+      round: payload.round,
+      countdownSeconds: Math.max(0, Math.ceil(remainingMs / MILLISECONDS_PER_SECOND)),
+    };
   }
 }

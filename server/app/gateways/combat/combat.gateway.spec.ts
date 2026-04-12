@@ -4,7 +4,7 @@ import { CombatService } from '@app/services/combat/combat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
 import { CombatSessionSnapshot, CombatTurnSnapshot, StancePayload } from '@common/combat/combat.interface';
-import { CombatSocketEvents, SessionSocketEvents } from '@common/socket-events';
+import { CombatSocketEvents, getGameSessionRoom, SessionSocketEvents } from '@common/socket-events';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Server } from 'socket.io';
 import { CombatGateway } from './combat.gateway';
@@ -141,14 +141,39 @@ describe('CombatGateway', () => {
   });
 
   it('should send the payload if the combatId is valid - handleTurnSwitch', () => {
-    const payload: CombatTurnSnapshot = { combatId: '6745', turnState: makeTurnState()};
+    const payload: CombatTurnSnapshot = {
+      combatId: '6745',
+      gameSessionId: 'game-1',
+      attackerId: 'player-1',
+      defenderId: 'player-2',
+      round: 3,
+      turnState: makeTurnState(),
+    };
     gateway.handleTurnSwitch(payload);
-    expect(server.to).toHaveBeenCalledWith(payload.combatId);
-    expect(server.emit).toHaveBeenCalledWith(CombatSocketEvents.TurnSnapshot, payload.turnState);
+    expect(server.to).toHaveBeenNthCalledWith(1, payload.combatId);
+    expect(server.emit).toHaveBeenNthCalledWith(1, CombatSocketEvents.TurnSnapshot, payload.turnState);
+    expect(server.to).toHaveBeenNthCalledWith(2, getGameSessionRoom(payload.gameSessionId));
+    expect(server.emit).toHaveBeenNthCalledWith(2, SessionSocketEvents.CombatWaitingSnapshot, {
+      combatId: payload.combatId,
+      gameSessionId: payload.gameSessionId,
+      attackerId: payload.attackerId,
+      defenderId: payload.defenderId,
+      activePlayerId: payload.turnState.activePlayerId,
+      phase: payload.turnState.phase,
+      round: payload.round,
+      countdownSeconds: expect.any(Number),
+    });
   });
 
   it('should not send the payload if the combatId is not valid but send an error message - handleTurnSwitch', () => {
-    const payload: CombatTurnSnapshot = { combatId: undefined, turnState: makeTurnState()};
+    const payload: CombatTurnSnapshot = {
+      combatId: undefined as unknown as string,
+      gameSessionId: undefined as unknown as string,
+      attackerId: 'player-1',
+      defenderId: 'player-2',
+      round: 1,
+      turnState: makeTurnState(),
+    };
     gateway.handleTurnSwitch(payload);
     expect(server.to).not.toHaveBeenCalledWith(undefined);
     expect(server.emit).not.toHaveBeenCalledWith(CombatSocketEvents.TurnSnapshot, payload.turnState);
@@ -177,7 +202,7 @@ describe('CombatGateway', () => {
     const newPayload = { winner: payload.winner, loser: payload.loser };
     gateway.handleVictory(payload);
     expect(server.to).toHaveBeenNthCalledWith(1, payload.combatId);
-    expect(server.to).toHaveBeenNthCalledWith(2, payload.gameSessionId);
+    expect(server.to).toHaveBeenNthCalledWith(2, getGameSessionRoom(payload.gameSessionId));
     expect(server.emit).toHaveBeenNthCalledWith(1, CombatSocketEvents.Victory, newPayload);
     expect(server.emit).toHaveBeenNthCalledWith(2, SessionSocketEvents.CombatVictory, newPayload);
   });
@@ -197,7 +222,7 @@ describe('CombatGateway', () => {
     const newPayload = { player1: payload.winner, player2: payload.loser };
     gateway.handleTie(payload);
     expect(server.to).toHaveBeenNthCalledWith(1, payload.combatId);
-    expect(server.to).toHaveBeenNthCalledWith(2, payload.gameSessionId);
+    expect(server.to).toHaveBeenNthCalledWith(2, getGameSessionRoom(payload.gameSessionId));
     expect(server.emit).toHaveBeenNthCalledWith(1, CombatSocketEvents.Tie, newPayload);
     expect(server.emit).toHaveBeenNthCalledWith(2, SessionSocketEvents.CombatTie, newPayload);
   });
