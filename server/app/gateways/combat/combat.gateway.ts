@@ -1,5 +1,6 @@
 import { CombatService } from '@app/services/combat/combat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
+import { MILLISECONDS_PER_SECOND } from '@app/utilities/combat/combat.constants';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import {
   CombatResultSnapshot,
@@ -12,8 +13,6 @@ import { CombatSocketEvents, GameSessionErrorPayload, getGameSessionRoom, Sessio
 import { OnEvent } from '@nestjs/event-emitter';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-
-const MILLISECONDS_PER_SECOND = 1000;
 
 @WebSocketGateway({ namespace: '/api' })
 export class CombatGateway {

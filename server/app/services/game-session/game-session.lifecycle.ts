@@ -162,30 +162,6 @@ export class GameSessionLifecycle {
         return { session, player };
     }
 
-    getCombatContext(
-        sessionId: string,
-        attackerId: string,
-        defenderId: string,
-    ): { session: GameSessionRuntime; attacker: MatchPlayer; defender: MatchPlayer } | null {
-        const session = this.sessions.get(sessionId);
-        if (!session ||
-            session.turnState.phase !== 'active' ||
-            session.turnState.activePlayerId !== attackerId ||
-            session.turnState.actionTaken ||
-            session.match.pendingSanctuaryChoice ||
-            session.match.endState) {
-            return null;
-        }
-
-        const attacker = session.match.players.find((player) => player.id === attackerId);
-        const defender = session.match.players.find((player) => player.id === defenderId);
-        if (!attacker || !defender || !this.canStartCombat(session.match, attacker, defender)) {
-            return null;
-        }
-
-        return { session, attacker, defender };
-    }
-
     isCurrentTurnPlayer(playerId: string, turnState: MatchTurnState): boolean {
         return turnState.activePlayerId === playerId || turnState.transitionTargetPlayerId === playerId;
     }
@@ -357,17 +333,6 @@ export class GameSessionLifecycle {
 
     private activateTurn(session: GameSessionRuntime): void {
         activateTurn(session, this.getActivePlayer, this.activateTurnConfig);
-    }
-
-    private canStartCombat(match: InitializedMatch, attacker: MatchPlayer, defender: MatchPlayer): boolean {
-        if (Math.abs(attacker.position.x - defender.position.x) + Math.abs(attacker.position.y - defender.position.y) !== 1) {
-            return false;
-        }
-
-        return match.mode !== GameMode.CTF ||
-            attacker.teamId === null ||
-            attacker.teamId === undefined ||
-            attacker.teamId !== defender.teamId;
     }
 
     private getMissingCtfTeamId(mode: GameMode, players: MatchPlayer[]): MatchTeamId | null {

@@ -9,7 +9,6 @@ import {
     MoveGamePlayerPayload,
     ResolveSanctuaryChoicePayload,
     SessionSocketEvents,
-    StartCombatPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
     ToggleDoorPayload,
@@ -143,7 +142,6 @@ describe('GameSessionGateway', () => {
             forceEndDebugTurn: gateway.forceEndDebugTurn.bind(gateway),
             movePlayer: gateway.movePlayer.bind(gateway),
             resolveSanctuaryChoice: gateway.resolveSanctuaryChoice.bind(gateway),
-            startCombat: gateway.startCombat.bind(gateway),
             toggleDebugMode: gateway.toggleDebugMode.bind(gateway),
             toggleDoor: gateway.toggleDoor.bind(gateway),
             useSanctuary: gateway.useSanctuary.bind(gateway),
@@ -178,12 +176,6 @@ describe('GameSessionGateway', () => {
                 serviceMethod: 'endTurn',
                 payload: { sessionId: 'session-1', playerId: 'player-1' } satisfies EndGameTurnPayload,
                 error: 'Fin de tour refusee.',
-            },
-            {
-                action: actions.startCombat,
-                serviceMethod: 'startCombat',
-                payload: { sessionId: 'session-1', playerId: 'player-1', defenderId: 'player-2' } satisfies StartCombatPayload,
-                error: 'Combat refuse.',
             },
             {
                 action: actions.useSanctuary,

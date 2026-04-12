@@ -112,10 +112,19 @@ export function clearTimers<T extends Timers>(session: T): void {
 
 export function pauseTimer<TSession extends TurnCapableSession>(session: TSession): void {
     clearTimers(session);
+
+    if (session.turnState.phase === 'active' && session.turnState.activeTurnEndsAt) {
+        session.turnState.activeTurnRemainingMs =
+            Math.max(0, session.turnState.activeTurnEndsAt - Date.now());
+    }
+
+    if (session.turnState.phase === 'transition' && session.turnState.transitionEndsAt) {
+        session.turnState.transitionRemainingMs =
+            Math.max(0, session.turnState.transitionEndsAt - Date.now());
+    }
+
     session.turnState = {
         ...session.turnState,
-        activePlayerId: null,
-        transitionTargetPlayerId: null,
         playerStates: session.turnState.playerStates.map(player => ({
             ...player,
             state: 'waiting',
@@ -127,25 +136,23 @@ export function resumeTimers<TSession extends TurnCapableSession>(
     session: TSession,
     config: TimerConfig<TSession>,
 ): void {
-    let remainingTime = 0;
     clearTimers(session);
 
-    if (session.turnState.phase === 'active') {
-        remainingTime = Math.max(0, session.turnState.activeTurnEndsAt - Date.now());
-        session.turnState.activeTurnEndsAt = remainingTime;
-    }
+    const remainingTime = session.turnState.activeTurnRemainingMs;
 
-    if (session.turnState.phase === 'transition') {
-        remainingTime = Math.max(0, session.turnState.transitionEndsAt - Date.now());
-        session.turnState.transitionEndsAt = remainingTime;
-    }
-
-    if (remainingTime <= 0) {
+    if (!remainingTime || remainingTime <= 0) {
         config.onTransitionEnd(session);
         return;
     }
+
     config.emitSnapshot(session);
-    session.timerIntervalId = setInterval(() => tickTimers(session, (candidate) => config.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
-    session.activeTurnTimeoutId = setTimeout(() => config.onTransitionEnd(session), remainingTime);
+
+    session.timerIntervalId = setInterval(() => {
+        tickTimers(session, config.emitSnapshot);
+    }, SNAPSHOT_TICK_MS);
+
+    session.activeTurnTimeoutId = setTimeout(() => {
+        config.onTransitionEnd(session);
+    }, remainingTime);
 }
 

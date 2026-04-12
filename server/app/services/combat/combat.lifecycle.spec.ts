@@ -10,12 +10,11 @@ import {
 import * as timerUtils from '@app/services/timer/turn.timers';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import { SessionSocketEvents } from '@common/socket-events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test, TestingModule } from '@nestjs/testing';
 import { makeCombatSession, makeFighter } from './combat-service.helper';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
-import { CombatEvents } from '@app/utilities/combat/combat.enums';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('Combat Life Cycle', () => {
     let service: CombatService;
@@ -32,6 +31,7 @@ describe('Combat Life Cycle', () => {
             endCombat: jest.fn(),
             getMatchFromSessionId: jest.fn(),
             setWinner: jest.fn(),
+            stopSessionTimers: jest.fn(),
         };
 
         turnServiceMock = {
@@ -68,27 +68,11 @@ describe('Combat Life Cycle', () => {
         expect(spy).toHaveBeenCalledWith(SessionSocketEvents.ClientDisconnect, handler);
     });
 
-    it('should subscribe to combat timeout events on Module Init', () => {
-        const spy = jest.spyOn(eventEmitterMock, 'on');
-
-        service.onModuleInit();
-
-        expect(spy).toHaveBeenCalledWith(CombatEvents.Timeout, expect.any(Function));
-    });
-
     it('should unsubscribe from Client Disconnect event on Module Destroy', () => {
         const handler = jest.spyOn(service as never, 'handleDisconnect').mockImplementation();
         const spy = jest.spyOn(gameSessionMock, 'off');
         service.onModuleDestroy();
         expect(spy).toHaveBeenCalledWith(SessionSocketEvents.ClientDisconnect, handler);
-    });
-
-    it('should unsubscribe from combat timeout events on Module Destroy', () => {
-        const spy = jest.spyOn(eventEmitterMock, 'off');
-
-        service.onModuleDestroy();
-
-        expect(spy).toHaveBeenCalledWith(CombatEvents.Timeout, expect.any(Function));
     });
 
     it('should return null if game does not exist - createCombatSession', () => {

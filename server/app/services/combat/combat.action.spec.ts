@@ -1,13 +1,13 @@
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { makeMatch } from '@app/services/game-session/game-session.service.spec-helpers';
+import { BONUS, MIN_DIE_VALUE } from '@app/utilities/combat/combat.constants';
+import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import { DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test, TestingModule } from '@nestjs/testing';
 import { makeCombatPlayerStatistics, makeCombatSession, makeFighter, makeFighterPayload } from './combat-service.helper';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
-import { CombatEvents } from '@app/utilities/combat/combat.enums';
-import { BONUS, MIN_DIE_VALUE } from '@app/utilities/combat/combat.constants';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('CombatService', () => {
   let service: CombatService;
@@ -25,6 +25,7 @@ describe('CombatService', () => {
       endCombat: jest.fn(),
       getMatchFromSessionId: jest.fn(),
       setWinner: jest.fn(),
+      stopSessionTimers: jest.fn(),
     };
 
     turnServiceMock = {
