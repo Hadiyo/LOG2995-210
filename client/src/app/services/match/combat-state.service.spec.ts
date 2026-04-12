@@ -217,7 +217,7 @@ describe('CombatStateService', () => {
         emitSocketEvent(CombatSocketEvents.AttackSnapshot, createAttackStatistics());
 
         const resolvedRound = service.roundLogs()[0];
-        expect(resolvedRound.status).toBe('resolved');
+        expect(resolvedRound.status).toBe('revealing');
         expect(resolvedRound.fighters[0].stance).toBe('attack');
         expect(resolvedRound.fighters[0].attack.postureBonus).toBe(2);
         expect(resolvedRound.fighters[1].stance).toBe('defense');
@@ -239,6 +239,7 @@ describe('CombatStateService', () => {
         tick(HIT_REACTION_DURATION_MS);
 
         const panelState = service.panelState();
+        expect(service.roundLogs()[0].status).toBe('resolved');
         expect(panelState?.fighters[0].currentHealth).toBe(5);
         expect(panelState?.fighters[1].currentHealth).toBe(3);
         expect(panelState?.round).toBe(2);

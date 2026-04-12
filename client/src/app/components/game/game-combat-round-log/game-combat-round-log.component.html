@@ -9,14 +9,18 @@
 
   <div #viewport class="combat-round-log__viewport" (scroll)="onScroll()">
     @if (!logs.length) {
-      <div class="combat-round-log__empty">Aucun detail de round pour le moment.</div>
+      <div class="combat-round-log__empty">Aucun detail de tour pour le moment.</div>
     } @else {
       @for (round of logs; track trackRound($index, round)) {
         <article class="combat-round-log__round">
           <header class="combat-round-log__round-header">
             <span class="combat-round-log__round-chip">Round {{ round.round }}</span>
-            <span class="combat-round-log__round-state" [class.combat-round-log__round-state--pending]="round.status === 'pending'">
-              {{ round.status === 'pending' ? 'En attente' : 'Resolue' }}
+            <span
+              class="combat-round-log__round-state"
+              [class.combat-round-log__round-state--pending]="round.status === 'pending'"
+              [class.combat-round-log__round-state--revealing]="round.status === 'revealing'"
+            >
+              {{ round.status === 'pending' ? 'En attente' : round.status === 'revealing' ? 'Resolution' : 'Resolue' }}
             </span>
           </header>
 

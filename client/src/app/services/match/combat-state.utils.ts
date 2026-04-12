@@ -54,9 +54,17 @@ export function createResolvedRoundLog(
     return {
         id: `${panelState.id}-round-${panelState.round}`,
         round: panelState.round,
-        status: 'resolved',
+        status: 'revealing',
         fighters: roundFighterLogs as [CombatRoundFighterLog, CombatRoundFighterLog],
     };
+}
+
+export function revealRoundLog(roundLogs: CombatRoundLog[], round: number): CombatRoundLog[] {
+    return roundLogs.map((roundLog) =>
+        roundLog.round === round && roundLog.status === 'revealing'
+            ? { ...roundLog, status: 'resolved' }
+            : roundLog,
+    );
 }
 
 export function createVictoryNotice(
@@ -145,7 +153,7 @@ export function upsertRoundLog(roundLogs: CombatRoundLog[], nextRoundLog: Combat
         return nextLogs;
     }
 
-    if (nextLogs[roundIndex].status === 'pending' || nextRoundLog.status === 'resolved') {
+    if (nextLogs[roundIndex].status === 'pending' || nextRoundLog.status !== 'pending') {
         nextLogs[roundIndex] = nextRoundLog;
     }
 

@@ -31,6 +31,7 @@ import {
     createVictoryNotice,
     getDamageTakenByFighterId,
     getUpdatedHealthByFighterId,
+    revealRoundLog,
     upsertRoundLog,
 } from './combat-state.utils';
 const DICE_ROLL_DURATION_MS = 1000;
@@ -226,7 +227,8 @@ export class CombatStateService {
 
     private syncPendingRoundLog(): void {
         const panelState = this.panelState();
-        if (!panelState || this.isResolvingRound()) {
+        const hasExistingLogs = this.roundLogs().length > 0;
+        if (!panelState || this.isResolvingRound() || (hasExistingLogs && this.localSelectedStance() === null)) {
             return;
         }
 
@@ -273,6 +275,10 @@ export class CombatStateService {
         const pendingOutcomeNotice = this.pendingOutcomeNotice;
         this.pendingOutcomeNotice = null;
         this.isResolvingRound.set(false);
+        const currentRound = this.panelState()?.round ?? null;
+        if (currentRound !== null) {
+            this.roundLogs.update((roundLogs) => revealRoundLog(roundLogs, currentRound));
+        }
 
         if (pendingOutcomeNotice) {
             this.startCombatEnding(pendingOutcomeNotice);

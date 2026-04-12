@@ -69,10 +69,12 @@
 }
 
 .combat-dice__die-label {
+  --combat-die-label-offset-y: 0px;
   position: relative;
   z-index: 1;
   font-size: 1.26rem;
   line-height: 1;
+  transform: translateY(var(--combat-die-label-offset-y));
 }
 
 .combat-dice__die--d6 {
@@ -100,7 +102,7 @@
 }
 
 .combat-dice__die--d4 .combat-dice__die-label {
-  transform: translateY(6px);
+  --combat-die-label-offset-y: 6px;
 }
 
 .combat-dice__die--green {
@@ -169,16 +171,16 @@
 @keyframes combat-die-value-flicker {
   0% {
     opacity: 0.45;
-    transform: translateY(-1px);
+    transform: translateY(calc(var(--combat-die-label-offset-y) - 1px));
   }
 
   50% {
     opacity: 1;
-    transform: translateY(1px);
+    transform: translateY(calc(var(--combat-die-label-offset-y) + 1px));
   }
 
   100% {
     opacity: 0.45;
-    transform: translateY(-1px);
+    transform: translateY(calc(var(--combat-die-label-offset-y) - 1px));
   }
 }

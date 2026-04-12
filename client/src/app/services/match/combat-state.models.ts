@@ -94,6 +94,6 @@ export interface CombatRoundFighterLog {
 export interface CombatRoundLog {
     id: string;
     round: number;
-    status: 'pending' | 'resolved';
+    status: 'pending' | 'revealing' | 'resolved';
     fighters: [CombatRoundFighterLog, CombatRoundFighterLog];
 }

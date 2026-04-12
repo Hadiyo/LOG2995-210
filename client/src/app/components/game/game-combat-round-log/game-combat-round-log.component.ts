@@ -54,6 +54,9 @@ export class GameCombatRoundLogComponent implements AfterViewInit, OnChanges {
     }
 
     protected fighterOutcome(round: CombatRoundLog, fighterIndex: 0 | 1): 'pending' | 'win' | 'lose' | 'draw' {
+        if (!this.isResolved(round)) {
+            return 'pending';
+        }
         const fighter = round.fighters[fighterIndex];
         const opponent = round.fighters[fighterIndex === 0 ? 1 : 0];
         if (fighter.damage === null || opponent.damage === null) {
@@ -72,11 +75,17 @@ export class GameCombatRoundLogComponent implements AfterViewInit, OnChanges {
     }
 
     protected attackSucceeded(round: CombatRoundLog, fighterIndex: 0 | 1): boolean | null {
+        if (!this.isResolved(round)) {
+            return null;
+        }
         const delta = round.fighters[fighterIndex].attackDelta;
         return delta === null ? null : delta > 0;
     }
 
     protected defenseSucceeded(round: CombatRoundLog, fighterIndex: 0 | 1): boolean | null {
+        if (!this.isResolved(round)) {
+            return null;
+        }
         const opponentDelta = round.fighters[fighterIndex === 0 ? 1 : 0].attackDelta;
         return opponentDelta === null ? null : opponentDelta <= 0;
     }
@@ -121,6 +130,10 @@ export class GameCombatRoundLogComponent implements AfterViewInit, OnChanges {
         }
 
         return fighter.damage > 0 ? `Degats ${fighter.damage}` : 'Aucun degat';
+    }
+
+    protected isResolved(round: CombatRoundLog): boolean {
+        return round.status === 'resolved';
     }
 
     private queueAutoscroll(): void {

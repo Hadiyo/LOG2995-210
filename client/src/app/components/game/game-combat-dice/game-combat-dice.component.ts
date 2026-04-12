@@ -70,8 +70,8 @@ export class GameCombatDiceComponent implements OnChanges, OnDestroy {
     }
 
     private syncDisplayedValues(): void {
-        this.attackDisplay = this.attackValue === null ? '--' : `${this.attackValue}`;
-        this.defenseDisplay = this.defenseValue === null ? '--' : `${this.defenseValue}`;
+        this.attackDisplay = this.attackValue === null ? this.attackDie : `${this.attackValue}`;
+        this.defenseDisplay = this.defenseValue === null ? this.defenseDie : `${this.defenseValue}`;
     }
 
     private clearAnimationTimers(): void {

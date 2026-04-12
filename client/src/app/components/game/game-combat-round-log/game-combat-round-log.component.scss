@@ -103,6 +103,10 @@
   color: color-mix(in srgb, var(--accent-primary) 76%, var(--text-main));
 }
 
+.combat-round-log__round-state--revealing {
+  color: color-mix(in srgb, #ffcf85 82%, var(--text-main));
+}
+
 .combat-round-log__fighters {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -129,7 +133,8 @@
 }
 
 .combat-round-log__fighter--draw {
-  border-color: color-mix(in srgb, var(--accent-primary) 30%, var(--border-soft));
+  border-color: color-mix(in srgb, var(--accent-secondary) 56%, var(--border-soft));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-secondary) 24%, transparent);
 }
 
 .combat-round-log__fighter-header {
