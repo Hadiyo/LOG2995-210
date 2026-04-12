@@ -126,7 +126,7 @@ export class GameSessionSocketService {
         }
 
         this.errorMessage.set('');
-        this.socketManager.send(CombatSocketEvents.StartTempCombat, {
+        this.socketManager.send(CombatSocketEvents.StartCombat, {
             sessionId,
             playerId,
             defenderId,

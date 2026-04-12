@@ -30,7 +30,7 @@ export class CombatGateway {
       client.leave(combatId);
   }
 
-  @SubscribeMessage(CombatSocketEvents.StartTempCombat)
+  @SubscribeMessage(CombatSocketEvents.StartCombat)
   async startCombat(@ConnectedSocket() client: Socket, @MessageBody() payload: StartCombatPayload): Promise<void> {
     if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
         client.emit(CombatSocketEvents.CombatSessionError, { message: 'Combat refusé.' } satisfies GameSessionErrorPayload);

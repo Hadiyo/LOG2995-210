@@ -64,6 +64,7 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         if (!game || game.turnState.phase !== 'active' || game.turnState.activePlayerId !== attackerId || game.match.endState) {
             return null;
         }
+        this.gameSessionService.stopSessionTimers(game, attackerId);
 
         const player1 = this.createFighter(game.match.players, attackerId);
         const player2 = this.createFighter(game.match.players, defenderId);

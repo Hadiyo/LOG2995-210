@@ -1,13 +1,11 @@
-import { ATTACK_POSE_DURATION_MS, CLASSIC_WIN_THRESHOLD, WALK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
+import { ATTACK_POSE_DURATION_MS, WALK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { MatchSanctuaryChoice } from '@common/game/match.interface';
 import { buildVisibleObjects, resolveFlagCarrier } from '@common/game/match.utils';
-import { ObjectType } from '@common/maps/map.enums';
 import { PlayerPose } from '@common/player/player.interface';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { getGameSessionDestination, getGameSessionMovementCost } from './game-session.match';
 import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
-import { resolveRespawnPosition } from './game-session.runtime';
 import { beginGameSessionSanctuaryChoice, resolveGameSessionSanctuaryChoice } from './game-session.sanctuary';
 
 export class GameSessionActions {
@@ -167,89 +165,6 @@ export class GameSessionActions {
             map: nextMap,
         };
         session.turnState = { ...session.turnState, actionTaken: true };
-        this.lifecycle.emitSnapshot(session);
-        return true;
-    }
-
-    startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
-        // const session = this.sessions.get(sessionId);
-        // if (!session ||
-        //     session.turnState.phase !== 'active' ||
-        //     session.turnState.activePlayerId !== attackerId ||
-        //     session.turnState.actionTaken ||
-        //     session.match.pendingSanctuaryChoice ||
-        //     session.match.endState) {
-        //     return null;
-        // }
-        // pauseTimer(session);
-        // should return the sessionId to notify other players that a combat has started between two players
-        const combatContext = this.lifecycle.getCombatContext(sessionId, attackerId, defenderId);
-        if (!combatContext) {
-            return false;
-        }
-
-        const { session, attacker, defender } = combatContext;
-        const respawnPosition = resolveRespawnPosition(session.match, defenderId);
-        let nextFlagCarrierId = session.match.flagCarrierId ?? null;
-        let nextAllObjects = session.match.allObjects.map((object) => ({
-            ...object,
-            position: { ...object.position },
-        }));
-        const nextPlayers = session.match.players.map((player) => {
-            if (player.id === attackerId) {
-                return {
-                    ...player,
-                    combatWins: player.combatWins + 1,
-                    render: setTransientPose(
-                        applyFacingTowardPosition(player, defender.position),
-                        PlayerPose.Attack,
-                        ATTACK_POSE_DURATION_MS,
-                    ).render,
-                };
-            }
-
-            if (player.id === defenderId) {
-                return { ...player, position: { ...respawnPosition } };
-            }
-
-            return player;
-        });
-        const winner = nextPlayers.find((player) => player.id === attackerId) ?? attacker;
-
-        if (session.match.flagCarrierId === defenderId) {
-            nextFlagCarrierId = null;
-            nextAllObjects = nextAllObjects.map((object) =>
-                object.type === ObjectType.FLAG
-                    ? { ...object, position: { ...defender.position } }
-                    : object,
-            );
-        }
-
-        session.match = {
-            ...session.match,
-            players: nextPlayers,
-            allObjects: nextAllObjects,
-            flagCarrierId: nextFlagCarrierId,
-            objects: buildVisibleObjects(nextAllObjects, nextPlayers, nextFlagCarrierId),
-            endState: winner.combatWins >= CLASSIC_WIN_THRESHOLD ? {
-                id: crypto.randomUUID(),
-                winnerKind: 'player',
-                winnerPlayerId: winner.id,
-                winnerTeamId: null,
-                message: `${winner.name} remporte la partie avec ${winner.combatWins} victoires de combat.`,
-                resolvedAt: Date.now(),
-            } : session.match.endState ?? null,
-        };
-        session.turnState = {
-            ...session.turnState,
-            actionTaken: true,
-        };
-
-        if (session.match.endState) {
-            this.lifecycle.finishMatch(session);
-            return true;
-        }
-
         this.lifecycle.emitSnapshot(session);
         return true;
     }

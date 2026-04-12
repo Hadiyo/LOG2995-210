@@ -13,7 +13,6 @@ import {
     ResolveFlagTransferPayload,
     ResolveSanctuaryChoicePayload,
     SessionSocketEvents,
-    StartCombatPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
     ToggleDoorPayload,
@@ -154,21 +153,6 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
 
         if (!this.gameSessionService.endTurn(payload.sessionId, payload.playerId)) {
             client.emit(SessionSocketEvents.GameSessionError, { message: 'Fin de tour refusee.' } satisfies GameSessionErrorPayload);
-        }
-    }
-
-    @SubscribeMessage(CombatSocketEvents.StartCombat)
-    startCombat(
-        @ConnectedSocket() client: Socket,
-        @MessageBody() payload: StartCombatPayload,
-    ): void {
-        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
-            client.emit(SessionSocketEvents.GameSessionError, { message: 'Combat refuse.' } satisfies GameSessionErrorPayload);
-            return;
-        }
-
-        if (!this.gameSessionService.startCombat(payload.sessionId, payload.playerId, payload.defenderId)) {
-            client.emit(SessionSocketEvents.GameSessionError, { message: 'Combat refuse.' } satisfies GameSessionErrorPayload);
         }
     }
 

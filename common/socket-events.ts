@@ -64,7 +64,6 @@ export enum CombatSocketEvents {
     TurnSnapshot = 'TurnSnapshot', 
     AttackSnapshot = 'AttackSnapshot', 
     Disconnect = 'disconnect',
-    StartTempCombat = 'startTemptCombat',
     CombatSessionError = 'combatSessionError',
 }
 

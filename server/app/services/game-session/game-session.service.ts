@@ -194,8 +194,8 @@ export class GameSessionService {
         return this.actions.toggleDoor(sessionId, playerId, position);
     }
 
-    startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
-        return this.actions.startCombat(sessionId, attackerId, defenderId);
+    stopSessionTimers(session: GameSessionRuntime, attackerId: string): boolean {
+        return this.lifecycle.stopSessionTimers(session, attackerId);
     }
 
     endCombat(sessionId: string, winnerId: string, loserId: string): void {
