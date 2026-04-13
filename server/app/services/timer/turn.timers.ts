@@ -138,21 +138,25 @@ export function resumeTimers<TSession extends TurnCapableSession>(
 ): void {
     clearTimers(session);
 
-    const remainingTime = session.turnState.activeTurnRemainingMs;
-
-    if (!remainingTime || remainingTime <= 0) {
-        config.onTransitionEnd(session);
-        return;
+    if (session.turnState.phase === 'active' && session.turnState.activeTurnEndsAt) {
+        session.turnState.activeTurnEndsAt = Math.max(0, session.turnState.activeTurnRemainingMs + Date.now());
     }
 
+    if (session.turnState.phase === 'transition' && session.turnState.transitionEndsAt) {
+        session.turnState.transitionEndsAt = Math.max(0, session.turnState.transitionRemainingMs + Date.now());
+    }
+
+    session.turnState.playerStates = session.turnState.order.map((entry) => ({
+            playerId: entry.playerId,
+            state: entry.playerId === session.turnState.activePlayerId ? 'active' : 'waiting',
+    }));
+
     config.emitSnapshot(session);
+    session.timerIntervalId = setInterval(() => tickTimers(session, config.emitSnapshot), SNAPSHOT_TICK_MS);
 
-    session.timerIntervalId = setInterval(() => {
-        tickTimers(session, config.emitSnapshot);
-    }, SNAPSHOT_TICK_MS);
-
-    session.activeTurnTimeoutId = setTimeout(() => {
-        config.onTransitionEnd(session);
-    }, remainingTime);
+    if(session.turnState.phase === 'active')
+        session.activeTurnTimeoutId = setTimeout(() => config.onTransitionEnd(session), session.turnState.activeTurnRemainingMs);
+    else if (session.turnState.phase === 'transition')
+        session.transitionTimeoutId = setTimeout(() => config.onTransitionEnd(session), session.turnState.transitionRemainingMs);
 }
 
