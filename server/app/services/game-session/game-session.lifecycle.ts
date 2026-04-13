@@ -41,6 +41,7 @@ export class GameSessionLifecycle {
         private readonly events: EventEmitter,
     ) {
         this.emitSnapshot = this.emitSnapshot.bind(this);
+        this.setNextMatch = this.setNextMatch.bind(this);
     }
 
     setNextMatch(session: GameSessionRuntime): void {
@@ -309,12 +310,17 @@ export class GameSessionLifecycle {
     }
 
     advanceToNextTurn(session: GameSessionRuntime): void {
-        advanceToNextTurn(session, this.setNextMatch);
+        advanceToNextTurn(session, (candidate) => this.setNextMatch(candidate));
         startTimerTransition(session, this.startTimerConfig);
     }
 
-    resumeGameSessionTurn(session: GameSessionRuntime): void {
-        resumeTimers(session, this.activateTurnConfig);
+    resumeGameSessionTurn(session) {
+        resumeTimers(
+            session,
+            this.emitSnapshot.bind(this),
+            (s) => this.activateTurn(s),
+            (s) => this.advanceToNextTurn(s),
+        );
     }
 
     stopSessionTimers(session: GameSessionRuntime, attackerId: string): boolean {

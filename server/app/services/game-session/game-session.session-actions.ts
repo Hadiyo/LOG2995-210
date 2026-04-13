@@ -196,6 +196,7 @@ export class GameSessionSessionActions {
 
     resolveCombatEnd(sessionId: string, winnerId: string, loserId: string): boolean {
         const session = this.sessions.get(sessionId);
+        const currentPlayer = this.lifecycle.getActivePlayer(session);
         if(!session)
             return false;
 
@@ -209,7 +210,7 @@ export class GameSessionSessionActions {
         loser.health = loser.maxHealth;
         loser.position = resolveRespawnPosition(session.match, loser.id);
         
-        if(session.turnState.activePlayerId === winnerId)
+        if(currentPlayer.id === winnerId && session.turnState.movementPointsRemaining > 0)
             this.lifecycle.resumeGameSessionTurn(session);
         else
             this.lifecycle.advanceToNextTurn(session);

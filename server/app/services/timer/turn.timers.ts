@@ -134,7 +134,9 @@ export function pauseTimer<TSession extends TurnCapableSession>(session: TSessio
 
 export function resumeTimers<TSession extends TurnCapableSession>(
     session: TSession,
-    config: TimerConfig<TSession>,
+    emitSnapshot: (session: TSession) => void,
+    onTransitionEnd: (session: TSession) => void,
+    onActiveTurnEnd: (session: TSession) => void,
 ): void {
     clearTimers(session);
 
@@ -151,12 +153,12 @@ export function resumeTimers<TSession extends TurnCapableSession>(
             state: entry.playerId === session.turnState.activePlayerId ? 'active' : 'waiting',
     }));
 
-    config.emitSnapshot(session);
-    session.timerIntervalId = setInterval(() => tickTimers(session, config.emitSnapshot), SNAPSHOT_TICK_MS);
+    emitSnapshot(session);
+    session.timerIntervalId = setInterval(() => tickTimers(session, emitSnapshot), SNAPSHOT_TICK_MS);
 
     if(session.turnState.phase === 'active')
-        session.activeTurnTimeoutId = setTimeout(() => config.onTransitionEnd(session), session.turnState.activeTurnRemainingMs);
+        session.activeTurnTimeoutId = setTimeout(() => onActiveTurnEnd(session), session.turnState.activeTurnRemainingMs);
     else if (session.turnState.phase === 'transition')
-        session.transitionTimeoutId = setTimeout(() => config.onTransitionEnd(session), session.turnState.transitionRemainingMs);
+        session.transitionTimeoutId = setTimeout(() => onTransitionEnd(session), session.turnState.transitionRemainingMs);
 }
 
