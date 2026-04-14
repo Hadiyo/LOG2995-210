@@ -1,6 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
-import { CombatRoundBreakdown, CombatRoundLog, CombatStanceChoice } from '@app/services/match/combat-state.models';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import {
+    COMBAT_FIGHTER_INDEXES,
+    CombatFighterIndex,
+    CombatRoundBreakdown,
+    CombatRoundLog,
+    CombatStanceChoice,
+} from '@app/services/match/combat-state.models';
+import { CombatRoundOutcome } from '@common/combat/combat.interface';
 
 @Component({
     selector: 'app-game-combat-round-log',
@@ -9,36 +16,15 @@ import { CombatRoundBreakdown, CombatRoundLog, CombatStanceChoice } from '@app/s
     templateUrl: './game-combat-round-log.component.html',
     styleUrl: './game-combat-round-log.component.scss',
 })
-export class GameCombatRoundLogComponent implements AfterViewInit, OnChanges {
+export class GameCombatRoundLogComponent implements OnChanges {
     @Input({ required: true }) logs: readonly CombatRoundLog[] = [];
 
-    @ViewChild('viewport') private viewportRef?: ElementRef<HTMLDivElement>;
-
-    private shouldStickToBottom = true;
-
-    ngAfterViewInit(): void {
-        this.scrollToBottom();
-    }
+    protected displayedLogs: readonly CombatRoundLog[] = [];
 
     ngOnChanges(changes: SimpleChanges): void {
         if (changes.logs) {
-            this.queueAutoscroll();
+            this.displayedLogs = [...this.logs].reverse();
         }
-    }
-
-    protected trackRound(index: number, round: CombatRoundLog): string {
-        void index;
-        return round.id;
-    }
-
-    protected onScroll(): void {
-        const viewport = this.viewportRef?.nativeElement;
-        if (!viewport) {
-            return;
-        }
-
-        const threshold = 20;
-        this.shouldStickToBottom = viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - threshold;
     }
 
     protected stanceLabel(stance: CombatStanceChoice): string {
@@ -47,47 +33,52 @@ export class GameCombatRoundLogComponent implements AfterViewInit, OnChanges {
         }
 
         if (stance === 'defense') {
-            return 'Defensive';
+            return 'Défensive';
         }
 
         return 'Aucune';
     }
 
-    protected fighterOutcome(round: CombatRoundLog, fighterIndex: 0 | 1): 'pending' | 'win' | 'lose' | 'draw' {
+    protected combatFighterIndex(index: number): CombatFighterIndex {
+        const [firstCombatFighterIndex] = COMBAT_FIGHTER_INDEXES;
+        return COMBAT_FIGHTER_INDEXES.find((fighterIndex) => fighterIndex === index) ?? firstCombatFighterIndex;
+    }
+
+    protected fighterOutcome(round: CombatRoundLog, fighterIndex: CombatFighterIndex): CombatRoundOutcome {
         if (!this.isResolved(round)) {
             return 'pending';
         }
-        const fighter = round.fighters[fighterIndex];
-        const opponent = round.fighters[fighterIndex === 0 ? 1 : 0];
-        if (fighter.damage === null || opponent.damage === null) {
-            return 'pending';
-        }
 
-        if (fighter.damage > opponent.damage) {
+        const fighter = round.fighters[fighterIndex];
+        const opponent = this.getOpponentFighter(round, fighterIndex);
+        const fighterDamage = fighter.damage ?? 0;
+        const opponentDamage = opponent.damage ?? 0;
+
+        if (fighterDamage > opponentDamage) {
             return 'win';
         }
 
-        if (fighter.damage < opponent.damage) {
+        if (fighterDamage < opponentDamage) {
             return 'lose';
         }
 
         return 'draw';
     }
 
-    protected attackSucceeded(round: CombatRoundLog, fighterIndex: 0 | 1): boolean | null {
+    protected attackSucceeded(round: CombatRoundLog, fighterIndex: CombatFighterIndex): boolean | null {
         if (!this.isResolved(round)) {
             return null;
         }
-        const delta = round.fighters[fighterIndex].attackDelta;
-        return delta === null ? null : delta > 0;
+
+        return (round.fighters[fighterIndex].attackDelta ?? 0) > 0;
     }
 
-    protected defenseSucceeded(round: CombatRoundLog, fighterIndex: 0 | 1): boolean | null {
+    protected defenseSucceeded(round: CombatRoundLog, fighterIndex: CombatFighterIndex): boolean | null {
         if (!this.isResolved(round)) {
             return null;
         }
-        const opponentDelta = round.fighters[fighterIndex === 0 ? 1 : 0].attackDelta;
-        return opponentDelta === null ? null : opponentDelta <= 0;
+
+        return (this.getOpponentFighter(round, fighterIndex).attackDelta ?? 0) <= 0;
     }
 
     protected dieClass(dieType: CombatRoundBreakdown['dieType']): string {
@@ -110,46 +101,33 @@ export class GameCombatRoundLogComponent implements AfterViewInit, OnChanges {
         return breakdown.total === null ? '--' : `${breakdown.total}`;
     }
 
-    protected resultLabel(round: CombatRoundLog, fighterIndex: 0 | 1): string {
+    protected resultLabel(round: CombatRoundLog, fighterIndex: CombatFighterIndex): string {
         const fighter = round.fighters[fighterIndex];
         if (fighter.damage === null || fighter.attackDelta === null) {
             return 'En attente du lancer';
         }
 
         if (fighter.damage > 0) {
-            return `Diff ${this.signedValue(fighter.attackDelta)} | Degats ${fighter.damage}`;
+            return `Diff ${this.signedValue(fighter.attackDelta)} | Dégâts ${fighter.damage}`;
         }
 
-        return `Diff ${this.signedValue(fighter.attackDelta)} | Aucun degat`;
+        return `Diff ${this.signedValue(fighter.attackDelta)} | Aucun dégât`;
     }
 
-    protected damageLabel(round: CombatRoundLog, fighterIndex: 0 | 1): string {
+    protected damageLabel(round: CombatRoundLog, fighterIndex: CombatFighterIndex): string {
         const fighter = round.fighters[fighterIndex];
         if (fighter.damage === null) {
-            return 'Degats --';
+            return 'Dégâts --';
         }
 
-        return fighter.damage > 0 ? `Degats ${fighter.damage}` : 'Aucun degat';
+        return fighter.damage > 0 ? `Dégâts ${fighter.damage}` : 'Aucun dégât';
     }
 
     protected isResolved(round: CombatRoundLog): boolean {
         return round.status === 'resolved';
     }
 
-    private queueAutoscroll(): void {
-        if (!this.shouldStickToBottom) {
-            return;
-        }
-
-        window.setTimeout(() => this.scrollToBottom());
-    }
-
-    private scrollToBottom(): void {
-        const viewport = this.viewportRef?.nativeElement;
-        if (!viewport) {
-            return;
-        }
-
-        viewport.scrollTop = viewport.scrollHeight;
+    private getOpponentFighter(round: CombatRoundLog, fighterIndex: CombatFighterIndex): CombatRoundLog['fighters'][number] {
+        return round.fighters.find((_fighter, index) => index !== fighterIndex) ?? round.fighters[fighterIndex];
     }
 }

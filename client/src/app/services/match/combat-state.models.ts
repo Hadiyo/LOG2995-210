@@ -21,6 +21,9 @@ export interface CombatTiePayload {
     player2: string;
 }
 
+export const COMBAT_FIGHTER_INDEXES = [0, 1] as const;
+export type CombatFighterIndex = (typeof COMBAT_FIGHTER_INDEXES)[number];
+
 export interface CombatWaitingState {
     combatId: string;
     gameSessionId: string;

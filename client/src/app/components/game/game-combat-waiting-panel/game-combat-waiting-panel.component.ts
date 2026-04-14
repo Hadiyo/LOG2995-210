@@ -14,7 +14,7 @@ export class GameCombatWaitingPanelComponent {
 
     protected getTimerLabel(): string {
         if (this.waitingState.phase === 'transition') {
-            return 'Resolution du tour';
+            return 'Résolution du tour';
         }
         return this.waitingState.activePlayerName ? `Tour de ${this.waitingState.activePlayerName}` : 'Tour en cours';
     }

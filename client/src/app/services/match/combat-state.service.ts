@@ -5,6 +5,14 @@ import { CombatPlayerStatistics, CombatWaitingSnapshot, StancePayload } from '@c
 import { MatchTurnState } from '@common/game/turn.interface';
 import { CombatSocketEvents, SessionSocketEvents } from '@common/socket-events';
 import {
+    COMBAT_ATTACK_POSE_DURATION_MS,
+    COMBAT_DICE_ROLL_DURATION_MS,
+    COMBAT_END_DEAD_FRAME_MS,
+    COMBAT_END_LINGER_MS,
+    COMBAT_OUTCOME_RESOLUTION_GRACE_MS,
+    COMBAT_ROUND_RESOLUTION_DURATION_MS,
+} from './combat-state.constants';
+import {
     CombatOutcomeNotice,
     CombatPanelState,
     CombatResultPayload,
@@ -13,7 +21,6 @@ import {
     CombatTiePayload,
     CombatWaitingState,
 } from './combat-state.models';
-import { MatchStateService } from './match-state.service';
 import {
     advanceCombatRoundState,
     applyResolvedDamageState,
@@ -25,8 +32,8 @@ import {
     getCombatFooterMessage,
 } from './combat-state.reducers';
 import {
-    createPendingRoundLog,
     createResolvedRoundLog as buildResolvedRoundLog,
+    createPendingRoundLog,
     createTieNotice,
     createVictoryNotice,
     getDamageTakenByFighterId,
@@ -34,13 +41,8 @@ import {
     revealRoundLog,
     upsertRoundLog,
 } from './combat-state.utils';
-const DICE_ROLL_DURATION_MS = 1000;
-const ATTACK_POSE_DURATION_MS = 900;
-const HIT_REACTION_DURATION_MS = 280;
-const OUTCOME_RESOLUTION_GRACE_MS = 500;
-const COMBAT_END_DEAD_FRAME_MS = 1000;
-const COMBAT_END_LINGER_MS = 1000;
-const ROUND_RESOLUTION_DURATION_MS = DICE_ROLL_DURATION_MS + ATTACK_POSE_DURATION_MS + HIT_REACTION_DURATION_MS;
+import { MatchStateService } from './match-state.service';
+
 @Injectable({ providedIn: 'root' })
 export class CombatStateService {
     readonly lastCombatUpdate = signal('');
@@ -78,7 +80,7 @@ export class CombatStateService {
             return '';
         }
         if (turnState.phase === 'transition') {
-            return 'Resolution du tour';
+            return 'Résolution du tour';
         }
         const activeFighter = panelState.fighters.find((fighter) => fighter.id === turnState.activePlayerId) ?? null;
         if (activeFighter?.isLocal) {
@@ -202,17 +204,17 @@ export class CombatStateService {
 
         this.animationTimeoutIds.push(window.setTimeout(() => {
             this.panelState.update((panelState) => panelState ? applyResolvedStanceAnimationState(panelState, resolvedRoundLog) : panelState);
-        }, DICE_ROLL_DURATION_MS));
+        }, COMBAT_DICE_ROLL_DURATION_MS));
 
         this.animationTimeoutIds.push(window.setTimeout(() => {
             this.panelState.update((panelState) =>
                 panelState ? applyResolvedDamageState(panelState, damageTakenByFighterId, updatedHealthByFighterId) : panelState,
             );
-        }, DICE_ROLL_DURATION_MS + ATTACK_POSE_DURATION_MS));
+        }, COMBAT_DICE_ROLL_DURATION_MS + COMBAT_ATTACK_POSE_DURATION_MS));
 
         this.animationTimeoutIds.push(window.setTimeout(() => {
             this.finalizeRoundResolution();
-        }, ROUND_RESOLUTION_DURATION_MS));
+        }, COMBAT_ROUND_RESOLUTION_DURATION_MS));
     }
 
     private handleVictory(payload: CombatResultPayload): void {
@@ -313,7 +315,7 @@ export class CombatStateService {
             }
 
             this.startCombatEnding(notice);
-        }, OUTCOME_RESOLUTION_GRACE_MS));
+        }, COMBAT_OUTCOME_RESOLUTION_GRACE_MS));
     }
 
     private startCombatEnding(notice: CombatOutcomeNotice): void {

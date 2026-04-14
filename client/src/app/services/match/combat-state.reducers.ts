@@ -1,41 +1,24 @@
-import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
-import { MatchTurnState } from '@common/game/turn.interface';
-import { PlayerPose } from '@common/player/player.interface';
 import { CombatWaitingSnapshot } from '@common/combat/combat.interface';
+import { MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { PlayerPose } from '@common/player/player.interface';
+import { CombatFooterMessageOptions, CombatPanelStateFromTurnSnapshotOptions } from './combat-state.interfaces';
 import {
     CombatOutcomeNotice,
     CombatPanelFighter,
     CombatPanelState,
     CombatRoundFighterLog,
     CombatRoundLog,
-    CombatStanceChoice,
     CombatWaitingState,
 } from './combat-state.models';
 import {
     createCombatPanelFighter,
     getCombatOrientation,
+    getCountdownSeconds,
     getOrderedCombatPlayers,
     getTileTypeForCombatPlayer,
-    getCountdownSeconds,
     isOpenDoorForCombatPlayer,
     resolveCombatParticipants,
 } from './combat-state.utils';
-
-type FooterMessageOptions = {
-    canSelectStance: boolean;
-    endingNotice: CombatOutcomeNotice | null;
-    hasActiveCombat: boolean;
-    isResolvingRound: boolean;
-    selectedStance: CombatStanceChoice;
-};
-
-type PanelStateFromTurnSnapshotOptions = {
-    currentPanelState: CombatPanelState | null;
-    keepAnimatedPose: boolean;
-    localPlayerId: string | null;
-    match: InitializedMatch;
-    turnState: MatchTurnState;
-};
 
 export function getCombatFooterMessage({
     canSelectStance,
@@ -43,7 +26,7 @@ export function getCombatFooterMessage({
     hasActiveCombat,
     isResolvingRound,
     selectedStance,
-}: FooterMessageOptions): string {
+}: CombatFooterMessageOptions): string {
     if (!hasActiveCombat) {
         return '';
     }
@@ -53,7 +36,7 @@ export function getCombatFooterMessage({
     }
 
     if (isResolvingRound) {
-        return 'Resolution du round en cours...';
+        return 'Résolution du tour en cours...';
     }
 
     if (!canSelectStance) {
@@ -61,14 +44,14 @@ export function getCombatFooterMessage({
     }
 
     if (selectedStance === 'attack') {
-        return 'Posture offensive selectionnee.';
+        return 'Posture offensive sélectionnée.';
     }
 
     if (selectedStance === 'defense') {
-        return 'Posture defensive selectionnee.';
+        return 'Posture défensive sélectionnée.';
     }
 
-    return 'Choisissez une posture pour preparer le combat.';
+    return 'Choisissez une posture pour préparer le combat.';
 }
 
 export function buildCombatPanelStateFromTurnSnapshot({
@@ -77,7 +60,7 @@ export function buildCombatPanelStateFromTurnSnapshot({
     localPlayerId,
     match,
     turnState,
-}: PanelStateFromTurnSnapshotOptions): CombatPanelState | null {
+}: CombatPanelStateFromTurnSnapshotOptions): CombatPanelState | null {
     const participants = resolveCombatParticipants(match.players, turnState);
     if (!participants) {
         return null;
@@ -98,7 +81,6 @@ export function buildCombatPanelStateFromTurnSnapshot({
         createCombatPanelFighter({
             player,
             index,
-            orientation,
             localPlayerId,
             currentHealth: currentHealthByFighterId.get(player.id) ?? player.health,
             previousFighter: previousFightersById.get(player.id) ?? null,
@@ -204,7 +186,7 @@ export function createCombatForfeitNotice(
         attackerId: localPlayer.id,
         defenderId: missingOpponent.id,
         attackerMessage: `Victoire contre ${missingOpponent.name} par abandon.`,
-        defenderMessage: `Defaite contre ${localPlayerName} par abandon.`,
+        defenderMessage: `Défaite contre ${localPlayerName} par abandon.`,
         logMessage: `${missingOpponent.name} abandonne le combat.`,
     };
 }

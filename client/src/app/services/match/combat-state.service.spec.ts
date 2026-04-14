@@ -1,5 +1,5 @@
-import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { signal } from '@angular/core';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
 import { MapApiService } from '@app/services/map/map-api.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
@@ -11,6 +11,14 @@ import { GameMode, MapSize, TileType } from '@common/maps/map.enums';
 import { EditorCell } from '@common/maps/map.interface';
 import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
 import { CombatSocketEvents, SessionSocketEvents } from '@common/socket-events';
+import {
+    COMBAT_ATTACK_POSE_DURATION_MS,
+    COMBAT_DICE_ROLL_DURATION_MS,
+    COMBAT_END_DEAD_FRAME_MS,
+    COMBAT_END_LINGER_MS,
+    COMBAT_HIT_REACTION_DURATION_MS,
+    COMBAT_OUTCOME_RESOLUTION_GRACE_MS,
+} from './combat-state.constants';
 import { CombatStateService } from './combat-state.service';
 import { MatchStateService } from './match-state.service';
 import { TurnStateService } from './turn-state.service';
@@ -20,12 +28,6 @@ const DEFAULT_SPEED = 6;
 const STARTING_HEALTH = 6;
 const ACTIVE_TURN_MS = 9000;
 const TRANSITION_TURN_MS = 3000;
-const DICE_ROLL_DURATION_MS = 1000;
-const ATTACK_POSE_DURATION_MS = 900;
-const HIT_REACTION_DURATION_MS = 280;
-const OUTCOME_RESOLUTION_GRACE_MS = 500;
-const COMBAT_END_DEAD_FRAME_MS = 1000;
-const COMBAT_END_LINGER_MS = 1000;
 
 const createGrid = (): EditorCell[] =>
     Array.from({ length: MapSize.S * MapSize.S }, (_, index) => ({
@@ -227,16 +229,16 @@ describe('CombatStateService', () => {
         expect(service.panelState()?.fighters[0].attackRollValue).toBe(4);
         expect(service.canSelectStance()).toBeFalse();
 
-        tick(DICE_ROLL_DURATION_MS);
+        tick(COMBAT_DICE_ROLL_DURATION_MS);
 
         expect(service.panelState()?.fighters[0].pose).toBe(PlayerPose.Attack);
         expect(service.panelState()?.fighters[1].isDefending).toBeTrue();
 
-        tick(ATTACK_POSE_DURATION_MS);
+        tick(COMBAT_ATTACK_POSE_DURATION_MS);
 
         expect(service.panelState()?.fighters[1].isHit).toBeTrue();
 
-        tick(HIT_REACTION_DURATION_MS);
+        tick(COMBAT_HIT_REACTION_DURATION_MS);
 
         const panelState = service.panelState();
         expect(service.roundLogs()[0].status).toBe('resolved');
@@ -256,7 +258,7 @@ describe('CombatStateService', () => {
         expect(service.hasActiveCombat()).toBeTrue();
         expect(service.endingNotice()).toBeNull();
 
-        tick(OUTCOME_RESOLUTION_GRACE_MS + COMBAT_END_DEAD_FRAME_MS);
+        tick(COMBAT_OUTCOME_RESOLUTION_GRACE_MS + COMBAT_END_DEAD_FRAME_MS);
         expect(service.endingNotice()?.attackerMessage).toContain('Victoire contre Defender');
 
         tick(COMBAT_END_LINGER_MS);
@@ -327,11 +329,11 @@ describe('CombatStateService', () => {
         expect(service.hasActiveCombat()).toBeTrue();
         expect(service.endingNotice()).toBeNull();
 
-        tick(DICE_ROLL_DURATION_MS + ATTACK_POSE_DURATION_MS);
+        tick(COMBAT_DICE_ROLL_DURATION_MS + COMBAT_ATTACK_POSE_DURATION_MS);
         expect(service.hasActiveCombat()).toBeTrue();
         expect(service.endingNotice()).toBeNull();
 
-        tick(HIT_REACTION_DURATION_MS);
+        tick(COMBAT_HIT_REACTION_DURATION_MS);
         expect(service.panelState()?.fighters[1].pose).toBe(PlayerPose.Dead);
         expect(service.endingNotice()).toBeNull();
 

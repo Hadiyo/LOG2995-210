@@ -1,6 +1,7 @@
 import { MatchTurnState, TurnPhase } from '../game/turn.interface';
 
 export type FighterStance = 'attack' | 'defense' | null;
+export type CombatRoundOutcome = 'pending' | 'win' | 'lose' | 'draw';
 
 export interface FighterPayload{
     id: string,

@@ -4,7 +4,7 @@
       <header class="combat-shell__header">
         <div class="combat-shell__title">
           <p class="combat-shell__eyebrow">Combat</p>
-          <h2 id="combat-title">Duel rapproche</h2>
+          <h2 id="combat-title">Duel rapproché</h2>
         </div>
 
         <div class="combat-shell__meta">
@@ -65,7 +65,7 @@
 
             @if (combat.endingNotice(); as ending) {
               <div class="combat-stage__ending">
-                <p class="combat-stage__ending-eyebrow">Combat termine</p>
+                <p class="combat-stage__ending-eyebrow">Combat terminé</p>
                 <h3 class="combat-stage__ending-title">{{ getEndingTitle(ending) }}</h3>
                 <p class="combat-stage__ending-message">{{ getEndingMessage(ending) }}</p>
               </div>
@@ -137,7 +137,7 @@
             [disabled]="!combat.canSelectStance()"
             (click)="selectDefenseStance()"
           >
-            Posture defensive
+            Posture défensive
           </button>
         </div>
       </footer>

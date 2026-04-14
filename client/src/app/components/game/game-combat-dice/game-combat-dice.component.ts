@@ -1,11 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
-
-type CombatDie = 'D4' | 'D6';
-const D4_SIDES = 4;
-const D6_SIDES = 6;
-const ROLL_FRAME_INTERVAL_MS = 80;
-const ROLL_DURATION_MS = 1000;
+import { COMBAT_DICE_ROLL_DURATION_MS, COMBAT_DICE_ROLL_FRAME_INTERVAL_MS } from '@app/services/match/combat-state.constants';
+import { DIE_D4_SIDES, DIE_D6_SIDES, Die } from '@common/character/character.model';
 
 @Component({
     selector: 'app-game-combat-dice',
@@ -15,8 +11,8 @@ const ROLL_DURATION_MS = 1000;
     styleUrl: './game-combat-dice.component.scss',
 })
 export class GameCombatDiceComponent implements OnChanges, OnDestroy {
-    @Input({ required: true }) attackDie!: CombatDie;
-    @Input({ required: true }) defenseDie!: CombatDie;
+    @Input({ required: true }) attackDie!: Die;
+    @Input({ required: true }) defenseDie!: Die;
     @Input() attackValue: number | null = null;
     @Input() defenseValue: number | null = null;
     @Input() rollToken = 0;
@@ -42,15 +38,15 @@ export class GameCombatDiceComponent implements OnChanges, OnDestroy {
         this.clearAnimationTimers();
     }
 
-    protected getDieShapeClass(die: CombatDie): string {
+    protected getDieShapeClass(die: Die): string {
         return die === 'D4' ? 'combat-dice__die--d4' : 'combat-dice__die--d6';
     }
 
-    protected getDieColorClass(die: CombatDie): string {
+    protected getDieColorClass(die: Die): string {
         return die === 'D4' ? 'combat-dice__die--blue' : 'combat-dice__die--green';
     }
 
-    protected dieAriaLabel(die: CombatDie, value: number | null): string {
+    protected dieAriaLabel(die: Die, value: number | null): string {
         return value === null ? die : `${die} ${value}`;
     }
 
@@ -60,13 +56,13 @@ export class GameCombatDiceComponent implements OnChanges, OnDestroy {
         this.rollingIntervalId = window.setInterval(() => {
             this.attackDisplay = `${this.randomDieValue(this.attackDie)}`;
             this.defenseDisplay = `${this.randomDieValue(this.defenseDie)}`;
-        }, ROLL_FRAME_INTERVAL_MS);
+        }, COMBAT_DICE_ROLL_FRAME_INTERVAL_MS);
 
         this.settleTimeoutId = window.setTimeout(() => {
             this.isRolling = false;
             this.syncDisplayedValues();
             this.clearAnimationTimers();
-        }, ROLL_DURATION_MS);
+        }, COMBAT_DICE_ROLL_DURATION_MS);
     }
 
     private syncDisplayedValues(): void {
@@ -75,18 +71,18 @@ export class GameCombatDiceComponent implements OnChanges, OnDestroy {
     }
 
     private clearAnimationTimers(): void {
-        if (this.rollingIntervalId !== null) {
+        if (this.rollingIntervalId) {
             window.clearInterval(this.rollingIntervalId);
             this.rollingIntervalId = null;
         }
-        if (this.settleTimeoutId !== null) {
+        if (this.settleTimeoutId) {
             window.clearTimeout(this.settleTimeoutId);
             this.settleTimeoutId = null;
         }
     }
 
-    private randomDieValue(die: CombatDie): number {
-        const sides = die === 'D4' ? D4_SIDES : D6_SIDES;
+    private randomDieValue(die: Die): number {
+        const sides = die === 'D4' ? DIE_D4_SIDES : DIE_D6_SIDES;
         return Math.floor(Math.random() * sides) + 1;
     }
 }

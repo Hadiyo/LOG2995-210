@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
+import { CharacterSpriteComponent } from '@app/components/game/character-sprite/character-sprite.component';
 import { GameCombatDiceComponent } from '@app/components/game/game-combat-dice/game-combat-dice.component';
 import { GameCombatRoundLogComponent } from '@app/components/game/game-combat-round-log/game-combat-round-log.component';
-import { CharacterSpriteComponent } from '@app/components/game/character-sprite/character-sprite.component';
 import { getTeamClass } from '@app/components/game/team-class.util';
 import { CombatOutcomeNotice, CombatPanelState, CombatRoundLog } from '@app/services/match/combat-state.models';
 import { CombatStateService } from '@app/services/match/combat-state.service';
@@ -46,7 +46,7 @@ export class GameCombatPanelComponent {
         }
 
         if (localFighterId === ending.defenderId) {
-            return ending.defenderMessage.startsWith('Egalite') ? 'Egalite' : 'Defaite';
+            return ending.defenderMessage.startsWith('Égalité') ? 'Égalité' : 'Défaite';
         }
 
         return 'Fin du combat';

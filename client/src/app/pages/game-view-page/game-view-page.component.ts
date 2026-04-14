@@ -53,9 +53,9 @@ import {
     handleIncomingFlagTransferResponse,
     initializeGameViewPage,
     leaveMatch,
-    MatchEndRedirectState,
     syncMatchEndRedirect,
 } from './game-view-page.helpers';
+import { GameViewCellContextMenuPayload, MatchEndRedirectState } from './game-view-page.helpers.interfaces';
 @Component({
     selector: 'app-game-view-page',
     standalone: true,
@@ -276,7 +276,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         handleGameViewCellClick(this.combat.hasActiveCombat(), this.interaction, this.mapCells(), index);
     }
 
-    protected onCellContextMenu(payload: { event: MouseEvent; index: number }): void {
+    protected onCellContextMenu(payload: GameViewCellContextMenuPayload): void {
         handleGameViewCellContextMenu(this.combat.hasActiveCombat(), this.interaction, this.mapCells(), payload);
     }
 

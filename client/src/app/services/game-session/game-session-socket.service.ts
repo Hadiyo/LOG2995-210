@@ -1,8 +1,10 @@
 import { Injectable, signal } from '@angular/core';
 import { ChatService } from '@app/services/chat/chat.service';
+import { CombatResultPayload, CombatTiePayload } from '@app/services/match/combat-state.models';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
+import { MatchSanctuaryChoice } from '@common/game/match.interface';
 import {
     CombatSocketEvents,
     DebugTeleportPlayerPayload,
@@ -10,29 +12,18 @@ import {
     ForceEndDebugTurnPayload,
     GameSessionErrorPayload,
     GameSessionSnapshotPayload,
-    RequestFlagTransferPayload,
-    ResolveFlagTransferPayload,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
+    RequestFlagTransferPayload,
+    ResolveFlagTransferPayload,
     ResolveSanctuaryChoicePayload,
     SessionSocketEvents,
     StartCombatPayload,
-    ToggleDoorPayload,
-    UseSanctuaryPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
+    ToggleDoorPayload,
+    UseSanctuaryPayload,
 } from '@common/socket-events';
-import { MatchSanctuaryChoice } from '@common/game/match.interface';
-
-type CombatVictoryPayload = {
-    loser: string;
-    winner: string;
-};
-
-type CombatTiePayload = {
-    player1: string;
-    player2: string;
-};
 
 @Injectable({ providedIn: 'root' })
 export class GameSessionSocketService {
@@ -246,7 +237,7 @@ export class GameSessionSocketService {
             this.errorMessage.set(payload.message);
         });
 
-        this.socketManager.on<CombatVictoryPayload>(SessionSocketEvents.CombatVictory, (payload) => {
+        this.socketManager.on<CombatResultPayload>(SessionSocketEvents.CombatVictory, (payload) => {
             this.errorMessage.set('');
             this.matchState.registerCombatVictory(payload.winner);
             this.matchState.applyCombatAftermath([payload.loser]);

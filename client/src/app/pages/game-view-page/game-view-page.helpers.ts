@@ -1,61 +1,21 @@
 import { WritableSignal } from '@angular/core';
-import { Router } from '@angular/router';
 import { CLOCK_TICK_MS, MATCH_END_REDIRECT_DURATION_MS } from '@app/config/game-session.config';
-import { ChatService } from '@app/services/chat/chat.service';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
-import { GameSessionDisplayService } from '@app/services/game-view/game-session-display.service';
 import { GameSessionInteractionService } from '@app/services/game-view/game-session-interaction.service';
-import { CombatStateService } from '@app/services/match/combat-state.service';
-import { MatchStateService } from '@app/services/match/match-state.service';
 import { startLocalPoseRefreshClock, stopLocalPoseRefreshClock } from '@app/utils/game-view/game-view-pose-clock.utils';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchEndState } from '@common/game/match.interface';
 import { GameCell } from '@common/maps/map.interface';
-
-export type IncomingFlagTransferView = {
-    kind: NonNullable<InitializedMatch['pendingFlagTransfer']>['kind'];
-    requesterName: string;
-};
-
-export type MatchEndRedirectState = {
-    intervalId: number | null;
-    scheduledMatchEndId: string | null;
-    timeoutId: number | null;
-};
-
-export type MatchEndRedirectContext = {
-    endRedirectRemainingMs: WritableSignal<number>;
-    interaction: GameSessionInteractionService;
-    matchState: MatchStateService;
-    router: Router;
-    state: MatchEndRedirectState;
-};
-
-export type GameViewPageInitContext = {
-    chatService: ChatService;
-    display: GameSessionDisplayService;
-    gameSessionSocket: GameSessionSocketService;
-    localPoseRefreshMs: number;
-    matchState: MatchStateService;
-    navigationMessages: ChatMessage[];
-    nowMs: WritableSignal<number>;
-    sessionId: string | null;
-};
-
-export type GameViewPageDestroyContext = {
-    chatService: ChatService;
-    combat: CombatStateService;
-    effects: { destroy(): void };
-    endRedirectRemainingMs: WritableSignal<number>;
-    localPoseIntervalId: number | null;
-    matchEndRedirectState: MatchEndRedirectState;
-};
-
-export type GameViewPageMatchCommandContext = {
-    display: GameSessionDisplayService;
-    gameSessionSocket: GameSessionSocketService;
-    matchState: MatchStateService;
-};
+import {
+    GameViewCellContextMenuPayload,
+    GameViewDebugShortcutContext,
+    GameViewPageDestroyContext,
+    GameViewPageInitContext,
+    GameViewPageMatchCommandContext,
+    IncomingFlagTransferView,
+    MatchEndRedirectContext,
+    MatchEndRedirectState,
+} from './game-view-page.helpers.interfaces';
 
 export function buildIncomingFlagTransfer(
     match: InitializedMatch | null | undefined,
@@ -155,7 +115,7 @@ export function handleGameViewCellContextMenu(
     hasActiveCombat: boolean,
     interaction: GameSessionInteractionService,
     mapCells: readonly GameCell[],
-    payload: { event: MouseEvent; index: number },
+    payload: GameViewCellContextMenuPayload,
 ): void {
     if (hasActiveCombat) {
         return;
@@ -222,15 +182,7 @@ export function handleGameViewMovementKeyup(
 
 export function handleGameViewDebugShortcut(
     event: KeyboardEvent,
-    context: {
-        canToggleDebugMode: boolean;
-        closeTileInfoModal: () => void;
-        combatActive: boolean;
-        combatClose: () => void;
-        matchEnded: boolean;
-        onToggleDebugMode: () => void;
-        selectedTileInfo: unknown;
-    },
+    context: GameViewDebugShortcutContext,
 ): void {
     if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) {
         return;

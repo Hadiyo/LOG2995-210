@@ -4,32 +4,26 @@ import { MatchTurnState } from '@common/game/turn.interface';
 import { TileType } from '@common/maps/map.enums';
 import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
 import {
+    ICE_COMBAT_PENALTY,
+    MAX_STANCE_BONUS,
+    MILLISECONDS_PER_SECOND,
+    MINIMUM_COUNTDOWN_SECONDS,
+    NO_DAMAGE,
+    NO_PENALTY,
+} from './combat-state.constants';
+import { CombatPanelFighterOptions } from './combat-state.interfaces';
+import {
     CombatOutcomeNotice,
     CombatPanelFighter,
     CombatPanelOrientation,
     CombatPanelState,
+    CombatResultPayload,
     CombatRoundBreakdown,
     CombatRoundFighterLog,
     CombatRoundLog,
     CombatStanceChoice,
+    CombatTiePayload,
 } from './combat-state.models';
-
-const MAX_STANCE_BONUS = 2;
-const NO_DAMAGE = 0;
-const NO_PENALTY = 0;
-const ICE_COMBAT_PENALTY = -2;
-const MILLISECONDS_PER_SECOND = 1000;
-const MINIMUM_COUNTDOWN_SECONDS = 0;
-
-type CombatResultPayload = {
-    loser: string;
-    winner: string;
-};
-
-type CombatTiePayload = {
-    player1: string;
-    player2: string;
-};
 
 export function createPendingRoundLog(panelState: CombatPanelState, localSelectedStance: CombatStanceChoice): CombatRoundLog {
     return {
@@ -84,7 +78,7 @@ export function createVictoryNotice(
         attackerId: payload.winner,
         defenderId: payload.loser,
         attackerMessage: `Victoire contre ${loser.name}${suffix}.`,
-        defenderMessage: `Defaite contre ${winner.name}${suffix}.`,
+        defenderMessage: `Défaite contre ${winner.name}${suffix}.`,
         logMessage: `${winner.name} remporte le combat contre ${loser.name}${suffix}.`,
     };
 }
@@ -100,9 +94,9 @@ export function createTieNotice(players: readonly MatchPlayer[], payload: Combat
         id: `${payload.player1}:${payload.player2}:${Date.now()}`,
         attackerId: payload.player1,
         defenderId: payload.player2,
-        attackerMessage: `Egalite contre ${player2.name}.`,
-        defenderMessage: `Egalite contre ${player1.name}.`,
-        logMessage: `${player1.name} et ${player2.name} terminent le combat a egalite.`,
+        attackerMessage: `Égalité contre ${player2.name}.`,
+        defenderMessage: `Égalité contre ${player1.name}.`,
+        logMessage: `${player1.name} et ${player2.name} terminent le combat à égalité.`,
     };
 }
 
@@ -240,18 +234,6 @@ function getResolvedStance(attackPostureBonus: number, defensePostureBonus: numb
 
     return null;
 }
-
-type CombatPanelFighterOptions = {
-    player: MatchPlayer;
-    index: number;
-    orientation: CombatPanelOrientation;
-    localPlayerId: string | null;
-    currentHealth: number;
-    previousFighter: CombatPanelFighter | null;
-    tileType: TileType;
-    isDoorOpen: boolean;
-    keepAnimatedPose: boolean;
-};
 
 export function getCombatOrientation(attacker: MatchPlayer, defender: MatchPlayer): CombatPanelOrientation {
     return attacker.position.y === defender.position.y ? 'horizontal' : 'vertical';
