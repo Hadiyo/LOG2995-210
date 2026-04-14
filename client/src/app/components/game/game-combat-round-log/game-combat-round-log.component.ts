@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { NEUTRAL_COMBAT_VALUE } from '@app/services/match/combat-state.constants';
 import {
     COMBAT_FIGHTER_INDEXES,
     CombatFighterIndex,
@@ -51,8 +52,8 @@ export class GameCombatRoundLogComponent implements OnChanges {
 
         const fighter = round.fighters[fighterIndex];
         const opponent = this.getOpponentFighter(round, fighterIndex);
-        const fighterDamage = fighter.damage ?? 0;
-        const opponentDamage = opponent.damage ?? 0;
+        const fighterDamage = fighter.damage ?? NEUTRAL_COMBAT_VALUE;
+        const opponentDamage = opponent.damage ?? NEUTRAL_COMBAT_VALUE;
 
         if (fighterDamage > opponentDamage) {
             return 'win';
@@ -70,7 +71,7 @@ export class GameCombatRoundLogComponent implements OnChanges {
             return null;
         }
 
-        return (round.fighters[fighterIndex].attackDelta ?? 0) > 0;
+        return (round.fighters[fighterIndex].attackDelta ?? NEUTRAL_COMBAT_VALUE) > NEUTRAL_COMBAT_VALUE;
     }
 
     protected defenseSucceeded(round: CombatRoundLog, fighterIndex: CombatFighterIndex): boolean | null {
@@ -78,7 +79,7 @@ export class GameCombatRoundLogComponent implements OnChanges {
             return null;
         }
 
-        return (this.getOpponentFighter(round, fighterIndex).attackDelta ?? 0) <= 0;
+        return (this.getOpponentFighter(round, fighterIndex).attackDelta ?? NEUTRAL_COMBAT_VALUE) <= NEUTRAL_COMBAT_VALUE;
     }
 
     protected dieClass(dieType: CombatRoundBreakdown['dieType']): string {
@@ -86,7 +87,7 @@ export class GameCombatRoundLogComponent implements OnChanges {
     }
 
     protected signedValue(value: number): string {
-        if (value > 0) {
+        if (value > NEUTRAL_COMBAT_VALUE) {
             return `+${value}`;
         }
 
@@ -107,7 +108,7 @@ export class GameCombatRoundLogComponent implements OnChanges {
             return 'En attente du lancer';
         }
 
-        if (fighter.damage > 0) {
+        if (fighter.damage > NEUTRAL_COMBAT_VALUE) {
             return `Diff ${this.signedValue(fighter.attackDelta)} | Dégâts ${fighter.damage}`;
         }
 
@@ -120,7 +121,7 @@ export class GameCombatRoundLogComponent implements OnChanges {
             return 'Dégâts --';
         }
 
-        return fighter.damage > 0 ? `Dégâts ${fighter.damage}` : 'Aucun dégât';
+        return fighter.damage > NEUTRAL_COMBAT_VALUE ? `Dégâts ${fighter.damage}` : 'Aucun dégât';
     }
 
     protected isResolved(round: CombatRoundLog): boolean {

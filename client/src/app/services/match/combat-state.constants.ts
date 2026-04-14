@@ -1,4 +1,5 @@
 export const MAX_STANCE_BONUS = 2;
+export const NEUTRAL_COMBAT_VALUE = 0;
 export const NO_DAMAGE = 0;
 export const NO_PENALTY = 0;
 export const ICE_COMBAT_PENALTY = -2;
