@@ -1,4 +1,12 @@
-import { CombatPlayerStatistics, CombatResultSnapshot, FighterPayload } from '@common/combat/combat.interface';
+import { makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
+import {
+  CombatPlayerStatistics,
+  CombatResultSnapshot,
+  CombatTurnSnapshot,
+  CombatWaitingSnapshot,
+  FighterPayload,
+} from '@common/combat/combat.interface';
+import { TurnPhase } from '@common/game/turn.interface';
 import { Socket } from 'socket.io';
 
 export function createMockSocket(id: string) {
@@ -12,13 +20,16 @@ export function createMockSocket(id: string) {
     } as unknown as Socket;
 }
 
-export function createMockServer() {
+export function createMockServer(overrides?: {
+  sockets?: Map<string, Socket> | { sockets?: Map<string, Socket> };
+}) {
   const emit = jest.fn();
-  const socketsMap = new Map([['socket-123', createMockSocket('socket-123')]]);
+
   return {
     to: jest.fn(() => ({ emit })),
     emit,
-    sockets: socketsMap,
+    sockets: overrides?.sockets ?? undefined,
+    ...overrides,
   };
 }
 
@@ -66,3 +77,34 @@ export function createCombatResult(
     ...overrides,
   };
 }
+
+export function createCombatWaitingSnapshot(
+  overrides: Partial<CombatWaitingSnapshot> = {},
+): CombatWaitingSnapshot {
+  return {
+    combatId: 'combat-1',
+    gameSessionId: 'game-1',
+    attackerId: 'attacker-1',
+    defenderId: 'defender-1',
+    activePlayerId: 'attacker-1',
+    phase: 'active' as TurnPhase,
+    round: 1,
+    countdownSeconds: 5,
+    ...overrides,
+  };
+}
+
+export function createCombatTurnSnapshot(
+  overrides: Partial<CombatTurnSnapshot> = {},
+): CombatTurnSnapshot {
+  return {
+    combatId: 'combat-1',
+    gameSessionId: 'game-1',
+    attackerId: 'attacker-1',
+    defenderId: 'defender-1',
+    round: 1,
+    turnState: makeTurnState(),
+    ...overrides,
+  };
+}
+

@@ -1,12 +1,19 @@
-import { createCombatResult, createMockCombatPlayerStatistics, createMockServer, createMockSocket } from '@app/gateways/mocks';
+import {
+  createCombatResult,
+  createCombatTurnSnapshot,
+  createMockCombatPlayerStatistics,
+  createMockServer,
+  createMockSocket,
+} from '@app/gateways/mocks';
 import { makeCombatSession } from '@app/services/combat/combat-service.helper';
 import { CombatService } from '@app/services/combat/combat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
+import { MILLISECONDS_PER_SECOND } from '@app/utilities/combat/combat.constants';
 import { CombatSessionSnapshot, CombatTurnSnapshot, StancePayload } from '@common/combat/combat.interface';
 import { CombatSocketEvents, getGameSessionRoom, SessionSocketEvents } from '@common/socket-events';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { CombatGateway } from './combat.gateway';
 
 describe('CombatGateway', () => {
@@ -75,10 +82,17 @@ describe('CombatGateway', () => {
 
   it('should return and emit an error message if the opponents socket cannot be found - startCombat', async () => {
     const socket = createMockSocket('1234');
+    const socketsMap = new Map<string, Socket>([
+      ['socket-123', socket],
+    ]);
     const payload = {sessionId: '1555', playerId: '8906', defenderId: '0000'};
     jest.spyOn(gameSessionServiceMock, 'getPlayerIdForSocket').mockReturnValue('8906');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     jest.spyOn(gateway as any, 'getOpponentSocket').mockReturnValue(undefined);
+
+    gateway['server'] = {
+      sockets: socketsMap,
+    } as unknown as Server;
 
     await gateway.startCombat(socket, payload);
 
@@ -289,21 +303,124 @@ describe('CombatGateway', () => {
     expect(result).toBeUndefined();
   });
 
-  it('should return the opponent socket if it is part of a game session and is part of the current combat gateway server - getOpponentSocket', () => {
-    const socketId = 'socket-123';
-    const gameSessionId = '9999';
-    const opponentId = '8888';
-    const spy = jest.spyOn(gameSessionServiceMock, 'getSocketFromPlayer').mockReturnValue(socketId);
+  it('should return the opponent socket if it exists in registry - getOpponentSocket', () => {
+      const socketId = 'socket-123';
+      const gameSessionId = '9999';
+      const opponentId = '8888';
 
-    const result = gateway['getOpponentSocket'](gameSessionId, opponentId);
+      const mockSocket = createMockSocket(socketId);
 
-    expect(spy).toHaveBeenCalledWith(gameSessionId, opponentId);
+      jest.spyOn(gameSessionServiceMock, 'getSocketFromPlayer').mockReturnValue(socketId);
+
+      gateway['server'] = {
+        sockets: new Map([[socketId, mockSocket]]),
+      } as unknown as Server;
+
+      const result = gateway['getOpponentSocket'](gameSessionId, opponentId);
+
+      expect(gameSessionServiceMock.getSocketFromPlayer).toHaveBeenCalledWith(
+        gameSessionId,
+        opponentId,
+      );
+
+      expect(result).toBe(mockSocket);
+  });
+  
+  it('returns sockets when it is a Map - getSocketRegistry', () => {
+    const mockServer = createMockServer({
+      sockets: new Map(),
+    });
+
+    gateway['server'] = mockServer as unknown as Server;
+
+    const result = gateway['getSocketRegistry']();
+
+    expect(result).toBe(mockServer.sockets);
+  });
+
+  it('returns nested sockets map', () => {
+    const mockMap = new Map<string, Socket>();
+
+    const mockServer = createMockServer({
+      sockets: {
+        sockets: mockMap,
+      },
+    });
+
+    gateway['server'] = mockServer as unknown as Server;
+
+    const result = gateway['getSocketRegistry']();
+
+    expect(result).toBe(mockMap);
+  });
+
+  it('returns empty Map fallback when sockets missing - getSocketRegistry', () => {
+    const mockServer = createMockServer({
+      sockets: undefined,
+    });
+
+    gateway['server'] = mockServer as unknown as Server;
+
+    const result = gateway['getSocketRegistry']();
+
+    expect(result).toBeInstanceOf(Map);
+    expect(result.size).toBe(0);
+  });
+
+  it('should return the activeTurnReaminingMs if turnState.phase is active - createWaitingSnapshot', () => {
+    const REMAINING_TIME = 8;
+    const payload = createCombatTurnSnapshot({turnState: makeTurnState({phase: 'active', activeTurnRemainingMs: REMAINING_TIME})});
+    const result = gateway['createWaitingSnapshot'](payload);
+
     expect(result).toEqual({
-      id: socketId,
-      rooms: expect.any(Set),
-      join: expect.any(Function),
-      leave: expect.any(Function),
-      emit: expect.any(Function),
+      combatId: payload.combatId,
+      gameSessionId: payload.gameSessionId,
+      attackerId: payload.attackerId,
+      defenderId: payload.defenderId,
+      activePlayerId: payload.turnState.activePlayerId,
+      phase: payload.turnState.phase,
+      round: payload.round,
+      countdownSeconds: Math.max(0, Math.ceil(REMAINING_TIME / MILLISECONDS_PER_SECOND)),
+    });
+  });
+
+  it('should return transitionRemainingMs if the turnState.phase is transitive - createWaitingSnapshot', () => {
+    const REMAINING_TIME = 10;
+    const payload = createCombatTurnSnapshot({turnState: makeTurnState({phase: 'transition', transitionRemainingMs: REMAINING_TIME})});
+    const result = gateway['createWaitingSnapshot'](payload);
+
+    expect(result).toEqual({
+      combatId: payload.combatId,
+      gameSessionId: payload.gameSessionId,
+      attackerId: payload.attackerId,
+      defenderId: payload.defenderId,
+      activePlayerId: payload.turnState.activePlayerId,
+      phase: payload.turnState.phase,
+      round: payload.round,
+      countdownSeconds: Math.max(0, Math.ceil(REMAINING_TIME / MILLISECONDS_PER_SECOND)),
+    });
+  });
+
+  it('should not use activeTurnRemainingMs if the phase is active - createWaitingSnapshot', () => {
+    const REMAINING_TIME1 = 10;
+    const REMAINING_TIME2 = 5;
+    const payload = createCombatTurnSnapshot(
+      {turnState: makeTurnState(
+        {phase: 'transition', transitionRemainingMs: REMAINING_TIME1, activeTurnRemainingMs: REMAINING_TIME2},
+      )},
+    );
+    
+    const result = gateway['createWaitingSnapshot'](payload);
+
+    expect(result).toEqual({
+      combatId: payload.combatId,
+      gameSessionId: payload.gameSessionId,
+      attackerId: payload.attackerId,
+      defenderId: payload.defenderId,
+      activePlayerId: payload.turnState.activePlayerId,
+      phase: payload.turnState.phase,
+      round: payload.round,
+      countdownSeconds: Math.max(0, Math.ceil(REMAINING_TIME1 / MILLISECONDS_PER_SECOND)),
     });
   });
 });

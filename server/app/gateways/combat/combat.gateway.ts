@@ -118,11 +118,11 @@ export class CombatGateway {
     const serverWithRegistry = this.server as unknown as {
       sockets?: Map<string, Socket> | { sockets?: Map<string, Socket> };
     };
+
     const registry = serverWithRegistry.sockets;
     if (registry instanceof Map) {
       return registry;
     }
-
     return registry?.sockets ?? new Map<string, Socket>();
   }
 

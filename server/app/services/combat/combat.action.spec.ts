@@ -5,9 +5,75 @@ import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import { DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test, TestingModule } from '@nestjs/testing';
-import { makeCombatPlayerStatistics, makeCombatSession, makeFighter, makeFighterPayload } from './combat-service.helper';
+import {
+  createCombatTurnServiceMock,
+  createEventEmitterMock,
+  createGameSessionMock,
+  makeCombatPlayerStatistics,
+  makeCombatSession,
+  makeFighter,
+  makeFighterPayload,
+} from './combat-service.helper';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
+
+/**
+ * Test Strategy:
+ * 
+ * These tests validate the core combat logic of CombatService, focusing on
+ * attack resolution and combat result evaluation. The goal is to ensure that
+ * combat outcomes are correct, consistent, and robust under both normal and
+ * edge-case conditions.
+ * 
+ * Edge Cases Covered:
+ * - Invalid inputs (evaluateCombatResult):
+ *   Tests scenarios where the session or attack data is undefined.
+ *   Ensures the method safely returns false instead of causing runtime errors.
+ * 
+ * - Combat termination conditions (evaluateCombatResult):
+ *   Covers all possible outcomes:
+ *   - One player reaches 0 health → correct winner is determined
+ *   - Both players reach 0 health → tie is declared
+ *   - No player reaches 0 health → combat continues and turn switches
+ *   These cases ensure correct game flow and prevent inconsistent or invalid states.
+ * 
+ * - Invalid state during turn transition:
+ *   Verifies that if combat stances are not properly reset, the turn does not proceed.
+ *   This prevents invalid or desynchronized combat states.
+ * 
+ * - Debug mode behavior (attack):
+ *   Tests deterministic combat outcomes when debug mode is enabled:
+ *   - Instigator receives maximum roll
+ *   - Opponent receives minimum roll
+ *   This ensures predictable behavior for testing and debugging purposes.
+ * 
+ * - Random roll behavior (attack):
+ *   Ensures that random dice rolls are used when debug mode is disabled,
+ *   validating the normal probabilistic combat flow.
+ * 
+ * - Bonus application (attack):
+ *   Tests that bonuses are applied only when:
+ *   - The correct combat stance is selected
+ *   - The player is in a valid position (on ice)
+ *   Also verifies that bonuses are not applied in invalid conditions.
+ * 
+ * - Damage handling (attack):
+ *   Ensures that:
+ *   - Health is updated only when damage is positive
+ *   - No update occurs when damage is zero or negative
+ *   This prevents incorrect health modifications.
+ * 
+ * - Output structure validation (attack):
+ *   Confirms that the returned combat payload contains all required fields,
+ *   ensuring compatibility with other parts of the system.
+ * 
+ * Rationale:
+ * These edge cases were selected because they represent critical combat
+ * scenarios where incorrect logic could break combat flow, such as invalid inputs,
+ * boundary health values (0 HP), incorrect bonus application, and deterministic
+ * vs random behavior. Testing these ensures the combat system remains stable,
+ * predictable, and aligned with game rules.
+ */
 
 describe('CombatService', () => {
   let service: CombatService;
@@ -18,26 +84,9 @@ describe('CombatService', () => {
 
   beforeEach(async () => {
 
-    gameSessionMock = {
-      on: jest.fn(),
-      off: jest.fn(),
-      getSessionById: jest.fn(),
-      endCombat: jest.fn(),
-      getMatchFromSessionId: jest.fn(),
-      setWinner: jest.fn(),
-      stopSessionTimers: jest.fn(),
-    };
-
-    turnServiceMock = {
-      startTransition: jest.fn(),
-      advanceToNextTurn: jest.fn(),
-    };
-
-    eventEmitterMock = {
-      emit: jest.fn(),
-      on: jest.fn(),
-      off: jest.fn(),
-    };
+    gameSessionMock = createGameSessionMock();
+    turnServiceMock = createCombatTurnServiceMock();
+    eventEmitterMock = createEventEmitterMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [CombatService,
@@ -223,7 +272,7 @@ describe('CombatService', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('should give the instigator maximum attack with D6 if debug is on', () => {
+  it('should give the instigator maximum attack with D6 if debug is on - attack', () => {
     const session = makeCombatSession({players: [
       makeFighter({}, { id: 'player1', attackDie:'D6'}),
       makeFighter({}, { id: 'player2'}),
@@ -240,7 +289,7 @@ describe('CombatService', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('should give the non-instigator minimum attack and the instigator maximum defense if debugMode is on', () => {
+  it('should give the non-instigator minimum attack and the instigator maximum defense if debugMode is on - attack', () => {
     const session = makeCombatSession({players: [
       makeFighter({}, { id: 'player1', defenseDie: 'D4' }),
       makeFighter({}, { id: 'player2', attackDie:'D6' }),

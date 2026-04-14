@@ -1,4 +1,4 @@
-import { MatchTurnState } from '../game/turn.interface';
+import { MatchTurnState, TurnPhase } from '../game/turn.interface';
 
 export type FighterStance = 'attack' | 'defense' | null;
 
@@ -36,7 +36,7 @@ export interface CombatWaitingSnapshot {
     attackerId: string,
     defenderId: string,
     activePlayerId: string | null,
-    phase: MatchTurnState['phase'],
+    phase: TurnPhase,
     round: number,
     countdownSeconds: number,
 }

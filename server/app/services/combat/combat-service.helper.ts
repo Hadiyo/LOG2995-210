@@ -1,7 +1,10 @@
+import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { makeMatchPlayer, makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
 import { CombatSession, Fighter } from '@app/utilities/combat/combat.interface';
 import { CombatPlayerStatistics, FighterPayload } from '@common/combat/combat.interface';
 import { MatchPlayer } from '@common/game/match.interface';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { CombatTurnService } from './combat-turn.service';
 
 export const makeCombatSession = (overrides: Partial<CombatSession> = {}): CombatSession => ({
     id: 'id1234',
@@ -40,4 +43,26 @@ export const makeCombatPlayerStatistics = (overrides: Partial<CombatPlayerStatis
   attack: 6,
   defense: 2,
   ...overrides,
+});
+
+export const createGameSessionMock = (): jest.Mocked<Partial<GameSessionService>> => ({
+    on: jest.fn(),
+    off: jest.fn(),
+    getSessionById: jest.fn(),
+    endCombat: jest.fn(),
+    getMatchFromSessionId: jest.fn(),
+    setWinner: jest.fn(),
+    stopSessionTimers: jest.fn(),
+});
+
+export const createCombatTurnServiceMock = (): jest.Mocked<Partial<CombatTurnService>> => ({
+    startTransition: jest.fn(),
+    advanceToNextTurn: jest.fn(),
+    initCombatTurnState: jest.fn(),
+});
+
+export const createEventEmitterMock = (): jest.Mocked<Partial<EventEmitter2>> => ({
+    emit: jest.fn(),
+    on: jest.fn(),
+    off: jest.fn(),
 });

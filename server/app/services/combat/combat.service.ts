@@ -3,9 +3,10 @@ import { isPlayerOnIce } from '@app/services/game-session/game-session.match';
 import { canStartCombat } from '@app/services/game-session/game-session.runtime';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { clearTurnState } from '@app/services/timer/turn.timers';
-import { BONUS, MIN_DIE_VALUE, ZERO } from '@app/utilities/combat/combat.constants';
+import { BONUS, MIN_DIE_VALUE, NO_BONUS } from '@app/utilities/combat/combat.constants';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import { CombatSession, Fighter } from '@app/utilities/combat/combat.interface';
+import { CombatTimeoutPayload } from '@app/utilities/combat/combat.types';
 import { Die, DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { CombatPlayerStatistics, FighterStance } from '@common/combat/combat.interface';
 import { MatchPlayer } from '@common/game/match.interface';
@@ -13,11 +14,6 @@ import { SessionSocketEvents } from '@common/socket-events';
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { CombatTurnService } from './combat-turn.service';
-
-type CombatTimeoutPayload = {
-    combatId: string;
-    playerId: string;
-};
 
 @Injectable()
 export class CombatService implements OnModuleInit, OnModuleDestroy {
@@ -37,7 +33,7 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
     }
 
     @OnEvent(CombatEvents.Timeout)
-    handleTurnTimeout( payload: CombatTimeoutPayload): void {
+    handleTurnTimeout(payload: CombatTimeoutPayload): void {
         this.combatTurn(payload.combatId, payload.playerId, null);
     };
 
@@ -132,17 +128,17 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         const currentPlayer = session.players.find(p => p.stats.id === attacks[0].attacker.id);
         const otherPlayer = session.players.find(p => p.stats.id === attacks[1].attacker.id);
 
-        if(currentPlayer.stats.health > ZERO && otherPlayer.stats.health === ZERO){
+        if(currentPlayer.stats.health > NO_BONUS && otherPlayer.stats.health === NO_BONUS){
             this.emitCombatStatistics(session.id, attacks);
             this.gameSessionService.endCombat(session.gameSessionId, currentPlayer.stats.id, otherPlayer.stats.id);
             this.emitCombatResultSnapshot(CombatEvents.Victory, session, currentPlayer.stats.id, otherPlayer.stats.id);
             this.endCombat(session.id);
-        } else if (otherPlayer.stats.health > ZERO && currentPlayer.stats.health === ZERO){
+        } else if (otherPlayer.stats.health > NO_BONUS && currentPlayer.stats.health === NO_BONUS){
             this.emitCombatStatistics(session.id, attacks);
             this.gameSessionService.endCombat(session.gameSessionId, otherPlayer.stats.id, currentPlayer.stats.id);
             this.emitCombatResultSnapshot(CombatEvents.Victory, session, otherPlayer.stats.id, currentPlayer.stats.id);
             this.endCombat(session.id);
-        } else if (otherPlayer.stats.health === ZERO && currentPlayer.stats.health === ZERO){
+        } else if (otherPlayer.stats.health === NO_BONUS && currentPlayer.stats.health === NO_BONUS){
             this.emitCombatStatistics(session.id, attacks);
             this.emitCombatResultSnapshot(CombatEvents.Tie, session, currentPlayer.stats.id, otherPlayer.stats.id);
             this.endCombat(session.id);
@@ -185,14 +181,14 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         defender: Fighter,
         isDefenderOnIce: boolean,
     ): CombatPlayerStatistics {
-        const attackRoll = this.getAttackRoll(session, attacker);
-        const defenseRoll = this.getDefenseRoll(session, defender);
+        const attackRoll = this.getDieRoll(session, attacker);
+        const defenseRoll = this.getDieRoll(session, defender);
 
-        const attackBonus = attacker.combatStance === 'attack' ? BONUS : ZERO;
-        const defenseBonus = defender.combatStance === 'defense' ? BONUS : ZERO;
+        const attackBonus = attacker.combatStance === 'attack' ? BONUS : NO_BONUS;
+        const defenseBonus = defender.combatStance === 'defense' ? BONUS : NO_BONUS;
 
-        const attackerIcePenalty = isAttackerOnIce ? BONUS : ZERO;
-        const defenderIcePenalty = isDefenderOnIce ? BONUS : ZERO;
+        const attackerIcePenalty = isAttackerOnIce ? BONUS : NO_BONUS;
+        const defenderIcePenalty = isDefenderOnIce ? BONUS : NO_BONUS;
 
         const totalAttack = attacker.stats.baseAttack + attackRoll + attackBonus - attackerIcePenalty;
         const totalDefense = defender.stats.baseDefense + defenseRoll + defenseBonus - defenderIcePenalty;
@@ -201,7 +197,7 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
 
         let victim = defender;
 
-        if(damage > ZERO){
+        if(damage > NO_BONUS){
             victim = this.updatePlayerHealth(session.id, defender.stats.id, damage);
             if(!victim) victim = defender;
         }
@@ -260,20 +256,12 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
             return Math.floor(Math.random() * DIE_D6_SIDES) + 1;
     }
 
-    private getAttackRoll(session: CombatSession, attacker: Fighter): number {
+    private getDieRoll(session: CombatSession, player: Fighter): number {
         if (!this.isDebugModeEnabled(session)) {
-            return this.rollDie(attacker.stats.attackDie);
+            return this.rollDie(player.stats.attackDie);
         }
 
-        return this.isCombatInstigator(session, attacker.stats.id) ? this.getMaxRoll(attacker.stats.attackDie) : MIN_DIE_VALUE;
-    }
-
-    private getDefenseRoll(session: CombatSession, defender: Fighter): number {
-        if (!this.isDebugModeEnabled(session)) {
-            return this.rollDie(defender.stats.defenseDie);
-        }
-
-        return this.isCombatInstigator(session, defender.stats.id) ? this.getMaxRoll(defender.stats.defenseDie) : MIN_DIE_VALUE;
+        return this.isCombatInstigator(session, player.stats.id) ? this.getMaxRoll(player.stats.attackDie) : MIN_DIE_VALUE;
     }
 
     private isDebugModeEnabled(session: CombatSession): boolean {

@@ -12,9 +12,63 @@ import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import { SessionSocketEvents } from '@common/socket-events';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test, TestingModule } from '@nestjs/testing';
-import { makeCombatSession, makeFighter } from './combat-service.helper';
+import { createCombatTurnServiceMock, createEventEmitterMock, createGameSessionMock, makeCombatSession, makeFighter } from './combat-service.helper';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
+
+/**
+ * Test Strategy:
+ * 
+ * These tests validate the full combat lifecycle managed by CombatService,
+ * including session creation, turn handling, combat flow, and cleanup.
+ * The goal is to ensure that the combat logic and turns behaves correctly across both
+ * normal gameplay scenarios and failure conditions.
+ * 
+ * Edge Cases Covered:
+ * - Invalid combat initialization (createCombatSession):
+ *   Tests scenarios where combat should not start, such as:
+ *   - Game session not found
+ *   - Game already ended
+ *   - Turn phase not active
+ *   - Requesting player is not the active player
+ *   - Missing or invalid player data
+ *   - Players not in valid positions to start combat
+ *   These cases ensure that combat is only created under valid game conditions.
+ * 
+ * - Combat session cleanup (endCombat):
+ *   Verifies that timers are cleared and sessions are removed safely,
+ *   and ensures no action is taken when the session does not exist.
+ * 
+ * - Turn execution logic (startCombat, combatTurn):
+ *   Ensures that startCombat initiates the timer
+ *   Tests both branches of combatTurn:
+ *   - When both players have selected stances → full combat logic executes
+ *   - When at least one stance is missing → turn is skipped/switched
+ *   This ensures correct flow control depending on player input completeness.
+ * 
+ * - Turn switching constraints (switchCombatTurn):
+ *   Validates that turns only advance when:
+ *   - The session exists
+ *   - The phase is active
+ *   - The correct player initiates the switch
+ *   Prevents invalid or out-of-order turn transitions.
+ * 
+ * - Player disconnection handling (handleDisconnect):
+ *   Covers cases where:
+ *   - Player is not in combat → no action taken
+ *   - Opponent is missing → combat ends without winner
+ *   - Opponent is present → winner is set and result is emitted
+ *   This ensures resilience to real-world issues like unexpected disconnects.
+ * 
+ * - Timeout handling (handleTurnTimeout):
+ *   Ensures that a timeout results in a default (null) stance submission,
+ *   preventing the combat from stalling indefinitely.
+ * 
+ * Rationale:
+ * These edge cases were selected because they represent critical points
+ * where the system could fail during the combat and in between combats. 
+ * Testing them ensures the combat lifecycle remains consistent, predictable, and fault-tolerant.
+ */
 
 describe('Combat Life Cycle', () => {
     let service: CombatService;
@@ -24,27 +78,9 @@ describe('Combat Life Cycle', () => {
 
     beforeEach(async () => {
 
-        gameSessionMock = {
-            on: jest.fn(),
-            off: jest.fn(),
-            getSessionById: jest.fn(),
-            endCombat: jest.fn(),
-            getMatchFromSessionId: jest.fn(),
-            setWinner: jest.fn(),
-            stopSessionTimers: jest.fn(),
-        };
-
-        turnServiceMock = {
-            startTransition: jest.fn(),
-            advanceToNextTurn: jest.fn(),
-            initCombatTurnState: jest.fn(),
-        };
-
-        eventEmitterMock = {
-            emit: jest.fn(),
-            on: jest.fn(),
-            off: jest.fn(),
-        };
+        gameSessionMock = createGameSessionMock();
+        turnServiceMock = createCombatTurnServiceMock();
+        eventEmitterMock = createEventEmitterMock();
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [CombatService,
@@ -57,6 +93,7 @@ describe('Combat Life Cycle', () => {
         service = module.get<CombatService>(CombatService);
 
         jest.clearAllMocks();
+        // To ensure that previous tests modifying this resource does not interfer with other tests
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (service as any)['combatSessions'].clear();
     });
@@ -107,6 +144,7 @@ describe('Combat Life Cycle', () => {
         const player1 = makeFighter({stats: undefined});
         const player2 = makeFighter();
         (gameSessionMock.getSessionById as jest.Mock).mockReturnValue(game);
+        // To mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'createFighter').mockReturnValueOnce(player1).mockReturnValueOnce(player2);
         const result = service.createCombatSession('player1', 'player2', 'idk');
@@ -119,13 +157,13 @@ describe('Combat Life Cycle', () => {
         const player2 = makeFighter();
         jest.spyOn(combatUtils, 'canStartCombat').mockReturnValue(false);
         (gameSessionMock.getSessionById as jest.Mock).mockReturnValue(game);
+        // To mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'createFighter').mockReturnValueOnce(player1).mockReturnValueOnce(player2);
         const result = service.createCombatSession('player1', 'player2', 'idk');
         expect(result).toBe(null);
     });
     
-      // issue with canStartCombat
     it('should create a valid combat session - createCombatSession', () => {
         const player1 = makeFighter({stats: makeMatchPlayer({ id: 'player1', position: {x: 1, y: 1}})});
         const player2 = makeFighter({stats: makeMatchPlayer({ id: 'player2', position: {x: 1, y: 2}})});
@@ -135,8 +173,10 @@ describe('Combat Life Cycle', () => {
     
         (gameSessionMock.getSessionById as jest.Mock).mockReturnValue(game);
         jest.spyOn(crypto, 'randomUUID').mockReturnValue('1111-2222-3333-4444-5555');
+        // To mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'createFighter').mockReturnValueOnce(player1).mockReturnValueOnce(player2);
+        // To mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(turnServiceMock as any, 'initCombatTurnState').mockReturnValue(turnState);
         jest.spyOn(combatUtils, 'canStartCombat').mockReturnValue(true);
@@ -189,6 +229,7 @@ describe('Combat Life Cycle', () => {
         const session = makeCombatSession();
         service['combatSessions'].set(session.id, session);
     
+        // To spy and mock a private method
         const stanceSpy = jest
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .spyOn(service as any, 'setCombatStance')
@@ -207,10 +248,13 @@ describe('Combat Life Cycle', () => {
         session.players[1].combatStance = 'defense';
         session.players[1].hasSelectedStance = true;
         service['combatSessions'].set(session.id, session);
+        // To mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'setCombatStance').mockReturnValue(true);
+        // To spy and mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const onIceSpy = jest.spyOn(service as any, 'isFighterOnIce').mockReturnValue(false);
+        // To spy and mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const attackSpy = jest.spyOn(service as any, 'attack').mockReturnValue({});
         const evaluateSpy = jest.spyOn(service, 'evaluateCombatResult').mockReturnValue(true);
@@ -232,11 +276,14 @@ describe('Combat Life Cycle', () => {
         session.players[1].combatStance = null;
         session.players[1].hasSelectedStance = false;
         service['combatSessions'].set(session.id, session);
+        // To mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'setCombatStance').mockReturnValue(true);
     
+        // To spy and mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const onIceSpy = jest.spyOn(service as any, 'isFighterOnIce').mockReturnValue(false);
+        // To spy and mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const attackSpy = jest.spyOn(service as any, 'attack').mockReturnValue({});
         const evaluateSpy = jest.spyOn(service, 'evaluateCombatResult').mockReturnValue(true);
@@ -293,6 +340,7 @@ describe('Combat Life Cycle', () => {
     it('should end the combat even if the opponent is no longer part of the combatSession', () => {
         const player = makeFighter();
         const combat = makeCombatSession({players: [player]});
+        // To mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'getCombatFromPlayer').mockReturnValue(combat);
         const spy = jest.spyOn(service, 'endCombat').mockImplementation();
@@ -308,10 +356,12 @@ describe('Combat Life Cycle', () => {
         const player1 = makeFighter({}, {id:'player1'});
         const player2 = makeFighter({}, {id: 'player2'});
         const combat = makeCombatSession({players: [player1, player2]});
+        // To mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'getCombatFromPlayer').mockReturnValue(combat);
         const spy = jest.spyOn(service, 'endCombat').mockImplementation();
         const spy2 = jest.spyOn(gameSessionMock, 'setWinner').mockImplementation();
+        // To spy and mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const spy3 = jest.spyOn(service as any, 'emitCombatResultSnapshot').mockImplementation();
 
