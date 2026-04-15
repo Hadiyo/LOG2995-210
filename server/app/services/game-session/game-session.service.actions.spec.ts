@@ -27,6 +27,7 @@ describe('GameSessionService actions', () => {
         expect(harness.service.toggleDebugMode('session-1', 'player-2')).toBe(false);
         expect(harness.service.toggleDebugMode('session-1', 'player-1')).toBe(true);
         expect(runtime.match.debugMode).toBe(true);
+        expect(runtime.logEntries.at(-1)?.entry.content).toContain('active le mode de debogage');
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
     });
 
@@ -147,6 +148,7 @@ describe('GameSessionService actions', () => {
             poseDurationMs: 220,
         });
         expect(runtime.turnState.actionTaken).toBe(true);
+        expect(runtime.logEntries.at(-1)?.entry.content).toContain('ouvre une porte');
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
     });
 
@@ -199,6 +201,7 @@ describe('GameSessionService actions', () => {
         expect(runtime.match.pendingFlagTransfer).toBeNull();
         expect(runtime.match.flagCarrierId).toBe('player-2');
         expect(runtime.messages.at(-1)?.content).toContain('obtient le drapeau');
+        expect(runtime.logEntries.at(-1)?.entry.content).toContain('obtient le drapeau');
         expect(emitSnapshotSpy).toHaveBeenCalled();
     });
 
@@ -221,7 +224,8 @@ describe('GameSessionService actions', () => {
         });
         harness.getPrivateState().sessions.set('pickup', pickupRuntime);
         expect(harness.service.movePlayer('pickup', 'player-1', 'right')).toBe(true);
-        expect(pickupRuntime.messages.at(-1)?.content).toContain('ramasse le drapeau');
+        expect(pickupRuntime.messages).toHaveLength(0);
+        expect(pickupRuntime.logEntries.at(-1)?.entry.content).toContain('ramasse le drapeau');
 
         const transferRuntime = makeRuntime({
             sessionId: 'transfer',
@@ -248,6 +252,48 @@ describe('GameSessionService actions', () => {
         expect(emitSnapshotSpy).toHaveBeenCalled();
     });
 
+    it('starts combat only for adjacent active players and finishes the match on the win threshold', () => {
+        const serviceInternals = harness.getServiceInternals();
+        const privateState = harness.getPrivateState();
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
+
+        const runtime = makeRuntime({
+            match: makeMatch({
+                players: [
+                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, combatWins: 1, isOrganizer: true }),
+                    makeMatchPlayer({ id: 'player-2', name: 'Bob', position: { x: 1, y: 0 }, avatarId: 1 }),
+                ],
+            }),
+        });
+        privateState.sessions.set(runtime.sessionId, runtime);
+
+        expect(harness.service.startCombat('missing', 'player-1', 'player-2')).toBe(false);
+        expect(harness.service.startCombat('session-1', 'player-2', 'player-1')).toBe(false);
+        expect(harness.service.startCombat('session-1', 'player-1', 'player-2')).toBe(true);
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.combatWins).toBe(2);
+        expect(runtime.logEntries.at(-1)?.visibleToPlayerIds).toEqual(['player-1', 'player-2']);
+        expect(runtime.logEntries.at(-1)?.entry.involvedPlayers).toEqual(['Alice', 'Bob']);
+        expect(runtime.match.players.find((player) => player.id === 'player-1')?.render).toMatchObject({
+            facing: 'right',
+            pose: 'attack',
+            poseDurationMs: 220,
+        });
+        expect(runtime.turnState.actionTaken).toBe(true);
+        expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
+
+        const winnerRuntime = makeRuntime({
+            sessionId: 'winner',
+            match: makeMatch({
+                players: [
+                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, combatWins: 2, isOrganizer: true }),
+                    makeMatchPlayer({ id: 'player-2', name: 'Bob', position: { x: 1, y: 0 }, avatarId: 1 }),
+                ],
+            }),
+        });
+        privateState.sessions.set('winner', winnerRuntime);
+        expect(harness.service.startCombat('winner', 'player-1', 'player-2')).toBe(true);
+        expect(privateState.sessions.has('winner')).toBe(false);
+    });
     it('declares a team victory when the flag carrier returns to the starting tile', () => {
         const privateState = harness.getPrivateState();
         const runtime = makeRuntime({
@@ -315,6 +361,7 @@ describe('GameSessionService actions', () => {
         expect(runtime.match.sanctuaryStates?.find((state) => state.objectId === REGEN_SANCTUARY_ID)?.cooldownTurnsRemaining)
             .toBe(SANCTUARY_COOLDOWN_TURNS);
         expect(runtime.turnState.actionTaken).toBe(true);
+        expect(runtime.logEntries.at(-1)?.entry.content).toContain('utilise un sanctuaire');
         expect(emitSnapshotSpy).toHaveBeenCalledTimes(2);
     });
 
@@ -348,6 +395,7 @@ describe('GameSessionService actions', () => {
         expect(runtime.match.pendingSanctuaryChoice).toBeNull();
         expect(runtime.match.players.find((player) => player.id === 'player-1')?.health).toBe(DAMAGED_PLAYER_HEALTH);
         expect(runtime.turnState.actionTaken).toBe(false);
+        expect(runtime.logEntries).toHaveLength(0);
     });
 
     it('ticks arena sanctuary cooldowns and temporary buffs when turns advance', () => {

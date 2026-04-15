@@ -33,6 +33,7 @@ import { getPhaseDescription, getPhaseHeadline } from '@app/utils/game-view/game
 import { toGamePlayer } from '@app/utils/game-view/game-view-player.utils';
 import { createSelectedTileInfo } from '@app/utils/game-view/game-view-tile-info.utils';
 import { ChatMessage } from '@common/chat/chat.interface';
+import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import { MatchPlayer } from '@common/game/match.interface';
 import { MapSize } from '@common/maps/map.enums';
 import { GameCell } from '@common/maps/map.interface';
@@ -97,6 +98,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected readonly endRedirectRemainingMs = signal(0);
     protected readonly errorMessage = computed(() => this.gameSessionSocket.errorMessage() || this.display.errorMessage());
     protected readonly match = this.display.match;
+    protected readonly messageTab = signal<'chat' | 'journal'>('chat');
     protected readonly localPlayerId = computed(() => this.display.localPlayer()?.id ?? '');
     protected readonly leftPanelTab = signal<'player' | 'turn-order'>('player');
     protected readonly isPlayerListExpanded = signal(false);
@@ -202,6 +204,8 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.interaction.inspectedTile, this.mapCells, this.mapObjects, this.players, this.inactiveSanctuaryObjectIds,
     );
     protected readonly chatMessages = toSignal(this.chatService.chat$, { initialValue: [] as ChatMessage[] });
+    protected readonly journalEntries = computed<readonly GameLogEntry[]>(() => this.gameSessionSocket.logEntries());
+    protected readonly journalAvailable = computed<boolean>(() => this.display.turnState()?.hasStarted ?? false);
     protected readonly incomingFlagTransfer = computed(() => buildIncomingFlagTransfer(this.match(), this.localPlayerId()));
 
     private matchEndRedirectState: MatchEndRedirectState = {
@@ -223,6 +227,11 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
                     state: this.matchEndRedirectState,
                 },
             );
+        });
+        effect(() => {
+            if (!this.journalAvailable() && this.messageTab() === 'journal') {
+                this.messageTab.set('chat');
+            }
         });
     }
 
@@ -298,6 +307,14 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
 
     protected onToggleActionMode(): void {
         handleGameViewToggleActionMode(this.combat.hasActiveCombat(), this.interaction);
+    }
+
+    protected onMessageTabChange(tab: 'chat' | 'journal'): void {
+        if (tab === 'journal' && !this.journalAvailable()) {
+            return;
+        }
+
+        this.messageTab.set(tab);
     }
 
     protected onTogglePlayerListExpanded(): void {

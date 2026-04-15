@@ -9,9 +9,10 @@ import {
 } from '@app/services/timer/turn.timers';
 import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
 import { ACTIVE_TURN_DURATION_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
-import { GameSessionRuntime } from '@app/utilities/game/game.interface';
+import { GameSessionLogEntry, GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
 import { ChatMessage } from '@common/chat/chat.interface';
+import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import {
     InitializedMatch,
     MatchPendingFlagTransfer,
@@ -119,6 +120,7 @@ export class GameSessionLifecycle {
             match: session.match,
             turnState: session.turnState,
             messages: session.messages,
+            logEntries: session.logEntries.map((entry) => ({ ...entry.entry, involvedPlayers: [...entry.entry.involvedPlayers] })),
         });
     }
 
@@ -311,6 +313,31 @@ export class GameSessionLifecycle {
         };
     }
 
+    getActivePlayer(session: GameSessionRuntime): MatchPlayer | null {
+    createLogEntry(content: string, involvedPlayers: string[], visibleToPlayerIds: string[] | null = null): GameSessionLogEntry {
+        const entry: GameLogEntry = {
+            id: crypto.randomUUID(),
+            author: 'Journal',
+            content,
+            createdAt: new Date().toISOString(),
+            involvedPlayers: [...involvedPlayers],
+        };
+
+        return {
+            entry,
+            visibleToPlayerIds: visibleToPlayerIds ? [...visibleToPlayerIds] : null,
+        };
+    }
+
+    appendLogEntry(
+        session: GameSessionRuntime,
+        content: string,
+        involvedPlayers: string[],
+        visibleToPlayerIds: string[] | null = null,
+    ): void {
+        session.logEntries.push(this.createLogEntry(content, involvedPlayers, visibleToPlayerIds));
+    }
+    
     getActivePlayer(session: GameSessionRuntime): MatchPlayer | null {
         const activePlayerId = session.turnState.order[session.turnState.currentTurnIndex]?.playerId ?? null;
         if(!activePlayerId)

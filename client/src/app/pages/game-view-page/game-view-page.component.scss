@@ -153,6 +153,11 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 38%, transparent);
 }
 
+.panel__tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .panel__tab-list {
   display: flex;
   flex-wrap: nowrap;

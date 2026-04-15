@@ -1,4 +1,5 @@
 import { ChatMessage } from './chat/chat.interface';
+import { GameLogEntry } from './game/game-log-entry.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from './game/match.interface';
 import { MatchTurnState } from './game/turn.interface';
 
@@ -223,6 +224,7 @@ export interface GameSessionSnapshotPayload {
     match: InitializedMatch;
     turnState: MatchTurnState;
     messages: ChatMessage[];
+    logEntries: GameLogEntry[];
 }
 
 export interface GameSessionErrorPayload {
