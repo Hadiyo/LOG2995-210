@@ -14,6 +14,7 @@ import {
 } from '@angular/core';
 import { GameNotificationsPanelComponent } from '@app/components/game/game-notifications-panel/game-notifications-panel.component';
 import { ChatMessage } from '@common/chat/chat.interface';
+import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import { GameNotification } from '@common/game-notification';
 
 @Component({
@@ -24,7 +25,7 @@ import { GameNotification } from '@common/game-notification';
   styleUrl: './game-chat-panel.component.scss',
 })
 export class GameChatPanelComponent implements OnChanges, AfterViewInit {
-  @Input({ required: true }) messages: readonly ChatMessage[] = [];
+  @Input({ required: true }) messages: readonly (ChatMessage | GameLogEntry)[] = [];
   @Input() notification: GameNotification | null = null;
   @Input() currentPlayerName: string | null = null;
   @Input() messageMaxLength = 200;
@@ -76,9 +77,13 @@ export class GameChatPanelComponent implements OnChanges, AfterViewInit {
   }
 
   // Helper to identify if a message was sent by the current player for styling.
-  isOwnMessage(message: ChatMessage): boolean {
+  isOwnMessage(message: ChatMessage | GameLogEntry): boolean {
     if (!this.currentPlayerName) return false;
     return message.author === this.currentPlayerName;
+  }
+
+  hasInvolvedPlayers(message: ChatMessage | GameLogEntry): message is GameLogEntry {
+    return Array.isArray((message as GameLogEntry).involvedPlayers) && (message as GameLogEntry).involvedPlayers.length > 0;
   }
 
   // Scrolls the messages feed to the bottom.

@@ -154,6 +154,7 @@ export const makeRuntime = (overrides: Partial<GameSessionRuntime> = {}): GameSe
     match: makeMatch(),
     turnState: makeTurnState(),
     messages: [],
+    logEntries: [],
     socketToPlayerId: new Map(),
     transitionTimeoutId: null,
     activeTurnTimeoutId: null,

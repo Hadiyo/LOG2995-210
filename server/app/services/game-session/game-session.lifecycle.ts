@@ -1,4 +1,5 @@
 import { ChatMessage } from '@common/chat/chat.interface';
+import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import {
     InitializedMatch,
     MatchPendingFlagTransfer,
@@ -14,6 +15,7 @@ import {
     ACTIVE_TURN_DURATION_MS,
     createActiveTurnState,
     createTransitionTurnState,
+    GameSessionLogEntry,
     GameSessionRuntime,
     SNAPSHOT_TICK_MS,
     TRANSITION_DURATION_MS,
@@ -128,6 +130,7 @@ export class GameSessionLifecycle {
             match: session.match,
             turnState: session.turnState,
             messages: session.messages,
+            logEntries: session.logEntries.map((entry) => ({ ...entry.entry, involvedPlayers: [...entry.entry.involvedPlayers] })),
         });
     }
 
@@ -331,6 +334,30 @@ export class GameSessionLifecycle {
         };
     }
 
+    createLogEntry(content: string, involvedPlayers: string[], visibleToPlayerIds: string[] | null = null): GameSessionLogEntry {
+        const entry: GameLogEntry = {
+            id: crypto.randomUUID(),
+            author: 'Journal',
+            content,
+            createdAt: new Date().toISOString(),
+            involvedPlayers: [...involvedPlayers],
+        };
+
+        return {
+            entry,
+            visibleToPlayerIds: visibleToPlayerIds ? [...visibleToPlayerIds] : null,
+        };
+    }
+
+    appendLogEntry(
+        session: GameSessionRuntime,
+        content: string,
+        involvedPlayers: string[],
+        visibleToPlayerIds: string[] | null = null,
+    ): void {
+        session.logEntries.push(this.createLogEntry(content, involvedPlayers, visibleToPlayerIds));
+    }
+
     private activateTurn(session: GameSessionRuntime): void {
         const activePlayerId = session.turnState.order[session.turnState.currentTurnIndex]?.playerId ?? null;
         const activePlayer = session.match.players.find((player) => player.id === activePlayerId) ?? null;
@@ -340,6 +367,7 @@ export class GameSessionLifecycle {
 
         clearGameSessionTimers(session);
         session.turnState = createActiveTurnState(session.turnState, activePlayer);
+        this.appendLogEntry(session, `Debut du tour de ${activePlayer.name}.`, [activePlayer.name]);
         this.emitSnapshot(session);
         session.timerIntervalId = setInterval(() => tickGameSessionTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
         session.activeTurnTimeoutId = setTimeout(() => this.advanceToNextTurn(session), ACTIVE_TURN_DURATION_MS);

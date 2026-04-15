@@ -41,7 +41,12 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
         private readonly logger: Logger = new Logger(GameSessionGateway.name),
     ) {
         this.onSnapshot = (payload) => {
-            this.server.to(getGameSessionRoom(payload.sessionId)).emit(SessionSocketEvents.GameSessionSnapshot, payload);
+            for (const socketId of this.gameSessionService.getSocketIdsForSession(payload.sessionId)) {
+                const snapshot = this.gameSessionService.getSnapshotForSocket(payload.sessionId, socketId);
+                if (snapshot) {
+                    this.server.to(socketId).emit(SessionSocketEvents.GameSessionSnapshot, snapshot);
+                }
+            }
         };
         this.gameSessionService.on(SessionSocketEvents.GameSessionSnapshot, this.onSnapshot);
     }
@@ -70,10 +75,7 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
             }
             client.join(getGameSessionRoom(payload.sessionId));
             client.emit(SessionSocketEvents.GameSessionSnapshot, {
-                sessionId: payload.sessionId,
-                match: snapshot.match,
-                turnState: snapshot.turnState,
-                messages: snapshot.messages,
+                ...snapshot.snapshot,
             } satisfies GameSessionSnapshotPayload);
         } catch {
             client.emit(SessionSocketEvents.GameSessionError, {

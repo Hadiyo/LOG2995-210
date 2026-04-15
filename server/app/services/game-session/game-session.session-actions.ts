@@ -70,7 +70,14 @@ export class GameSessionSessionActions {
         if (accepted) {
             const transferMessage = this.lifecycle.buildFlagTransferMessage(session.match, pendingFlagTransfer, nextFlagCarrierId);
             if (transferMessage) {
+                const requester = session.match.players.find((player) => player.id === pendingFlagTransfer.requesterId);
+                const receiver = session.match.players.find((player) => player.id === pendingFlagTransfer.receiverId);
                 session.messages.push(this.lifecycle.createSystemMessage(transferMessage));
+                this.lifecycle.appendLogEntry(
+                    session,
+                    transferMessage,
+                    [requester?.name, receiver?.name].filter((name): name is string => !!name),
+                );
             }
         }
 
@@ -93,6 +100,11 @@ export class GameSessionSessionActions {
         const nextPlayers = session.match.players.filter((player) => player.id !== playerId);
         if (nextPlayers.length === session.match.players.length) {
             return false;
+        }
+
+        if (departingPlayer) {
+            const content = `${departingPlayer.name} abandonne la partie.`;
+            this.lifecycle.appendLogEntry(session, content, [departingPlayer.name]);
         }
 
         const nextFlagCarrierId = session.match.flagCarrierId === playerId ? null : (session.match.flagCarrierId ?? null);
@@ -140,6 +152,11 @@ export class GameSessionSessionActions {
             ...session.match,
             debugMode: !session.match.debugMode,
         };
+        this.lifecycle.appendLogEntry(
+            session,
+            `${player.name} ${session.match.debugMode ? 'active' : 'desactive'} le mode de debogage.`,
+            [player.name],
+        );
         this.lifecycle.emitSnapshot(session);
         return true;
     }

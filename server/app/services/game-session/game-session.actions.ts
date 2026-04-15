@@ -68,7 +68,8 @@ export class GameSessionActions {
             objects: buildVisibleObjects(session.match.allObjects, nextPlayers, nextFlagCarrierId),
         };
         if (pickedUpFlag) {
-            session.messages.push(this.lifecycle.createSystemMessage(`${movingPlayer.name} ramasse le drapeau.`));
+            const content = `${movingPlayer.name} ramasse le drapeau.`;
+            this.lifecycle.appendLogEntry(session, content, [movingPlayer.name]);
         }
         session.turnState = {
             ...session.turnState,
@@ -141,6 +142,10 @@ export class GameSessionActions {
                 ...session.turnState,
                 actionTaken: true,
             };
+            const actingPlayer = session.match.players.find((player) => player.id === playerId);
+            if (actingPlayer) {
+                this.lifecycle.appendLogEntry(session, `${actingPlayer.name} utilise un sanctuaire.`, [actingPlayer.name]);
+            }
         }
 
         this.lifecycle.emitSnapshot(session);
@@ -154,6 +159,7 @@ export class GameSessionActions {
         }
 
         const { session, player } = actionContext;
+        const targetDoor = session.match.map.find((cell) => cell.position.x === position.x && cell.position.y === position.y);
         const nextMap = session.match.map.map((cell) =>
             cell.position.x === position.x && cell.position.y === position.y
                 ? { ...cell, isWalkable: !cell.isWalkable }
@@ -177,6 +183,13 @@ export class GameSessionActions {
             map: nextMap,
         };
         session.turnState = { ...session.turnState, actionTaken: true };
+        if (targetDoor) {
+            this.lifecycle.appendLogEntry(
+                session,
+                `${player.name} ${targetDoor.isWalkable ? 'ferme' : 'ouvre'} une porte.`,
+                [player.name],
+            );
+        }
         this.lifecycle.emitSnapshot(session);
         return true;
     }
@@ -188,6 +201,12 @@ export class GameSessionActions {
         }
 
         const { session, attacker, defender } = combatContext;
+        this.lifecycle.appendLogEntry(
+            session,
+            `${attacker.name} remporte un combat contre ${defender.name}.`,
+            [attacker.name, defender.name],
+            [attackerId, defenderId],
+        );
         const respawnPosition = resolveRespawnPosition(session.match, defenderId);
         let nextFlagCarrierId = session.match.flagCarrierId ?? null;
         let nextAllObjects = session.match.allObjects.map((object) => ({

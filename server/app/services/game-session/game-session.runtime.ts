@@ -1,4 +1,5 @@
 import { ChatMessage } from '@common/chat/chat.interface';
+import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { ObjectType, TileType } from '@common/maps/map.enums';
@@ -11,11 +12,17 @@ export const ACTIVE_TURN_DURATION_MS = 30000;
 export const SNAPSHOT_TICK_MS = 1000;
 export const CLASSIC_WIN_THRESHOLD = 3;
 
+export interface GameSessionLogEntry {
+    entry: GameLogEntry;
+    visibleToPlayerIds: string[] | null;
+}
+
 export interface GameSessionRuntime {
     sessionId: string;
     match: InitializedMatch;
     turnState: MatchTurnState;
     messages: ChatMessage[];
+    logEntries: GameSessionLogEntry[];
     socketToPlayerId: Map<string, string>;
     transitionTimeoutId: NodeJS.Timeout | null;
     activeTurnTimeoutId: NodeJS.Timeout | null;
@@ -50,6 +57,7 @@ export function buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[],
         match,
         turnState,
         messages: messages.map((message) => ({ ...message })),
+        logEntries: [],
         socketToPlayerId: new Map(),
         transitionTimeoutId: null,
         activeTurnTimeoutId: null,

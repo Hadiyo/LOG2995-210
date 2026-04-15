@@ -3,6 +3,7 @@ import { ChatService } from '@app/services/chat/chat.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
+import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import {
     CombatSocketEvents,
     DebugTeleportPlayerPayload,
@@ -29,6 +30,7 @@ export class GameSessionSocketService {
     private static readonly debugToggleGuardMs = 400;
     readonly sessionId = signal<string | null>(null);
     readonly errorMessage = signal('');
+    readonly logEntries = signal<GameLogEntry[]>([]);
 
     private listenersRegistered = false;
     private debugTogglePending = false;
@@ -51,6 +53,7 @@ export class GameSessionSocketService {
         }
 
         this.sessionId.set(sessionId);
+        this.logEntries.set([]);
         this.socketManager.send(SessionSocketEvents.JoinGameSession, {
             sessionId,
             playerId,
@@ -222,6 +225,7 @@ export class GameSessionSocketService {
             this.matchState.hydrateSnapshot(payload.match);
             this.turnState.hydrateSnapshot(payload.turnState);
             this.chatService.loadChatMessages(payload.messages);
+            this.logEntries.set(payload.logEntries);
             this.errorMessage.set('');
         });
 

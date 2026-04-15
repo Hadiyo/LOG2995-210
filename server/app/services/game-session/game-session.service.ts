@@ -1,8 +1,7 @@
 import { MapService } from '@app/services/map/map.service';
 import { ChatMessage } from '@common/chat/chat.interface';
-import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
-import { MatchTurnState } from '@common/game/turn.interface';
-import { SessionSocketEvents } from '@common/socket-events';
+import { MatchLobbyPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
+import { GameSessionSnapshotPayload, SessionSocketEvents } from '@common/socket-events';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import { GameSessionActions } from './game-session.actions';
@@ -42,7 +41,7 @@ export class GameSessionService {
         sessionId: string,
         playerId: string,
         socketId: string,
-    ): { match: InitializedMatch; turnState: MatchTurnState; messages: ChatMessage[]; previousSessionId: string | null } {
+    ): { snapshot: GameSessionSnapshotPayload; previousSessionId: string | null } {
         const session = this.sessions.get(sessionId);
         if (!session) {
             throw new NotFoundException('Game session not found');
@@ -63,11 +62,27 @@ export class GameSessionService {
 
         session.socketToPlayerId.set(socketId, playerId);
         return {
-            match: session.match,
-            turnState: session.turnState,
-            messages: session.messages,
+            snapshot: this.buildSnapshot(session, playerId),
             previousSessionId: previousSessionId && previousSessionId !== sessionId ? previousSessionId : null,
         };
+    }
+
+    getSocketIdsForSession(sessionId: string): string[] {
+        return [...(this.sessions.get(sessionId)?.socketToPlayerId.keys() ?? [])];
+    }
+
+    getSnapshotForSocket(sessionId: string, socketId: string): GameSessionSnapshotPayload | null {
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return null;
+        }
+
+        const playerId = session.socketToPlayerId.get(socketId);
+        if (!playerId) {
+            return null;
+        }
+
+        return this.buildSnapshot(session, playerId);
     }
 
     getPlayerIdForSocket(socketId: string, sessionId: string): string | null {
@@ -173,5 +188,20 @@ export class GameSessionService {
 
     startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
         return this.actions.startCombat(sessionId, attackerId, defenderId);
+    }
+
+    private buildSnapshot(
+        session: GameSessionRuntime,
+        playerId: string,
+    ): GameSessionSnapshotPayload {
+        return {
+            sessionId: session.sessionId,
+            match: session.match,
+            turnState: session.turnState,
+            messages: session.messages,
+            logEntries: session.logEntries
+                .filter((entry) => !entry.visibleToPlayerIds || entry.visibleToPlayerIds.includes(playerId))
+                .map((entry) => ({ ...entry.entry, involvedPlayers: [...entry.entry.involvedPlayers] })),
+        };
     }
 }
