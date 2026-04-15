@@ -200,6 +200,22 @@ describe('EditorTopbarComponent', () => {
     expect(alert?.textContent).toContain('Le nom de la carte est requis.');
   });
 
+  it('onSave() should dismiss validation issues when the invalid save button is clicked again', async () => {
+    editorStateMock.editorMap.set(makeInvalidMap());
+
+    await component.onSave();
+    fixture.detectChanges();
+
+    expect(component.shouldShowIssues()).toBeTrue();
+
+    await component.onSave();
+    fixture.detectChanges();
+
+    expect(component.isValidationDismissed()).toBeTrue();
+    expect(component.shouldShowIssues()).toBeFalse();
+    expect(mapApiServiceSpy.saveMap).not.toHaveBeenCalled();
+  });
+
   // REQ: Le systeme doit generer une image de previsualisation apres un enregistrement reussi.
   // REQ: Le systeme doit rediriger l'utilisateur vers la vue d'administration apres un enregistrement reussi.
   // REQ: Un jeu cree ou modifie doit avoir un parametre de visibilite cache.
