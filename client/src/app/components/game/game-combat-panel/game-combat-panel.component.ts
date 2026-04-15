@@ -23,10 +23,6 @@ export class GameCombatPanelComponent {
     protected readonly isHorizontal = computed(() => this.panelState()?.orientation === 'horizontal');
     protected readonly timerLabel = computed(() => this.combat.timerLabel());
 
-    protected closeCombat(): void {
-        this.combat.closeCombat();
-    }
-
     protected selectAttackStance(): void {
         this.combat.selectStance('attack');
     }
