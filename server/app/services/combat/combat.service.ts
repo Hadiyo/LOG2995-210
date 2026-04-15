@@ -5,18 +5,18 @@ import { GameSessionService } from '@app/services/game-session/game-session.serv
 import { clearTurnState } from '@app/services/timer/turn.timers';
 import { BONUS, MIN_DIE_VALUE, NO_BONUS } from '@app/utilities/combat/combat.constants';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
-import { CombatSession, Fighter } from '@app/utilities/combat/combat.interface';
+import { CombatSession, CombatStartPayload, Fighter } from '@app/utilities/combat/combat.interface';
 import { CombatTimeoutPayload } from '@app/utilities/combat/combat.types';
 import { Die, DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { CombatPlayerStatistics, FighterStance } from '@common/combat/combat.interface';
 import { MatchPlayer } from '@common/game/match.interface';
 import { SessionSocketEvents } from '@common/socket-events';
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { CombatTurnService } from './combat-turn.service';
 
 @Injectable()
-export class CombatService implements OnModuleInit, OnModuleDestroy {
+export class CombatService {
     private readonly combatSessions = new Map<string, CombatSession>();
     constructor(
         private readonly gameSessionService: GameSessionService,
@@ -24,17 +24,22 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         private readonly event: EventEmitter2,
     ){}
 
-    onModuleInit() {
-        this.gameSessionService.on(SessionSocketEvents.ClientDisconnect, this.handleDisconnect);
-    }
-
-    onModuleDestroy() {
-        this.gameSessionService.off(SessionSocketEvents.ClientDisconnect, this.handleDisconnect);
-    }
-
     @OnEvent(CombatEvents.Timeout)
     handleTurnTimeout(payload: CombatTimeoutPayload): void {
         this.combatTurn(payload.combatId, payload.playerId, null);
+    };
+
+    @OnEvent(SessionSocketEvents.ClientDisconnect)
+    handleDisconnect(playerId: string): void {
+        const combat = this.getCombatFromPlayer(playerId);
+        if(!combat)
+            return;
+        const opponent = combat.players.find((player) => player.stats.id !== playerId);
+        if(opponent){
+            this.gameSessionService.endCombat(combat.gameSessionId, opponent.stats.id, null);
+            this.emitCombatResultSnapshot(CombatEvents.ClientDisconnect, combat, opponent.stats.id, playerId);
+        }
+        this.endCombat(combat.id);
     };
 
     getCombatIdByRooms(rooms: string[]): string | undefined {
@@ -54,13 +59,15 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         return this.combatSessions.get(combatId);
     }
 
-    createCombatSession(attackerId: string, defenderId: string, gameSessionId: string): CombatSession | null {
+    createCombatSession(attackerId: string, defenderId: string, gameSessionId: string): CombatStartPayload | null {
         const game = this.gameSessionService.getSessionById(gameSessionId);
 
-        if (!game || game.turnState.phase !== 'active' || game.turnState.activePlayerId !== attackerId || game.match.endState) {
+        if (!game || game.turnState.phase !== 'active' || 
+            game.turnState.activePlayerId !== attackerId || 
+            game.match.endState ||  game.turnState.actionTaken ||
+            game.match.pendingSanctuaryChoice) {
             return null;
         }
-        this.gameSessionService.stopSessionTimers(game, attackerId);
 
         const player1 = this.createFighter(game.match.players, attackerId);
         const player2 = this.createFighter(game.match.players, defenderId);
@@ -84,7 +91,7 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
             timerIntervalId: null,
         };
         this.combatSessions.set(session.id, session);
-        return session;
+        return { combat: session, game };
     }
     
     startCombat(session: CombatSession): void {
@@ -130,17 +137,18 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
 
         if(currentPlayer.stats.health > NO_BONUS && otherPlayer.stats.health === NO_BONUS){
             this.emitCombatStatistics(session.id, attacks);
-            this.gameSessionService.endCombat(session.gameSessionId, currentPlayer.stats.id, otherPlayer.stats.id);
             this.emitCombatResultSnapshot(CombatEvents.Victory, session, currentPlayer.stats.id, otherPlayer.stats.id);
+            this.gameSessionService.endCombat(session.gameSessionId, currentPlayer.stats.id, otherPlayer.stats.id);
             this.endCombat(session.id);
         } else if (otherPlayer.stats.health > NO_BONUS && currentPlayer.stats.health === NO_BONUS){
             this.emitCombatStatistics(session.id, attacks);
-            this.gameSessionService.endCombat(session.gameSessionId, otherPlayer.stats.id, currentPlayer.stats.id);
             this.emitCombatResultSnapshot(CombatEvents.Victory, session, otherPlayer.stats.id, currentPlayer.stats.id);
+            this.gameSessionService.endCombat(session.gameSessionId, otherPlayer.stats.id, currentPlayer.stats.id);
             this.endCombat(session.id);
         } else if (otherPlayer.stats.health === NO_BONUS && currentPlayer.stats.health === NO_BONUS){
             this.emitCombatStatistics(session.id, attacks);
             this.emitCombatResultSnapshot(CombatEvents.Tie, session, currentPlayer.stats.id, otherPlayer.stats.id);
+            this.gameSessionService.resolveCombatTie(session.gameSessionId, currentPlayer.stats.id, otherPlayer.stats.id);
             this.endCombat(session.id);
         } else {
             const isStanceSet1 = this.clearCombatStance(session, currentPlayer.stats.id);
@@ -291,17 +299,4 @@ export class CombatService implements OnModuleInit, OnModuleDestroy {
         player.stats.health = Math.max(player.stats.health - damage, 0);
         return player;
     }
-
-    private handleDisconnect = (playerId: string) => {
-        const combat = this.getCombatFromPlayer(playerId);
-        if(!combat)
-            return;
-        const opponent = combat.players.find((player) => player.stats.id !== playerId);
-        if(opponent){
-            this.gameSessionService.setWinner(combat.gameSessionId, opponent.stats.id);
-            this.emitCombatResultSnapshot(CombatEvents.ClientDisconnect, combat, opponent.stats.id, playerId);
-        }
-        this.endCombat(combat.id);
-    };
-
 }

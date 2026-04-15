@@ -51,7 +51,10 @@ export const createGameSessionMock = (): jest.Mocked<Partial<GameSessionService>
     getSessionById: jest.fn(),
     endCombat: jest.fn(),
     getMatchFromSessionId: jest.fn(),
-    setWinner: jest.fn(),
+    resolveCombatTie: jest.fn(),
+    resumeSessionTurns: jest.fn(),
+    getSocketFromPlayer: jest.fn(),
+    getPlayerIdForSocket: jest.fn(),
     stopSessionTimers: jest.fn(),
 });
 

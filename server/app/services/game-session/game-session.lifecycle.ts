@@ -285,6 +285,23 @@ export class GameSessionLifecycle {
         return true;
     }
 
+    finishMatchOnCombatVictories(session: GameSessionRuntime, winner: MatchPlayer): void {
+        session.match.endState = {
+            id: crypto.randomUUID(),
+            winnerKind: 'player',
+            winnerPlayerId: winner.id,
+            winnerTeamId: session.match.mode === GameMode.CTF ? winner.teamId : null,
+            message: `${winner.name} remporte la partie avec ${winner.combatWins} victoires de combat.`,
+            resolvedAt: Date.now(),
+        };
+        session.turnState = {
+            ...session.turnState,
+            actionTaken: true,
+        };
+        this.finishMatch(session);
+        this.emitSnapshot(session);
+    }
+
     createSystemMessage(content: string): ChatMessage {
         return {
             id: crypto.randomUUID(),
@@ -323,18 +340,9 @@ export class GameSessionLifecycle {
         );
     }
 
-    stopSessionTimers(session: GameSessionRuntime, attackerId: string): boolean {
-        if (!session ||
-            session.turnState.phase !== 'active' ||
-            session.turnState.activePlayerId !== attackerId ||
-            session.turnState.actionTaken ||
-            session.match.pendingSanctuaryChoice ||
-            session.match.endState) {
-            return false;
-        }
+    stopSessionTimers(session: GameSessionRuntime): void {
         pauseTimer(session);
         this.emitSnapshot(session);
-        return true;
     }
 
     private activateTurn(session: GameSessionRuntime): void {

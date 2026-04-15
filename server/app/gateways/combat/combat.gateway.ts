@@ -40,18 +40,18 @@ export class CombatGateway {
       client.emit(CombatSocketEvents.CombatSessionError, { message: 'Adversaire indisponible.' } satisfies GameSessionErrorPayload);
       return;
     }
-    const session = this.combatService.createCombatSession(payload.playerId, payload.defenderId, payload.sessionId);
-    if(!session){
+    const result = this.combatService.createCombatSession(payload.playerId, payload.defenderId, payload.sessionId);
+    if(!result){
       client.emit(CombatSocketEvents.CombatSessionError, { message: 'Combat impossible.' } satisfies GameSessionErrorPayload);
       return;
     }
 
     await Promise.all([
-      Promise.resolve(opponentSocket.join(session.id)),
-      Promise.resolve(client.join(session.id)),
+      Promise.resolve(opponentSocket.join(result.combat.id)),
+      Promise.resolve(client.join(result.combat.id)),
     ]);
-
-    this.combatService.startCombat(session);
+    this.gameSessionService.stopSessionTimers(result.game);
+    this.combatService.startCombat(result.combat);
   }
 
   @SubscribeMessage(CombatSocketEvents.SetStance)

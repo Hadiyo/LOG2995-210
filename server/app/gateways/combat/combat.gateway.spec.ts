@@ -5,10 +5,10 @@ import {
   createMockServer,
   createMockSocket,
 } from '@app/gateways/mocks';
-import { makeCombatSession } from '@app/services/combat/combat-service.helper';
+import { createGameSessionMock, makeCombatSession } from '@app/services/combat/combat-service.helper';
 import { CombatService } from '@app/services/combat/combat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
-import { makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
+import { makeRuntime, makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
 import { MILLISECONDS_PER_SECOND } from '@app/utilities/combat/combat.constants';
 import { CombatSessionSnapshot, CombatTurnSnapshot, StancePayload } from '@common/combat/combat.interface';
 import { CombatSocketEvents, getGameSessionRoom, SessionSocketEvents } from '@common/socket-events';
@@ -32,10 +32,7 @@ describe('CombatGateway', () => {
       getCombatIdByRooms: jest.fn(),
     };
 
-    gameSessionServiceMock = {
-      getPlayerIdForSocket: jest.fn(),
-      getSocketFromPlayer: jest.fn(),
-    };
+    gameSessionServiceMock = createGameSessionMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [CombatGateway, 
@@ -119,11 +116,12 @@ describe('CombatGateway', () => {
     const socket1 = createMockSocket('1234');
     const socket2 = createMockSocket('8975');
     const session = makeCombatSession();
+    const game = makeRuntime();
     const payload = {sessionId: '1555', playerId: '8906', defenderId: '0000'};
     jest.spyOn(gameSessionServiceMock, 'getPlayerIdForSocket').mockReturnValue('8906');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     jest.spyOn(gateway as any, 'getOpponentSocket').mockReturnValue(socket2);
-    jest.spyOn(combatServiceMock, 'createCombatSession').mockReturnValue(session);
+    jest.spyOn(combatServiceMock, 'createCombatSession').mockReturnValue({ combat: session, game });
     const spy = jest.spyOn(combatServiceMock, 'startCombat');
 
     await gateway.startCombat(socket1, payload);

@@ -1,3 +1,4 @@
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchSanctuaryState } from '@common/game/match.interface';
 import { buildTeamAssignments, buildVisibleObjects } from '@common/game/match.utils';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
@@ -161,5 +162,18 @@ export function isPlayerOnIce(match: InitializedMatch, playerId: string): boolea
     if(!cell)
         return false;
     return (cell.tileType === TileType.ICE);
+}
+
+export function dropFlag(session: GameSessionRuntime, loser: MatchPlayer): void {
+    const nextAllObjects = session.match.allObjects.map((object) =>
+        object.type === ObjectType.FLAG
+            ? { ...object, position: { ...loser.position } }
+            : object,
+    );
+    session.match = {
+        ...session.match,
+        flagCarrierId: null,
+        allObjects: buildVisibleObjects(nextAllObjects, session.match.players, null),   
+    };
 }
 

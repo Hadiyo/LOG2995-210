@@ -1,13 +1,18 @@
+import { MAXIMUM_WINS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { buildVisibleObjects } from '@common/game/match.utils';
 import { ObjectType } from '@common/maps/map.enums';
+import { SessionSocketEvents } from '@common/socket-events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { GameSessionLifecycle } from './game-session.lifecycle';
+import { dropFlag } from './game-session.match';
 import { applyFacingTowardPosition } from './game-session.render';
 import { rebuildTurnStateAfterRosterChange, resolveRespawnPosition } from './game-session.runtime';
 
 export class GameSessionSessionActions {
+    private readonly event = new EventEmitter2();
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly lifecycle: GameSessionLifecycle,
@@ -125,7 +130,7 @@ export class GameSessionSessionActions {
             this.lifecycle.startTransition(session);
             return true;
         }
-
+        this.event.emit(SessionSocketEvents.ClientDisconnect, playerId);
         this.lifecycle.emitSnapshot(session);
         return true;
     }
@@ -194,35 +199,45 @@ export class GameSessionSessionActions {
         return message;
     }
 
-    resolveCombatEnd(sessionId: string, winnerId: string, loserId: string): boolean {
+    resolveCombatEnd(sessionId: string, winnerId: string, loserId: string | null): void {
         const session = this.sessions.get(sessionId);
         const currentPlayer = this.lifecycle.getActivePlayer(session);
         if(!session)
-            return false;
+            return;
 
+        const winner = session.match.players.find((player) => player.id === winnerId);
+        if(winner)
+            winner.combatWins += 1;
+        if(loserId){
+            const loser = session.match.players.find((player) => player.id === loserId);
+            if(loser){
+                loser.health = loser.maxHealth;
+                loser.position = resolveRespawnPosition(session.match, loser.id);
+                if (session.match.flagCarrierId === loserId)
+                    dropFlag(session, loser);
+            }
+        }
+        if(winner.combatWins < MAXIMUM_WINS){
+            if(currentPlayer.id === winnerId && session.turnState.movementPointsRemaining > 0)
+                this.lifecycle.resumeGameSessionTurn(session);
+            else
+                this.lifecycle.advanceToNextTurn(session);
+        } else {
+            this.lifecycle.finishMatchOnCombatVictories(session, winner);
+        }
+    }
+
+    resolveCombatTie(sessionId: string, winnerId: string, loserId: string): void {
+        const session = this.sessions.get(sessionId);
         const winner = session.match.players.find((player) => player.id === winnerId);
         const loser = session.match.players.find((player) => player.id === loserId);
 
         if(!winner || !loser)
-            return false;
+            return;
 
-        winner.combatWins += 1;
         loser.health = loser.maxHealth;
-        loser.position = resolveRespawnPosition(session.match, loser.id);
-        
-        if(currentPlayer.id === winnerId && session.turnState.movementPointsRemaining > 0)
-            this.lifecycle.resumeGameSessionTurn(session);
-        else
-            this.lifecycle.advanceToNextTurn(session);
-        return true;
-    }
+        winner.health = winner.maxHealth;
 
-    setCombatWinner(sessionId: string, winnerId: string): boolean {
-        const session = this.sessions.get(sessionId);
-        if(!session)
-            return false;
-        const winner = session.match.players.find((player) => player.id === winnerId);
-        winner.combatWins += 1;
-        return true;
+        this.lifecycle.resumeGameSessionTurn(session);
     }
 }

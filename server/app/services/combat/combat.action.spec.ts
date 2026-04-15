@@ -198,6 +198,7 @@ describe('CombatService', () => {
     const spy2 = jest.spyOn(service as any, 'emitCombatResultSnapshot').mockImplementation();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const spy3 = jest.spyOn(service as any, 'endCombat').mockImplementation();
+    const spy4 = jest.spyOn(gameSessionMock, 'resolveCombatTie').mockImplementation();
 
     const result = service.evaluateCombatResult(session, [combatStatistics1, combatStatistics2]);
 
@@ -211,6 +212,7 @@ describe('CombatService', () => {
       session.players[0].stats.id, 
       session.players[1].stats.id);
     expect(spy3).toHaveBeenCalledWith(session.id);
+    expect(spy4).toHaveBeenCalledWith(session.gameSessionId, session.players[0].stats.id, session.players[1].stats.id);
     expect(result).toBe(true);
   });
 

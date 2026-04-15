@@ -8,3 +8,4 @@ export const SANCTUARY_COOLDOWN_TURNS = 3;
 export const SANCTUARY_DOUBLE_OR_NOTHING_THRESHOLD = 0.5;
 export const ARENA_BUFF_TURNS = 2;
 export const SANCTUARY_HEAL_VALUE = 2;
+export const MAXIMUM_WINS = 3;

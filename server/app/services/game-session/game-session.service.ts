@@ -129,7 +129,6 @@ export class GameSessionService {
                 return null;
             }
             const payload = { sessionId: session.sessionId, playerId };
-            this.events.emit(SessionSocketEvents.ClientDisconnect, payload.playerId);
             return payload;
         }
 
@@ -194,16 +193,21 @@ export class GameSessionService {
         return this.actions.toggleDoor(sessionId, playerId, position);
     }
 
-    stopSessionTimers(session: GameSessionRuntime, attackerId: string): boolean {
-        return this.lifecycle.stopSessionTimers(session, attackerId);
+    resumeSessionTurns(sessionId: string): void {
+        const session = this.sessions.get(sessionId);
+        if(session)
+            this.lifecycle.advanceToNextTurn(session);
+    }
+
+    stopSessionTimers(session: GameSessionRuntime): void {
+        this.lifecycle.stopSessionTimers(session);
     }
 
     endCombat(sessionId: string, winnerId: string, loserId: string): void {
         this.sessionActions.resolveCombatEnd(sessionId, winnerId, loserId);
     }
 
-    setWinner(sessionId: string, winnerId: string): void {
-        this.sessionActions.setCombatWinner(sessionId, winnerId);
+    resolveCombatTie(sessionId: string, winnerId: string, loserId: string): void {
+        this.sessionActions.resolveCombatTie(sessionId, winnerId, loserId);
     }
-
 }

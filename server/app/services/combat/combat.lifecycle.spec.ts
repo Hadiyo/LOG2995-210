@@ -9,7 +9,6 @@ import {
 } from '@app/services/game-session/game-session.service.spec-helpers';
 import * as timerUtils from '@app/services/timer/turn.timers';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
-import { SessionSocketEvents } from '@common/socket-events';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test, TestingModule } from '@nestjs/testing';
 import { createCombatTurnServiceMock, createEventEmitterMock, createGameSessionMock, makeCombatSession, makeFighter } from './combat-service.helper';
@@ -98,20 +97,6 @@ describe('Combat Life Cycle', () => {
         (service as any)['combatSessions'].clear();
     });
 
-    it('should subscribe to client disconnect event on Module Init', () => {
-        const handler = jest.spyOn(service as never, 'handleDisconnect').mockImplementation();
-        const spy = jest.spyOn(gameSessionMock, 'on');
-        service.onModuleInit();
-        expect(spy).toHaveBeenCalledWith(SessionSocketEvents.ClientDisconnect, handler);
-    });
-
-    it('should unsubscribe from Client Disconnect event on Module Destroy', () => {
-        const handler = jest.spyOn(service as never, 'handleDisconnect').mockImplementation();
-        const spy = jest.spyOn(gameSessionMock, 'off');
-        service.onModuleDestroy();
-        expect(spy).toHaveBeenCalledWith(SessionSocketEvents.ClientDisconnect, handler);
-    });
-
     it('should return null if game does not exist - createCombatSession', () => {
         (gameSessionMock.getSessionById as jest.Mock).mockReturnValue(undefined);
         const result = service.createCombatSession('player1', 'player2', 'idk');
@@ -186,7 +171,7 @@ describe('Combat Life Cycle', () => {
         const session = service['combatSessions'].get('1111-2222-3333-4444-5555');
     
         expect(session).toBeDefined();
-        expect(result).toEqual({
+        expect(result).toEqual({ combat: {
           id: '1111-2222-3333-4444-5555',
           gameSessionId: '1234',
           round: 1,
@@ -195,7 +180,7 @@ describe('Combat Life Cycle', () => {
           transitionTimeoutId: null,
           activeTurnTimeoutId: null,
           timerIntervalId: null,
-        });
+        }, game});
     });
     
     it('should call startTransition - startCombat', () => {
@@ -329,7 +314,7 @@ describe('Combat Life Cycle', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'getCombatFromPlayer').mockReturnValue(undefined);
         const spy = jest.spyOn(service, 'endCombat').mockImplementation();
-        const spy2 = jest.spyOn(gameSessionMock, 'setWinner').mockImplementation();
+        const spy2 = jest.spyOn(gameSessionMock, 'endCombat').mockImplementation();
 
         service['handleDisconnect']('player1');
 
@@ -344,7 +329,7 @@ describe('Combat Life Cycle', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'getCombatFromPlayer').mockReturnValue(combat);
         const spy = jest.spyOn(service, 'endCombat').mockImplementation();
-        const spy2 = jest.spyOn(gameSessionMock, 'setWinner').mockImplementation();
+        const spy2 = jest.spyOn(gameSessionMock, 'endCombat').mockImplementation();
 
         service['handleDisconnect'](player.stats.id);
 
@@ -360,14 +345,14 @@ describe('Combat Life Cycle', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'getCombatFromPlayer').mockReturnValue(combat);
         const spy = jest.spyOn(service, 'endCombat').mockImplementation();
-        const spy2 = jest.spyOn(gameSessionMock, 'setWinner').mockImplementation();
+        const spy2 = jest.spyOn(gameSessionMock, 'endCombat').mockImplementation();
         // To spy and mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const spy3 = jest.spyOn(service as any, 'emitCombatResultSnapshot').mockImplementation();
 
         service['handleDisconnect'](player1.stats.id);
 
-        expect(spy2).toHaveBeenCalledWith(combat.gameSessionId, player2.stats.id);
+        expect(spy2).toHaveBeenCalledWith(combat.gameSessionId, player2.stats.id, null);
         expect(spy3).toHaveBeenCalledWith(CombatEvents.ClientDisconnect, combat, player2.stats.id, player1.stats.id);
         expect(spy).toHaveBeenCalledWith(combat.id);
     });
