@@ -6,7 +6,6 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import {
   generateCharacterFormValues,
-  makeFullName,
   normalizeCharacterName,
   sanitizeCharacterName,
   validatePlayerName,
@@ -133,11 +132,6 @@ export class CharacterCreationPageComponent implements OnInit {
     this.form.patchValue(generated);
   }
 
-  onRandomName(): void {
-    const takenNames = this.waitingRoomService.getPlayerSnapshot().map((player) => player.name);
-    this.form.controls.name.setValue(makeFullName(takenNames));
-  }
-
   onNameInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     const cleaned = sanitizeCharacterName(input.value);
@@ -211,9 +205,6 @@ export class CharacterCreationPageComponent implements OnInit {
 
   private validateName(name: string | null): string {
     const takenNames = this.waitingRoomService.getPlayerSnapshot().map((player) => player.name);
-    if (!name) {
-      return validatePlayerName(makeFullName(takenNames), takenNames);
-    }
-    return validatePlayerName(name, takenNames);
+    return validatePlayerName(name ?? '', takenNames);
   }
 }
