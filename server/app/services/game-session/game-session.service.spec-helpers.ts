@@ -201,13 +201,35 @@ export const makeEndState = (overrides: Partial<MatchEndState> = {}): MatchEndSt
 export function createGameSessionServiceHarness() {
     let service: GameSessionService;
     let mapService: { getMapByIdForEditor: jest.Mock };
+    let statsService: { 
+        startGame: jest.Mock; 
+        startCombat: jest.Mock;
+        visitTile: jest.Mock, 
+        useDoor: jest.Mock,
+        useSanctuary: jest.Mock,
+        getFlag: jest.Mock, 
+        endTurn: jest.Mock,
+        endSession: jest.Mock,
+        resultCombat: jest.Mock,
+    };
 
     beforeEach(() => {
         jest.useFakeTimers();
         mapService = {
             getMapByIdForEditor: jest.fn(),
         };
-        service = new GameSessionService(mapService as never);
+        statsService = {
+            startGame: jest.fn(),
+            startCombat: jest.fn(),
+            visitTile: jest.fn(),
+            useDoor: jest.fn(),
+            useSanctuary: jest.fn(),
+            getFlag: jest.fn(),
+            endTurn: jest.fn(),
+            endSession: jest.fn(),
+            resultCombat: jest.fn(),
+        };
+        service = new GameSessionService(mapService as never, statsService as never);
     });
 
     afterEach(() => {

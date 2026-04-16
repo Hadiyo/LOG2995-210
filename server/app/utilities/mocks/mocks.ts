@@ -1,4 +1,5 @@
 import { CombatTurnService } from '@app/services/combat/combat-turn.service';
+import { EndStatsService } from '@app/services/end-stats.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { makeMatchPlayer, makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
 import { CombatSession, Fighter } from '@app/utilities/combat/combat.interface';
@@ -198,3 +199,10 @@ export const createEventEmitterMock = (): jest.Mocked<Partial<EventEmitter2>> =>
     on: jest.fn(),
     off: jest.fn(),
 });
+
+export const createEndStatsServiceMock = (): jest.Mocked<Partial<EndStatsService>> => ({
+    startCombat: jest.fn(),
+    dealDamage: jest.fn(),
+    takeDamage: jest.fn(),
+});
+

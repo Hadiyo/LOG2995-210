@@ -1,23 +1,19 @@
+import { EndStatsService } from '@app/services/end-stats.service';
+import { createActiveTurnState } from '@app/services/game-session/game-session.runtime';
 import {
-    advanceToNextTurn as advanceSessionTurn,
-    clearTimers,
-    clearTurnState,
-    pauseTimer,
-    resumeTimers,
-    startTimerTransition,
-    tickTimers,
+    advanceToNextTurn as advanceSessionTurn, clearTimers, clearTurnState,
+    pauseTimer, resumeTimers, startTimerTransition, tickTimers,
 } from '@app/services/timer/turn.timers';
 import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
 import { ACTIVE_TURN_DURATION_MS, SNAPSHOT_TICK_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionLogEntry, GameSessionRuntime } from '@app/utilities/game/game.interface';
-import { createActiveTurnState } from '@app/services/game-session/game-session.runtime';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { CombatPlayerStatistics } from '@common/combat/combat.interface';
 import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import {
-    InitializedMatch,MatchPendingFlagTransfer,
-    MatchPlayer,MatchTeamId,
+    InitializedMatch, MatchPendingFlagTransfer,
+    MatchPlayer, MatchTeamId,
 } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
@@ -29,6 +25,7 @@ import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
 
 export class GameSessionLifecycle {
     private readonly events2 = new EventEmitter2();
+
     private readonly startTimerConfig: TimerConfig<GameSessionRuntime> = {
         emitSnapshot: (session) => this.emitSnapshot(session),
         onTransitionEnd: (session) => this.activateTurn(session),
@@ -38,6 +35,7 @@ export class GameSessionLifecycle {
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly events: EventEmitter,
+        private readonly endStatsService: EndStatsService,
     ) {
         this.emitSnapshot = this.emitSnapshot.bind(this);
         this.setNextMatch = this.setNextMatch.bind(this);
@@ -48,6 +46,7 @@ export class GameSessionLifecycle {
             ? { ...session.match, pendingFlagTransfer: null }
             : session.match;
         session.match = progressGameSessionSanctuaryEffects(nextMatch, session.turnState.activePlayerId);
+        this.endStatsService.endTurn(session.sessionId);
     }
 
     finishSurrenderAfterRosterChange(
@@ -57,7 +56,9 @@ export class GameSessionLifecycle {
     ): boolean {
         if (nextPlayers.length === 0) {
             clearTimers(session);
+            this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
             this.sessions.delete(sessionId);
+            this.endStatsService.endSession(sessionId);
             return true;
         }
 
@@ -105,8 +106,7 @@ export class GameSessionLifecycle {
             pendingSanctuaryChoice: null,
         };
         this.emitSnapshot(session);
-        this.sessions.delete(session.sessionId);
-        this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
+        this.events.emit(SessionSocketEvents.EndGame, session.sessionId);
     }
 
     emitSnapshot(session: GameSessionRuntime): void {

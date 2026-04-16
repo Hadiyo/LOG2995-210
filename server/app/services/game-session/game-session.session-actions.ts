@@ -1,8 +1,9 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import { MAXIMUM_WINS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { buildVisibleObjects } from '@common/game/match.utils';
-import { ObjectType } from '@common/maps/map.enums';
+import { GameMode, ObjectType } from '@common/maps/map.enums';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { dropFlag } from './game-session.match';
@@ -14,6 +15,7 @@ export class GameSessionSessionActions {
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly lifecycle: GameSessionLifecycle,
+        private readonly endStatsService: EndStatsService,
     ) {}
 
     endTurn(sessionId: string, playerId: string): boolean {
@@ -83,6 +85,7 @@ export class GameSessionSessionActions {
                     [requester?.name, receiver?.name].filter((name): name is string => !!name),
                 );
             }
+            this.endStatsService.getFlag(sessionId, nextFlagCarrierId);
         }
 
         if (this.lifecycle.finishCtfMatchIfFlagTransferWins(session, accepted, nextFlagCarrierId)) {
@@ -236,9 +239,11 @@ export class GameSessionSessionActions {
                 loser.position = resolveRespawnPosition(session.match, loser.id);
             }
         }
-        if(winner)
+        if(winner) {
             winner.combatWins += 1;
-        if(winner.combatWins === MAXIMUM_WINS){
+            this.endStatsService.resultCombat(sessionId, winnerId, loserId);
+        }
+        if(winner.combatWins === MAXIMUM_WINS && session.match.mode !== GameMode.CTF) {
             this.lifecycle.finishMatchOnCombatVictories(session, winner);
         } else {
             if(currentPlayer.id === winnerId && session.turnState.movementPointsRemaining > 0)

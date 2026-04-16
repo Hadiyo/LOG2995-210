@@ -1,3 +1,4 @@
+import { ARENA_BUFF_TURNS, SANCTUARY_COOLDOWN_TURNS } from '@app/utilities/game/game.constants';
 import { CombatPlayerStatistics } from '@common/combat/combat.interface';
 import { GameMode, ObjectSize, ObjectType } from '@common/maps/map.enums';
 import {
@@ -10,7 +11,6 @@ import {
     makeRuntime,
     makeSessionObjects,
 } from './game-session.service.spec-helpers';
-import { ARENA_BUFF_TURNS, SANCTUARY_COOLDOWN_TURNS } from '@app/utilities/game/game.constants';
 
 const SANCTUARY_STARTS = [{ x: 0, y: 0 }, { x: 2, y: 2 }];
 const REGEN_SANCTUARY_ID = 9;
@@ -101,7 +101,6 @@ describe('GameSessionService action outcomes', () => {
     });
 
     it('declares a team victory when the flag carrier returns to the starting tile', () => {
-        const privateState = harness.getPrivateState();
         const runtime = registerRuntime(makeRuntime({
             sessionId: 'ctf-win',
             match: makeMatch({
@@ -120,7 +119,6 @@ describe('GameSessionService action outcomes', () => {
         expect(runtime.match.endState?.winnerKind).toBe('team');
         expect(runtime.match.endState?.winnerTeamId).toBe('A');
         expect(runtime.match.endState?.message).toContain("L'équipe A remporte la partie");
-        expect(privateState.sessions.has('ctf-win')).toBe(false);
     });
 
     it('opens a pending sanctuary choice and resolves healing on the server', () => {

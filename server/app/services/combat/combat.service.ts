@@ -1,4 +1,5 @@
 
+import { EndStatsService } from '@app/services/end-stats.service';
 import { isPlayerOnIce } from '@app/services/game-session/game-session.match';
 import { canStartCombat } from '@app/services/game-session/game-session.runtime';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
@@ -21,6 +22,7 @@ export class CombatService {
         private readonly gameSessionService: GameSessionService,
         private readonly turnService: CombatTurnService,
         private readonly event: EventEmitter2,
+        private readonly endStatsService: EndStatsService,
     ){}
 
     @OnEvent(CombatEvents.Timeout)
@@ -98,6 +100,7 @@ export class CombatService {
     
     startCombat(session: CombatSession): void {
         this.turnService.startTransition(session);
+        this.endStatsService.startCombat(session.gameSessionId, session.players[0].stats.id, session.players[1].stats.id);
     }
 
     endCombat(sessionId: string): void {
@@ -124,7 +127,7 @@ export class CombatService {
 
             const attack1 = this.attack(session, currentPlayer, isCurrPlayerOnIce, otherPlayer, isOtherPlayerOnIce);
             const attack2 = this.attack(session, otherPlayer,isOtherPlayerOnIce, currentPlayer, isCurrPlayerOnIce);
-            
+
             return this.evaluateCombatResult(session, [attack1, attack2]);
         } else {
             return this.switchCombatTurn(session, currentPlayer.stats.id);
@@ -206,12 +209,14 @@ export class CombatService {
         const totalAttack = attacker.stats.baseAttack + sanctuaryAttackBonus + attackRoll + stanceAttackBonus - attackerIcePenalty;
         const totalDefense = defender.stats.baseDefense + sanctuaryDefenseBonus + defenseRoll + stanceDefenseBonus - defenderIcePenalty;
 
-        const damage = totalAttack - totalDefense;
+        const damage = totalAttack - totalDefense > defender.stats.health ? defender.stats.health : totalAttack - totalDefense;
 
         let victim = defender;
 
         if(damage > NO_BONUS){
             victim = this.updatePlayerHealth(session.id, defender.stats.id, damage);
+            this.endStatsService.dealDamage(session.gameSessionId, attacker.stats.id, damage);
+            this.endStatsService.takeDamage(session.gameSessionId, defender.stats.id, damage);
             if(!victim) victim = defender;
         }
         
