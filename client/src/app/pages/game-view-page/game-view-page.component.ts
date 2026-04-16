@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -269,25 +268,18 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected onEndTurn(): void {
         handleGameViewEndTurn(this.combat.hasActiveCombat(), this.interaction);
     }
-
     protected onChatMessageSubmit(content: string): void {
         const author = this.currentPlayer()?.information?.name;
-        if (!author) {
-            return;
-        }
+        if (!author) return;
         this.chatService.sendMessage(buildChatMessage(author, content));
     }
     protected onToggleActionMode(): void {
         handleGameViewToggleActionMode(this.combat.hasActiveCombat(), this.interaction);
     }
-
     protected onMessageTabChange(tab: 'chat' | 'journal'): void {
-        if (tab === 'journal' && !this.journalAvailable()) {
-            return;
-        }
+        if (tab === 'journal' && !this.journalAvailable()) return;
         this.messageTab.set(tab);
     }
-
     protected onTogglePlayerListExpanded(): void {
         this.isPlayerListExpanded.update((expanded) => !expanded);
     }
@@ -297,15 +289,12 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     protected onToggleTurnStatusPanel(): void {
         this.isTurnStatusPanelOpen.update((open) => !open);
     }
-
     protected acceptIncomingFlagTransfer(): void {
         handleIncomingFlagTransferResponse(true, this.incomingFlagTransfer(), this.localPlayerId(), this.gameSessionSocket, this.interaction);
     }
-
     protected refuseIncomingFlagTransfer(): void {
         handleIncomingFlagTransferResponse(false, this.incomingFlagTransfer(), this.localPlayerId(), this.gameSessionSocket, this.interaction);
     }
-
     protected onToggleDebugMode(): void {
         handleGameViewToggleDebugMode(
             this.localPlayerId(),
@@ -314,12 +303,10 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             this.gameSessionSocket,
         );
     }
-
     @HostListener('window:keyup', ['$event'])
     protected handleMovementKeyup(event: KeyboardEvent): void {
         handleGameViewMovementKeyup(event, this.combat.hasActiveCombat(), this.interaction);
     }
-
     @HostListener('window:keydown', ['$event'])
     protected handleDebugShortcut(event: KeyboardEvent): void {
         handleGameViewDebugShortcut(event, {
@@ -340,7 +327,6 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             this.display.matchEndState()?.message ?? null,
         );
     }
-
     protected quitGame(): void {
         this.matchEndRedirectState = clearMatchEndRedirect(this.matchEndRedirectState, this.endRedirectRemainingMs);
         this.interaction.clearActionSelection();
@@ -351,7 +337,6 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         });
         void this.router.navigate(['/home']);
     }
-
     private leaveMatch(message: string): void {
         leaveMatch(message, {
             display: this.display,
