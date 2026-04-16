@@ -9,11 +9,12 @@ import {
     CombatStanceChoice,
 } from '@app/services/match/combat-state.models';
 import { CombatRoundOutcome } from '@common/combat/combat.interface';
+import { GameCombatRoundLogFighterComponent } from './game-combat-round-log-fighter.component';
 
 @Component({
     selector: 'app-game-combat-round-log',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, GameCombatRoundLogFighterComponent],
     templateUrl: './game-combat-round-log.component.html',
     styleUrl: './game-combat-round-log.component.scss',
 })
