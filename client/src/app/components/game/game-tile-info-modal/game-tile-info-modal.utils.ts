@@ -33,8 +33,7 @@ export function buildTileInfoModalData(
     objectUsed,
     objectLabel: object ? OBJECT_LABELS[object.type] ?? null : null,
     objectDescription: object ? buildObjectDescription(object, objectUsed) : null,
-    playerName: player?.information.name ?? null,
-    playerAvatarId: player?.information.avatarId ?? null,
+    ...buildPlayerPreview(player),
   };
 }
 
@@ -64,6 +63,18 @@ function getTileBlockingReason(object: MapObject | null, player: Player | null):
   }
 
   return null;
+}
+
+function buildPlayerPreview(player: Player | null): Pick<
+  GameTileInfoModalData,
+  'playerName' | 'playerAvatarId' | 'playerController' | 'playerVirtualProfile'
+> {
+  return {
+    playerName: player?.information.name ?? null,
+    playerAvatarId: player?.information.avatarId ?? null,
+    playerController: player?.information.controller ?? null,
+    playerVirtualProfile: player?.information.virtualProfile ?? null,
+  };
 }
 
 // Describe the current door state only for door tiles.

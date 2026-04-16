@@ -11,15 +11,16 @@ import { CombatTimeoutPayload } from '@app/utilities/combat/combat.types';
 import { Die, DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { CombatPlayerStatistics, FighterStance } from '@common/combat/combat.interface';
 import { MatchPlayer } from '@common/game/match.interface';
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { CombatTurnService } from './combat-turn.service';
+import { setVirtualStance } from './combat.helpers';
 
 @Injectable()
 export class CombatService {
     private readonly combatSessions = new Map<string, CombatSession>();
     constructor(
-        private readonly gameSessionService: GameSessionService,
+        @Inject(forwardRef(() => GameSessionService)) private readonly gameSessionService: GameSessionService,
         private readonly turnService: CombatTurnService,
         private readonly event: EventEmitter2,
         private readonly endStatsService: EndStatsService,
@@ -178,11 +179,14 @@ export class CombatService {
         return true;
     }
 
-    private createFighter(players: MatchPlayer[], playerId: string): Fighter {
+    private createFighter(players: MatchPlayer[], playerId: string): Fighter | null {
         const player = players.find((candidate) => candidate.id === playerId);
+        if(!player)
+            return null;
+        const stance = setVirtualStance(player);
         return {
             stats: player,
-            combatStance: null,
+            combatStance: stance,
             hasSelectedStance: false,
             hasPenalty: false,
         };

@@ -1,4 +1,5 @@
 import * as runtimeModule from '@app/services/game-session/game-session.runtime';
+import { CombatService } from '@app/services/combat/combat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { InitializedMatch, MatchEndState, MatchLobbyPlayer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
@@ -11,6 +12,7 @@ export const ACTIVE_TURN_MS = 5000;
 export const MOVEMENT_POINTS_AFTER_MOVE = 3;
 
 export type GameSessionServiceInternals = {
+    activateTurn: (...args: unknown[]) => unknown;
     advanceToNextTurn: (...args: unknown[]) => unknown;
     emitSnapshot: (...args: unknown[]) => unknown;
     startTransition: (...args: unknown[]) => unknown;
@@ -32,6 +34,7 @@ export const makeLobbyPlayer = (overrides: Partial<MatchLobbyPlayer> = {}): Matc
     attackDie: 'D4',
     defenseDie: 'D6',
     controller: 'human',
+    virtualProfile: null,
     ...overrides,
 });
 
@@ -185,6 +188,7 @@ export const makeRuntime = (overrides: Partial<GameSessionRuntime> = {}): GameSe
     transitionTimeoutId: null,
     activeTurnTimeoutId: null,
     timerIntervalId: null,
+    virtualDecisionTimeoutId: null,
     ...overrides,
 });
 
@@ -201,17 +205,18 @@ export const makeEndState = (overrides: Partial<MatchEndState> = {}): MatchEndSt
 export function createGameSessionServiceHarness() {
     let service: GameSessionService;
     let mapService: { getMapByIdForEditor: jest.Mock };
-    let statsService: { 
-        startGame: jest.Mock; 
+    let statsService: {
+        startGame: jest.Mock;
         startCombat: jest.Mock;
-        visitTile: jest.Mock, 
+        visitTile: jest.Mock;
         useDoor: jest.Mock,
         useSanctuary: jest.Mock,
-        getFlag: jest.Mock, 
+        getFlag: jest.Mock;
         endTurn: jest.Mock,
         endSession: jest.Mock,
         resultCombat: jest.Mock,
     };
+    let combatService: { createCombatSession: jest.Mock; startCombat: jest.Mock };
 
     beforeEach(() => {
         jest.useFakeTimers();
@@ -229,7 +234,11 @@ export function createGameSessionServiceHarness() {
             endSession: jest.fn(),
             resultCombat: jest.fn(),
         };
-        service = new GameSessionService(mapService as never, statsService as never);
+        combatService = {
+            createCombatSession: jest.fn(),
+            startCombat: jest.fn(),
+        };
+        service = new GameSessionService(mapService as never, combatService as unknown as CombatService, statsService as never);
     });
 
     afterEach(() => {
@@ -244,6 +253,12 @@ export function createGameSessionServiceHarness() {
         },
         get mapService() {
             return mapService;
+        },
+        get statsService() {
+            return statsService;
+        },
+        get combatService() {
+            return combatService;
         },
         getPrivateState(): GameSessionServicePrivateState {
             return service as unknown as GameSessionServicePrivateState;

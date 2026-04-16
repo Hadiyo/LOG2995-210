@@ -108,6 +108,10 @@ export function clearTimers<T extends Timers>(session: T): void {
         clearInterval(session.timerIntervalId);
         session.timerIntervalId = null;
     }
+    if (session.virtualDecisionTimeoutId) {
+        clearTimeout(session.virtualDecisionTimeoutId);
+        session.virtualDecisionTimeoutId = null;
+    }
 }
 
 export function pauseTimer<TSession extends TurnCapableSession>(session: TSession): void {

@@ -30,7 +30,7 @@ export class CombatGateway {
         return;
     }
     const opponentSocket = this.getOpponentSocket(payload.sessionId, payload.defenderId);
-    if(!opponentSocket){
+    if(!opponentSocket && !this.isVirtualCombatant(payload.sessionId, payload.defenderId)){
       client.emit(CombatSocketEvents.CombatSessionError, { message: 'Adversaire indisponible.' } satisfies GameSessionErrorPayload);
       return;
     }
@@ -41,8 +41,8 @@ export class CombatGateway {
     }
 
     await Promise.all([
-      Promise.resolve(opponentSocket.join(result.combat.id)),
       Promise.resolve(client.join(result.combat.id)),
+      ...(opponentSocket ? [Promise.resolve(opponentSocket.join(result.combat.id))] : []),
     ]);
     this.gameSessionService.stopSessionTimers(result.game);
     this.combatService.startCombat(result.combat);
@@ -60,15 +60,27 @@ export class CombatGateway {
   handleTurnSwitch(payload: CombatTurnSnapshot): void {
     if(payload.combatId)
       this.server.to(payload.combatId).emit(CombatSocketEvents.TurnSnapshot, payload.turnState);
+    this.emitToCombatParticipants(
+      payload.gameSessionId,
+      [payload.attackerId, payload.defenderId],
+      CombatSocketEvents.TurnSnapshot,
+      payload.turnState,
+    );
     if(payload.gameSessionId){
       this.server.to(getGameSessionRoom(payload.gameSessionId)).emit(SessionSocketEvents.CombatWaitingSnapshot, this.createWaitingSnapshot(payload));
     }
+    this.resolveVirtualCombatTurn(payload);
   }
 
   @OnEvent(CombatEvents.Statistics)
   handleCombatStatistics(payload: CombatSessionSnapshot): void {
     if(payload.combatId)
       this.server.to(payload.combatId).emit(CombatSocketEvents.AttackSnapshot, payload.statistics);
+    const combat = payload.combatId ? this.combatService.getCombatSession(payload.combatId) : undefined;
+    if (combat) {
+      const participantIds = combat.players.map((player) => player.stats.id);
+      this.emitToCombatParticipants(combat.gameSessionId, participantIds, CombatSocketEvents.AttackSnapshot, payload.statistics);
+    }
   }
 
   @OnEvent(CombatEvents.Victory)
@@ -76,6 +88,7 @@ export class CombatGateway {
     if(payload.combatId && payload.gameSessionId){
       const newPayload = { winner: payload.winner, loser: payload.loser };
       this.server.to(payload.combatId).emit(CombatSocketEvents.Victory, newPayload);
+      this.emitToCombatParticipants(payload.gameSessionId, [payload.winner, payload.loser], CombatSocketEvents.Victory, newPayload);
       this.server.to(getGameSessionRoom(payload.gameSessionId)).emit(SessionSocketEvents.CombatVictory, newPayload);
       this.server.in(payload.combatId).socketsLeave(payload.combatId);
     }
@@ -86,6 +99,7 @@ export class CombatGateway {
     if(payload.combatId && payload.gameSessionId){
       const newPayload = { player1: payload.winner, player2: payload.loser };
       this.server.to(payload.combatId).emit(CombatSocketEvents.Tie, newPayload);
+      this.emitToCombatParticipants(payload.gameSessionId, [payload.winner, payload.loser], CombatSocketEvents.Tie, newPayload);
       this.server.to(getGameSessionRoom(payload.gameSessionId)).emit(SessionSocketEvents.CombatTie, newPayload);
       this.server.in(payload.combatId).socketsLeave(payload.combatId);
     }
@@ -96,6 +110,7 @@ export class CombatGateway {
     if(payload.combatId && payload.gameSessionId){
       const newPayload = { winner: payload.winner, loser: payload.loser };
       this.server.to(payload.combatId).emit(CombatSocketEvents.HandleDisconnect, newPayload);
+      this.emitToCombatParticipants(payload.gameSessionId, [payload.winner, payload.loser], CombatSocketEvents.HandleDisconnect, newPayload);
       this.server.to(getGameSessionRoom(payload.gameSessionId)).emit(SessionSocketEvents.ClientDisconnect, newPayload);
       this.server.in(payload.combatId).socketsLeave(payload.combatId);
     }
@@ -121,6 +136,26 @@ export class CombatGateway {
     return registry?.sockets ?? new Map<string, Socket>();
   }
 
+  private isVirtualCombatant(gameSessionId: string, playerId: string): boolean {
+    const match = this.gameSessionService.getMatchFromSessionId(gameSessionId);
+    return match?.players.find((player) => player.id === playerId)?.controller === 'virtual';
+  }
+
+  private resolveVirtualCombatTurn(payload: CombatTurnSnapshot): void {
+    if (payload.turnState.phase !== 'active' || !payload.turnState.activePlayerId) {
+      return;
+    }
+
+    const match = this.gameSessionService.getMatchFromSessionId(payload.gameSessionId);
+    const activePlayer = match?.players.find((player) => player.id === payload.turnState.activePlayerId) ?? null;
+    if (activePlayer?.controller !== 'virtual') {
+      return;
+    }
+
+    const stance = activePlayer.virtualProfile === 'defensive' ? 'defense' : 'attack';
+    this.combatService.combatTurn(payload.combatId, activePlayer.id, stance);
+  }
+
   private createWaitingSnapshot(payload: CombatTurnSnapshot): CombatWaitingSnapshot {
     const remainingMs = payload.turnState.phase === 'active'
       ? payload.turnState.activeTurnRemainingMs
@@ -135,5 +170,30 @@ export class CombatGateway {
       round: payload.round,
       countdownSeconds: Math.max(0, Math.ceil(remainingMs / MILLISECONDS_PER_SECOND)),
     };
+  }
+
+  private emitToCombatParticipants(
+    gameSessionId: string | undefined,
+    participantIds: (string | undefined)[],
+    event: CombatSocketEvents,
+    payload:
+      | CombatTurnSnapshot['turnState']
+      | CombatSessionSnapshot['statistics']
+      | { winner: string; loser: string }
+      | { player1: string; player2: string },
+  ): void {
+    if (!gameSessionId) {
+      return;
+    }
+
+    const socketIds = new Set(
+      participantIds
+        .map((participantId) => this.gameSessionService.getSocketFromPlayer(gameSessionId, participantId))
+        .filter((socketId): socketId is string => !!socketId),
+    );
+
+    for (const socketId of socketIds) {
+      this.server.to(socketId).emit(event, payload);
+    }
   }
 }

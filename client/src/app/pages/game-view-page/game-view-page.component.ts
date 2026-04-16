@@ -27,7 +27,7 @@ import { positionKey } from '@app/services/match/match-geometry';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { createPanelAvatarDirection, createPanelAvatarId, createPanelAvatarState } from '@app/utils/game-view/game-view-avatar.utils';
 import { getPhaseDescription, getPhaseHeadline } from '@app/utils/game-view/game-view-phase.utils';
-import { toGamePlayer } from '@app/utils/game-view/game-view-player.utils';
+import { getActivePanelPlayer, getVirtualPlayerBadgeLabel, toGamePlayer } from '@app/utils/game-view/game-view-player.utils';
 import { createSelectedTileInfo } from '@app/utils/game-view/game-view-tile-info.utils';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { GameLogEntry } from '@common/game/game-log-entry.interface';
@@ -37,9 +37,9 @@ import { GameCell } from '@common/maps/map.interface';
 import { Player, PlayerStatus } from '@common/player/player.interface';
 import {
     buildChatMessage, buildIncomingFlagTransfer,
-    clearMatchEndRedirect,
-    destroyGameViewPage,
-    handleGameViewBrowserRefresh, handleGameViewCellClick,
+    clearMatchEndRedirect,destroyGameViewPage,
+    handleGameViewBrowserRefresh,
+    handleGameViewCellClick,
     handleGameViewCellContextMenu,
     handleGameViewDebugShortcut,
     handleGameViewEndTurn,
@@ -52,6 +52,7 @@ import {
     syncMatchEndRedirect,
 } from './game-view-page.helpers';
 import { GameViewCellContextMenuPayload, MatchEndRedirectState } from './game-view-page.helpers.interfaces';
+
 @Component({
     selector: 'app-game-view-page',
     standalone: true,
@@ -88,7 +89,6 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     private readonly gameSessionSocket = inject(GameSessionSocketService);
     private readonly chatService = inject(ChatService);
     private readonly endStatsService = inject(EndStatsService);
-
     protected readonly endRedirectRemainingMs = signal(0);
     protected readonly errorMessage = computed(() => this.gameSessionSocket.errorMessage() || this.display.errorMessage());
     protected readonly match = this.display.match;
@@ -169,16 +169,16 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.isTurnStatusPanelOpen() || this.display.turnState()?.phase === 'transition',
     );
     protected readonly canCloseTurnStatusOverlay = computed<boolean>(() => this.display.turnState()?.phase !== 'transition');
-    protected readonly activePanelName = computed<string | null>(() => {
-        const turnState = this.display.turnState();
-        if (!turnState) {
-            return null;
-        }
-        if (turnState.phase === 'active') {
-            return this.display.currentActivePlayer()?.name ?? null;
-        }
-        return this.display.transitionTargetPlayer()?.name ?? null;
-    });
+    protected readonly activePanelPlayer = computed<Player | null>(() =>
+        getActivePanelPlayer(
+            this.display.turnState()?.phase ?? null,
+            this.activePlayer(),
+            this.players(),
+            this.display.transitionTargetPlayer()?.id ?? null,
+        ),
+    );
+    protected readonly activePanelName = computed<string | null>(() => this.activePanelPlayer()?.information.name ?? null);
+    protected readonly activePanelBadge = computed<string | null>(() => getVirtualPlayerBadgeLabel(this.activePanelPlayer()?.information));
     protected readonly reachableCellKeys = computed<ReadonlySet<string>>(() => new Set<string>(this.display.reachableTiles().keys()));
     protected readonly reachableOriginKey = computed<string | null>(() => {
         const localPlayerId = this.display.localPlayer()?.id ?? null;
@@ -199,6 +199,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         timeoutId: null,
     };
     private localPoseIntervalId: number | null = null;
+
     constructor() {
         effect(() => {
             this.matchEndRedirectState = syncMatchEndRedirect(
@@ -218,6 +219,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             }
         });
     }
+
     ngOnInit(): void {
         this.combat.closeCombat();
         this.localPoseIntervalId = initializeGameViewPage({
@@ -232,6 +234,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             sessionId: this.route.snapshot.queryParamMap.get('sessionId'),
         });
     }
+
     ngOnDestroy(): void {
         this.matchEndRedirectState = destroyGameViewPage({
             chatService: this.chatService,
@@ -244,9 +247,11 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         });
         this.localPoseIntervalId = null;
     }
+
     protected endRedirectCountdownSeconds(): number {
         return Math.max(0, Math.ceil(this.endRedirectRemainingMs() / MILLISECONDS_PER_SECOND));
     }
+
     protected phaseHeadline(): string {
         return getPhaseHeadline(
             this.display.turnState(),
@@ -255,6 +260,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             this.display.transitionCountdownSeconds(),
         );
     }
+
     protected phaseDescription(): string {
         return getPhaseDescription(
             this.display.turnState(),
@@ -263,42 +269,54 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             this.display.localActionAvailable(),
         );
     }
+
     protected onCellClick(index: number): void {
         handleGameViewCellClick(this.combat.hasActiveCombat(), this.interaction, this.mapCells(), index);
     }
+
     protected onCellContextMenu(payload: GameViewCellContextMenuPayload): void {
         handleGameViewCellContextMenu(this.combat.hasActiveCombat(), this.interaction, this.mapCells(), payload);
     }
+
     protected onEndTurn(): void {
         handleGameViewEndTurn(this.combat.hasActiveCombat(), this.interaction);
     }
+
     protected onChatMessageSubmit(content: string): void {
         const author = this.currentPlayer()?.information?.name;
         if (!author) return;
         this.chatService.sendMessage(buildChatMessage(author, content));
     }
+
     protected onToggleActionMode(): void {
         handleGameViewToggleActionMode(this.combat.hasActiveCombat(), this.interaction);
     }
+
     protected onMessageTabChange(tab: 'chat' | 'journal'): void {
         if (tab === 'journal' && !this.journalAvailable()) return;
         this.messageTab.set(tab);
     }
+
     protected onTogglePlayerListExpanded(): void {
         this.isPlayerListExpanded.update((expanded) => !expanded);
     }
+
     protected closeTileInfoModal(): void {
         this.interaction.closeInspection();
     }
+
     protected onToggleTurnStatusPanel(): void {
         this.isTurnStatusPanelOpen.update((open) => !open);
     }
+
     protected acceptIncomingFlagTransfer(): void {
         handleIncomingFlagTransferResponse(true, this.incomingFlagTransfer(), this.localPlayerId(), this.gameSessionSocket, this.interaction);
     }
+
     protected refuseIncomingFlagTransfer(): void {
         handleIncomingFlagTransferResponse(false, this.incomingFlagTransfer(), this.localPlayerId(), this.gameSessionSocket, this.interaction);
     }
+
     protected onToggleDebugMode(): void {
         handleGameViewToggleDebugMode(
             this.localPlayerId(),
@@ -307,10 +325,12 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             this.gameSessionSocket,
         );
     }
+
     @HostListener('window:keyup', ['$event'])
     protected handleMovementKeyup(event: KeyboardEvent): void {
         handleGameViewMovementKeyup(event, this.combat.hasActiveCombat(), this.interaction);
     }
+
     @HostListener('window:keydown', ['$event'])
     protected handleDebugShortcut(event: KeyboardEvent): void {
         handleGameViewDebugShortcut(event, {
@@ -323,6 +343,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             selectedTileInfo: this.selectedTileInfo(),
         });
     }
+
     @HostListener('window:beforeunload')
     protected handleBrowserRefresh(): void {
         handleGameViewBrowserRefresh(
@@ -331,6 +352,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
             this.display.matchEndState()?.message ?? null,
         );
     }
+
     protected quitGame(): void {
         this.matchEndRedirectState = clearMatchEndRedirect(this.matchEndRedirectState, this.endRedirectRemainingMs);
         this.interaction.clearActionSelection();
@@ -341,6 +363,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         });
         void this.router.navigate(['/home']);
     }
+
     private leaveMatch(message: string): void {
         leaveMatch(message, {
             display: this.display,

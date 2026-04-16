@@ -1,19 +1,24 @@
 import { EndStatsService } from '@app/services/end-stats.service';
-import { createActiveTurnState } from '@app/services/game-session/game-session.runtime';
 import {
-    advanceToNextTurn as advanceSessionTurn, clearTimers, clearTurnState,
-    pauseTimer, resumeTimers, startTimerTransition, tickTimers,
+    activateTurn,
+    advanceToNextTurn as advanceSessionTurn,
+    clearTimers,
+    clearTurnState,
+    pauseTimer,
+    resumeTimers,
+    startTimerTransition,
 } from '@app/services/timer/turn.timers';
 import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
-import { ACTIVE_TURN_DURATION_MS, SNAPSHOT_TICK_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
+import { ACTIVE_TURN_DURATION_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionLogEntry, GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { CombatPlayerStatistics } from '@common/combat/combat.interface';
 import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import {
-    InitializedMatch, MatchPendingFlagTransfer,
-    MatchPlayer, MatchTeamId,
+    InitializedMatch,
+    MatchPendingFlagTransfer,
+    MatchPlayer,
 } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
@@ -21,21 +26,27 @@ import { SessionSocketEvents } from '@common/socket-events';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventEmitter } from 'events';
 import { appendCombatRoundLogEntries } from './game-session.combat-round-log';
+import { getMissingCtfTeamId } from './game-session.lifecycle.helpers';
 import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
 
 export class GameSessionLifecycle {
     private readonly events2 = new EventEmitter2();
-
     private readonly startTimerConfig: TimerConfig<GameSessionRuntime> = {
         emitSnapshot: (session) => this.emitSnapshot(session),
         onTransitionEnd: (session) => this.activateTurn(session),
         transitionDuration: TRANSITION_DURATION_MS,
+    };
+    private readonly activeTurnConfig: TimerConfig<GameSessionRuntime> = {
+        emitSnapshot: (session) => this.emitSnapshot(session),
+        onTransitionEnd: (session) => this.advanceToNextTurn(session),
+        transitionDuration: ACTIVE_TURN_DURATION_MS,
     };
 
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly events: EventEmitter,
         private readonly endStatsService: EndStatsService,
+        private readonly syncAutomation: (session: GameSessionRuntime) => void = () => undefined,
     ) {
         this.emitSnapshot = this.emitSnapshot.bind(this);
         this.setNextMatch = this.setNextMatch.bind(this);
@@ -56,13 +67,13 @@ export class GameSessionLifecycle {
     ): boolean {
         if (nextPlayers.length === 0) {
             clearTimers(session);
-            this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
             this.sessions.delete(sessionId);
+            this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
             this.endStatsService.endSession(sessionId);
             return true;
         }
 
-        const missingTeamId = this.getMissingCtfTeamId(session.match.mode, nextPlayers);
+        const missingTeamId = getMissingCtfTeamId(session.match.mode, nextPlayers);
         if (missingTeamId) {
             session.match = {
                 ...session.match,
@@ -106,7 +117,9 @@ export class GameSessionLifecycle {
             pendingSanctuaryChoice: null,
         };
         this.emitSnapshot(session);
-        this.events.emit(SessionSocketEvents.EndGame, session.sessionId);
+        this.sessions.delete(session.sessionId);
+        this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
+        this.endStatsService.endSession(session.sessionId);
     }
 
     emitSnapshot(session: GameSessionRuntime): void {
@@ -179,86 +192,12 @@ export class GameSessionLifecycle {
             player.position.y === player.startingPosition.y;
     }
 
-    createPendingFlagTransfer(
-        match: InitializedMatch,
-        requesterId: string,
-        receiverId: string,
-    ): MatchPendingFlagTransfer | null {
-        if (match.mode !== GameMode.CTF || match.pendingFlagTransfer) {
-            return null;
-        }
-
-        const requester = match.players.find((player) => player.id === requesterId) ?? null;
-        const receiver = match.players.find((player) => player.id === receiverId) ?? null;
-        if (!requester || !receiver) {
-            return null;
-        }
-
-        const sameTeam = requester.teamId !== null && requester.teamId !== undefined && requester.teamId === receiver.teamId;
-        const adjacent = Math.abs(requester.position.x - receiver.position.x) + Math.abs(requester.position.y - receiver.position.y) === 1;
-        if (!sameTeam || !adjacent) {
-            return null;
-        }
-
-        const requesterHasFlag = match.flagCarrierId === requesterId;
-        const receiverHasFlag = match.flagCarrierId === receiverId;
-        if (requesterHasFlag === receiverHasFlag) {
-            return null;
-        }
-
-        return {
-            requesterId,
-            receiverId,
-            kind: requesterHasFlag ? 'offer' : 'request',
-        };
-    }
-
-    clearPendingFlagTransfer(pendingFlagTransfer: MatchPendingFlagTransfer | null, playerId: string): MatchPendingFlagTransfer | null {
-        if (!pendingFlagTransfer) {
-            return null;
-        }
-
-        return pendingFlagTransfer.requesterId === playerId || pendingFlagTransfer.receiverId === playerId ? null : pendingFlagTransfer;
-    }
-
-    buildFlagTransferMessage(
-        match: InitializedMatch,
-        pendingFlagTransfer: MatchPendingFlagTransfer,
-        nextFlagCarrierId: string | null,
-    ): string | null {
-        if (!nextFlagCarrierId) {
-            return null;
-        }
-
-        const receiver = match.players.find((player) => player.id === pendingFlagTransfer.receiverId) ?? null;
-        const requester = match.players.find((player) => player.id === pendingFlagTransfer.requesterId) ?? null;
-        if (!receiver || !requester) {
-            return null;
-        }
-
-        const giver = nextFlagCarrierId === receiver.id ? requester : receiver;
-        const beneficiary = nextFlagCarrierId === receiver.id ? receiver : requester;
-        return `${beneficiary.name} obtient le drapeau de ${giver.name}.`;
-    }
-
     canResolveFlagTransfer(
         session: GameSessionRuntime | undefined,
         pendingFlagTransfer: MatchPendingFlagTransfer | null,
         receiverId: string,
     ): session is GameSessionRuntime {
         return !!session && !!pendingFlagTransfer && pendingFlagTransfer.receiverId === receiverId && !session.match.endState;
-    }
-
-    resolveTransferredFlagCarrierId(
-        match: InitializedMatch,
-        pendingFlagTransfer: MatchPendingFlagTransfer,
-        accepted: boolean,
-    ): string | null {
-        if (!accepted) {
-            return match.flagCarrierId ?? null;
-        }
-
-        return pendingFlagTransfer.kind === 'offer' ? pendingFlagTransfer.receiverId : pendingFlagTransfer.requesterId;
     }
 
     finishCtfMatchIfFlagTransferWins(session: GameSessionRuntime, accepted: boolean, nextFlagCarrierId: string | null): boolean {
@@ -349,6 +288,7 @@ export class GameSessionLifecycle {
 
     startTransition(session: GameSessionRuntime): void {
         startTimerTransition(session, this.startTimerConfig);
+        this.syncAutomation(session);
     }
 
     advanceToNextTurn(session: GameSessionRuntime): void {
@@ -363,6 +303,7 @@ export class GameSessionLifecycle {
             (s) => this.activateTurn(s),
             (s) => this.advanceToNextTurn(s),
         );
+        this.syncAutomation(session);
     }
 
     stopSessionTimers(session: GameSessionRuntime): void {
@@ -371,30 +312,12 @@ export class GameSessionLifecycle {
     }
 
     private activateTurn(session: GameSessionRuntime): void {
+        activateTurn(session, this.getActivePlayer, this.activeTurnConfig);
         const activePlayer = this.getActivePlayer(session);
-        if (!activePlayer) {
-            return;
+        if (activePlayer) {
+            this.appendLogEntry(session, `Debut du tour de ${activePlayer.name}.`, [activePlayer.name]);
+            this.emitSnapshot(session);
         }
-
-        clearTimers(session);
-        session.turnState = createActiveTurnState(session.turnState, activePlayer, ACTIVE_TURN_DURATION_MS);
-        this.appendLogEntry(session, `Debut du tour de ${activePlayer.name}.`, [activePlayer.name]);
-        this.emitSnapshot(session);
-        session.timerIntervalId = setInterval(() => tickTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
-        session.activeTurnTimeoutId = setTimeout(() => this.advanceToNextTurn(session), ACTIVE_TURN_DURATION_MS);
-    }
-
-    private getMissingCtfTeamId(mode: GameMode, players: MatchPlayer[]): MatchTeamId | null {
-        if (mode !== GameMode.CTF || players.length === 0) {
-            return null;
-        }
-
-        const teamAAlive = players.some((player) => player.teamId === 'A');
-        const teamBAlive = players.some((player) => player.teamId === 'B');
-        if (teamAAlive === teamBAlive) {
-            return null;
-        }
-
-        return teamAAlive ? 'B' : 'A';
+        this.syncAutomation(session);
     }
 }

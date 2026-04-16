@@ -31,6 +31,7 @@ describe('CombatGateway', () => {
       createCombatSession: jest.fn(),
       combatTurn: jest.fn(),
       getCombatIdByRooms: jest.fn(),
+      getCombatSession: jest.fn(),
     };
 
     gameSessionServiceMock = createGameSessionMock();
@@ -133,6 +134,7 @@ describe('CombatGateway', () => {
     expect(spy).toHaveBeenCalledWith(session);
   });
 
+
   it('should emit an error message if combatTurn returns false - setCombatStance', () => {
     const socket = createMockSocket('4567');
     const payload: StancePayload = { combatId: '0000', playerId: '1111', stance: 'attack'};
@@ -178,6 +180,7 @@ describe('CombatGateway', () => {
     });
   });
 
+
   it('should not send the payload if the combatId is not valid but send an error message - handleTurnSwitch', () => {
     const payload: CombatTurnSnapshot = {
       combatId: undefined as unknown as string,
@@ -196,6 +199,7 @@ describe('CombatGateway', () => {
     const statistics1 = createMockCombatPlayerStatistics();
     const statistics2 = createMockCombatPlayerStatistics();
     const payload: CombatSessionSnapshot = { combatId: '6745', statistics: [statistics1, statistics2]};
+    jest.spyOn(combatServiceMock, 'getCombatSession').mockReturnValue(undefined);
     gateway.handleCombatStatistics(payload);
     expect(server.to).toHaveBeenCalledWith(payload.combatId);
     expect(server.emit).toHaveBeenCalledWith(CombatSocketEvents.AttackSnapshot, payload.statistics);
@@ -208,6 +212,36 @@ describe('CombatGateway', () => {
     gateway.handleCombatStatistics(payload);
     expect(server.to).not.toHaveBeenCalledWith(payload.combatId);
     expect(server.emit).not.toHaveBeenCalledWith(CombatSocketEvents.AttackSnapshot, payload.statistics);
+  });
+
+  it('sends combat snapshots directly to participant sockets when the combat room was not joined', () => {
+    const statistics1 = createMockCombatPlayerStatistics();
+    const statistics2 = createMockCombatPlayerStatistics();
+    const payload: CombatSessionSnapshot = { combatId: '6745', statistics: [statistics1, statistics2] };
+    const combatSession = makeCombatSession();
+    jest.spyOn(combatServiceMock, 'getCombatSession').mockReturnValue(
+      {
+        ...combatSession,
+        id: '6745',
+        gameSessionId: 'game-1',
+        players: [
+          { ...combatSession.players[0], stats: { ...combatSession.players[0].stats, id: 'player-1' } },
+          { ...combatSession.players[1], stats: { ...combatSession.players[1].stats, id: 'player-2' } },
+        ],
+      },
+    );
+    jest.spyOn(gameSessionServiceMock, 'getSocketFromPlayer').mockImplementation((sessionId, playerId) => {
+      if (sessionId !== 'game-1') {
+        return undefined;
+      }
+      return playerId === 'player-1' ? 'socket-1' : playerId === 'player-2' ? 'socket-2' : undefined;
+    });
+
+    gateway.handleCombatStatistics(payload);
+
+    expect(server.to).toHaveBeenCalledWith('socket-1');
+    expect(server.to).toHaveBeenCalledWith('socket-2');
+    expect(server.emit).toHaveBeenCalledWith(CombatSocketEvents.AttackSnapshot, payload.statistics);
   });
 
   it('should send the payload if both combatId and gameSessionId are valid - handleVictory', () => {
