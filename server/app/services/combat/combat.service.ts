@@ -209,7 +209,7 @@ export class CombatService {
         const totalAttack = attacker.stats.baseAttack + sanctuaryAttackBonus + attackRoll + stanceAttackBonus - attackerIcePenalty;
         const totalDefense = defender.stats.baseDefense + sanctuaryDefenseBonus + defenseRoll + stanceDefenseBonus - defenderIcePenalty;
 
-        const damage = totalAttack - totalDefense;
+        const damage = totalAttack - totalDefense > defender.stats.health ? defender.stats.health : totalAttack - totalDefense;
 
         let victim = defender;
 
