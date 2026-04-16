@@ -117,6 +117,7 @@ export class GameSessionLifecycle {
             pendingSanctuaryChoice: null,
         };
         this.emitSnapshot(session);
+        this.events.emit(SessionSocketEvents.EndGame, session.sessionId);
         this.sessions.delete(session.sessionId);
         this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
         this.endStatsService.endSession(session.sessionId);
