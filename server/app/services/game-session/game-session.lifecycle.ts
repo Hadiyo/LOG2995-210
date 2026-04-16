@@ -65,9 +65,9 @@ export class GameSessionLifecycle {
     ): boolean {
         if (nextPlayers.length === 0) {
             clearTimers(session);
+            this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
             this.sessions.delete(sessionId);
             this.endStatsService.endSession(sessionId);
-            this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
             return true;
         }
 

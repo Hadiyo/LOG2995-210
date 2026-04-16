@@ -69,14 +69,8 @@ export class EndGameComponent implements OnInit, OnDestroy {
   }
 
   protected leaveMatch(message: string): void {
-    const localPlayer = this.display.localPlayer();
-    if (localPlayer) {
-        this.gameSessionSocket.surrender(localPlayer.id);
-    }
-
-    if (this.display.matchEndState()) {
-        this.matchState.endLocalSession(message);
-        return;
+    if (this.currentPlayer) {
+      this.gameSessionSocket.surrender(this.currentPlayer.id);
     }
 
     this.matchState.abandonLocalPlayer(message);
