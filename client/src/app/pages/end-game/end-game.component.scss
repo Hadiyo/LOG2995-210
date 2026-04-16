@@ -2,14 +2,26 @@
     --panel-padding: 30px;
 }
 
+h2 {
+    margin: 0 0 1.5rem;
+    text-align: center;
+    color: var(--accent-secondary);
+}
+
 .end-game-container {
     display: grid;
     grid-template-columns: 70% 30%;
     height: 100%;
 }
 
-.end-game-container app-end-stats {
-    grid-column: 1;
+.end-game-container > div:first-child h2 {
+    margin: 0;
+    text-align: center;
+}
+
+.end-game-container > div:first-child app-end-stats {
+    flex: 1;
+    min-height: 0;
 }
 
 .chat {
@@ -21,4 +33,19 @@
     overflow-x: hidden;
     overflow-y: auto;
     padding: var(--panel-padding);
+}
+
+.end-stats {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: column;
+}
+  
+.header-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    padding-top: 16px;
 }

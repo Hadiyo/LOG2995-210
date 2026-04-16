@@ -1,7 +1,18 @@
 <div class="end-game-container">
-    <app-end-stats
-        (onEmptyStats)="leaveMatch('Retour a l accueil.')"
-    ></app-end-stats>
+    <div>
+        <div class="end-stats">
+            <div class="header-row">
+                <app-back-button (pressed)="leaveMatch('Retour a l accueil.')">
+                </app-back-button>    
+                <div>
+                    <h2>Statistiques de fin de partie</h2>
+                </div>
+            </div>
+            <app-end-stats
+                (onEmptyStats)="leaveMatch('Retour a l accueil.')"
+            ></app-end-stats>
+        </div>
+    </div>
     <app-game-chat-panel class="chat"
         [messages]="chatMessages()"
         [notification]="null"
@@ -13,8 +24,4 @@
         (messageSubmit)="onChatMessageSubmit($event)"
     >
     </app-game-chat-panel>
-
-    <button class="btn-secondary" (click)="leaveMatch('Retour a l accueil.')">
-        Quitter la partie
-    </button>
 </div>

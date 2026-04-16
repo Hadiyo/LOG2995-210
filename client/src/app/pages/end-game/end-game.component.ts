@@ -1,6 +1,7 @@
 import { Component, HostListener, inject, OnDestroy, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import { EndStatsComponent } from '@app/components/end-stats/end-stats.component';
 import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { GAME_VIEW_CONSTANTS } from '@app/config/game-view.config';
@@ -13,7 +14,7 @@ import { ChatMessage } from '@common/chat/chat.interface';
 
 @Component({
   selector: 'app-end-game',
-  imports: [EndStatsComponent, GameChatPanelComponent],
+  imports: [EndStatsComponent, GameChatPanelComponent, BackButtonComponent],
   templateUrl: './end-game.component.html',
   styleUrl: './end-game.component.scss',
   providers: [GameSessionDisplayService],
