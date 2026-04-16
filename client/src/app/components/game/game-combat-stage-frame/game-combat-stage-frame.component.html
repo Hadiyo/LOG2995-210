@@ -1,0 +1,67 @@
+@if (fighters.length === 2) {
+  <div class="combat-stage-layout">
+    <app-game-combat-dice
+      class="combat-stage-layout__dice"
+      [attackDie]="fighters[0].attackDie"
+      [defenseDie]="fighters[0].defenseDie"
+      [attackValue]="fighters[0].attackRollValue"
+      [defenseValue]="fighters[0].defenseRollValue"
+      [rollToken]="fighters[0].rollToken"
+      side="left"
+    />
+
+    <div class="combat-stage-frame">
+      <div class="combat-stage-strip combat-stage-strip--top">
+        @for (fighter of fighters; track fighter.id) {
+          <div class="combat-stage-strip__slot">
+            <p class="combat-stage-strip__name">{{ fighter.name }}</p>
+            <span class="combat-stage-strip__tag">{{ fighter.isLocal ? 'Vous' : 'Adversaire' }}</span>
+          </div>
+        }
+      </div>
+
+      <app-game-combat-stage-arena [fighters]="fighters" [isHorizontal]="isHorizontal" [endingNotice]="endingNotice" />
+
+      <div class="combat-stage-strip combat-stage-strip--bottom">
+        @for (fighter of fighters; track fighter.id) {
+          <div class="combat-stage-strip__slot combat-stage-strip__slot--stats">
+            <div class="combat-stage__stat-grid" role="table" aria-label="Statistiques de {{ fighter.name }}">
+              <span class="combat-stage__stat-pair" role="cell">
+                <span class="combat-stage__stat-label">PV:</span>
+                <span class="combat-stage__stat-value">{{ fighter.currentHealth }}/{{ fighter.maxHealth }}</span>
+              </span>
+              <span class="combat-stage__stat-pair" role="cell">
+                <span class="combat-stage__stat-label">ATQ:</span>
+                <span class="combat-stage__stat-value">
+                  {{ fighter.attack }} +
+                  <span class="combat-stage__die" [class.hint-d6]="fighter.attackDie === 'D6'" [class.hint-d4]="fighter.attackDie === 'D4'">
+                    {{ fighter.attackDie }}
+                  </span>
+                </span>
+              </span>
+              <span class="combat-stage__stat-pair" role="cell">
+                <span class="combat-stage__stat-label">DEF:</span>
+                <span class="combat-stage__stat-value">
+                  {{ fighter.defense }} +
+                  <span class="combat-stage__die" [class.hint-d6]="fighter.defenseDie === 'D6'" [class.hint-d4]="fighter.defenseDie === 'D4'">
+                    {{ fighter.defenseDie }}
+                  </span>
+                </span>
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <app-game-combat-dice
+      class="combat-stage-layout__dice"
+      [attackDie]="fighters[1].attackDie"
+      [defenseDie]="fighters[1].defenseDie"
+      [attackValue]="fighters[1].attackRollValue"
+      [defenseValue]="fighters[1].defenseRollValue"
+      [rollToken]="fighters[1].rollToken"
+      side="right"
+    />
+  </div>
+}
