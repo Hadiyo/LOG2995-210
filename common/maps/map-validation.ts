@@ -14,6 +14,7 @@ export type MapValidationIssueCode =
     | 'START_ON_OPEN_DOOR_NOT_ALLOWED'
     | 'DOOR_INVALID_PLACEMENT'
     | 'DOOR_DOORWAY_BLOCKED'
+    | 'SANCTUARY_ENCLOSED'
     | 'UNREACHABLE_TILES';
 
 export interface MapValidationIssue {
@@ -221,11 +222,11 @@ const getBlockedDoorwayPositions = (cellsByKey: Map<string, Cell>, blockedKeys: 
         if (doorPlacement === null) continue;
 
         if (doorPlacement === 'vertical') {
-            if (blockedKeys.has(positionKey(x, y - 1)) || blockedKeys.has(positionKey(x, y + 1))) {
+            if (blockedKeys.has(positionKey(x, y - 1)) && blockedKeys.has(positionKey(x, y + 1))) {
                 blocked.push({ x, y });
             }
         } else {
-            if (blockedKeys.has(positionKey(x - 1, y)) || blockedKeys.has(positionKey(x + 1, y))) {
+            if (blockedKeys.has(positionKey(x - 1, y)) && blockedKeys.has(positionKey(x + 1, y))) {
                 blocked.push({ x, y });
             }
         }
@@ -242,6 +243,40 @@ const addDoorwayBlockedIssues = (cellsByKey: Map<string, Cell>, blockedKeys: Set
         code: 'DOOR_DOORWAY_BLOCKED',
         message: "Un objet bloquant empeche le passage a travers une porte.",
         details: { positions: blockedDoors },
+    });
+};
+
+const isSanctuaryEnclosed = (object: EditorMap['objects'][number], cellsByKey: Map<string, Cell>): boolean => {
+    const coveredPositions = getCoveredPositions(object.position, object.size);
+    const coveredKeys = new Set(coveredPositions.map((position) => positionKey(position.x, position.y)));
+    const boundaryKeys = new Set<string>();
+
+    for (const position of coveredPositions) {
+        for (const neighborKey of getNeighborKeys(position)) {
+            if (!coveredKeys.has(neighborKey)) {
+                boundaryKeys.add(neighborKey);
+            }
+        }
+    }
+
+    return [...boundaryKeys].every((key) => {
+        const cell = cellsByKey.get(key);
+        return !cell || isWallTile(cell.tileType);
+    });
+};
+
+const addEnclosedSanctuaryIssues = (map: EditorMap, cellsByKey: Map<string, Cell>, issues: MapValidationIssue[]): void => {
+    const enclosedSanctuaries = map.objects
+        .filter((object) => isBlockingObjectType(object.type))
+        .filter((object) => isSanctuaryEnclosed(object, cellsByKey))
+        .map((object) => object.position);
+
+    if (enclosedSanctuaries.length === 0) return;
+
+    issues.push({
+        code: 'SANCTUARY_ENCLOSED',
+        message: 'Un sanctuaire ne peut pas etre completement entoure de murs.',
+        details: { positions: enclosedSanctuaries },
     });
 };
 
@@ -362,6 +397,7 @@ export const validateMap = (map: EditorMap): MapValidationResult => {
     const blockedKeys = collectBlockedKeys(map);
     addDoorPlacementIssues(cellsByKey, issues);
     addDoorwayBlockedIssues(cellsByKey, blockedKeys, issues);
+    addEnclosedSanctuaryIssues(map, cellsByKey, issues);
     addStartPointIssues(map, issues);
     addFlagIssues(map, issues);
     addFlagOnDoorIssues(map, cellsByKey, issues);
