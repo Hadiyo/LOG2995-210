@@ -4,8 +4,8 @@ import { CombatResultPayload, CombatTiePayload } from '@app/services/match/comba
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
-import { MatchSanctuaryChoice } from '@common/game/match.interface';
 import { GameLogEntry } from '@common/game/game-log-entry.interface';
+import { MatchSanctuaryChoice } from '@common/game/match.interface';
 import {
     CombatSocketEvents,
     DebugTeleportPlayerPayload,
@@ -54,8 +54,8 @@ export class GameSessionSocketService {
         }
 
         this.sessionId.set(sessionId);
-        this.errorMessage.set('');
         this.logEntries.set([]);
+        this.errorMessage.set('');
         this.socketManager.send(SessionSocketEvents.JoinGameSession, {
             sessionId,
             playerId,

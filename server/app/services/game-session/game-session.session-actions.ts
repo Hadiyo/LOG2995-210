@@ -222,6 +222,14 @@ export class GameSessionSessionActions {
         if(loserId){
             const loser = session.match.players.find((player) => player.id === loserId);
             if(loser){
+                if (winner) {
+                    this.lifecycle.appendLogEntry(
+                        session,
+                        `${winner.name} remporte un combat contre ${loser.name}.`,
+                        [winner.name, loser.name],
+                        [winnerId, loserId],
+                    );
+                }
                 loser.health = loser.maxHealth;
                 if (session.match.flagCarrierId === loserId)
                     dropFlag(session, loser);
@@ -250,6 +258,12 @@ export class GameSessionSessionActions {
 
         loser.health = loser.maxHealth;
         winner.health = winner.maxHealth;
+        this.lifecycle.appendLogEntry(
+            session,
+            `${winner.name} et ${loser.name} terminent le combat a egalite.`,
+            [winner.name, loser.name],
+            [winnerId, loserId],
+        );
 
         this.lifecycle.resumeGameSessionTurn(session);
     }

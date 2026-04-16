@@ -71,13 +71,6 @@ export class GameSessionService {
         };
     }
 
-    getSessionById(id: string): GameSessionRuntime {
-        return this.sessions.get(id);
-    }
-
-    getMatchFromSessionId(id: string): InitializedMatch | null {
-        return this.sessions.get(id)?.match ?? null;
-    }
     getSocketIdsForSession(sessionId: string): string[] {
         return [...(this.sessions.get(sessionId)?.socketToPlayerId.keys() ?? [])];
     }
@@ -94,6 +87,14 @@ export class GameSessionService {
         }
 
         return this.buildSnapshot(session, playerId);
+    }
+    
+    getSessionById(id: string): GameSessionRuntime | undefined {
+        return this.sessions.get(id);
+    }
+
+    getMatchFromSessionId(id: string): InitializedMatch | null {
+        return this.sessions.get(id)?.match ?? null;
     }
     getPlayerIdForSocket(socketId: string, sessionId: string): string | null {
         return this.sessions.get(sessionId)?.socketToPlayerId.get(socketId) ?? null;
@@ -210,8 +211,9 @@ export class GameSessionService {
 
     resumeSessionTurns(sessionId: string): void {
         const session = this.sessions.get(sessionId);
-        if(session)
-            this.lifecycle.advanceToNextTurn(session);
+        if (session) {
+            this.lifecycle.resumeGameSessionTurn(session);
+        }
     }
 
     stopSessionTimers(session: GameSessionRuntime): void {

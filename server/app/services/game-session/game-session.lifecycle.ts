@@ -1,15 +1,16 @@
 import {
-    activateTurn,
-    advanceToNextTurn,
+    advanceToNextTurn as advanceSessionTurn,
     clearTimers,
     clearTurnState,
     pauseTimer,
     resumeTimers,
     startTimerTransition,
+    tickTimers,
 } from '@app/services/timer/turn.timers';
 import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
-import { ACTIVE_TURN_DURATION_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
+import { ACTIVE_TURN_DURATION_MS, SNAPSHOT_TICK_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionLogEntry, GameSessionRuntime } from '@app/utilities/game/game.interface';
+import { createActiveTurnState } from '@app/services/game-session/game-session.runtime';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { GameLogEntry } from '@common/game/game-log-entry.interface';
@@ -30,12 +31,6 @@ export class GameSessionLifecycle {
         emitSnapshot: (session) => this.emitSnapshot(session),
         onTransitionEnd: (session) => this.activateTurn(session),
         transitionDuration: TRANSITION_DURATION_MS,
-    };
-
-    private readonly activateTurnConfig: TimerConfig<GameSessionRuntime> = {
-        emitSnapshot: (session) => this.emitSnapshot(session),
-        onTransitionEnd: (session) => this.advanceToNextTurn(session),
-        transitionDuration: ACTIVE_TURN_DURATION_MS,
     };
 
     constructor(
@@ -299,7 +294,6 @@ export class GameSessionLifecycle {
             resolvedAt: Date.now(),
         };
         this.finishMatch(session);
-        this.emitSnapshot(session);
     }
 
     createSystemMessage(content: string): ChatMessage {
@@ -311,7 +305,6 @@ export class GameSessionLifecycle {
         };
     }
 
-    getActivePlayer(session: GameSessionRuntime): MatchPlayer | null {
     createLogEntry(content: string, involvedPlayers: string[], visibleToPlayerIds: string[] | null = null): GameSessionLogEntry {
         const entry: GameLogEntry = {
             id: crypto.randomUUID(),
@@ -335,11 +328,12 @@ export class GameSessionLifecycle {
     ): void {
         session.logEntries.push(this.createLogEntry(content, involvedPlayers, visibleToPlayerIds));
     }
-    
+
     getActivePlayer(session: GameSessionRuntime): MatchPlayer | null {
         const activePlayerId = session.turnState.order[session.turnState.currentTurnIndex]?.playerId ?? null;
-        if(!activePlayerId)
+        if (!activePlayerId) {
             return null;
+        }
         const activePlayer = session.match.players.find((player) => player.id === activePlayerId) ?? null;
         if (!activePlayer) {
             return null;
@@ -352,11 +346,11 @@ export class GameSessionLifecycle {
     }
 
     advanceToNextTurn(session: GameSessionRuntime): void {
-        advanceToNextTurn(session, (candidate) => this.setNextMatch(candidate));
+        advanceSessionTurn(session, (candidate) => this.setNextMatch(candidate));
         startTimerTransition(session, this.startTimerConfig);
     }
 
-    resumeGameSessionTurn(session) {
+    resumeGameSessionTurn(session: GameSessionRuntime): void {
         resumeTimers(
             session,
             this.emitSnapshot.bind(this),
@@ -371,7 +365,17 @@ export class GameSessionLifecycle {
     }
 
     private activateTurn(session: GameSessionRuntime): void {
-        activateTurn(session, this.getActivePlayer, this.activateTurnConfig);
+        const activePlayer = this.getActivePlayer(session);
+        if (!activePlayer) {
+            return;
+        }
+
+        clearTimers(session);
+        session.turnState = createActiveTurnState(session.turnState, activePlayer, ACTIVE_TURN_DURATION_MS);
+        this.appendLogEntry(session, `Debut du tour de ${activePlayer.name}.`, [activePlayer.name]);
+        this.emitSnapshot(session);
+        session.timerIntervalId = setInterval(() => tickTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
+        session.activeTurnTimeoutId = setTimeout(() => this.advanceToNextTurn(session), ACTIVE_TURN_DURATION_MS);
     }
 
     private getMissingCtfTeamId(mode: GameMode, players: MatchPlayer[]): MatchTeamId | null {
