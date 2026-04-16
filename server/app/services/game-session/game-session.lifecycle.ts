@@ -1,24 +1,19 @@
 import { EndStatsService } from '@app/services/end-stats.service';
+import { createActiveTurnState } from '@app/services/game-session/game-session.runtime';
 import {
-    advanceToNextTurn as advanceSessionTurn,
-    clearTimers,
-    clearTurnState,
-    pauseTimer,
-    resumeTimers,
-    startTimerTransition,
-    tickTimers,
+    advanceToNextTurn as advanceSessionTurn, clearTimers, clearTurnState,
+    pauseTimer, resumeTimers, startTimerTransition, tickTimers,
 } from '@app/services/timer/turn.timers';
 import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
 import { ACTIVE_TURN_DURATION_MS, SNAPSHOT_TICK_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionLogEntry, GameSessionRuntime } from '@app/utilities/game/game.interface';
-import { createActiveTurnState } from '@app/services/game-session/game-session.runtime';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { CombatPlayerStatistics } from '@common/combat/combat.interface';
 import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import {
-    InitializedMatch,MatchPendingFlagTransfer,
-    MatchPlayer,MatchTeamId,
+    InitializedMatch, MatchPendingFlagTransfer,
+    MatchPlayer, MatchTeamId,
 } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';

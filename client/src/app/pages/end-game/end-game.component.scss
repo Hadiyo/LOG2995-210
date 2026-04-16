@@ -32,19 +32,19 @@ h2 {
     display: flex;
     grid-column: 2;
     flex-direction: column;
-    min-height: 75vh;
-    height: 75vh;
+    min-height: 65vh;
+    height: 65vh;
     overflow-x: hidden;
-    overflow-y: auto;
 }
 
 .panel {
     display: flex;
+    flex-direction: column;
     box-sizing: border-box;
     border: 1px solid var(--border-soft);
     border-radius: var(--panel-radius);
     background: var(--bg-panel); 
-    padding: var(--panel-padding);
+    padding: 10px var(--panel-padding) var(--panel-padding);
     max-height: 85vh;
   }
 
@@ -59,5 +59,92 @@ h2 {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 16px;
+    gap: var(--view-gap);
+}
+
+.panel__header {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: var(--panel-padding);
+}
+
+.panel__toggle-btn {
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: color-mix(in srgb, var(--bg-main) 86%, transparent);
+    color: var(--text-main);
+    font-size: 0.82rem;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.panel__toggle-btn:hover {
+    border-color: color-mix(in srgb, var(--accent-primary) 45%, var(--border-soft));
+    background: color-mix(in srgb, var(--accent-primary) 12%, var(--bg-main));
+}
+
+.panel__toggle-btn--active {
+    border-color: color-mix(in srgb, var(--accent-primary) 65%, var(--border-soft));
+    background: color-mix(in srgb, var(--accent-primary) 18%, var(--bg-main));
+}
+
+.panel__toggle-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 38%, transparent);
+}
+
+.panel__tab:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.panel__tab-list {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
+    flex: 1 1 auto;
+    width: 100%;
+    white-space: nowrap;
+}
+
+.panel__tabs {
+    display: flex;
+    align-items: flex-end;
+    margin: calc(-1 * var(--panel-padding)) calc(-1 * var(--panel-padding)) 12px;
+    padding: 0 10px;
+    border-bottom: 1px solid var(--border-soft);
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.panel__tab {
+    border: 0;
+    border-radius: 8px 8px 0 0;
+    padding: 10px 16px 9px;
+    background: transparent;
+    color: color-mix(in srgb, var(--text-main) 72%, transparent);
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1;
+    flex: 1 1 0;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.panel__tab:hover {
+    background: color-mix(in srgb, var(--bg-main) 55%, transparent);
+    color: var(--text-main);
+}
+
+.panel__tab--active {
+    background: color-mix(in srgb, var(--bg-main) 82%, transparent);
+    color: var(--text-main);
+}
+
+.panel__tab:focus-visible {
+    outline: none;
+    background: color-mix(in srgb, var(--bg-main) 68%, transparent);
+    color: var(--text-main);
 }

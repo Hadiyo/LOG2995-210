@@ -6,10 +6,8 @@ import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import {
   createCombatTurnServiceMock, createEndStatsServiceMock,
   createEventEmitterMock, createGameSessionMock,
-  makeCombatPlayerStatistics,
-  makeCombatSession,
-  makeFighter,
-  makeFighterPayload,
+  makeCombatPlayerStatistics, makeCombatSession,
+  makeFighter, makeFighterPayload,
 } from '@app/utilities/mocks/mocks';
 import { DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { EventEmitter2 } from '@nestjs/event-emitter';

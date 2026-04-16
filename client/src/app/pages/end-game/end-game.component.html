@@ -13,17 +13,57 @@
             ></app-end-stats>
         </div>
     </div>
-    <div class="panel">
-        <app-game-chat-panel class="chat"
-            [messages]="chatMessages()"
-            [notification]="null"
-            [currentPlayerName]="currentPlayer?.name ?? null"
-            [messageMaxLength]="constants.messageMaxLength"
-            [title]="'Clavardage'"
-            [showTitle]="true"
-            [readOnly]="false"
-            (messageSubmit)="onChatMessageSubmit($event)"
-        >
-        </app-game-chat-panel>
-    </div>
+    <section class="panel messages">
+        <div class="panel__header">
+          <h3>Zone des messages</h3>
+        </div>
+        <div class="messages--tabs">
+          <div class="panel__tabs" role="tablist" aria-label="Zone des messages">
+            <div class="panel__tab-list">
+              <button
+                type="button"
+                class="panel__tab"
+                [class.panel__tab--active]="messageTab() === 'chat'"
+                role="tab"
+                [attr.aria-selected]="messageTab() === 'chat'"
+                (click)="onMessageTabChange('chat')"
+              >
+                Clavardage
+              </button>
+              <button
+                type="button"
+                class="panel__tab"
+                [class.panel__tab--active]="messageTab() === 'journal'"
+                role="tab"
+                [attr.aria-selected]="messageTab() === 'journal'"
+                (click)="onMessageTabChange('journal')"
+              >
+                Journal de jeu
+              </button>
+            </div>
+          </div>
+
+          @if (messageTab() === 'chat') {
+            <app-game-chat-panel class="chat"
+              [messages]="chatMessages()"
+              [notification]="null"
+              [currentPlayerName]="currentPlayer?.name ?? null"
+              [messageMaxLength]="constants.messageMaxLength"
+              [title]="'Clavardage'"
+              [showTitle]="false"
+              [readOnly]="false"
+              (messageSubmit)="onChatMessageSubmit($event)"
+            />
+          } @else {
+            <app-game-chat-panel
+              [messages]="journalEntries()"
+              [notification]="null"
+              [currentPlayerName]="null"
+              [title]="'Journal de jeu'"
+              [showTitle]="false"
+              [readOnly]="true"
+            />
+          }
+        </div>
+    </section>
 </div>

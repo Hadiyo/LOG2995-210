@@ -210,6 +210,7 @@ export function createGameSessionServiceHarness() {
         getFlag: jest.Mock, 
         endTurn: jest.Mock,
         endSession: jest.Mock,
+        resultCombat: jest.Mock,
     };
 
     beforeEach(() => {
@@ -226,6 +227,7 @@ export function createGameSessionServiceHarness() {
             getFlag: jest.fn(),
             endTurn: jest.fn(),
             endSession: jest.fn(),
+            resultCombat: jest.fn(),
         };
         service = new GameSessionService(mapService as never, statsService as never);
     });

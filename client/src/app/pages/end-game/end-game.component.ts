@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, computed, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
@@ -11,10 +11,11 @@ import { GameSessionDisplayService } from '@app/services/game-view/game-session-
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { ChatMessage } from '@common/chat/chat.interface';
+import { GameLogEntry } from '@common/game/game-log-entry.interface';
 
 @Component({
   selector: 'app-end-game',
-  imports: [EndStatsComponent, GameChatPanelComponent, BackButtonComponent],
+  imports: [EndStatsComponent, BackButtonComponent, GameChatPanelComponent],
   templateUrl: './end-game.component.html',
   styleUrl: './end-game.component.scss',
   providers: [GameSessionDisplayService],
@@ -34,6 +35,9 @@ export class EndGameComponent implements OnInit, OnDestroy {
 
   protected readonly constants = GAME_VIEW_CONSTANTS;
   protected currentPlayer = this.waitingRoomService.me;
+
+  protected readonly messageTab = signal<'chat' | 'journal'>('chat');
+  protected readonly journalEntries = computed<readonly GameLogEntry[]>(() => this.gameSessionSocket.logEntries());
 
   ngOnInit(): void {
     this.chatService.initChat();
@@ -75,5 +79,9 @@ export class EndGameComponent implements OnInit, OnDestroy {
 
     this.matchState.abandonLocalPlayer(message);
     void this.router.navigate(['/home']);
+  }
+
+  protected onMessageTabChange(tab: 'chat' | 'journal'): void {
+    this.messageTab.set(tab);
   }
 }
