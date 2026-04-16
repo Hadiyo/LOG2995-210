@@ -3,10 +3,8 @@ import { makeMatch } from '@app/services/game-session/game-session.service.spec-
 import { BONUS, MIN_DIE_VALUE } from '@app/utilities/combat/combat.constants';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import {
-  createCombatTurnServiceMock,
-  createEventEmitterMock,
-  createGameSessionMock,
-  makeCombatPlayerStatistics,
+  createCombatTurnServiceMock,createEventEmitterMock,
+  createGameSessionMock,makeCombatPlayerStatistics,
   makeCombatSession,
   makeFighter,
   makeFighterPayload,
@@ -139,6 +137,7 @@ describe('CombatService', () => {
     const spy3 = jest.spyOn(service as any, 'endCombat').mockImplementation();
 
     const result = service.evaluateCombatResult(session, [combatStatistics1, combatStatistics2]);
+    expect(gameSessionMock.appendCombatRoundLogs).toHaveBeenCalledWith(session.gameSessionId, [combatStatistics1, combatStatistics2]);
     expect(emitSpy).toHaveBeenCalledWith(CombatEvents.Statistics, {
       combatId: session.id,
       statistics: [combatStatistics1, combatStatistics2],
@@ -170,6 +169,7 @@ describe('CombatService', () => {
     const spy3 = jest.spyOn(service as any, 'endCombat').mockImplementation();
 
     const result = service.evaluateCombatResult(session, [combatStatistics1, combatStatistics2]);
+    expect(gameSessionMock.appendCombatRoundLogs).toHaveBeenCalledWith(session.gameSessionId, [combatStatistics1, combatStatistics2]);
     expect(emitSpy).toHaveBeenCalledWith(CombatEvents.Statistics, {
       combatId: session.id,
       statistics: [combatStatistics1, combatStatistics2],
@@ -202,6 +202,7 @@ describe('CombatService', () => {
 
     const result = service.evaluateCombatResult(session, [combatStatistics1, combatStatistics2]);
 
+    expect(gameSessionMock.appendCombatRoundLogs).toHaveBeenCalledWith(session.gameSessionId, [combatStatistics1, combatStatistics2]);
     expect(emitSpy).toHaveBeenCalledWith(CombatEvents.Statistics, {
       combatId: session.id,
       statistics: [combatStatistics1, combatStatistics2],
@@ -231,6 +232,7 @@ describe('CombatService', () => {
 
     expect(spy).toHaveBeenCalledTimes(2);
     expect(spy1).toHaveBeenCalledWith(session, 'player1');
+    expect(gameSessionMock.appendCombatRoundLogs).toHaveBeenCalledWith(session.gameSessionId, attacks);
     expect(emitSpy).toHaveBeenCalledWith(CombatEvents.Statistics, {
       combatId: session.id,
       statistics: attacks,

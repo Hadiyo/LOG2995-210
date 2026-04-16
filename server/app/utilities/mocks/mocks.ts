@@ -70,6 +70,15 @@ export function createMockCombatPlayerStatistics(
     defenseRoll: 5,
     attack: 20,
     defense: 15,
+    attackBaseValue: 4,
+    attackPostureBonus: 2,
+    attackSanctuaryBonus: 0,
+    attackPenalty: 0,
+    defenseBaseValue: 4,
+    defensePostureBonus: 0,
+    defenseSanctuaryBonus: 0,
+    defensePenalty: 0,
+    damageDealt: 5,
     ...overrides,
   };
 }
@@ -152,6 +161,15 @@ export const makeCombatPlayerStatistics = (overrides: Partial<CombatPlayerStatis
   defenseRoll: 3,
   attack: 6,
   defense: 2,
+  attackBaseValue: 4,
+  attackPostureBonus: 2,
+  attackSanctuaryBonus: 0,
+  attackPenalty: 0,
+  defenseBaseValue: 4,
+  defensePostureBonus: 0,
+  defenseSanctuaryBonus: 0,
+  defensePenalty: 0,
+  damageDealt: 4,
   ...overrides,
 });
 
@@ -160,6 +178,7 @@ export const createGameSessionMock = (): jest.Mocked<Partial<GameSessionService>
     off: jest.fn(),
     getSessionById: jest.fn(),
     endCombat: jest.fn(),
+    appendCombatRoundLogs: jest.fn(),
     getMatchFromSessionId: jest.fn(),
     resolveCombatTie: jest.fn(),
     resumeSessionTurns: jest.fn(),
@@ -179,4 +198,3 @@ export const createEventEmitterMock = (): jest.Mocked<Partial<EventEmitter2>> =>
     on: jest.fn(),
     off: jest.fn(),
 });
-

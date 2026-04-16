@@ -1,15 +1,20 @@
 import { MapService } from '@app/services/map/map.service';
+import { canStartCombat } from '@app/services/game-session/game-session.runtime';
 import { clearTimers } from '@app/services/timer/turn.timers';
 import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
+import { ATTACK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
+import { CombatPlayerStatistics } from '@common/combat/combat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
+import { PlayerPose } from '@common/player/player.interface';
 import { GameSessionSnapshotPayload, SessionSocketEvents } from '@common/socket-events';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventEmitter } from 'events';
 import { GameSessionActions } from './game-session.actions';
 import { GameSessionLifecycle } from './game-session.lifecycle';
+import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
 import { buildSession } from './game-session.runtime';
 import { GameSessionSessionActions } from './game-session.session-actions';
 
@@ -197,6 +202,46 @@ export class GameSessionService {
         return this.actions.movePlayer(sessionId, playerId, direction);
     }
 
+    startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
+        const session = this.sessions.get(sessionId);
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== attackerId ||
+            session.turnState.actionTaken ||
+            session.match.pendingSanctuaryChoice ||
+            session.match.endState) {
+            return false;
+        }
+
+        const attacker = session.match.players.find((player) => player.id === attackerId);
+        const defender = session.match.players.find((player) => player.id === defenderId);
+        if (!attacker || !defender || !canStartCombat(attacker, defender)) {
+            return false;
+        }
+
+        session.match = {
+            ...session.match,
+            players: session.match.players.map((player) =>
+                player.id === attackerId
+                    ? {
+                        ...player,
+                        render: setTransientPose(
+                            applyFacingTowardPosition(player, defender.position),
+                            PlayerPose.Attack,
+                            ATTACK_POSE_DURATION_MS,
+                        ).render,
+                    }
+                    : player,
+            ),
+        };
+        session.turnState = {
+            ...session.turnState,
+            actionTaken: true,
+        };
+        this.sessionActions.resolveCombatEnd(sessionId, attackerId, defenderId);
+        return true;
+    }
+
     useSanctuary(sessionId: string, playerId: string, sanctuaryId: number): boolean {
         return this.actions.useSanctuary(sessionId, playerId, sanctuaryId);
     }
@@ -226,6 +271,16 @@ export class GameSessionService {
 
     resolveCombatTie(sessionId: string, winnerId: string, loserId: string): void {
         this.sessionActions.resolveCombatTie(sessionId, winnerId, loserId);
+    }
+
+    appendCombatRoundLogs(sessionId: string, statistics: CombatPlayerStatistics[]): void {
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return;
+        }
+
+        this.lifecycle.appendCombatRoundLogEntries(session, statistics);
+        this.lifecycle.emitSnapshot(session);
     }
 
     private buildSnapshot(

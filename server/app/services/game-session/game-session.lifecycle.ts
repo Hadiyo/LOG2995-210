@@ -13,6 +13,7 @@ import { GameSessionLogEntry, GameSessionRuntime } from '@app/utilities/game/gam
 import { createActiveTurnState } from '@app/services/game-session/game-session.runtime';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
 import { ChatMessage } from '@common/chat/chat.interface';
+import { CombatPlayerStatistics } from '@common/combat/combat.interface';
 import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import {
     InitializedMatch,MatchPendingFlagTransfer,
@@ -23,6 +24,7 @@ import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SessionSocketEvents } from '@common/socket-events';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventEmitter } from 'events';
+import { appendCombatRoundLogEntries } from './game-session.combat-round-log';
 import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
 
 export class GameSessionLifecycle {
@@ -327,6 +329,10 @@ export class GameSessionLifecycle {
         visibleToPlayerIds: string[] | null = null,
     ): void {
         session.logEntries.push(this.createLogEntry(content, involvedPlayers, visibleToPlayerIds));
+    }
+
+    appendCombatRoundLogEntries(session: GameSessionRuntime, statistics: CombatPlayerStatistics[]): void {
+        appendCombatRoundLogEntries(session, statistics, this.appendLogEntry.bind(this));
     }
 
     getActivePlayer(session: GameSessionRuntime): MatchPlayer | null {

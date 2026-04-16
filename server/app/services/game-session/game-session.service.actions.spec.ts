@@ -1,5 +1,6 @@
 /* eslint-disable max-lines */
 import { ChatMessage } from '@common/chat/chat.interface';
+import { CombatPlayerStatistics } from '@common/combat/combat.interface';
 import { GameMode, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import {
     createGameSessionServiceHarness,
@@ -17,6 +18,7 @@ describe('GameSessionService actions', () => {
     const ARENA_SANCTUARY_ID = 11;
     const DAMAGED_PLAYER_HEALTH = 4;
     const HEALED_PLAYER_HEALTH = 6;
+    const PRIVATE_COMBAT_LOG_COUNT = 4;
 
     it('toggles debug mode only for the organizer', () => {
         const runtime = makeRuntime();
@@ -293,6 +295,79 @@ describe('GameSessionService actions', () => {
         privateState.sessions.set('winner', winnerRuntime);
         expect(harness.service.startCombat('winner', 'player-1', 'player-2')).toBe(true);
         expect(privateState.sessions.has('winner')).toBe(false);
+    });
+    it('adds detailed private combat logs only for the involved players', () => {
+        const serviceInternals = harness.getServiceInternals();
+        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
+        const runtime = makeRuntime({
+            socketToPlayerId: new Map([
+                ['socket-1', 'player-1'],
+                ['socket-2', 'player-2'],
+                ['socket-3', 'player-3'],
+            ]),
+            match: makeMatch({
+                players: [
+                    makeMatchPlayer({ id: 'player-1', name: 'Alice', isOrganizer: true }),
+                    makeMatchPlayer({ id: 'player-2', name: 'Bob', avatarId: 1 }),
+                    makeMatchPlayer({ id: 'player-3', name: 'Cara', avatarId: 2, position: { x: 2, y: 0 }, startingPosition: { x: 2, y: 0 } }),
+                ],
+            }),
+        });
+        const statistics: CombatPlayerStatistics[] = [
+            {
+                attacker: { id: 'player-1', health: 6 },
+                victim: { id: 'player-2', health: 4 },
+                attackRoll: 3,
+                defenseRoll: 2,
+                attack: 10,
+                defense: 7,
+                attackBaseValue: 4,
+                attackPostureBonus: 2,
+                attackSanctuaryBonus: 1,
+                attackPenalty: 0,
+                defenseBaseValue: 4,
+                defensePostureBonus: 0,
+                defenseSanctuaryBonus: 1,
+                defensePenalty: 0,
+                damageDealt: 3,
+            },
+            {
+                attacker: { id: 'player-2', health: 4 },
+                victim: { id: 'player-1', health: 6 },
+                attackRoll: 1,
+                defenseRoll: 4,
+                attack: 5,
+                defense: 10,
+                attackBaseValue: 4,
+                attackPostureBonus: 0,
+                attackSanctuaryBonus: 0,
+                attackPenalty: 0,
+                defenseBaseValue: 4,
+                defensePostureBonus: 2,
+                defenseSanctuaryBonus: 0,
+                defensePenalty: 0,
+                damageDealt: 0,
+            },
+        ];
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+
+        harness.service.appendCombatRoundLogs(runtime.sessionId, statistics);
+
+        expect(runtime.logEntries).toHaveLength(PRIVATE_COMBAT_LOG_COUNT);
+        expect(runtime.logEntries.every((entry) => entry.visibleToPlayerIds?.sort().join(',') === 'player-1,player-2')).toBe(true);
+        expect(runtime.logEntries[0].entry.content).toContain('Calcul detaille pour attaque');
+        expect(runtime.logEntries[0].entry.content).toContain('Calcul detaille pour attaque de Alice');
+        expect(runtime.logEntries[0].entry.content).toContain('Calcul detaille pour attaque de Bob');
+        expect(runtime.logEntries[1].entry.content).toContain('Calcul detaille pour defense');
+        expect(runtime.logEntries[1].entry.content).toContain('Calcul detaille pour defense de Bob');
+        expect(runtime.logEntries[1].entry.content).toContain('Calcul detaille pour defense de Alice');
+        expect(runtime.logEntries[2].entry.content).toContain("Difference entre l'attaque de Alice et la defense de Bob");
+        expect(runtime.logEntries[3].entry.content).toContain("Resultat de l'attaque de Alice contre Bob : 3 degats");
+        expect(runtime.logEntries[3].entry.content).toContain("Resultat de l'attaque de Bob contre Alice : aucun degat");
+        expect(harness.service.getSnapshotForSocket(runtime.sessionId, 'socket-1')?.logEntries).toHaveLength(PRIVATE_COMBAT_LOG_COUNT);
+        expect(harness.service.getSnapshotForSocket(runtime.sessionId, 'socket-2')?.logEntries).toHaveLength(PRIVATE_COMBAT_LOG_COUNT);
+        expect(harness.service.getSnapshotForSocket(runtime.sessionId, 'socket-3')?.logEntries).toHaveLength(0);
+        expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
     });
     it('declares a team victory when the flag carrier returns to the starting tile', () => {
         const privateState = harness.getPrivateState();
