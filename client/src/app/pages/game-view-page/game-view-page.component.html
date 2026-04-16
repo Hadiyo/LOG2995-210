@@ -158,14 +158,14 @@
       </section>
 
       <section class="map-action-panel panel" aria-live="polite">
-        @if (interaction.hasLocalPendingSanctuaryChoice() || interaction.actionSelectionOpen() || interaction.sanctuaryPromptUiHold()) {
+        @if (interaction.hasLocalPendingSanctuaryChoice() || interaction.sanctuaryPromptUiHold()) {
           <app-game-map-action-prompt />
         } @else {
           @if (combat.hasActiveCombat()) {
             <p class="map-panel__hint">Combat en cours: choisissez une posture.</p>
           } @else if (combat.hasWaitingCombat()) {
             <p class="map-panel__hint">Combat en cours: veuillez patienter.</p>
-          } @else if (interaction.actionContext()) {
+          } @else if (actionModeEnabled()) {
             <p class="map-panel__hint">{{ interaction.actionHelperText() }}</p>
           } @else {
             <p class="map-panel__hint">Les cases surlignees indiquent les deplacements atteignables avec vos points restants.</p>

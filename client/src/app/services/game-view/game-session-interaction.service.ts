@@ -14,6 +14,7 @@ import { MatchPlayer, MatchSanctuaryChoice, MatchTileInspection } from '@common/
 import { ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell } from '@common/maps/map.interface';
 import { GameSessionDisplayService } from './game-session-display.service';
+import { collectActionTargetKeys, createActionTargetSets, resolveActionContextFromTile } from './game-session-interaction-selection.utils';
 import { GameSessionTargetsService } from './game-session-targets.service';
 
 @Injectable()
@@ -59,7 +60,7 @@ export class GameSessionInteractionService {
             case 'door':
                 return this.targets.getDoorActionTargets();
             default:
-                return new Set<string>();
+                return this.actionSelectionOpen() ? collectActionTargetKeys(createActionTargetSets(this.targets)) : new Set<string>();
         }
     });
 
@@ -87,6 +88,7 @@ export class GameSessionInteractionService {
     }
 
     actionHelperText(): string {
+        if (this.actionSelectionOpen()) return 'Choisissez une interaction adjacente en surbrillance.';
         if (this.actionContext() === 'sanctuary') return 'Choisissez un sanctuaire adjacent en surbrillance.';
         if (this.actionContext() === 'combat') return 'Choisissez un adversaire adjacent pour engager le combat.';
         if (this.actionContext() === 'flag-transfer') return 'Choisissez un coequipier adjacent pour demander ou offrir le drapeau.';
@@ -125,11 +127,6 @@ export class GameSessionInteractionService {
         } else {
             this.actionSelectionOpen.set(true);
         }
-    }
-
-    selectActionContext(context: GameSessionActionContext): void {
-        this.actionSelectionOpen.set(false);
-        this.actionContext.set(context);
     }
 
     endCurrentTurn(): void {
@@ -240,6 +237,8 @@ export class GameSessionInteractionService {
             this.handleFlagTransferAction(tile);
         } else if (this.actionContext() === 'door') {
             this.handleDoorAction(tile);
+        } else if (this.actionSelectionOpen()) {
+            this.handleHighlightedAction(tile);
         }
     }
 
@@ -307,6 +306,22 @@ export class GameSessionInteractionService {
         this.clearActionSelection();
         this.closeInspection();
         this.movementFeedback.set(`Demande de transfert envoyee a ${targetPlayer.name}.`);
+    }
+
+    private handleHighlightedAction(tile: EditorCell): void {
+        const actionContext = resolveActionContextFromTile(positionKey(tile.position), createActionTargetSets(this.targets));
+        if (!actionContext) {
+            this.movementFeedback.set('Action ignoree: cible invalide.');
+            return;
+        }
+
+        const actionHandlers = new Map<GameSessionActionContext, () => void>([
+            ['sanctuary', () => this.handleSanctuaryAction(tile)],
+            ['combat', () => this.handleCombatAction(tile)],
+            ['flag-transfer', () => this.handleFlagTransferAction(tile)],
+            ['door', () => this.handleDoorAction(tile)],
+        ]);
+        actionHandlers.get(actionContext)?.();
     }
 
     private shouldIgnoreMovementShortcut(event: KeyboardEvent): boolean {

@@ -19,8 +19,12 @@
             <div class="input-with-actions">
                 <input type="text" [formControl]="form.controls.name" [maxlength]="nameMaxLength"
                     placeholder="lettres, chiffres, espace, - et ’" (input)="onNameInput($event)" />
-                <button type="button" class="mini-btn btn-generate-name" (click)="onRandomName()">Nom Aléatoire</button>
                 <button type="button" class="mini-btn btn-clear-name" (click)="form.controls.name.setValue('')">Effacer</button>
+            </div>
+
+            <div class="actions actions-name">
+                <button type="button" class="btn-generate" (click)="onGenerate()">Générer personnage</button>
+                <button type="button" class="btn-validate" [disabled]="(isLocked$ | async) !== false" (click)="onSubmit()">Valider</button>
             </div>
         </label>
 
@@ -90,11 +94,6 @@
     <div class="right">
         <div class="header-row">
             <h3>Aperçu</h3>
-            <div class="actions actions-top">
-                <button type="button" class="btn-generate" (click)="onGenerate()">Générer
-                    personnage</button>
-                <button type="button" class="btn-validate" [disabled]="(isLocked$ | async) !== false" (click)="onSubmit()">Valider</button>
-            </div>
         </div>
 
         <div class="preview-identity">
