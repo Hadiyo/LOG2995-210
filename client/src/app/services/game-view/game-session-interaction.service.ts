@@ -10,6 +10,7 @@ import { GameSessionSocketService } from '@app/services/game-session/game-sessio
 import { MatchMovementService } from '@app/services/match/match-movement.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
+import { positionKey } from '@app/services/match/match-geometry';
 import { MatchPlayer, MatchSanctuaryChoice, MatchTileInspection } from '@common/game/match.interface';
 import { ObjectType } from '@common/maps/map.enums';
 import { EditorCell } from '@common/maps/map.interface';
