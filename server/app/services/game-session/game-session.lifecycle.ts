@@ -1,10 +1,8 @@
 import { ChatMessage } from '@common/chat/chat.interface';
 import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import {
-    InitializedMatch,
-    MatchPendingFlagTransfer,
-    MatchPlayer,
-    MatchTeamId,
+    InitializedMatch,MatchPendingFlagTransfer,
+    MatchPlayer,MatchTeamId,
 } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
