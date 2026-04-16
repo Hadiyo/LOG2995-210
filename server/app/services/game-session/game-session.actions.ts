@@ -1,6 +1,7 @@
 import { EndStatsService } from '@app/services/end-stats.service';
 import { ATTACK_POSE_DURATION_MS, WALK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
+import { MovementDirection } from '@common/game/movement-direction';
 import { MatchSanctuaryChoice } from '@common/game/match.interface';
 import { buildVisibleObjects, resolveFlagCarrier } from '@common/game/match.utils';
 import { PlayerPose } from '@common/player/player.interface';
@@ -19,7 +20,7 @@ export class GameSessionActions {
         private readonly endStatsService: EndStatsService,
     ) {}
 
-    movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
+    movePlayer(sessionId: string, playerId: string, direction: MovementDirection): boolean {
         const session = this.sessions.get(sessionId);
         if (!session ||
             session.turnState.phase !== 'active' ||

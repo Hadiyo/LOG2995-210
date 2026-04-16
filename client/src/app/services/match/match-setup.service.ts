@@ -36,7 +36,7 @@ export class MatchSetupService {
             maxHealth: this.getCharacterMaxHealth(character),
             baseAttack: DEFAULT_PLAYER_ATTACK,
             baseDefense: DEFAULT_PLAYER_DEFENSE,
-            attackDie: character.bonuses.attaqueDie,
+            attackDie: character.bonuses.attackDie,
             defenseDie: character.bonuses.defenseDie,
             controller: 'human',
             virtualProfile: null,
@@ -160,13 +160,13 @@ export class MatchSetupService {
     }
 
     private getCharacterSpeed(character: Character): number {
-        return CHARACTER_BASE_ATTRIBUTES.rapidite +
-            (character.bonuses.plusTwo === 'rapidite' ? CHARACTER_PLUS_TWO_VALUE : 0);
+        return CHARACTER_BASE_ATTRIBUTES.speed +
+            (character.bonuses.plusTwo === 'speed' ? CHARACTER_PLUS_TWO_VALUE : 0);
     }
 
     private getCharacterMaxHealth(character: Character): number {
-        return CHARACTER_BASE_ATTRIBUTES.vie +
-            (character.bonuses.plusTwo === 'vie' ? CHARACTER_PLUS_TWO_VALUE : 0);
+        return CHARACTER_BASE_ATTRIBUTES.health +
+            (character.bonuses.plusTwo === 'health' ? CHARACTER_PLUS_TWO_VALUE : 0);
     }
 
     private normalizeMatchPlayer(player: MatchPlayer): MatchPlayer {
@@ -234,7 +234,7 @@ export class MatchSetupService {
             facing: player.render?.facing ?? PlayerFacing.Front,
             pose: player.render?.pose ?? PlayerPose.Idle,
             ...(player.render?.poseStartedAt ? { poseStartedAt: player.render.poseStartedAt } : {}),
-            ...(player.render?.poseDurationMs !== undefined ? { poseDurationMs: player.render.poseDurationMs } : {}),
+            ...(typeof player.render?.poseDurationMs === 'number' ? { poseDurationMs: player.render.poseDurationMs } : {}),
         };
     }
 
@@ -242,7 +242,7 @@ export class MatchSetupService {
         controller: MatchLobbyPlayer['controller'],
         virtualProfile: MatchLobbyPlayer['virtualProfile'],
     ): Partial<Pick<MatchLobbyPlayer, 'virtualProfile'>> {
-        return virtualProfile !== undefined || controller === 'virtual'
+        return virtualProfile != null || controller === 'virtual'
             ? { virtualProfile: virtualProfile ?? null }
             : {};
     }

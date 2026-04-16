@@ -8,6 +8,7 @@ import { ATTACK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { CombatPlayerStatistics } from '@common/combat/combat.interface';
+import { MovementDirection } from '@common/game/movement-direction';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
 import { PlayerPose } from '@common/player/player.interface';
 import { GameSessionSnapshotPayload, SessionSocketEvents } from '@common/socket-events';
@@ -188,7 +189,7 @@ export class GameSessionService {
     addChatMessage(sessionId: string, message: ChatMessage): ChatMessage | null {
         return this.sessionActions.addChatMessage(sessionId, message);
     }
-    movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
+    movePlayer(sessionId: string, playerId: string, direction: MovementDirection): boolean {
         return this.runSessionAction(sessionId, () => this.actions.movePlayer(sessionId, playerId, direction));
     }
     startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {

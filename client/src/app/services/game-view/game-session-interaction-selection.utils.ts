@@ -36,16 +36,16 @@ export function resolveActionContextFromTile(
     targetSets: GameSessionActionTargetSets,
 ): GameSessionActionContext | null {
     if (targetSets.sanctuary.has(tileKey)) {
-        return 'sanctuary';
+        return GameSessionActionContext.Sanctuary;
     }
     if (targetSets.combat.has(tileKey)) {
-        return 'combat';
+        return GameSessionActionContext.Combat;
     }
     if (targetSets.flagTransfer.has(tileKey)) {
-        return 'flag-transfer';
+        return GameSessionActionContext.FlagTransfer;
     }
     if (targetSets.door.has(tileKey)) {
-        return 'door';
+        return GameSessionActionContext.Door;
     }
     return null;
 }

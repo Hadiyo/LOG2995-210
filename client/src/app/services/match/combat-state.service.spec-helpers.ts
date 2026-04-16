@@ -1,7 +1,7 @@
 import { AvatarId } from '@common/character/character.model';
 import { CombatPlayerStatistics, CombatWaitingSnapshot } from '@common/combat/combat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
-import { MatchTurnState } from '@common/game/turn.interface';
+import { MatchTurnState, PlayerTurnInteractionState } from '@common/game/turn.interface';
 import { GameMode, MapSize, TileType } from '@common/maps/map.enums';
 import { EditorCell } from '@common/maps/map.interface';
 import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
@@ -95,8 +95,8 @@ export const createCombatTurnState = (
     actionTaken: false,
     movementCount: 0,
     playerStates: [
-        { playerId: 'attacker', state: activePlayerId === 'attacker' ? 'active' : 'waiting' },
-        { playerId: 'defender', state: activePlayerId === 'defender' ? 'active' : 'waiting' },
+        { playerId: 'attacker', state: activePlayerId === 'attacker' ? PlayerTurnInteractionState.Active : PlayerTurnInteractionState.Waiting },
+        { playerId: 'defender', state: activePlayerId === 'defender' ? PlayerTurnInteractionState.Active : PlayerTurnInteractionState.Waiting },
     ],
 });
 

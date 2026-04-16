@@ -31,6 +31,20 @@ import { map, startWith } from 'rxjs';
 
 const DEFAULT_PLUS_TWO: PlusTwoAttributeName = PLUS_TWO_ATTRIBUTE_NAMES[0];
 const DEFAULT_D6_TARGET: DieTargetAttributeName = DIE_TARGET_ATTRIBUTE_NAMES[0];
+const AVATAR_FALLBACK_COLORS = [
+  '#7A9EBF',
+  '#8A9BAA',
+  '#B8A76E',
+  '#8C6B5C',
+  '#6B5A7F',
+  '#6A8F6A',
+  '#7A75A3',
+  '#A67C5A',
+  '#A68A5A',
+  '#7A6B8F',
+  '#6A8FA3',
+  '#6B5A6B',
+] as const;
 type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
 
 @Component({
@@ -82,9 +96,7 @@ export class CharacterCreationPageComponent implements OnInit {
     d6GoesTo: [DEFAULT_D6_TARGET as DieTargetAttributeName, Validators.required],
   });
 
-  readonly avatarFallbackColors = Array.from({ length: 12 }, (_, i) =>
-    getComputedStyle(document.documentElement).getPropertyValue(`--avatar-${i}`).trim(),
-  );
+  readonly avatarFallbackColors = [...AVATAR_FALLBACK_COLORS];
 
   private readonly avatarIdValue = toSignal(
     this.form.controls.avatarId.valueChanges.pipe(startWith(this.form.controls.avatarId.value)),
@@ -102,7 +114,7 @@ export class CharacterCreationPageComponent implements OnInit {
     return {
       ...CHARACTER_BASE_ATTRIBUTES,
       [plusTwo]: CHARACTER_BASE_ATTRIBUTES[plusTwo] + CHARACTER_PLUS_TWO_VALUE,
-      attaque: `${CHARACTER_BASE_ATTRIBUTES.attaque} + ${d6Target === 'attaque' ? 'D6' : 'D4'}`,
+      attack: `${CHARACTER_BASE_ATTRIBUTES.attack} + ${d6Target === 'attack' ? 'D6' : 'D4'}`,
       defense: `${CHARACTER_BASE_ATTRIBUTES.defense} + ${d6Target === 'defense' ? 'D6' : 'D4'}`,
     };
   });
@@ -189,7 +201,7 @@ export class CharacterCreationPageComponent implements OnInit {
       throw new Error('Form invalid: missing required fields');
     }
 
-    const attaqueDie: Die = d6GoesTo === 'attaque' ? 'D6' : 'D4';
+    const attackDie: Die = d6GoesTo === 'attack' ? 'D6' : 'D4';
     const defenseDie: Die = d6GoesTo === 'defense' ? 'D6' : 'D4';
 
     return {
@@ -197,7 +209,7 @@ export class CharacterCreationPageComponent implements OnInit {
       avatarId,
       bonuses: {
         plusTwo,
-        attaqueDie,
+        attackDie,
         defenseDie,
       },
     };
