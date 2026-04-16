@@ -160,8 +160,8 @@ function createPendingRoundFighterLog(fighter: CombatPanelFighter, stance: Comba
         fighterName: fighter.name,
         isLocal: fighter.isLocal,
         stance,
-        attack: createBreakdown(fighter.baseAttack, stance === 'attack' ? MAX_STANCE_BONUS : NO_PENALTY, fighter.attackDie, fighter.tileType),
-        defense: createBreakdown(fighter.baseDefense, stance === 'defense' ? MAX_STANCE_BONUS : NO_PENALTY, fighter.defenseDie, fighter.tileType),
+        attack: createBreakdown(fighter.attack, stance === 'attack' ? MAX_STANCE_BONUS : NO_PENALTY, fighter.attackDie, fighter.tileType),
+        defense: createBreakdown(fighter.defense, stance === 'defense' ? MAX_STANCE_BONUS : NO_PENALTY, fighter.defenseDie, fighter.tileType),
         attackDelta: null,
         damage: null,
     };
@@ -178,8 +178,8 @@ function createResolvedRoundFighterLog(
     }
 
     const penalty = getPenalty(fighter.tileType);
-    const attackPostureBonus = attackStatistics.attack - fighter.baseAttack - attackStatistics.attackRoll - penalty;
-    const defensePostureBonus = defenseStatistics.defense - fighter.baseDefense - defenseStatistics.defenseRoll - penalty;
+    const attackPostureBonus = attackStatistics.attack - fighter.attack - attackStatistics.attackRoll - penalty;
+    const defensePostureBonus = defenseStatistics.defense - fighter.defense - defenseStatistics.defenseRoll - penalty;
     const attackDelta = attackStatistics.attack - attackStatistics.defense;
 
     return {
@@ -188,7 +188,7 @@ function createResolvedRoundFighterLog(
         isLocal: fighter.isLocal,
         stance: getResolvedStance(attackPostureBonus, defensePostureBonus),
         attack: {
-            base: fighter.baseAttack,
+            base: fighter.attack,
             postureBonus: attackPostureBonus,
             dieType: fighter.attackDie,
             dieValue: attackStatistics.attackRoll,
@@ -196,7 +196,7 @@ function createResolvedRoundFighterLog(
             total: attackStatistics.attack,
         },
         defense: {
-            base: fighter.baseDefense,
+            base: fighter.defense,
             postureBonus: defensePostureBonus,
             dieType: fighter.defenseDie,
             dieValue: defenseStatistics.defenseRoll,
@@ -272,8 +272,8 @@ export function createCombatPanelFighter(options: CombatPanelFighterOptions): Co
         attackRollValue: previousFighter?.attackRollValue ?? null,
         defenseRollValue: previousFighter?.defenseRollValue ?? null,
         rollToken: previousFighter?.rollToken ?? 0,
-        baseAttack: player.baseAttack,
-        baseDefense: player.baseDefense,
+        attack: player.baseAttack + (player.attackBonus ?? 0),
+        defense: player.baseDefense + (player.defenseBonus ?? 0),
         currentHealth,
         maxHealth: player.maxHealth,
         tileType,

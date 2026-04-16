@@ -50,8 +50,8 @@ export interface CombatPanelFighter {
     attackRollValue: number | null;
     defenseRollValue: number | null;
     rollToken: number;
-    baseAttack: number;
-    baseDefense: number;
+    attack: number;
+    defense: number;
     currentHealth: number;
     maxHealth: number;
     tileType: TileType;

@@ -192,14 +192,16 @@ export class CombatService {
         const attackRoll = this.getDieRoll(session, attacker);
         const defenseRoll = this.getDieRoll(session, defender);
 
-        const attackBonus = attacker.combatStance === 'attack' ? BONUS : NO_BONUS;
-        const defenseBonus = defender.combatStance === 'defense' ? BONUS : NO_BONUS;
+        const stanceAttackBonus = attacker.combatStance === 'attack' ? BONUS : NO_BONUS;
+        const stanceDefenseBonus = defender.combatStance === 'defense' ? BONUS : NO_BONUS;
+        const sanctuaryAttackBonus = attacker.stats.attackBonus ?? NO_BONUS;
+        const sanctuaryDefenseBonus = defender.stats.defenseBonus ?? NO_BONUS;
 
         const attackerIcePenalty = isAttackerOnIce ? BONUS : NO_BONUS;
         const defenderIcePenalty = isDefenderOnIce ? BONUS : NO_BONUS;
 
-        const totalAttack = attacker.stats.baseAttack + attackRoll + attackBonus - attackerIcePenalty;
-        const totalDefense = defender.stats.baseDefense + defenseRoll + defenseBonus - defenderIcePenalty;
+        const totalAttack = attacker.stats.baseAttack + sanctuaryAttackBonus + attackRoll + stanceAttackBonus - attackerIcePenalty;
+        const totalDefense = defender.stats.baseDefense + sanctuaryDefenseBonus + defenseRoll + stanceDefenseBonus - defenderIcePenalty;
 
         const damage = totalAttack - totalDefense;
 

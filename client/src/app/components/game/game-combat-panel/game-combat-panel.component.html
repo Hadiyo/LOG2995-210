@@ -83,7 +83,7 @@
                   <span class="combat-stage__stat-pair" role="cell">
                     <span class="combat-stage__stat-label">ATQ:</span>
                     <span class="combat-stage__stat-value">
-                      {{ fighter.baseAttack }} +
+                      {{ fighter.attack }} +
                       <span class="combat-stage__die" [class.hint-d6]="fighter.attackDie === 'D6'" [class.hint-d4]="fighter.attackDie === 'D4'">
                         {{ fighter.attackDie }}
                       </span>
@@ -92,7 +92,7 @@
                   <span class="combat-stage__stat-pair" role="cell">
                     <span class="combat-stage__stat-label">DEF:</span>
                     <span class="combat-stage__stat-value">
-                      {{ fighter.baseDefense }} +
+                      {{ fighter.defense }} +
                       <span class="combat-stage__die" [class.hint-d6]="fighter.defenseDie === 'D6'" [class.hint-d4]="fighter.defenseDie === 'D4'">
                         {{ fighter.defenseDie }}
                       </span>

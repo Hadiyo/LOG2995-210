@@ -237,6 +237,44 @@ describe('CombatStateService', () => {
         expect(service.canSelectStance()).toBeTrue();
     }));
 
+    it('keeps sanctuary bonuses in the combat panel and resolved round breakdowns', () => {
+        const match = createMatch();
+        match.players[0].attackBonus = 2;
+        match.players[1].defenseBonus = 1;
+        matchStateService.match.set(match);
+
+        emitSocketEvent(CombatSocketEvents.TurnSnapshot, createCombatTurnState('attacker', 0));
+        service.selectStance('attack');
+        emitSocketEvent(CombatSocketEvents.AttackSnapshot, [
+            {
+                attacker: { id: 'attacker', health: 5 },
+                victim: { id: 'defender', health: 4 },
+                attackRoll: 4,
+                defenseRoll: 1,
+                attack: 12,
+                defense: 8,
+            },
+            {
+                attacker: { id: 'defender', health: 4 },
+                victim: { id: 'attacker', health: 5 },
+                attackRoll: 2,
+                defenseRoll: 1,
+                attack: 6,
+                defense: 6,
+            },
+        ]);
+
+        const panelState = service.panelState();
+        const resolvedRound = service.roundLogs()[0];
+
+        expect(panelState?.fighters[0].attack).toBe(6);
+        expect(panelState?.fighters[1].defense).toBe(5);
+        expect(resolvedRound.fighters[0].attack.base).toBe(6);
+        expect(resolvedRound.fighters[0].attack.postureBonus).toBe(2);
+        expect(resolvedRound.fighters[1].defense.base).toBe(5);
+        expect(resolvedRound.fighters[1].defense.postureBonus).toBe(2);
+    });
+
     it('keeps the panel open briefly before storing a victory notice when combat ends', fakeAsync(() => {
         matchStateService.match.set(createMatch());
 

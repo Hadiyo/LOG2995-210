@@ -361,6 +361,36 @@ describe('CombatService', () => {
     );
   });
 
+  it('should include sanctuary bonuses and default missing ones to zero - attack', () => {
+    const bonusRoll1 = 3;
+    const bonusRoll2 = 2;
+    const fallbackRoll1 = 2;
+    const fallbackRoll2 = 1;
+    const match = makeMatch({ debugMode: false });
+    const bonusSession = makeCombatSession({
+      players: [makeFighter({ combatStance: 'attack' }, { id: 'player1', attackBonus: 2 }),
+        makeFighter({ combatStance: 'defense' }, { id: 'player2', defenseBonus: 1 })],
+    });
+    const fallbackSession = makeCombatSession({
+      players: [makeFighter({ combatStance: 'attack' }, { id: 'player1', attackBonus: undefined }),
+        makeFighter({ combatStance: 'defense' }, { id: 'player2', defenseBonus: undefined })],
+    });
+
+    jest.spyOn(gameSessionMock, 'getMatchFromSessionId').mockReturnValue(match);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    jest.spyOn(service as any, 'rollDie')
+      .mockReturnValueOnce(bonusRoll1).mockReturnValueOnce(bonusRoll2)
+      .mockReturnValueOnce(fallbackRoll1).mockReturnValueOnce(fallbackRoll2);
+
+    const bonusResult = service['attack'](bonusSession, bonusSession.players[0], false, bonusSession.players[1], false);
+    const fallbackResult = service['attack'](fallbackSession, fallbackSession.players[0], false, fallbackSession.players[1], false);
+
+    expect(bonusResult.attack).toBe(bonusSession.players[0].stats.baseAttack + 2 + bonusRoll1 + BONUS);
+    expect(bonusResult.defense).toBe(bonusSession.players[1].stats.baseDefense + 1 + bonusRoll2 + BONUS);
+    expect(fallbackResult.attack).toBe(fallbackSession.players[0].stats.baseAttack + fallbackRoll1 + BONUS);
+    expect(fallbackResult.defense).toBe(fallbackSession.players[1].stats.baseDefense + fallbackRoll2 + BONUS);
+  });
+
   it('should not set the bonus if the players did not pick the correct stance and are not on ice - attack', () => {
   const ROLL1 = 1;
   const ROLL2 = 1;

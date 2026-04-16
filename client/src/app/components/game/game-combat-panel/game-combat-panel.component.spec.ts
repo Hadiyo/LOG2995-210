@@ -100,8 +100,8 @@ const createPanelState = (): CombatPanelState => ({
             attackRollValue: null,
             defenseRollValue: null,
             rollToken: 0,
-            baseAttack: 4,
-            baseDefense: 4,
+            attack: 4,
+            defense: 4,
             currentHealth: 5,
             maxHealth: 6,
             tileType: TileType.WATER,
@@ -122,8 +122,8 @@ const createPanelState = (): CombatPanelState => ({
             attackRollValue: null,
             defenseRollValue: null,
             rollToken: 0,
-            baseAttack: 4,
-            baseDefense: 4,
+            attack: 4,
+            defense: 4,
             currentHealth: 3,
             maxHealth: 6,
             tileType: TileType.ICE,
@@ -175,6 +175,25 @@ describe('GameCombatPanelComponent', () => {
         expect(text).toContain('Duel rapproché');
         expect(text).toContain('Tour 3');
         expect(text).toContain('Votre tour: 7s');
+    });
+
+    it('should render the effective combat stats when sanctuary bonuses are active', () => {
+        combatStub.panelState.set({
+            ...createPanelState(),
+            fighters: [
+                { ...createPanelState().fighters[0], attack: 6, defense: 5 },
+                { ...createPanelState().fighters[1], attack: 5, defense: 6 },
+            ],
+        });
+        fixture.detectChanges();
+
+        const statValues = Array.from(
+            fixture.nativeElement.querySelectorAll('.combat-stage__stat-value'),
+        ) as HTMLElement[];
+        const normalizedTexts = statValues.map((value) => (value.textContent ?? '').replace(/\s+/g, ' ').trim());
+
+        expect(normalizedTexts).toContain('6 + D6');
+        expect(normalizedTexts).toContain('5 + D4');
     });
 
     it('should disable posture buttons when the player cannot select a stance', () => {
