@@ -1,6 +1,6 @@
 import {
     activateTurn,
-    advanceToNextTurn,
+    advanceToNextTurn as advanceSessionTurn,
     clearTimers,
     clearTurnState,
     pauseTimer,
@@ -9,20 +9,21 @@ import {
 } from '@app/services/timer/turn.timers';
 import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
 import { ACTIVE_TURN_DURATION_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
-import { GameSessionRuntime } from '@app/utilities/game/game.interface';
+import { GameSessionLogEntry, GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
 import { ChatMessage } from '@common/chat/chat.interface';
+import { CombatPlayerStatistics } from '@common/combat/combat.interface';
+import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import {
-    InitializedMatch,
-    MatchPendingFlagTransfer,
-    MatchPlayer,
-    MatchTeamId,
+    InitializedMatch,MatchPendingFlagTransfer,
+    MatchPlayer,MatchTeamId,
 } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SessionSocketEvents } from '@common/socket-events';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventEmitter } from 'events';
+import { appendCombatRoundLogEntries } from './game-session.combat-round-log';
 import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
 
 export class GameSessionLifecycle {
@@ -32,8 +33,7 @@ export class GameSessionLifecycle {
         onTransitionEnd: (session) => this.activateTurn(session),
         transitionDuration: TRANSITION_DURATION_MS,
     };
-
-    private readonly activateTurnConfig: TimerConfig<GameSessionRuntime> = {
+    private readonly activeTurnConfig: TimerConfig<GameSessionRuntime> = {
         emitSnapshot: (session) => this.emitSnapshot(session),
         onTransitionEnd: (session) => this.advanceToNextTurn(session),
         transitionDuration: ACTIVE_TURN_DURATION_MS,
@@ -120,6 +120,7 @@ export class GameSessionLifecycle {
             match: session.match,
             turnState: session.turnState,
             messages: session.messages,
+            logEntries: session.logEntries.map((entry) => ({ ...entry.entry, involvedPlayers: [...entry.entry.involvedPlayers] })),
         });
     }
 
@@ -304,7 +305,6 @@ export class GameSessionLifecycle {
             resolvedAt: Date.now(),
         };
         this.finishMatch(session);
-        this.emitSnapshot(session);
     }
 
     createSystemMessage(content: string): ChatMessage {
@@ -316,10 +316,39 @@ export class GameSessionLifecycle {
         };
     }
 
+    createLogEntry(content: string, involvedPlayers: string[], visibleToPlayerIds: string[] | null = null): GameSessionLogEntry {
+        const entry: GameLogEntry = {
+            id: crypto.randomUUID(),
+            author: 'Journal',
+            content,
+            createdAt: new Date().toISOString(),
+            involvedPlayers: [...involvedPlayers],
+        };
+
+        return {
+            entry,
+            visibleToPlayerIds: visibleToPlayerIds ? [...visibleToPlayerIds] : null,
+        };
+    }
+
+    appendLogEntry(
+        session: GameSessionRuntime,
+        content: string,
+        involvedPlayers: string[],
+        visibleToPlayerIds: string[] | null = null,
+    ): void {
+        session.logEntries.push(this.createLogEntry(content, involvedPlayers, visibleToPlayerIds));
+    }
+
+    appendCombatRoundLogEntries(session: GameSessionRuntime, statistics: CombatPlayerStatistics[]): void {
+        appendCombatRoundLogEntries(session, statistics, this.appendLogEntry.bind(this));
+    }
+
     getActivePlayer(session: GameSessionRuntime): MatchPlayer | null {
         const activePlayerId = session.turnState.order[session.turnState.currentTurnIndex]?.playerId ?? null;
-        if(!activePlayerId)
+        if (!activePlayerId) {
             return null;
+        }
         const activePlayer = session.match.players.find((player) => player.id === activePlayerId) ?? null;
         if (!activePlayer) {
             return null;
@@ -333,11 +362,11 @@ export class GameSessionLifecycle {
     }
 
     advanceToNextTurn(session: GameSessionRuntime): void {
-        advanceToNextTurn(session, (candidate) => this.setNextMatch(candidate));
+        advanceSessionTurn(session, (candidate) => this.setNextMatch(candidate));
         startTimerTransition(session, this.startTimerConfig);
     }
 
-    resumeGameSessionTurn(session) {
+    resumeGameSessionTurn(session: GameSessionRuntime): void {
         resumeTimers(
             session,
             this.emitSnapshot.bind(this),
@@ -353,7 +382,12 @@ export class GameSessionLifecycle {
     }
 
     private activateTurn(session: GameSessionRuntime): void {
-        activateTurn(session, this.getActivePlayer, this.activateTurnConfig);
+        activateTurn(session, this.getActivePlayer, this.activeTurnConfig);
+        const activePlayer = this.getActivePlayer(session);
+        if (activePlayer) {
+            this.appendLogEntry(session, `Debut du tour de ${activePlayer.name}.`, [activePlayer.name]);
+            this.emitSnapshot(session);
+        }
         this.syncAutomation(session);
     }
 

@@ -33,6 +33,18 @@ describe('GameSessionService lifecycle', () => {
         expect(startTransitionSpy).toHaveBeenCalledWith(runtime);
     });
 
+    it('adds a global log entry when a turn starts', async () => {
+        harness.mapService.getMapByIdForEditor.mockResolvedValue(makeMapDetails());
+
+        const sessionId = await harness.service.createSessionFromWaitingRoom('map-1', [makeLobbyPlayer()]);
+        const runtime = harness.getPrivateState().sessions.get(sessionId);
+
+        expect(runtime?.logEntries).toHaveLength(0);
+        jest.advanceTimersByTime(runtimeModule.TRANSITION_DURATION_MS);
+
+        expect(runtime?.logEntries.at(-1)?.entry.content).toContain('Debut du tour de');
+    });
+
     it('registers sockets and resolves socket lookups', () => {
         const runtime = makeRuntime();
         harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
@@ -40,9 +52,13 @@ describe('GameSessionService lifecycle', () => {
         const snapshot = harness.service.registerSocket('session-1', 'player-1', 'socket-1');
 
         expect(snapshot).toEqual({
-            match: runtime.match,
-            turnState: runtime.turnState,
-            messages: runtime.messages,
+            snapshot: {
+                sessionId: runtime.sessionId,
+                match: runtime.match,
+                turnState: runtime.turnState,
+                messages: runtime.messages,
+                logEntries: [],
+            },
             previousSessionId: null,
         });
         expect(harness.service.getPlayerIdForSocket('socket-1', 'session-1')).toBe('player-1');
@@ -69,6 +85,51 @@ describe('GameSessionService lifecycle', () => {
 
         expect(() => harness.service.registerSocket('session-1', 'player-1', 'socket-bot')).toThrow(NotFoundException);
         expect(harness.service.findSessionIdForSocket('socket-bot')).toBeNull();
+    });
+
+    it('filters journal entries per socket when a log is private', () => {
+        const runtime = makeRuntime({
+            logEntries: [
+                {
+                    entry: {
+                        id: 'public-log',
+                        author: 'Journal',
+                        content: 'Alice ramasse le drapeau.',
+                        createdAt: '2026-01-01T00:00:00.000Z',
+                        involvedPlayers: ['Alice'],
+                    },
+                    visibleToPlayerIds: null,
+                },
+                {
+                    entry: {
+                        id: 'private-log',
+                        author: 'Journal',
+                        content: 'Alice remporte un combat contre Bob.',
+                        createdAt: '2026-01-01T00:00:01.000Z',
+                        involvedPlayers: ['Alice', 'Bob'],
+                    },
+                    visibleToPlayerIds: ['player-1', 'player-2'],
+                },
+            ],
+            socketToPlayerId: new Map([
+                ['socket-1', 'player-1'],
+                ['socket-3', 'player-3'],
+            ]),
+            match: makeMatch({
+                players: [
+                    makeMatchPlayer({ id: 'player-1', name: 'Alice', isOrganizer: true }),
+                    makeMatchPlayer({ id: 'player-2', name: 'Bob', avatarId: 1 }),
+                    makeMatchPlayer({ id: 'player-3', name: 'Cara', avatarId: 2, position: { x: 2, y: 0 }, startingPosition: { x: 2, y: 0 } }),
+                ],
+            }),
+        });
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+
+        const attackerSnapshot = harness.service.getSnapshotForSocket('session-1', 'socket-1');
+        const outsiderSnapshot = harness.service.getSnapshotForSocket('session-1', 'socket-3');
+
+        expect(attackerSnapshot?.logEntries.map((entry) => entry.id)).toEqual(['public-log', 'private-log']);
+        expect(outsiderSnapshot?.logEntries.map((entry) => entry.id)).toEqual(['public-log']);
     });
 
     it('moves a socket membership to the latest joined session', () => {

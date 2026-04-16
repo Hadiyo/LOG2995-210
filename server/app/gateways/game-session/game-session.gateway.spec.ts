@@ -39,6 +39,8 @@ describe('GameSessionGateway', () => {
             removeSocket: jest.fn(),
             surrender: jest.fn(),
             registerSocket: jest.fn(),
+            getSocketIdsForSession: jest.fn(),
+            getSnapshotForSocket: jest.fn(),
             getPlayerIdForSocket: jest.fn(),
             toggleDebugMode: jest.fn(),
             forceEndDebugTurn: jest.fn(),
@@ -59,18 +61,24 @@ describe('GameSessionGateway', () => {
         (gateway as unknown as { server: Server }).server = server;
     });
 
-    it('subscribes to snapshots and forwards them to the session room', () => {
+    it('subscribes to snapshots and forwards filtered snapshots to each session socket', () => {
         const payload: GameSessionSnapshotPayload = {
             sessionId: 'session-1',
             match: {} as never,
             turnState: {} as never,
             messages: [],
+            logEntries: [],
         };
+        gameSessionService.getSocketIdsForSession.mockReturnValue(['socket-1', 'socket-2']);
+        gameSessionService.getSnapshotForSocket
+            .mockReturnValueOnce({ ...payload, logEntries: [{ id: 'log-1' }] })
+            .mockReturnValueOnce({ ...payload, logEntries: [] });
 
         handlers[SessionSocketEvents.GameSessionSnapshot]?.(payload);
 
         expect(gameSessionService.on).toHaveBeenCalledWith(SessionSocketEvents.GameSessionSnapshot, expect.any(Function));
-        expect(serverToEmit).toHaveBeenCalledWith(SessionSocketEvents.GameSessionSnapshot, payload);
+        expect(serverToEmit).toHaveBeenNthCalledWith(1, SessionSocketEvents.GameSessionSnapshot, { ...payload, logEntries: [{ id: 'log-1' }] });
+        expect(serverToEmit).toHaveBeenNthCalledWith(2, SessionSocketEvents.GameSessionSnapshot, { ...payload, logEntries: [] });
     });
 
     it('unsubscribes on destroy', () => {
@@ -94,9 +102,13 @@ describe('GameSessionGateway', () => {
         const client = createMockSocket('socket-1');
         const payload: JoinGameSessionPayload = { sessionId: 'session-1', playerId: 'player-1' };
         gameSessionService.registerSocket.mockReturnValue({
-            match: { id: 'match' },
-            turnState: { id: 'turn' },
-            messages: [{ id: 'msg-1' }],
+            snapshot: {
+                sessionId: 'session-1',
+                match: { id: 'match' },
+                turnState: { id: 'turn' },
+                messages: [{ id: 'msg-1' }],
+                logEntries: [{ id: 'log-1' }],
+            },
             previousSessionId: null,
         });
 
@@ -109,6 +121,7 @@ describe('GameSessionGateway', () => {
             match: { id: 'match' },
             turnState: { id: 'turn' },
             messages: [{ id: 'msg-1' }],
+            logEntries: [{ id: 'log-1' }],
         });
 
         gameSessionService.registerSocket.mockImplementation(() => {
@@ -124,9 +137,13 @@ describe('GameSessionGateway', () => {
     it('leaves the previous game room when migrating a socket to another session', () => {
         const client = createMockSocket('socket-1');
         gameSessionService.registerSocket.mockReturnValue({
-            match: { id: 'match' },
-            turnState: { id: 'turn' },
-            messages: [],
+            snapshot: {
+                sessionId: 'session-1',
+                match: { id: 'match' },
+                turnState: { id: 'turn' },
+                messages: [],
+                logEntries: [],
+            },
             previousSessionId: 'session-0',
         });
 

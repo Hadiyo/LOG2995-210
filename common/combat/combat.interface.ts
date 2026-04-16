@@ -15,6 +15,15 @@ export interface CombatPlayerStatistics {
     defenseRoll: number,
     attack: number,
     defense: number,
+    attackBaseValue?: number,
+    attackPostureBonus?: number,
+    attackSanctuaryBonus?: number,
+    attackPenalty?: number,
+    defenseBaseValue?: number,
+    defensePostureBonus?: number,
+    defenseSanctuaryBonus?: number,
+    defensePenalty?: number,
+    damageDealt?: number,
 }
 
 export interface CombatSessionSnapshot {

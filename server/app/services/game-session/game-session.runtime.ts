@@ -1,12 +1,14 @@
 import { buildTurnOrderFromPlayers } from '@app/services/game-session/game-session.turn';
+import { TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnOrderEntry, MatchTurnState } from '@common/game/turn.interface';
 import { ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMapDetails, Vec2 } from '@common/maps/map.interface';
 import { buildInitializedMatchFromEditor, getGameSessionObjectCovering } from './game-session.match';
-import { TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
-import { GameSessionRuntime } from '@app/utilities/game/game.interface';
+
+export { TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 
 export function buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[], messages: ChatMessage[] = []): GameSessionRuntime {
     const sessionId = crypto.randomUUID();
@@ -20,6 +22,7 @@ export function buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[],
         match,
         turnState,
         messages: messages.map((message) => ({ ...message })),
+        logEntries: [],
         socketToPlayerId: new Map(),
         transitionTimeoutId: null,
         activeTurnTimeoutId: null,
