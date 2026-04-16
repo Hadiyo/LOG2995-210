@@ -32,10 +32,16 @@
         <span>{{ player.state.wins }}</span>
       </span>
       <span class="player__badges">
+        @if (player.information.controller === 'virtual') {
+        <span class="player__badge player__badge--virtual"
+          [attr.title]="player.information.virtualProfile === 'defensive' ? 'Bot defensif' : 'Bot agressif'">
+          {{ player.information.virtualProfile === 'defensive' ? 'Bot def.' : 'Bot agr.' }}
+        </span>
+        }
         <!-- Display organizer badge if the player is an organizer. -->
         @if (player.information.isOrganizer) {
-        <span class="player__badge" [attr.title]="player.id === activePlayerId ? 'Organisateur' : null">
-          {{ player.id === activePlayerId ? 'Org.' : 'Organisateur' }}
+        <span class="player__badge" title="Organisateur">
+          Org.
         </span>
         }
         @if (player.information.teamId) {
@@ -54,7 +60,7 @@
         </span>
         }
         @if (isWinningTeamPlayer(row)) {
-        <span class="player__badge player__badge--active">
+        <span class="player__badge player__badge--active" title="Gagnant">
           Gagnant
         </span>
         }

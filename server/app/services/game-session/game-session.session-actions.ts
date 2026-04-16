@@ -2,10 +2,17 @@ import { EndStatsService } from '@app/services/end-stats.service';
 import { MAXIMUM_WINS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
+import { MatchPlayer } from '@common/game/match.interface';
 import { buildVisibleObjects } from '@common/game/match.utils';
 import { GameMode, ObjectType } from '@common/maps/map.enums';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { GameSessionLifecycle } from './game-session.lifecycle';
+import {
+    buildFlagTransferMessage,
+    clearPendingFlagTransfer,
+    createPendingFlagTransfer,
+    resolveTransferredFlagCarrierId,
+} from './game-session.lifecycle.helpers';
 import { dropFlag } from './game-session.match';
 import { applyFacingTowardPosition } from './game-session.render';
 import { rebuildTurnStateAfterRosterChange, resolveRespawnPosition } from './game-session.runtime';
@@ -41,7 +48,7 @@ export class GameSessionSessionActions {
             return false;
         }
 
-        const pendingFlagTransfer = this.lifecycle.createPendingFlagTransfer(session.match, requesterId, receiverId);
+        const pendingFlagTransfer = createPendingFlagTransfer(session.match, requesterId, receiverId);
         if (!pendingFlagTransfer) {
             return false;
         }
@@ -65,7 +72,7 @@ export class GameSessionSessionActions {
             return false;
         }
 
-        const nextFlagCarrierId = this.lifecycle.resolveTransferredFlagCarrierId(session.match, pendingFlagTransfer, accepted);
+        const nextFlagCarrierId = resolveTransferredFlagCarrierId(session.match, pendingFlagTransfer, accepted);
         session.match = {
             ...session.match,
             flagCarrierId: nextFlagCarrierId,
@@ -74,7 +81,7 @@ export class GameSessionSessionActions {
         };
 
         if (accepted) {
-            const transferMessage = this.lifecycle.buildFlagTransferMessage(session.match, pendingFlagTransfer, nextFlagCarrierId);
+            const transferMessage = buildFlagTransferMessage(session.match, pendingFlagTransfer, nextFlagCarrierId);
             if (transferMessage) {
                 const requester = session.match.players.find((player) => player.id === pendingFlagTransfer.requesterId);
                 const receiver = session.match.players.find((player) => player.id === pendingFlagTransfer.receiverId);
@@ -101,7 +108,10 @@ export class GameSessionSessionActions {
         if (!session) {
             return false;
         }
-        const departingPlayer = session.match.players.find((player) => player.id === playerId);
+        const departingPlayer = this.getHumanDepartingPlayer(session, playerId);
+        if (!departingPlayer) {
+            return false;
+        }
         const organizerLeftWhileDebugEnabled = !!departingPlayer?.isOrganizer && session.match.debugMode;
         const nextPlayers = session.match.players.filter((player) => player.id !== playerId);
         if (nextPlayers.length === session.match.players.length) {
@@ -114,23 +124,17 @@ export class GameSessionSessionActions {
         }
 
         const nextFlagCarrierId = session.match.flagCarrierId === playerId ? null : (session.match.flagCarrierId ?? null);
-        const nextPendingFlagTransfer = this.lifecycle.clearPendingFlagTransfer(session.match.pendingFlagTransfer ?? null, playerId);
-        const nextAllObjects = session.match.allObjects.map((object) =>
-            session.match.flagCarrierId === playerId && object.type === ObjectType.FLAG && departingPlayer
-                ? { ...object, position: { ...departingPlayer.position } }
-                : { ...object, position: { ...object.position } },
-        );
-
-        session.match = {
-            ...session.match,
-            debugMode: organizerLeftWhileDebugEnabled ? false : session.match.debugMode,
-            players: nextPlayers,
-            allObjects: nextAllObjects,
-            flagCarrierId: nextFlagCarrierId,
-            pendingFlagTransfer: nextPendingFlagTransfer,
-            objects: buildVisibleObjects(nextAllObjects, nextPlayers, nextFlagCarrierId),
-            pendingSanctuaryChoice: session.match.pendingSanctuaryChoice?.playerId === playerId ? null : session.match.pendingSanctuaryChoice ?? null,
-        };
+        const nextPendingFlagTransfer = clearPendingFlagTransfer(session.match.pendingFlagTransfer ?? null, playerId);
+        const nextAllObjects = this.buildSurrenderObjects(session, playerId, departingPlayer.position);
+        session.match = this.buildSurrenderMatchState({
+            nextAllObjects,
+            nextFlagCarrierId,
+            nextPendingFlagTransfer,
+            nextPlayers,
+            organizerLeftWhileDebugEnabled,
+            playerId,
+            session,
+        });
 
         const removedTurnPlayer = this.lifecycle.isCurrentTurnPlayer(playerId, session.turnState);
         if (this.lifecycle.finishSurrenderAfterRosterChange(session, sessionId, nextPlayers)) {
@@ -271,5 +275,47 @@ export class GameSessionSessionActions {
         );
 
         this.lifecycle.resumeGameSessionTurn(session);
+    }
+
+    private getHumanDepartingPlayer(session: GameSessionRuntime, playerId: string): MatchPlayer | null {
+        const departingPlayer = session.match.players.find((player) => player.id === playerId) ?? null;
+        return !departingPlayer || departingPlayer.controller === 'virtual' ? null : departingPlayer;
+    }
+
+    private buildSurrenderObjects(session: GameSessionRuntime, playerId: string, playerPosition: MatchPlayer['position']) {
+        return session.match.allObjects.map((object) =>
+            session.match.flagCarrierId === playerId && object.type === ObjectType.FLAG
+                ? { ...object, position: { ...playerPosition } }
+                : { ...object, position: { ...object.position } },
+        );
+    }
+
+    private buildSurrenderMatchState({
+        nextAllObjects,
+        nextFlagCarrierId,
+        nextPendingFlagTransfer,
+        nextPlayers,
+        organizerLeftWhileDebugEnabled,
+        playerId,
+        session,
+    }: {
+        nextAllObjects: GameSessionRuntime['match']['allObjects'];
+        nextFlagCarrierId: string | null;
+        nextPendingFlagTransfer: GameSessionRuntime['match']['pendingFlagTransfer'];
+        nextPlayers: MatchPlayer[];
+        organizerLeftWhileDebugEnabled: boolean;
+        playerId: string;
+        session: GameSessionRuntime;
+    }) {
+        return {
+            ...session.match,
+            debugMode: organizerLeftWhileDebugEnabled ? false : session.match.debugMode,
+            players: nextPlayers,
+            allObjects: nextAllObjects,
+            flagCarrierId: nextFlagCarrierId,
+            pendingFlagTransfer: nextPendingFlagTransfer,
+            objects: buildVisibleObjects(nextAllObjects, nextPlayers, nextFlagCarrierId),
+            pendingSanctuaryChoice: session.match.pendingSanctuaryChoice?.playerId === playerId ? null : session.match.pendingSanctuaryChoice ?? null,
+        };
     }
 }

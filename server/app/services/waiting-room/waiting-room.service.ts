@@ -5,6 +5,7 @@ import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { WaitingRoomPreview } from '@common/game/waiting-room-preview.interface';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import {
+    AddWaitingRoomVirtualPlayerPayload,
     CreateWaitingRoomPayload,
     JoinWaitingRoomPayload,
     KickWaitingRoomPlayerPayload,
@@ -15,6 +16,7 @@ import {
 import { Injectable } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import {
+    buildWaitingRoomVirtualPlayer,
     findWaitingRoomAccessCode,
     resolveUniqueWaitingRoomPlayerName,
 } from './waiting-room-player.utils';
@@ -41,17 +43,13 @@ import {
 export class WaitingRoomService {
     private readonly rooms = new Map<string, WaitingRoom>();
     private readonly events = new EventEmitter();
-
     constructor(
         private readonly mapService: MapService,
-        private readonly gameSessionService: GameSessionService,
-        private readonly chatService: ChatService,
+        private readonly gameSessionService: GameSessionService, private readonly chatService: ChatService,
     ) {}
-
     on<T>(event: WaitingRoomEvents, callback: (payload: T) => void): void {
         this.events.on(event, callback);
     }
-
     off<T>(event: WaitingRoomEvents, callback: (payload: T) => void): void {
         this.events.off(event, callback);
     }
@@ -103,6 +101,7 @@ export class WaitingRoomService {
             ...payload.player,
             isOrganizer: true,
             controller: 'human',
+            virtualProfile: null,
         };
 
         const room: WaitingRoom = {
@@ -148,6 +147,7 @@ export class WaitingRoomService {
             name: resolveUniqueWaitingRoomPlayerName(payload.player.name, room),
             isOrganizer: false,
             controller: 'human',
+            virtualProfile: null,
         };
 
         room.players.push(player);
@@ -156,6 +156,29 @@ export class WaitingRoomService {
         this.emitWaitingRoomUpdated(room);
         this.emitDirectoryUpdated();
         return true;
+    }
+
+    addVirtualPlayer(organizerSocketId: string, payload: AddWaitingRoomVirtualPlayerPayload): void {
+        const room = this.rooms.get(payload.accessCode);
+        if (!room) {
+            this.emitError(organizerSocketId, 'Salle introuvable.');
+            return;
+        }
+
+        if (room.organizerSocketId !== organizerSocketId) {
+            this.emitError(organizerSocketId, 'Seul l organisateur peut ajouter des joueurs virtuels.');
+            return;
+        }
+
+        if (room.isStarting || room.isLocked || room.players.length >= room.maxPlayers) {
+            this.emitError(organizerSocketId, 'La salle est verrouillee ou complete.');
+            return;
+        }
+
+        room.players.push(buildWaitingRoomVirtualPlayer(room, payload.profile));
+        this.updateLockState(room);
+        this.emitWaitingRoomUpdated(room);
+        this.emitDirectoryUpdated();
     }
 
     addMessage(socketId: string, payload: SendWaitingRoomMessagePayload): void {
@@ -271,7 +294,9 @@ export class WaitingRoomService {
                 return;
             }
 
-            const sessionId = await this.gameSessionService.createSessionFromWaitingRoom(room.mapId, room.players, room.messages);
+            const sessionPlayers = room.players.map((player) => ({ ...player }));
+            const sessionMessages = room.messages.map((message) => ({ ...message }));
+            const sessionId = await this.gameSessionService.createSessionFromWaitingRoom(room.mapId, sessionPlayers, sessionMessages);
             if (this.rooms.get(accessCode) !== room || room.players.length < MIN_PLAYERS_TO_START) {
                 room.isStarting = false;
                 this.updateLockState(room);
@@ -315,24 +340,15 @@ export class WaitingRoomService {
         if (!payload) {
             return;
         }
-
-        this.events.emit(WaitingRoomEvents.WaitingRoomUpdated, {
-            accessCode: room.accessCode,
-            payload,
-        } as WaitingRoomUpdatedEvent);
+        this.events.emit(WaitingRoomEvents.WaitingRoomUpdated, { accessCode: room.accessCode, payload } as WaitingRoomUpdatedEvent);
     }
 
     private emitError(socketId: string, message: string): void {
-        this.events.emit(WaitingRoomEvents.WaitingRoomError, {
-            socketId,
-            payload: { message },
-        } as WaitingRoomErrorEvent);
+        this.events.emit(WaitingRoomEvents.WaitingRoomError, { socketId, payload: { message } } as WaitingRoomErrorEvent);
     }
 
     private emitDirectoryUpdated(): void {
-        this.events.emit(WaitingRoomEvents.WaitingRoomDirectoryUpdated, {
-            updatedAt: new Date().toISOString(),
-        } as WaitingRoomDirectoryUpdatedEvent);
+        this.events.emit(WaitingRoomEvents.WaitingRoomDirectoryUpdated, { updatedAt: new Date().toISOString() } as WaitingRoomDirectoryUpdatedEvent);
     }
 
     private removePlayerBySocket(room: WaitingRoom, socketId: string): void {

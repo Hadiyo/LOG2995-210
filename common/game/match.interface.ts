@@ -4,7 +4,8 @@ import { EditorCell, MapObject, Vec2 } from '../maps/map.interface';
 import { PlayerRenderState } from '../player/player.interface';
 
 export type MatchTeamId = 'A' | 'B';
-export type MatchPlayerController = 'human';
+export type MatchPlayerController = 'human' | 'virtual';
+export type VirtualPlayerProfile = 'aggressive' | 'defensive';
 export type MatchFlagTransferKind = 'offer' | 'request';
 export type MatchSanctuaryChoice = 'normal' | 'double-or-nothing' | 'cancel';
 
@@ -20,6 +21,7 @@ export interface MatchLobbyPlayer {
     attackDie: Die;
     defenseDie: Die;
     controller: MatchPlayerController;
+    virtualProfile?: VirtualPlayerProfile | null;
 }
 
 export interface MatchPlayer extends MatchLobbyPlayer {

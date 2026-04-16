@@ -39,6 +39,7 @@ export class MatchSetupService {
             attackDie: character.bonuses.attaqueDie,
             defenseDie: character.bonuses.defenseDie,
             controller: 'human',
+            virtualProfile: null,
         };
     }
 
@@ -102,6 +103,7 @@ export class MatchSetupService {
             baseAttack: player.baseAttack ?? DEFAULT_PLAYER_ATTACK,
             baseDefense: player.baseDefense ?? DEFAULT_PLAYER_DEFENSE,
             controller: player.controller ?? 'human',
+            ...this.buildNormalizedVirtualProfile(player.controller ?? 'human', player.virtualProfile),
         };
     }
 
@@ -178,6 +180,7 @@ export class MatchSetupService {
             defenseBonus: player.defenseBonus ?? 0,
             arenaBuffTurnsRemaining: player.arenaBuffTurnsRemaining ?? 0,
             controller: player.controller ?? 'human',
+            ...this.buildNormalizedVirtualProfile(player.controller ?? 'human', player.virtualProfile),
             render: this.normalizePlayerRender(player),
         };
     }
@@ -233,5 +236,14 @@ export class MatchSetupService {
             ...(player.render?.poseStartedAt ? { poseStartedAt: player.render.poseStartedAt } : {}),
             ...(player.render?.poseDurationMs !== undefined ? { poseDurationMs: player.render.poseDurationMs } : {}),
         };
+    }
+
+    private buildNormalizedVirtualProfile(
+        controller: MatchLobbyPlayer['controller'],
+        virtualProfile: MatchLobbyPlayer['virtualProfile'],
+    ): Partial<Pick<MatchLobbyPlayer, 'virtualProfile'>> {
+        return virtualProfile !== undefined || controller === 'virtual'
+            ? { virtualProfile: virtualProfile ?? null }
+            : {};
     }
 }

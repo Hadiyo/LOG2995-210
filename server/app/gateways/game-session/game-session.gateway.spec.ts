@@ -64,6 +64,7 @@ describe('GameSessionGateway', () => {
 
         gateway = new GameSessionGateway(gameSessionService as never, mockEndStatsService as never, mockCombatService as never);
         (gateway as unknown as { server: Server }).server = server;
+        gateway.onModuleInit();
     });
 
     it('subscribes to snapshots and forwards filtered snapshots to each session socket', () => {
