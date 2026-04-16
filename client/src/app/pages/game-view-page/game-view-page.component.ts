@@ -37,8 +37,7 @@ import { GameCell } from '@common/maps/map.interface';
 import { Player, PlayerStatus } from '@common/player/player.interface';
 import {
     buildChatMessage, buildIncomingFlagTransfer,
-    clearMatchEndRedirect,
-    destroyGameViewPage,
+    clearMatchEndRedirect,destroyGameViewPage,
     handleGameViewBrowserRefresh,
     handleGameViewCellClick,
     handleGameViewCellContextMenu,
