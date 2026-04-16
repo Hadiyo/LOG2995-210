@@ -1,7 +1,7 @@
 import * as runtimeModule from '@app/services/game-session/game-session.runtime';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
-import { InitializedMatch, MatchEndState, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { InitializedMatch, MatchEndState, MatchLobbyPlayer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMapDetails, MapObject } from '@common/maps/map.interface';
@@ -84,7 +84,7 @@ export const makeSessionObjects = (
 
 export const makeCtfPlayer = (
     id: string,
-    teamId: string,
+    teamId: MatchTeamId,
     position: { x: number; y: number },
     overrides: Partial<MatchPlayer> = {},
 ): MatchPlayer => makeMatchPlayer({ id, teamId, position, startingPosition: position, ...overrides });
