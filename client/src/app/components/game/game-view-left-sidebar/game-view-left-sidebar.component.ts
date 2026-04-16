@@ -22,6 +22,7 @@ export class GameViewLeftSidebarComponent {
   @Input() activePlayersCount = 0;
   @Input() maxPlayers = 0;
   @Input() activePanelName: string | null = null;
+  @Input() activePanelBadge: string | null = null;
   @Input() remainingSeconds = 0;
   @Input() totalSeconds = 30;
   @Input() highlightTimer = true;

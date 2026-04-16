@@ -12,6 +12,7 @@
       [currentPlayers]="activePlayersCount"
       [maxPlayers]="maxPlayers"
       [activePlayerName]="activePanelName"
+      [activePlayerBadge]="activePanelBadge"
       [remainingSeconds]="remainingSeconds"
       [totalSeconds]="totalSeconds"
       [highlightTimer]="highlightTimer"
@@ -62,7 +63,17 @@
           <ul class="turn-order__details turn-order__details--panel">
             @for (player of turnDetails; track player.id) {
               <li class="turn-order__detail">
-                <strong class="turn-order__name">{{ player.name }}</strong>
+                <div class="turn-order__heading">
+                  <strong class="turn-order__name">{{ player.name }}</strong>
+                  @if (player.controller === 'virtual') {
+                    <span
+                      class="turn-order__badge"
+                      [attr.title]="player.virtualProfile === 'defensive' ? 'Joueur virtuel defensif' : 'Joueur virtuel agressif'"
+                    >
+                      {{ player.virtualProfile === 'defensive' ? 'JV defensif' : 'JV agressif' }}
+                    </span>
+                  }
+                </div>
                 <div class="turn-order__summary">
                   <span class="turn-order__meta-item">Depart ({{ player.startingPosition.x }}, {{ player.startingPosition.y }})</span>
                   <span class="turn-order__meta-item">Rapidite {{ player.speed }}</span>

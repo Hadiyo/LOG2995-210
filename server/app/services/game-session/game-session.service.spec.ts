@@ -1,4 +1,5 @@
 import { EndStatsService } from '@app/services/end-stats.service';
+import { CombatService } from '@app/services/combat/combat.service';
 import { MapService } from '@app/services/map/map.service';
 import { ATTACK_POSE_DURATION_MS, TRANSITION_DURATION_MS, WALK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
 import { InitializedMatch, MatchLobbyPlayer } from '@common/game/match.interface';
@@ -89,7 +90,18 @@ const createDoorMap = (): EditorMapDetails => ({
 describe('GameSessionService', () => {
     let service: GameSessionService;
     let mapService: jest.Mocked<Pick<MapService, 'getMapByIdForEditor'>>;
-    let endStatsService: { startGame: jest.Mock, startCombat: jest.Mock, visitTile: jest.Mock, useDoor: jest.Mock };
+    let combatService: jest.Mocked<Pick<CombatService, 'createCombatSession' | 'startCombat'>>;
+    let endStatsService: {
+        startGame: jest.Mock;
+        startCombat: jest.Mock;
+        visitTile: jest.Mock;
+        useDoor: jest.Mock;
+        useSanctuary: jest.Mock;
+        getFlag: jest.Mock;
+        endTurn: jest.Mock;
+        endSession: jest.Mock;
+        resultCombat: jest.Mock;
+    };
     let snapshots: { sessionId: string; match: InitializedMatch }[];
 
     beforeEach(() => {
@@ -103,8 +115,21 @@ describe('GameSessionService', () => {
             startCombat: jest.fn().mockReturnValue(null),
             visitTile: jest.fn().mockReturnValue(null),
             useDoor: jest.fn().mockReturnValue(null),
+            useSanctuary: jest.fn().mockReturnValue(null),
+            getFlag: jest.fn().mockReturnValue(null),
+            endTurn: jest.fn().mockReturnValue(null),
+            endSession: jest.fn().mockReturnValue(null),
+            resultCombat: jest.fn().mockReturnValue(null),
         };
-        service = new GameSessionService(mapService as unknown as MapService, endStatsService as unknown as EndStatsService);
+        combatService = {
+            createCombatSession: jest.fn(),
+            startCombat: jest.fn(),
+        };
+        service = new GameSessionService(
+            mapService as unknown as MapService,
+            combatService as unknown as CombatService,
+            endStatsService as unknown as EndStatsService,
+        );
         snapshots = [];
         service.on<GameSessionSnapshotPayload>(SessionSocketEvents.GameSessionSnapshot, (payload) => {
             snapshots.push({ sessionId: payload.sessionId, match: payload.match });

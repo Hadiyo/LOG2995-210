@@ -168,6 +168,38 @@ describe('GameSessionService actions', () => {
         expect(emitSnapshotSpy).toHaveBeenCalled();
     });
 
+    it('auto-accepts a flag transfer offered to a virtual teammate and refuses virtual requests', () => {
+        const runtime = makeRuntime({
+            match: makeMatch({
+                mode: GameMode.CTF,
+                players: [
+                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, startingPosition: { x: 0, y: 0 }, teamId: 'A' }),
+                    makeMatchPlayer({
+                        id: 'player-2',
+                        position: { x: 1, y: 0 },
+                        startingPosition: { x: 1, y: 0 },
+                        avatarId: 1,
+                        teamId: 'A',
+                        controller: 'virtual',
+                        virtualProfile: 'aggressive',
+                    }),
+                ],
+                flagCarrierId: 'player-1',
+            }),
+        });
+
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+
+        expect(harness.service.requestFlagTransfer('session-1', 'player-1', 'player-2')).toBe(true);
+        expect(runtime.match.pendingFlagTransfer).toBeNull();
+        expect(runtime.match.flagCarrierId).toBe('player-2');
+        expect(runtime.messages.at(-1)?.content).toContain('obtient le drapeau');
+
+        runtime.turnState.actionTaken = false;
+        runtime.match.flagCarrierId = 'player-2';
+        expect(harness.service.requestFlagTransfer('session-1', 'player-2', 'player-1')).toBe(false);
+    });
+
     it('logs flag pickup and clears unanswered transfers when the turn advances', () => {
         const serviceInternals = harness.getServiceInternals();
         const advanceSpy = jest.spyOn(serviceInternals, 'advanceToNextTurn');
@@ -209,8 +241,7 @@ describe('GameSessionService actions', () => {
         expect(emitSnapshotSpy).toHaveBeenCalled();
     });
 
-    it('starts combat only for adjacent active players and finishes the match on the win threshold', () => {
-        const privateState = harness.getPrivateState();
+    it('starts combat only for adjacent active players and delegates to the combat service', () => {
         const emitSnapshotSpy = spyOnEmitSnapshot(harness);
         const runtime = registerRuntime(makeRuntime({
             match: makeMatch({
@@ -220,28 +251,16 @@ describe('GameSessionService actions', () => {
                 ],
             }),
         }), harness);
+        const combatSession = { id: 'combat-1' };
+        harness.combatService.createCombatSession.mockReturnValue({ combat: combatSession, game: runtime });
 
         expect(harness.service.startCombat('missing', 'player-1', 'player-2')).toBe(false);
         expect(harness.service.startCombat('session-1', 'player-2', 'player-1')).toBe(false);
         expect(harness.service.startCombat('session-1', 'player-1', 'player-2')).toBe(true);
-        expect(findPlayer(runtime, 'player-1')?.combatWins).toBe(2);
-        expect(runtime.logEntries.at(-1)?.visibleToPlayerIds).toEqual(['player-1', 'player-2']);
-        expect(runtime.logEntries.at(-1)?.entry.involvedPlayers).toEqual(['Alice', 'Bob']);
+        expect(harness.combatService.createCombatSession).toHaveBeenCalledWith('player-1', 'player-2', 'session-1');
+        expect(harness.combatService.startCombat).toHaveBeenCalledWith(combatSession);
         expect(findPlayer(runtime, 'player-1')?.render).toMatchObject({ facing: 'right', pose: 'attack', poseDurationMs: 220 });
         expect(runtime.turnState.actionTaken).toBe(true);
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
-
-        registerRuntime(makeRuntime({
-            sessionId: 'winner',
-            match: makeMatch({
-                players: [
-                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, combatWins: 2, isOrganizer: true }),
-                    makeMatchPlayer({ id: 'player-2', name: 'Bob', position: { x: 1, y: 0 }, avatarId: 1 }),
-                ],
-            }),
-        }), harness);
-
-        expect(harness.service.startCombat('winner', 'player-1', 'player-2')).toBe(true);
-        expect(privateState.sessions.has('winner')).toBe(true);
     });
 });
