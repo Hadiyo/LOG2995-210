@@ -10,6 +10,7 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MongooseModule } from '@nestjs/mongoose';
+import { CombatGateway } from './gateways/combat/combat.gateway';
 import { MapGateway } from './gateways/map/map.gateway';
 import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
 import { MatchWaitingRoomGateway } from './gateways/waiting-room/match-waiting-room.gateway';
@@ -48,6 +49,7 @@ import { EndStatsService } from './services/end-stats.service';
         EndStatsService,
         CombatService,
         CombatTurnService,
+        CombatGateway,
     ],
 })
 export class AppModule {}

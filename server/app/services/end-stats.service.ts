@@ -72,10 +72,6 @@ export class EndStatsService {
             if (attacker && defender) {
                 attacker.combats += 1;
                 defender.combats += 1;
-
-                // TODO: Remove after combat is implemented
-                attacker.victories += 1;
-                defender.defeats += 1;
             }
         }
     }
@@ -118,6 +114,38 @@ export class EndStatsService {
         const session = this.sessions.get(sessionId);
         if (session && !session.heldFlag.includes(playerId)) {
             session.heldFlag.push(playerId);
+        }
+    }
+
+    takeDamage(sessionId: string, playerId: string, damage: number): void {
+        const session = this.sessions.get(sessionId);
+        if (session) {
+            const player = session.playerStats.find((p) => p.id === playerId);
+            if (player) {
+                player.damageTaken += damage;
+            }
+        }
+    }
+
+    dealDamage(sessionId: string, playerId: string, damage: number): void {
+        const session = this.sessions.get(sessionId);
+        if (session) {
+            const player = session.playerStats.find((p) => p.id === playerId);
+            if (player) {
+                player.damageDealt += damage;
+            }
+        }
+    }
+
+    resultCombat(sessionId: string, winnerId: string, loserId: string): void {
+        const session = this.sessions.get(sessionId);
+        if (session) {
+            const winner = session.playerStats.find((p) => p.id === winnerId);
+            const loser = session.playerStats.find((p) => p.id === loserId);
+            if (winner && loser) {
+                winner.victories += 1;
+                loser.defeats += 1;
+            }
         }
     }
 

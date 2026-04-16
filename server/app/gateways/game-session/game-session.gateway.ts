@@ -46,6 +46,7 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
         private readonly combatSession: CombatService,
     ) {
         this.onSnapshot = (payload) => {
+            this.server.to(getGameSessionRoom(payload.sessionId)).emit(SessionSocketEvents.GameSessionSnapshot, payload);
         };
         this.gameSessionService.on(SessionSocketEvents.GameSessionSnapshot, this.onSnapshot);
 

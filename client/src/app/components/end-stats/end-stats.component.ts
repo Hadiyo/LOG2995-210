@@ -86,4 +86,7 @@ export class EndStatsComponent implements OnInit {
     });
   }
 
+  isSorted(field: keyof PlayerStats): boolean {
+    return this.sortField === field;  
+  }
 }

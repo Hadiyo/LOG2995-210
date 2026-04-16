@@ -14,13 +14,62 @@
             <table class="player-table">
                 <thead>
                 <tr>
-                    <th><button (click)="sortPlayers('name')">Joueur</button></th>
-                    <th><button (click)="sortPlayers('combats')">Combats</button></th>
-                    <th><button (click)="sortPlayers('victories')">Victoires</button></th>
-                    <th><button (click)="sortPlayers('defeats')">Défaites</button></th>
-                    <th><button (click)="sortPlayers('damageTaken')">PV perdus</button></th>
-                    <th><button (click)="sortPlayers('damageDealt')">PV infligés</button></th>
-                    <th><button (click)="sortPlayers('percentTiles')">% Tuiles</button></th>
+                    <th>
+                        <button (click)="sortPlayers('name')">Joueur</button>
+                        @if (isSorted('name')) {
+                            <span>
+                                {{ sortDescending ? '↓' : '↑' }}
+                            </span>
+                        }
+                    </th>
+                    <th>
+                        <button (click)="sortPlayers('combats')">Combats</button>
+                        @if (isSorted('combats')) {
+                            <span>
+                                {{ sortDescending ? '↓' : '↑' }}
+                            </span>
+                        }
+                    </th>
+                    <th>
+                        <button (click)="sortPlayers('victories')">Victoires</button>
+                        @if (isSorted('victories')) {
+                            <span>
+                                {{ sortDescending ? '↓' : '↑' }}
+                            </span>
+                        }
+                    </th>
+                    <th>
+                        <button (click)="sortPlayers('defeats')">Défaites</button>
+                        @if (isSorted('defeats')) {
+                            <span>
+                                {{ sortDescending ? '↓' : '↑' }}
+                            </span>
+                        }
+                    </th>
+                    <th>
+                        <button (click)="sortPlayers('damageTaken')">PV perdus</button>
+                        @if (isSorted('damageTaken')) {
+                            <span>
+                                {{ sortDescending ? '↓' : '↑' }}
+                            </span>
+                        }
+                    </th>
+                    <th>
+                        <button (click)="sortPlayers('damageDealt')">PV infligés</button>
+                        @if (isSorted('damageDealt')) {
+                            <span>
+                                {{ sortDescending ? '↓' : '↑' }}
+                            </span>
+                        }
+                    </th>
+                    <th>
+                        <button (click)="sortPlayers('percentTiles')">% Tuiles</button>
+                        @if (isSorted('percentTiles')) {
+                            <span>
+                                {{ sortDescending ? '↓' : '↑' }}
+                            </span>
+                        }
+                    </th>
                 </tr>
                 </thead>
             

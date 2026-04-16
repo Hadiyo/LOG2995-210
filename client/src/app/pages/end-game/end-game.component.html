@@ -9,19 +9,21 @@
                 </div>
             </div>
             <app-end-stats
-                (onEmptyStats)="leaveMatch('Retour a l accueil.')"
+                (onEmptyStats)="leaveMatch('Retour a l accueil car aucune statistiques.')"
             ></app-end-stats>
         </div>
     </div>
-    <app-game-chat-panel class="chat"
-        [messages]="chatMessages()"
-        [notification]="null"
-        [currentPlayerName]="currentPlayer?.name ?? null"
-        [messageMaxLength]="constants.messageMaxLength"
-        [title]="'Clavardage'"
-        [showTitle]="true"
-        [readOnly]="false"
-        (messageSubmit)="onChatMessageSubmit($event)"
-    >
-    </app-game-chat-panel>
+    <div class="panel">
+        <app-game-chat-panel class="chat"
+            [messages]="chatMessages()"
+            [notification]="null"
+            [currentPlayerName]="currentPlayer?.name ?? null"
+            [messageMaxLength]="constants.messageMaxLength"
+            [title]="'Clavardage'"
+            [showTitle]="true"
+            [readOnly]="false"
+            (messageSubmit)="onChatMessageSubmit($event)"
+        >
+        </app-game-chat-panel>
+    </div>
 </div>

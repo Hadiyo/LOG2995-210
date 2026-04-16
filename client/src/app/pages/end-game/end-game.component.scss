@@ -1,5 +1,7 @@
 :host {
     --panel-padding: 30px;
+    --panel-radius: 10px;
+    --view-gap: 16px;
 }
 
 h2 {
@@ -11,7 +13,9 @@ h2 {
 .end-game-container {
     display: grid;
     grid-template-columns: 70% 30%;
-    height: 100%;
+    height: 90%;
+    gap: var(--view-gap);
+    padding: var(--panel-padding);
 }
 
 .end-game-container > div:first-child h2 {
@@ -28,12 +32,21 @@ h2 {
     display: flex;
     grid-column: 2;
     flex-direction: column;
-    min-height: 90vh;
-    height: 90vh;
+    min-height: 75vh;
+    height: 75vh;
     overflow-x: hidden;
     overflow-y: auto;
-    padding: var(--panel-padding);
 }
+
+.panel {
+    display: flex;
+    box-sizing: border-box;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--panel-radius);
+    background: var(--bg-panel); 
+    padding: var(--panel-padding);
+    max-height: 85vh;
+  }
 
 .end-stats {
     display: flex;
@@ -47,5 +60,4 @@ h2 {
     flex-direction: row;
     align-items: center;
     gap: 16px;
-    padding-top: 16px;
 }

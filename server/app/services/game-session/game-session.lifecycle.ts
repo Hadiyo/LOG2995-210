@@ -67,7 +67,6 @@ export class GameSessionLifecycle {
             clearTimers(session);
             this.sessions.delete(sessionId);
             this.endStatsService.endSession(sessionId);
-            this.sessions.delete(session.sessionId);
             this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
             return true;
         }
@@ -305,7 +304,6 @@ export class GameSessionLifecycle {
             resolvedAt: Date.now(),
         };
         this.finishMatch(session);
-        this.emitSnapshot(session);
     }
 
     createSystemMessage(content: string): ChatMessage {
