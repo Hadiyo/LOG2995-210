@@ -269,10 +269,6 @@ export class GameSessionService {
         return this.runSessionAction(sessionId, () => this.actions.toggleDoor(sessionId, playerId, position));
     }
 
-    // startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
-    //     return this.runSessionAction(sessionId, () => this.actions.startCombat(sessionId, attackerId, defenderId));
-    // }
-
     resumeSessionTurns(sessionId: string): void {
         const session = this.sessions.get(sessionId);
         if (session) {
@@ -368,8 +364,6 @@ export class GameSessionService {
 
         const decision = planVirtualPlayerDecision(session.match, session.turnState, activeVirtualPlayer);
         switch (decision.kind) {
-            case 'combat':
-                return;
             case 'move':
                 if (!this.movePlayer(sessionId, playerId, decision.direction)) {
                     this.endTurn(sessionId, playerId);
