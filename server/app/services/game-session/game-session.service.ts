@@ -85,7 +85,7 @@ export class GameSessionService {
         if (previousSessionId && previousSessionId !== sessionId) {
             const previousMembership = this.removeSocket(socketId);
             if (previousMembership) {
-                this.sessionActions.surrender(previousMembership.sessionId, previousMembership.playerId);
+                this.surrender(previousMembership.sessionId, previousMembership.playerId);
             }
         }
 
@@ -314,16 +314,6 @@ export class GameSessionService {
         this.sessionActions.resolveCombatTie(sessionId, winnerId, loserId);
     }
 
-    appendCombatRoundLogs(sessionId: string, statistics: CombatPlayerStatistics[]): void {
-        const session = this.sessions.get(sessionId);
-        if (!session) {
-            return;
-        }
-
-        this.lifecycle.appendCombatRoundLogEntries(session, statistics);
-        this.lifecycle.emitSnapshot(session);
-    }
-
     private runSessionAction(sessionId: string, action: () => boolean): boolean {
         const success = action();
         if (!success) {
@@ -354,6 +344,16 @@ export class GameSessionService {
             session.virtualDecisionTimeoutId = null;
             this.performVirtualDecision(session.sessionId, activeVirtualPlayer.id);
         }, delayMs);
+    }
+
+    appendCombatRoundLogs(sessionId: string, statistics: CombatPlayerStatistics[]): void {
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return;
+        }
+
+        this.lifecycle.appendCombatRoundLogEntries(session, statistics);
+        this.lifecycle.emitSnapshot(session);
     }
 
     private buildSnapshot(session: GameSessionRuntime, playerId: string): GameSessionSnapshotPayload {
