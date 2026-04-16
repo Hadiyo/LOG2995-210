@@ -108,7 +108,7 @@
             ],
             "scripts": [],
             "codeCoverageExclude": [
-              "src/**/!(*admin-page.component|*game-card.component|*editor-topbar.component|*map-api.service|*map-state.service|session.service|join-game.component|session-api.service).ts"
+              "src/**/!(*admin-page.component|*game-card.component|*editor-topbar.component|*map-api.service|*map-state.service|session.service|join-game.component|session-api.service|combat-state.service|game-combat-panel.component|game-combat-round-log.component).ts"
             ]
           }
         },

@@ -1,8 +1,10 @@
 import { Injectable, signal } from '@angular/core';
 import { ChatService } from '@app/services/chat/chat.service';
+import { CombatResultPayload, CombatTiePayload } from '@app/services/match/combat-state.models';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
 import { SocketManagerService } from '@app/services/socket-manager/socket-manager.service';
+import { MatchSanctuaryChoice } from '@common/game/match.interface';
 import {
     CombatSocketEvents,
     DebugTeleportPlayerPayload,
@@ -10,19 +12,18 @@ import {
     ForceEndDebugTurnPayload,
     GameSessionErrorPayload,
     GameSessionSnapshotPayload,
-    RequestFlagTransferPayload,
-    ResolveFlagTransferPayload,
     JoinGameSessionPayload,
     MoveGamePlayerPayload,
+    RequestFlagTransferPayload,
+    ResolveFlagTransferPayload,
     ResolveSanctuaryChoicePayload,
     SessionSocketEvents,
     StartCombatPayload,
-    ToggleDoorPayload,
-    UseSanctuaryPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
+    ToggleDoorPayload,
+    UseSanctuaryPayload,
 } from '@common/socket-events';
-import { MatchSanctuaryChoice } from '@common/game/match.interface';
 
 @Injectable({ providedIn: 'root' })
 export class GameSessionSocketService {
@@ -51,6 +52,7 @@ export class GameSessionSocketService {
         }
 
         this.sessionId.set(sessionId);
+        this.errorMessage.set('');
         this.socketManager.send(SessionSocketEvents.JoinGameSession, {
             sessionId,
             playerId,
@@ -114,6 +116,7 @@ export class GameSessionSocketService {
             return;
         }
 
+        this.errorMessage.set('');
         this.socketManager.send(CombatSocketEvents.StartCombat, {
             sessionId,
             playerId,
@@ -228,6 +231,21 @@ export class GameSessionSocketService {
         this.socketManager.on<GameSessionErrorPayload>(SessionSocketEvents.GameSessionError, (payload) => {
             this.clearDebugToggleGuard();
             this.errorMessage.set(payload.message);
+        });
+
+        this.socketManager.on<GameSessionErrorPayload>(CombatSocketEvents.CombatSessionError, (payload) => {
+            this.errorMessage.set(payload.message);
+        });
+
+        this.socketManager.on<CombatResultPayload>(SessionSocketEvents.CombatVictory, (payload) => {
+            this.errorMessage.set('');
+            this.matchState.registerCombatVictory(payload.winner);
+            this.matchState.applyCombatAftermath([payload.loser]);
+        });
+
+        this.socketManager.on<CombatTiePayload>(SessionSocketEvents.CombatTie, (payload) => {
+            this.errorMessage.set('');
+            this.matchState.applyCombatAftermath([payload.player1, payload.player2]);
         });
     }
 
