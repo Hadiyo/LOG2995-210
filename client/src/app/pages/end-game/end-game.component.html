@@ -55,7 +55,7 @@
               (messageSubmit)="onChatMessageSubmit($event)"
             />
           } @else {
-            <app-game-chat-panel
+            <app-game-chat-panel class="chat"
               [messages]="journalEntries()"
               [notification]="null"
               [currentPlayerName]="null"
