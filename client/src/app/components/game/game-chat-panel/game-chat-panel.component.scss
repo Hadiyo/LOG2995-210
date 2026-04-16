@@ -109,6 +109,12 @@ h3 {
   word-break: break-word;
 }
 
+.message__participants {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 .messages__input-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
