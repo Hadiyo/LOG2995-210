@@ -36,28 +36,28 @@ export class GameSessionInteractionService {
         }
         const options: GameSessionActionOption[] = [];
         if (this.targets.getSanctuaryActionTargets().size > 0) {
-            options.push({ context: 'sanctuary', label: 'Sanctuaire' });
+            options.push({ context: GameSessionActionContext.Sanctuary, label: 'Sanctuaire' });
         }
         if (this.targets.getCombatActionTargets().size > 0) {
-            options.push({ context: 'combat', label: 'Combat' });
+            options.push({ context: GameSessionActionContext.Combat, label: 'Combat' });
         }
         if (this.targets.getFlagTransferTargets().size > 0) {
-            options.push({ context: 'flag-transfer', label: 'Transferer drapeau' });
+            options.push({ context: GameSessionActionContext.FlagTransfer, label: 'Transferer drapeau' });
         }
         if (this.targets.getDoorActionTargets().size > 0) {
-            options.push({ context: 'door', label: 'Ouvrir/Fermer porte' });
+            options.push({ context: GameSessionActionContext.Door, label: 'Ouvrir/Fermer porte' });
         }
         return options;
     });
     readonly actionTargets = computed(() => {
         switch (this.actionContext()) {
-            case 'sanctuary':
+            case GameSessionActionContext.Sanctuary:
                 return this.targets.getSanctuaryActionTargets();
-            case 'combat':
+            case GameSessionActionContext.Combat:
                 return this.targets.getCombatActionTargets();
-            case 'flag-transfer':
+            case GameSessionActionContext.FlagTransfer:
                 return this.targets.getFlagTransferTargets();
-            case 'door':
+            case GameSessionActionContext.Door:
                 return this.targets.getDoorActionTargets();
             default:
                 return this.actionSelectionOpen() ? collectActionTargetKeys(createActionTargetSets(this.targets)) : new Set<string>();
@@ -89,10 +89,12 @@ export class GameSessionInteractionService {
 
     actionHelperText(): string {
         if (this.actionSelectionOpen()) return 'Choisissez une interaction adjacente en surbrillance.';
-        if (this.actionContext() === 'sanctuary') return 'Choisissez un sanctuaire adjacent en surbrillance.';
-        if (this.actionContext() === 'combat') return 'Choisissez un adversaire adjacent pour engager le combat.';
-        if (this.actionContext() === 'flag-transfer') return 'Choisissez un coequipier adjacent pour demander ou offrir le drapeau.';
-        if (this.actionContext() === 'door') return "Choisissez une porte adjacente pour l'ouvrir ou la fermer.";
+        if (this.actionContext() === GameSessionActionContext.Sanctuary) return 'Choisissez un sanctuaire adjacent en surbrillance.';
+        if (this.actionContext() === GameSessionActionContext.Combat) return 'Choisissez un adversaire adjacent pour engager le combat.';
+        if (this.actionContext() === GameSessionActionContext.FlagTransfer) {
+            return 'Choisissez un coequipier adjacent pour demander ou offrir le drapeau.';
+        }
+        if (this.actionContext() === GameSessionActionContext.Door) return "Choisissez une porte adjacente pour l'ouvrir ou la fermer.";
         return '';
     }
 
@@ -229,13 +231,13 @@ export class GameSessionInteractionService {
     }
 
     handleCellPrimaryAction(tile: EditorCell): void {
-        if (this.actionContext() === 'sanctuary') {
+        if (this.actionContext() === GameSessionActionContext.Sanctuary) {
             this.handleSanctuaryAction(tile);
-        } else if (this.actionContext() === 'combat') {
+        } else if (this.actionContext() === GameSessionActionContext.Combat) {
             this.handleCombatAction(tile);
-        } else if (this.actionContext() === 'flag-transfer') {
+        } else if (this.actionContext() === GameSessionActionContext.FlagTransfer) {
             this.handleFlagTransferAction(tile);
-        } else if (this.actionContext() === 'door') {
+        } else if (this.actionContext() === GameSessionActionContext.Door) {
             this.handleDoorAction(tile);
         } else if (this.actionSelectionOpen()) {
             this.handleHighlightedAction(tile);
@@ -316,10 +318,10 @@ export class GameSessionInteractionService {
         }
 
         const actionHandlers = new Map<GameSessionActionContext, () => void>([
-            ['sanctuary', () => this.handleSanctuaryAction(tile)],
-            ['combat', () => this.handleCombatAction(tile)],
-            ['flag-transfer', () => this.handleFlagTransferAction(tile)],
-            ['door', () => this.handleDoorAction(tile)],
+            [GameSessionActionContext.Sanctuary, () => this.handleSanctuaryAction(tile)],
+            [GameSessionActionContext.Combat, () => this.handleCombatAction(tile)],
+            [GameSessionActionContext.FlagTransfer, () => this.handleFlagTransferAction(tile)],
+            [GameSessionActionContext.Door, () => this.handleDoorAction(tile)],
         ]);
         actionHandlers.get(actionContext)?.();
     }

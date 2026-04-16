@@ -17,8 +17,8 @@ export class EditorTileComponent {
 
   @Output() tileEvent = new EventEmitter<TileEvent>();
 
-  readonly tileType = TileType;
-  readonly mouseEvent = MouseEventType;
+  protected readonly tileType = TileType;
+  protected readonly mouseEvent = MouseEventType;
   private readonly objectDescriptionByType: Record<ObjectType, string> = {
     [ObjectType.START]: "Un joueur est assigne aleatoirement un point de depart au debut d'une partie.",
     [ObjectType.FLAG]: "L'objectif principal du mode CTF. Pour gagner, un joueur doit revenir sur son point de depart avec le drapeau.",

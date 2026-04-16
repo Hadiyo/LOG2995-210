@@ -53,8 +53,8 @@ export class AdminPageComponent implements OnInit, OnDestroy {
    * @param result GameMode and MapSize
    */
   protected onCreateGameDialogConfirm(result: MapConfig): void {
-    const ok = this.adminService.setMapProperties(result);
-    if (ok) {
+    const mapPropertiesSet = this.adminService.setMapProperties(result);
+    if (mapPropertiesSet) {
       this.toggleGameDialog();
       this.router.navigate(['/editor']);
     } else {
@@ -71,8 +71,8 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.adminService
       .fetchExistingMapForEditor(map.id)
       .pipe(take(1))
-      .subscribe(ok => {
-        if (ok) this.router.navigate(['/editor']);
+      .subscribe((editorMapLoaded) => {
+        if (editorMapLoaded) this.router.navigate(['/editor']);
         else this.errorMessage = "Impossible d'aller rechercher la carte.";
       });
   }

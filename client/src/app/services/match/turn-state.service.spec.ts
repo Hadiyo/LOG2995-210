@@ -1,6 +1,7 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { AvatarId } from '@common/character/character.model';
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
+import { PlayerTurnInteractionState } from '@common/game/turn.interface';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
 import { TurnStateService } from './turn-state.service';
@@ -78,9 +79,9 @@ const createPersistedActiveState = () => ({
     actionTaken: true,
     movementCount: 2,
     playerStates: [
-        { playerId: 'player-2', state: 'waiting' as const },
-        { playerId: 'player-1', state: 'active' as const },
-        { playerId: 'player-3', state: 'waiting' as const },
+        { playerId: 'player-2', state: PlayerTurnInteractionState.Waiting },
+        { playerId: 'player-1', state: PlayerTurnInteractionState.Active },
+        { playerId: 'player-3', state: PlayerTurnInteractionState.Waiting },
     ],
 });
 

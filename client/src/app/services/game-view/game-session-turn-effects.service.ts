@@ -59,9 +59,8 @@ export class GameSessionTurnEffectsService {
     }
 
     dismissCombatNotification(notificationId: string): void {
-        const timerId = this.combatNotificationTimerIds.get(notificationId);
-        if (timerId !== undefined) {
-            window.clearTimeout(timerId);
+        if (this.combatNotificationTimerIds.has(notificationId)) {
+            window.clearTimeout(this.combatNotificationTimerIds.get(notificationId) ?? 0);
             this.combatNotificationTimerIds.delete(notificationId);
         }
 

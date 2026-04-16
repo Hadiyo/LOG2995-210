@@ -32,18 +32,18 @@
             <div class="section">
                 <h3>Bonus +2</h3>
                 <div class="option-group">
-                    <button type="button" class="option" [class.active]="form.controls.plusTwo.value === 'vie'"
-                        (click)="form.controls.plusTwo.setValue('vie')">
+                    <button type="button" class="option" [class.active]="form.controls.plusTwo.value === 'health'"
+                        (click)="form.controls.plusTwo.setValue('health')">
                         <span>Vie</span>
-                        @if (form.controls.plusTwo.value === 'vie') {
+                        @if (form.controls.plusTwo.value === 'health') {
                         <span class="option-hint">Vie +2</span>
                         }
                     </button>
 
-                    <button type="button" class="option" [class.active]="form.controls.plusTwo.value === 'rapidite'"
-                        (click)="form.controls.plusTwo.setValue('rapidite')">
+                    <button type="button" class="option" [class.active]="form.controls.plusTwo.value === 'speed'"
+                        (click)="form.controls.plusTwo.setValue('speed')">
                         <span>Rapidité</span>
-                        @if (form.controls.plusTwo.value === 'rapidite') {
+                        @if (form.controls.plusTwo.value === 'speed') {
                         <span class="option-hint">Rapidité +2</span>
                         }
                     </button>
@@ -53,11 +53,11 @@
             <div class="section">
                 <h3>Dé D6 attribué à</h3>
                 <div class="option-group">
-                    <button type="button" class="option" [class.active]="form.controls.d6GoesTo.value === 'attaque'"
-                        (click)="form.controls.d6GoesTo.setValue('attaque')">
+                    <button type="button" class="option" [class.active]="form.controls.d6GoesTo.value === 'attack'"
+                        (click)="form.controls.d6GoesTo.setValue('attack')">
                         <span>Attaque <small>(Défense reçoit D4)</small></span>
-                        <span class="option-hint" [class.hint-dim]="form.controls.d6GoesTo.value !== 'attaque'">
-                            {{ form.controls.d6GoesTo.value === 'attaque' ? 'Attaque + D6' : 'Attaque + D4' }}
+                        <span class="option-hint" [class.hint-dim]="form.controls.d6GoesTo.value !== 'attack'">
+                            {{ form.controls.d6GoesTo.value === 'attack' ? 'Attaque + D6' : 'Attaque + D4' }}
                         </span>
                     </button>
 
@@ -135,9 +135,9 @@
                     <small>Points de survie (base 6, peut recevoir +2).</small>
                 </div>
                 <div class="stat-values">
-                    <strong>{{ previewStats().vie }}</strong>
+                    <strong>{{ previewStats().health }}</strong>
                     <small class="stat-hint">
-                        {{ form.controls.plusTwo.value === 'vie' ? '+2' : ' ' }}
+                        {{ form.controls.plusTwo.value === 'health' ? '+2' : ' ' }}
                     </small>
                 </div>
             </div>
@@ -148,9 +148,9 @@
                     <small>Agilité et vitesse (base 6, peut recevoir +2).</small>
                 </div>
                 <div class="stat-values">
-                    <strong>{{ previewStats().rapidite }}</strong>
+                    <strong>{{ previewStats().speed }}</strong>
                     <small class="stat-hint">
-                        {{ form.controls.plusTwo.value === 'rapidite' ? '+2' : ' ' }}
+                        {{ form.controls.plusTwo.value === 'speed' ? '+2' : ' ' }}
                     </small>
                 </div>
             </div>
@@ -162,14 +162,14 @@
                 </div>
                 <div class="stat-values">
                     <strong>
-                        {{ form.controls.d6GoesTo.value === 'attaque' ? '10 Max' : '8 Max' }}
+                        {{ form.controls.d6GoesTo.value === 'attack' ? '10 Max' : '8 Max' }}
                     </strong>
 
                     <small
                         class="stat-hint"
-                        [class.hint-d6]="form.controls.d6GoesTo.value === 'attaque'"
-                        [class.hint-d4]="form.controls.d6GoesTo.value !== 'attaque'">
-                        {{ form.controls.d6GoesTo.value === 'attaque' ? '4 + D6' : '4 + D4' }}
+                        [class.hint-d6]="form.controls.d6GoesTo.value === 'attack'"
+                        [class.hint-d4]="form.controls.d6GoesTo.value !== 'attack'">
+                        {{ form.controls.d6GoesTo.value === 'attack' ? '4 + D6' : '4 + D4' }}
                     </small>
                 </div>
             </div>

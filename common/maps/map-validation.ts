@@ -43,9 +43,9 @@ const FLAGS_REQUIRED_BY_MODE: Record<GameMode, number> = {
 
 const MIN_TERRAIN_RATIO = 0.5;
 
-const isTerrainTile = (tileType: TileType): boolean => TERRAIN_TILES.has(tileType);
+const isTerrainTile = (tileType: TileType | undefined): boolean => tileType !== undefined && TERRAIN_TILES.has(tileType);
 
-const isWallTile = (tileType: TileType): boolean => tileType === TileType.WALL;
+const isWallTile = (tileType: TileType | undefined): boolean => tileType === TileType.WALL;
 
 const isDoorTile = (tileType: TileType): boolean => tileType === TileType.DOOR;
 
@@ -83,7 +83,7 @@ const getDoorPlacement = (position: Vec2, cellsByKey: Map<string, Cell>): 'horiz
     const up = getTileType(cellsByKey, x, y - 1);
     const down = getTileType(cellsByKey, x, y + 1);
 
-    if (left === undefined || right === undefined || up === undefined || down === undefined) {
+    if ([left, right, up, down].some((neighborTileType) => neighborTileType === undefined)) {
         return null;
     }
 
