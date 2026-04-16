@@ -1,10 +1,11 @@
 import { MatchWaitingRoomGateway } from '@app/gateways/waiting-room/match-waiting-room.gateway';
+import { createMockSocket } from '@app/utilities/mocks/mocks';
 import {
-    CreateWaitingRoomPayload,
-    getWaitingRoomRoom,
-    WaitingRoomEvents,
+  CreateWaitingRoomPayload,
+  getWaitingRoomRoom,
+  WaitingRoomEvents,
 } from '@common/socket-events';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 
 const makeCreatePayload = (): CreateWaitingRoomPayload => ({
     mapId: 'map-1',
@@ -22,13 +23,6 @@ const makeCreatePayload = (): CreateWaitingRoomPayload => ({
         controller: 'human',
     },
 });
-
-const makeSocket = (id: string): Socket => ({
-    id,
-    join: jest.fn(),
-    leave: jest.fn(),
-    emit: jest.fn(),
-} as unknown as Socket);
 
 describe('MatchWaitingRoomGateway', () => {
     let gateway: MatchWaitingRoomGateway;
@@ -68,6 +62,7 @@ describe('MatchWaitingRoomGateway', () => {
 
         gateway = new MatchWaitingRoomGateway(waitingRoomService as never, logger as never);
         (gateway as unknown as { server: Server }).server = server;
+
     });
 
     it('subscribes and unsubscribes waiting-room events', () => {
@@ -125,12 +120,12 @@ describe('MatchWaitingRoomGateway', () => {
     });
 
     it('delegates disconnect handling', () => {
-        gateway.handleDisconnect(makeSocket('socket-1'));
+        gateway.handleDisconnect(createMockSocket('socket-1'));
         expect(waitingRoomService.handleDisconnect).toHaveBeenCalledWith('socket-1');
     });
 
     it('creates a waiting room, joins its socket room, and emits current state', async () => {
-        const client = makeSocket('socket-1');
+        const client = createMockSocket('socket-1');
         waitingRoomService.getAccessCodeForSocket.mockReturnValue('OLD999');
         waitingRoomService.createWaitingRoom.mockResolvedValue('ABC123');
         waitingRoomService.getWaitingRoomState.mockReturnValue({ accessCode: 'ABC123' });
@@ -144,7 +139,7 @@ describe('MatchWaitingRoomGateway', () => {
     });
 
     it('handles createWaitingRoom failures', async () => {
-        const client = makeSocket('socket-1');
+        const client = createMockSocket('socket-1');
         waitingRoomService.createWaitingRoom.mockRejectedValue(new Error('boom'));
 
         await gateway.createWaitingRoom(client, makeCreatePayload());
@@ -157,7 +152,7 @@ describe('MatchWaitingRoomGateway', () => {
     });
 
     it('joins a waiting room only when the service accepts it', () => {
-        const client = makeSocket('socket-2');
+        const client = createMockSocket('socket-2');
         waitingRoomService.getAccessCodeForSocket.mockReturnValue('OLD999');
         waitingRoomService.joinWaitingRoom.mockReturnValue(true);
         waitingRoomService.getWaitingRoomState.mockReturnValue({ accessCode: 'ABC123', players: [] });
@@ -185,7 +180,7 @@ describe('MatchWaitingRoomGateway', () => {
     });
 
     it('delegates leave, kick, and send message operations', () => {
-        const client = makeSocket('socket-3');
+        const client = createMockSocket('socket-3');
 
         gateway.leaveWaitingRoom(client, { accessCode: 'ABC123' });
         gateway.kickPlayer(client, { accessCode: 'ABC123', playerId: 'player-2' });
@@ -198,7 +193,7 @@ describe('MatchWaitingRoomGateway', () => {
     });
 
     it('starts a waiting room game and emits an error on failure', async () => {
-        const client = makeSocket('socket-4');
+        const client = createMockSocket('socket-4');
 
         await gateway.startGame(client, { accessCode: 'ABC123' });
         expect(waitingRoomService.startGame).toHaveBeenCalledWith('socket-4', 'ABC123');

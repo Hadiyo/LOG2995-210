@@ -172,13 +172,25 @@
         @if (interaction.hasLocalPendingSanctuaryChoice() || interaction.sanctuaryPromptUiHold()) {
           <app-game-map-action-prompt />
         } @else {
-          @if (actionModeEnabled()) {
+          @if (combat.hasActiveCombat()) {
+            <p class="map-panel__hint">Combat en cours: choisissez une posture.</p>
+          } @else if (combat.hasWaitingCombat()) {
+            <p class="map-panel__hint">Combat en cours: veuillez patienter.</p>
+          } @else if (actionModeEnabled()) {
             <p class="map-panel__hint">{{ interaction.actionHelperText() }}</p>
           } @else {
             <p class="map-panel__hint">Les cases surlignees indiquent les deplacements atteignables avec vos points restants.</p>
           }
         }
       </section>
+
+      @if (combat.waitingState(); as waitingState) {
+        @if (combat.hasWaitingCombat()) {
+          <app-game-combat-waiting-panel [waitingState]="waitingState" />
+        }
+      }
+
+      <app-game-combat-panel />
     </div>
 
     <aside class="side-panel side-panel--right">

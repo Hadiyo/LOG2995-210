@@ -1,6 +1,6 @@
 import { computed, Signal } from '@angular/core';
 import { CharacterDirection, CharacterState } from '@app/shared/character/character.types';
-import { Player, PlayerFacing, PlayerPose, PlayerStatus } from '@common/player/player.interface';
+import { Player, PlayerFacing, PlayerPose } from '@common/player/player.interface';
 
 export function createPanelAvatarId(currentPlayer: Signal<Player | null>): Signal<number> {
     return computed(() => currentPlayer()?.information.avatarId ?? 0);
@@ -15,10 +15,6 @@ export function createPanelAvatarState(
         const player = currentPlayer();
         if (!player) {
             return PlayerPose.Idle;
-        }
-
-        if (player.state.status === PlayerStatus.Eliminated) {
-            return PlayerPose.Dead;
         }
 
         const pose = player.render?.pose ?? PlayerPose.Idle;

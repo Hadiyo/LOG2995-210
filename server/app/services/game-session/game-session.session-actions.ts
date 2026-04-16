@@ -1,13 +1,17 @@
+import { MAXIMUM_WINS } from '@app/utilities/game/game.constants';
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { buildVisibleObjects } from '@common/game/match.utils';
 import { MatchPlayer } from '@common/game/match.interface';
 import { ObjectType } from '@common/maps/map.enums';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { GameSessionLifecycle } from './game-session.lifecycle';
+import { dropFlag } from './game-session.match';
 import { applyFacingTowardPosition } from './game-session.render';
-import { GameSessionRuntime, rebuildTurnStateAfterRosterChange } from './game-session.runtime';
+import { rebuildTurnStateAfterRosterChange, resolveRespawnPosition } from './game-session.runtime';
 
 export class GameSessionSessionActions {
+    
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly lifecycle: GameSessionLifecycle,
@@ -88,7 +92,6 @@ export class GameSessionSessionActions {
         if (!session) {
             return false;
         }
-
         const departingPlayer = this.getHumanDepartingPlayer(session, playerId);
         if (!departingPlayer) {
             return false;
@@ -128,7 +131,6 @@ export class GameSessionSessionActions {
             this.lifecycle.startTransition(session);
             return true;
         }
-
         this.lifecycle.emitSnapshot(session);
         return true;
     }
@@ -195,6 +197,48 @@ export class GameSessionSessionActions {
         session.messages.push(message);
         this.lifecycle.emitSnapshot(session);
         return message;
+    }
+
+    resolveCombatEnd(sessionId: string, winnerId: string, loserId: string | null): void {
+        const session = this.sessions.get(sessionId);
+        if(!session) return;
+        const currentPlayer = this.lifecycle.getActivePlayer(session);
+        if(!currentPlayer) return;
+
+        const winner = session.match.players.find((player) => player.id === winnerId);
+        if(loserId){
+            const loser = session.match.players.find((player) => player.id === loserId);
+            if(loser){
+                loser.health = loser.maxHealth;
+                if (session.match.flagCarrierId === loserId)
+                    dropFlag(session, loser);
+                loser.position = resolveRespawnPosition(session.match, loser.id);
+            }
+        }
+        if(winner)
+            winner.combatWins += 1;
+        if(winner.combatWins === MAXIMUM_WINS){
+            this.lifecycle.finishMatchOnCombatVictories(session, winner);
+        } else {
+            if(currentPlayer.id === winnerId && session.turnState.movementPointsRemaining > 0)
+                this.lifecycle.resumeGameSessionTurn(session);
+            else
+                this.lifecycle.advanceToNextTurn(session);
+        }
+    }
+
+    resolveCombatTie(sessionId: string, winnerId: string, loserId: string): void {
+        const session = this.sessions.get(sessionId);
+        const winner = session.match.players.find((player) => player.id === winnerId);
+        const loser = session.match.players.find((player) => player.id === loserId);
+
+        if(!session || !winner || !loser)
+            return;
+
+        loser.health = loser.maxHealth;
+        winner.health = winner.maxHealth;
+
+        this.lifecycle.resumeGameSessionTurn(session);
     }
 
     private getHumanDepartingPlayer(session: GameSessionRuntime, playerId: string): MatchPlayer | null {

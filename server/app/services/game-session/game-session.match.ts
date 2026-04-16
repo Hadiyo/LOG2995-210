@@ -1,15 +1,9 @@
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchSanctuaryState } from '@common/game/match.interface';
 import { buildTeamAssignments, buildVisibleObjects } from '@common/game/match.utils';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
 import { PlayerFacing, PlayerPose, PlayerRenderState } from '@common/player/player.interface';
-
-export const WALK_POSE_DURATION_MS = 180;
-export const ATTACK_POSE_DURATION_MS = 220;
-export const SANCTUARY_COOLDOWN_TURNS = 3;
-export const SANCTUARY_DOUBLE_OR_NOTHING_THRESHOLD = 0.5;
-export const ARENA_BUFF_TURNS = 2;
-export const SANCTUARY_HEAL_VALUE = 2;
 
 export function buildInitializedMatchFromEditor(
     map: EditorMapDetails,
@@ -159,3 +153,27 @@ export function getGameSessionObjectFootprint(object: MapObject): Vec2[] {
         { x: object.position.x + 1, y: object.position.y + 1 },
     ];
 }
+
+export function isPlayerOnIce(match: InitializedMatch, playerId: string): boolean {
+    const position = match.players.find((player) => player.id === playerId)?.position;
+    if(!position)
+        return false;
+    const cell = match.map.find((candidate) => samePosition(candidate.position, position));
+    if(!cell)
+        return false;
+    return (cell.tileType === TileType.ICE);
+}
+
+export function dropFlag(session: GameSessionRuntime, loser: MatchPlayer): void {
+    const nextAllObjects = session.match.allObjects.map((object) =>
+        object.type === ObjectType.FLAG
+            ? { ...object, position: { ...loser.position } }
+            : object,
+    );
+    session.match = {
+        ...session.match,
+        flagCarrierId: null,
+        allObjects: buildVisibleObjects(nextAllObjects, session.match.players, null),   
+    };
+}
+
