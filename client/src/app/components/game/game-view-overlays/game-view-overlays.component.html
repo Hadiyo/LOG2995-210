@@ -27,14 +27,3 @@
     </section>
   </div>
 }
-
-@if (combatNotifications.length > 0) {
-  <div class="combat-toast-stack" aria-live="polite" aria-atomic="false">
-    @for (notification of combatNotifications; track notification.id) {
-      <section class="combat-toast" role="status">
-        <p>{{ notification.message }}</p>
-        <button type="button" class="combat-toast__close" (click)="dismissCombatNotification.emit(notification.id)">Fermer</button>
-      </section>
-    }
-  </div>
-}

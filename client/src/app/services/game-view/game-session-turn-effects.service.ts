@@ -1,10 +1,5 @@
-import { effect, inject, Injectable, signal } from '@angular/core';
-import {
-    COMBAT_NOTIFICATION_DURATION_MS,
-    LocalCombatNotification,
-} from '@app/config/game-session.config';
+import { effect, inject, Injectable } from '@angular/core';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
-import { CombatOutcomeNotice } from '@app/services/match/combat-state.models';
 import { CombatStateService } from '@app/services/match/combat-state.service';
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
@@ -17,14 +12,11 @@ export class GameSessionTurnEffectsService {
     private readonly display = inject(GameSessionDisplayService);
     private readonly gameSessionSocket = inject(GameSessionSocketService);
     private readonly interaction = inject(GameSessionInteractionService);
-    readonly combatNotifications = signal<LocalCombatNotification[]>([]);
 
     private previousObservedPhase: MatchTurnState['phase'] | null = null;
     private previousObservedActivePlayerId: string | null = null;
     private previousObservedTurnIndex: number | null = null;
-    private lastHandledCombatOutcomeId: string | null = null;
     private lastAutoEndedTurnKey: string | null = null;
-    private readonly combatNotificationTimerIds = new Map<string, number>();
 
     constructor() {
         effect(() => {
@@ -46,28 +38,8 @@ export class GameSessionTurnEffectsService {
             this.observeTurnProgression(this.display.turnState());
         });
         effect(() => {
-            this.handleCombatOutcome(this.combatStateService.lastCombatOutcome(), this.display.localPlayer()?.id ?? null);
-        });
-        effect(() => {
             this.handleAutoTurnEnd();
         });
-    }
-
-    destroy(): void {
-        this.combatNotificationTimerIds.forEach((timerId) => window.clearTimeout(timerId));
-        this.combatNotificationTimerIds.clear();
-    }
-
-    dismissCombatNotification(notificationId: string): void {
-        const timerId = this.combatNotificationTimerIds.get(notificationId);
-        if (timerId !== undefined) {
-            window.clearTimeout(timerId);
-            this.combatNotificationTimerIds.delete(notificationId);
-        }
-
-        this.combatNotifications.update((notifications) =>
-            notifications.filter((notification) => notification.id !== notificationId),
-        );
     }
 
     private observeTurnProgression(currentTurnState: MatchTurnState | null): void {
@@ -83,25 +55,6 @@ export class GameSessionTurnEffectsService {
         this.previousObservedPhase = currentTurnState?.phase ?? null;
         this.previousObservedActivePlayerId = currentTurnState?.activePlayerId ?? null;
         this.previousObservedTurnIndex = currentTurnState?.currentTurnIndex ?? null;
-    }
-
-    private handleCombatOutcome(combatOutcome: CombatOutcomeNotice | null, localPlayerId: string | null): void {
-        if (!combatOutcome || !localPlayerId || combatOutcome.id === this.lastHandledCombatOutcomeId) {
-            return;
-        }
-
-        this.lastHandledCombatOutcomeId = combatOutcome.id;
-        const message = this.getLocalCombatOutcomeMessage(combatOutcome, localPlayerId);
-        if (!message) {
-            return;
-        }
-
-        const notificationId = `${combatOutcome.id}:${localPlayerId}`;
-        this.combatNotifications.update((notifications) => [...notifications, { id: notificationId, message }]);
-        this.combatNotificationTimerIds.set(
-            notificationId,
-            window.setTimeout(() => this.dismissCombatNotification(notificationId), COMBAT_NOTIFICATION_DURATION_MS),
-        );
     }
 
     private handleAutoTurnEnd(): void {
@@ -168,17 +121,5 @@ export class GameSessionTurnEffectsService {
 
     private handleCompletedTurn(): void {
         this.interaction.clearActionSelection();
-    }
-
-    private getLocalCombatOutcomeMessage(combatOutcome: CombatOutcomeNotice, localPlayerId: string): string | null {
-        if (combatOutcome.attackerId === localPlayerId) {
-            return combatOutcome.attackerMessage;
-        }
-
-        if (combatOutcome.defenderId === localPlayerId) {
-            return combatOutcome.defenderMessage;
-        }
-
-        return null;
     }
 }

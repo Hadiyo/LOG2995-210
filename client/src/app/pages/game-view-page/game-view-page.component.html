@@ -147,8 +147,6 @@
   [matchEndMessage]="display.matchEndState()?.message ?? null"
   [endRedirectCountdownSeconds]="endRedirectCountdownSeconds()"
   [incomingFlagTransfer]="incomingFlagTransfer()"
-  [combatNotifications]="effects.combatNotifications()"
   (acceptTransfer)="acceptIncomingFlagTransfer()"
   (refuseTransfer)="refuseIncomingFlagTransfer()"
-  (dismissCombatNotification)="effects.dismissCombatNotification($event)"
 />
