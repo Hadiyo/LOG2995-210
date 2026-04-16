@@ -1,10 +1,9 @@
 import { MapService } from '@app/services/map/map.service';
+import { ATTACK_POSE_DURATION_MS, TRANSITION_DURATION_MS, WALK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
 import { InitializedMatch, MatchLobbyPlayer } from '@common/game/match.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMapDetails } from '@common/maps/map.interface';
 import { GameSessionSnapshotPayload, SessionSocketEvents } from '@common/socket-events';
-import { ATTACK_POSE_DURATION_MS, WALK_POSE_DURATION_MS } from './game-session.match';
-import { TRANSITION_DURATION_MS } from './game-session.runtime';
 import { GameSessionService } from './game-session.service';
 
 const START_LEFT_X = 1;
@@ -145,22 +144,6 @@ describe('GameSessionService', () => {
         expect(player?.render.facing).toBe('right');
         expect(player?.render.pose).toBe('attack');
         expect(player?.render.poseDurationMs).toBe(ATTACK_POSE_DURATION_MS);
-    });
-
-    it('syncs attack pose and defender-facing direction on combat', async () => {
-        const sessionId = await service.createSessionFromWaitingRoom('map-1', createPlayers());
-
-        jest.advanceTimersByTime(TRANSITION_DURATION_MS);
-
-        expect(service.startCombat(sessionId, 'player-1', 'player-2')).toBe(true);
-
-        const attacker = snapshots.at(-1)?.match.players.find((player) => player.id === 'player-1');
-        const defender = snapshots.at(-1)?.match.players.find((player) => player.id === 'player-2');
-        const expectedFacing = attacker && defender && attacker.position.x < defender.position.x ? 'right' : 'left';
-
-        expect(attacker?.render.facing).toBe(expectedFacing);
-        expect(attacker?.render.pose).toBe('attack');
-        expect(attacker?.render.poseDurationMs).toBe(ATTACK_POSE_DURATION_MS);
     });
 
     it('syncs facing on debug teleport without local-only client help', async () => {

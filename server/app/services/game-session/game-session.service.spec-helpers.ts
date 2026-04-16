@@ -1,7 +1,7 @@
-import { GameSessionService } from '@app/services/game-session/game-session.service';
-import { GameSessionRuntime } from '@app/services/game-session/game-session.runtime';
 import * as runtimeModule from '@app/services/game-session/game-session.runtime';
-import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { GameSessionService } from '@app/services/game-session/game-session.service';
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
+import { InitializedMatch, MatchEndState, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMapDetails, MapObject } from '@common/maps/map.interface';
@@ -158,6 +158,16 @@ export const makeRuntime = (overrides: Partial<GameSessionRuntime> = {}): GameSe
     transitionTimeoutId: null,
     activeTurnTimeoutId: null,
     timerIntervalId: null,
+    ...overrides,
+});
+
+export const makeEndState = (overrides: Partial<MatchEndState> = {}): MatchEndState => ({
+    id: '1234',
+    winnerKind: 'none',
+    winnerPlayerId: null,
+    winnerTeamId: null,
+    message: '',
+    resolvedAt: 0,
     ...overrides,
 });
 
