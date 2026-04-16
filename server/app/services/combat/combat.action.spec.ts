@@ -1,13 +1,13 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { makeMatch } from '@app/services/game-session/game-session.service.spec-helpers';
 import { BONUS, MIN_DIE_VALUE } from '@app/utilities/combat/combat.constants';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import {
-  createCombatTurnServiceMock,createEventEmitterMock,
-  createGameSessionMock,makeCombatPlayerStatistics,
-  makeCombatSession,
-  makeFighter,
-  makeFighterPayload,
+  createCombatTurnServiceMock, createEndStatsServiceMock,
+  createEventEmitterMock, createGameSessionMock,
+  makeCombatPlayerStatistics, makeCombatSession,
+  makeFighter, makeFighterPayload,
 } from '@app/utilities/mocks/mocks';
 import { DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -78,6 +78,7 @@ describe('CombatService', () => {
   let gameSessionMock: Partial<GameSessionService>;
   let turnServiceMock: Partial<CombatTurnService>;
   let eventEmitterMock: Partial<EventEmitter2>;
+  let endStatsServiceMock: Partial<EndStatsService>;
   let emitSpy: jest.SpyInstance;
 
   beforeEach(async () => {
@@ -85,12 +86,14 @@ describe('CombatService', () => {
     gameSessionMock = createGameSessionMock();
     turnServiceMock = createCombatTurnServiceMock();
     eventEmitterMock = createEventEmitterMock();
+    endStatsServiceMock = createEndStatsServiceMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [CombatService,
         { provide: GameSessionService, useValue: gameSessionMock },
         { provide: CombatTurnService, useValue: turnServiceMock },
         { provide: EventEmitter2, useValue: eventEmitterMock },
+        { provide: EndStatsService, useValue: endStatsServiceMock },
       ],
     }).compile();
 
@@ -311,8 +314,7 @@ describe('CombatService', () => {
   });
 
   it('should set a random dice roll if debug mode is off - attack', () => {
-    const ROLL1 = 3;
-    const ROLL2 = 2;
+    const ROLL1 = 3; const ROLL2 = 2;
     const session = makeCombatSession();
     const match = makeMatch({ debugMode: false });
 
@@ -335,8 +337,7 @@ describe('CombatService', () => {
   });
 
   it('should add the bonuses if the combatStance matches the player and the players are on ice - attack', () => {
-    const ROLL1 = 2;
-    const ROLL2 = 2;
+    const ROLL1 = 2; const ROLL2 = 2;
     const session = makeCombatSession();
     const match = makeMatch({ debugMode: false });
 
@@ -364,8 +365,7 @@ describe('CombatService', () => {
   });
 
   it('should include sanctuary bonuses and default missing ones to zero - attack', () => {
-    const bonusRoll1 = 3;
-    const bonusRoll2 = 2;
+    const bonusRoll1 = 3; const bonusRoll2 = 2;
     const fallbackRoll1 = 2;
     const fallbackRoll2 = 1;
     const match = makeMatch({ debugMode: false });

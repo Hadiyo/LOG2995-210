@@ -48,6 +48,7 @@ export function buildChatMessage(author: string, content: string): ChatMessage {
 export function initializeGameViewPage(context: GameViewPageInitContext): number | null {
     const {
         chatService,
+        endStatsService,
         display,
         gameSessionSocket,
         localPoseRefreshMs,
@@ -70,6 +71,7 @@ export function initializeGameViewPage(context: GameViewPageInitContext): number
     chatService.loadChatMessages(navigationMessages);
     gameSessionSocket.joinSession(sessionId, localPlayer.id);
     chatService.initChat();
+    endStatsService.initEndStats();
     return localPoseIntervalId;
 }
 
@@ -77,6 +79,7 @@ export function destroyGameViewPage(context: GameViewPageDestroyContext): MatchE
     context.chatService.unsubscribeToSocketEvents();
     context.combat.closeCombat();
     context.effects.destroy();
+    context.endStatsService.unsubscribeToSocketEvents();
     stopLocalPoseRefreshClock(context.localPoseIntervalId);
     return clearMatchEndRedirect(context.matchEndRedirectState, context.endRedirectRemainingMs);
 }
@@ -283,7 +286,7 @@ export function syncMatchEndRedirect(
         }
         endRedirectRemainingMs.set(0);
         matchState.endLocalSession(endState.message);
-        void router.navigate(['/home']);
+        void router.navigate(['/end-game']);
     }, MATCH_END_REDIRECT_DURATION_MS);
 
     return {

@@ -1,3 +1,4 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import { ATTACK_POSE_DURATION_MS, WALK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { MatchSanctuaryChoice } from '@common/game/match.interface';
@@ -6,12 +7,16 @@ import { PlayerPose } from '@common/player/player.interface';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { getGameSessionDestination, getGameSessionMovementCost } from './game-session.match';
 import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
-import { beginGameSessionSanctuaryChoice, resolveGameSessionSanctuaryChoice } from './game-session.sanctuary';
+import {
+    beginGameSessionSanctuaryChoice,
+    resolveGameSessionSanctuaryChoice,
+} from './game-session.sanctuary';
 
 export class GameSessionActions {
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly lifecycle: GameSessionLifecycle,
+        private readonly endStatsService: EndStatsService,
     ) {}
 
     movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
@@ -34,6 +39,8 @@ export class GameSessionActions {
             return false;
         }
 
+        this.endStatsService.visitTile(sessionId, destination, playerId);
+
         const nextPlayers = session.match.players.map((player) =>
             player.id === playerId
                 ? {
@@ -48,6 +55,10 @@ export class GameSessionActions {
                 : player,
         );
         const nextFlagCarrierId = resolveFlagCarrier(session.match, playerId, destination);
+        if (nextFlagCarrierId) {
+            this.endStatsService.getFlag(sessionId, nextFlagCarrierId);
+        }
+
         const pickedUpFlag = session.match.flagCarrierId === null && nextFlagCarrierId === playerId;
         session.match = {
             ...session.match,
@@ -101,6 +112,8 @@ export class GameSessionActions {
             return false;
         }
 
+        this.endStatsService.useSanctuary(sessionId, sanctuaryId);
+
         session.match = {
             ...session.match,
             pendingSanctuaryChoice,
@@ -145,6 +158,8 @@ export class GameSessionActions {
         if (!actionContext) {
             return false;
         }
+
+        this.endStatsService.useDoor(sessionId, position);
 
         const { session, player } = actionContext;
         const targetDoor = session.match.map.find((cell) => cell.position.x === position.x && cell.position.y === position.y);

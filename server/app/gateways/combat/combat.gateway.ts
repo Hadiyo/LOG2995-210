@@ -20,7 +20,8 @@ export class CombatGateway {
 
   constructor(
     private readonly combatService: CombatService, 
-    private readonly gameSessionService: GameSessionService){}
+    private readonly gameSessionService: GameSessionService,
+  ){}
 
   @SubscribeMessage(CombatSocketEvents.StartCombat)
   async startCombat(@ConnectedSocket() client: Socket, @MessageBody() payload: StartCombatPayload): Promise<void> {
