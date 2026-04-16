@@ -1,5 +1,6 @@
 import { CombatTurnService } from '@app/services/combat/combat-turn.service';
 import { CombatService } from '@app/services/combat/combat.service';
+import { EndStatsService } from '@app/services/end-stats.service';
 import * as matchutils from '@app/services/game-session/game-session.match';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { makeMatch, makeMatchPlayer, makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
@@ -7,6 +8,7 @@ import { MIN_DIE_VALUE } from '@app/utilities/combat/combat.constants';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import {
     createCombatTurnServiceMock,
+    createEndStatsServiceMock,
     createEventEmitterMock,
     createGameSessionMock,
     makeCombatSession,
@@ -57,6 +59,7 @@ describe('CombatService Helpers', () => {
     let gameSessionMock: Partial<GameSessionService>;
     let turnServiceMock: Partial<CombatTurnService>;
     let eventEmitterMock: Partial<EventEmitter2>;
+    let endStatsServiceMock: Partial<EndStatsService>; 
     let emitSpy: jest.SpyInstance;
 
     beforeEach(async () => {
@@ -64,12 +67,14 @@ describe('CombatService Helpers', () => {
         gameSessionMock = createGameSessionMock();
         turnServiceMock = createCombatTurnServiceMock();
         eventEmitterMock = createEventEmitterMock();
+        endStatsServiceMock = createEndStatsServiceMock();
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [CombatService,
             { provide: GameSessionService, useValue: gameSessionMock },
             { provide: CombatTurnService, useValue: turnServiceMock },
             { provide: EventEmitter2, useValue: eventEmitterMock },
+            { provide: EndStatsService, useValue: endStatsServiceMock },
             ],
         }).compile();
 

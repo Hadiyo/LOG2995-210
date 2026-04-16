@@ -1,7 +1,7 @@
 import { ChatService } from '@app/services/chat/chat.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
-import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { PreviewImageFormat } from '@common/enum';
+import { MatchLobbyPlayer } from '@common/game/match.interface';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import { EditorMap, MapSummary } from '@common/maps/map.interface';
 

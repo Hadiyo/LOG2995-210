@@ -16,6 +16,7 @@ import { ACTIVE_TURN_DURATION_MS, MILLISECONDS_PER_SECOND, TRANSITION_DURATION_M
 import { GAME_VIEW_CONSTANTS } from '@app/config/game-view.config';
 import { MAP_SIZE_CONFIG } from '@app/config/map.config';
 import { ChatService } from '@app/services/chat/chat.service';
+import { EndStatsService } from '@app/services/end-stats/end-stats.service';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
 import { GameSessionDisplayService } from '@app/services/game-view/game-session-display.service';
 import { GameSessionInteractionService } from '@app/services/game-view/game-session-interaction.service';
@@ -38,8 +39,7 @@ import {
     buildChatMessage, buildIncomingFlagTransfer,
     clearMatchEndRedirect,
     destroyGameViewPage,
-    handleGameViewBrowserRefresh,
-    handleGameViewCellClick,
+    handleGameViewBrowserRefresh, handleGameViewCellClick,
     handleGameViewCellContextMenu,
     handleGameViewDebugShortcut,
     handleGameViewEndTurn,
@@ -87,6 +87,8 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     private readonly router = inject(Router);
     private readonly gameSessionSocket = inject(GameSessionSocketService);
     private readonly chatService = inject(ChatService);
+    private readonly endStatsService = inject(EndStatsService);
+
     protected readonly endRedirectRemainingMs = signal(0);
     protected readonly errorMessage = computed(() => this.gameSessionSocket.errorMessage() || this.display.errorMessage());
     protected readonly match = this.display.match;
@@ -220,6 +222,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
         this.combat.closeCombat();
         this.localPoseIntervalId = initializeGameViewPage({
             chatService: this.chatService,
+            endStatsService: this.endStatsService,
             display: this.display,
             gameSessionSocket: this.gameSessionSocket,
             localPoseRefreshMs: GameViewPageComponent.localPoseRefreshMs,
@@ -232,6 +235,7 @@ export class GameViewPageComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void {
         this.matchEndRedirectState = destroyGameViewPage({
             chatService: this.chatService,
+            endStatsService: this.endStatsService,
             combat: this.combat,
             effects: this.effects,
             endRedirectRemainingMs: this.endRedirectRemainingMs,

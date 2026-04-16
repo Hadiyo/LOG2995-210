@@ -17,6 +17,7 @@ import { MatchWaitingRoomGateway } from './gateways/waiting-room/match-waiting-r
 import { ChatService } from './services/chat/chat.service';
 import { CombatTurnService } from './services/combat/combat-turn.service';
 import { CombatService } from './services/combat/combat.service';
+import { EndStatsService } from './services/end-stats.service';
 
 @Module({
     imports: [
@@ -45,8 +46,10 @@ import { CombatService } from './services/combat/combat.service';
         GameSessionGateway,
         ChatGateway,
         ChatService,
+        EndStatsService,
         CombatService,
         CombatTurnService,
-        CombatGateway],
+        CombatGateway,
+    ],
 })
 export class AppModule {}

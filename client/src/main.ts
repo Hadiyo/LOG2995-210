@@ -9,6 +9,7 @@ import { AppComponent } from '@app/pages/app/app.component';
 import { CharacterCreationPageComponent } from '@app/pages/character-creation/character-creation-page/character-creation-page.component';
 import { CreateGamePageComponent } from '@app/pages/create-game-page/create-game-page.component';
 import { EditorPageComponent } from '@app/pages/editor-page/editor-page.component';
+import { EndGameComponent } from '@app/pages/end-game/end-game.component';
 import { GameViewPageComponent } from '@app/pages/game-view-page/game-view-page.component';
 import { JoinGameComponent } from '@app/pages/join-game/join-game.component';
 import { MainPageComponent } from '@app/pages/main-page/main-page.component';
@@ -30,6 +31,7 @@ const routes: Routes = [
     { path: 'game-view', component: GameViewPageComponent },
     { path: 'play', component: GameViewPageComponent },
     { path: 'join-room', component: JoinGameComponent },
+    { path: 'end-game', component: EndGameComponent },
     { path: '**', redirectTo: '/home' },
 ];
 

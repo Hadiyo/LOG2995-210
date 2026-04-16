@@ -32,3 +32,34 @@ export interface GameSessionSnapshot extends Game {
     debugMode: boolean;
     createdAt: string;
 }
+
+// End stats interface 
+interface VisitedTiles {
+    position: string;
+    players: string[];
+}
+
+export interface EndStats {
+    startTime: Date;
+    endTime: Date | null;
+    turns: number;
+    usedSanctuaries: number[];
+    totalSanctuaries: number;
+    usedDoors: string[];
+    totalDoors: number;
+    visitedTiles: VisitedTiles[];
+    totalTiles: number;
+    playerStats: PlayerStats[];
+    heldFlag?: string[];
+}
+
+export interface PlayerStats {
+    id: string;
+    name: string;
+    combats: number;
+    victories: number;
+    defeats: number;
+    damageTaken: number;
+    damageDealt: number;
+    percentTiles: number;
+}

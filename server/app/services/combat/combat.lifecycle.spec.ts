@@ -1,3 +1,4 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import * as combatUtils from '@app/services/game-session/game-session.runtime';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import {
@@ -11,6 +12,7 @@ import * as timerUtils from '@app/services/timer/turn.timers';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import {
     createCombatTurnServiceMock,
+    createEndStatsServiceMock,
     createEventEmitterMock,
     createGameSessionMock,
     makeCombatSession,
@@ -80,18 +82,21 @@ describe('Combat Life Cycle', () => {
     let gameSessionMock: Partial<GameSessionService>;
     let turnServiceMock: Partial<CombatTurnService>;
     let eventEmitterMock: Partial<EventEmitter2>;
+    let endStatsService: Partial<EndStatsService>;
 
     beforeEach(async () => {
 
         gameSessionMock = createGameSessionMock();
         turnServiceMock = createCombatTurnServiceMock();
         eventEmitterMock = createEventEmitterMock();
+        endStatsService = createEndStatsServiceMock();
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [CombatService,
             { provide: GameSessionService, useValue: gameSessionMock },
             { provide: CombatTurnService, useValue: turnServiceMock },
             { provide: EventEmitter2, useValue: eventEmitterMock },
+            { provide: EndStatsService, useValue: endStatsService },
             ],
         }).compile();
 

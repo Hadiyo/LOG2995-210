@@ -242,6 +242,6 @@ describe('GameSessionService actions', () => {
         }), harness);
 
         expect(harness.service.startCombat('winner', 'player-1', 'player-2')).toBe(true);
-        expect(privateState.sessions.has('winner')).toBe(false);
+        expect(privateState.sessions.has('winner')).toBe(true);
     });
 });
