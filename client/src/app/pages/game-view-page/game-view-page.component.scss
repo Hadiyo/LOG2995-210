@@ -32,12 +32,11 @@
   background: var(--bg-panel);
 }
 
-.panel--error {
-  color: var(--accent-danger);
-}
+.panel--error { color: var(--accent-danger); }
 
 .map-column {
   grid-area: map;
+  position: relative;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: var(--view-gap);
@@ -327,7 +326,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: stretch;
   width: 100%;
   height: var(--shared-action-panel-height);
   overflow: hidden;
@@ -358,7 +356,7 @@
 }
 
 .map-panel__board > app-game-map-grid {
-  align-self:stretch;
+  align-self: stretch;
   height:100%;
   min-height:0;
   --grid-viewport-offset: 112px;
@@ -641,7 +639,7 @@
 
   .map-panel__title-block {
     flex-wrap: wrap;
-    padding-inline: 0;
+    padding-inline:0;
   }
 
   .map-panel__copy {

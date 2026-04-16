@@ -4,7 +4,8 @@ import {
     LocalCombatNotification,
 } from '@app/config/game-session.config';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
-import { CombatOutcomeNotice, CombatStateService } from '@app/services/match/combat-state.service';
+import { CombatOutcomeNotice } from '@app/services/match/combat-state.models';
+import { CombatStateService } from '@app/services/match/combat-state.service';
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameSessionDisplayService } from './game-session-display.service';
@@ -107,6 +108,11 @@ export class GameSessionTurnEffectsService {
         const currentMatch = this.display.match();
         const currentTurnState = this.display.turnState();
         if (!this.shouldEvaluateAutoTurnEnd(currentMatch, currentTurnState) || !currentTurnState) {
+            this.lastAutoEndedTurnKey = null;
+            return;
+        }
+
+        if (this.combatStateService.hasActiveCombat()) {
             this.lastAutoEndedTurnKey = null;
             return;
         }

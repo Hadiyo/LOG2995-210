@@ -1,0 +1,146 @@
+@if (panelState(); as panel) {
+  <div class="combat-overlay">
+    <section class="combat-shell" role="dialog" aria-modal="true" aria-labelledby="combat-title">
+      <header class="combat-shell__header">
+        <div class="combat-shell__title">
+          <p class="combat-shell__eyebrow">Combat</p>
+          <h2 id="combat-title">Duel rapproché</h2>
+        </div>
+
+        <div class="combat-shell__meta">
+          <span class="combat-shell__chip">Tour {{ panel.round }}</span>
+          <span class="combat-shell__chip combat-shell__chip--timer">{{ timerLabel() }}: {{ panel.countdownSeconds }}s</span>
+        </div>
+      </header>
+
+      <div class="combat-stage-layout">
+        <app-game-combat-dice
+          class="combat-stage-layout__dice"
+          [attackDie]="panel.fighters[0].attackDie"
+          [defenseDie]="panel.fighters[0].defenseDie"
+          [attackValue]="panel.fighters[0].attackRollValue"
+          [defenseValue]="panel.fighters[0].defenseRollValue"
+          [rollToken]="panel.fighters[0].rollToken"
+          side="left"
+        />
+
+        <div class="combat-stage-frame">
+          <div class="combat-stage-strip combat-stage-strip--top">
+            @for (fighter of panel.fighters; track fighter.id) {
+              <div class="combat-stage-strip__slot">
+                <p class="combat-stage-strip__name">{{ fighter.name }}</p>
+                <span class="combat-stage-strip__tag">{{ fighter.isLocal ? 'Vous' : 'Adversaire' }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="combat-stage combat-stage--horizontal" [class.combat-stage--rotated]="!isHorizontal()">
+            @for (fighter of panel.fighters; track fighter.id) {
+              <article
+                class="combat-stage__tile"
+                [class.combat-stage__tile--local]="fighter.isLocal"
+                [class.combat-stage__tile--attacking]="fighter.pose === 'attack'"
+                [class.combat-stage__tile--defending]="fighter.isDefending"
+                [class.combat-stage__tile--dead]="fighter.pose === 'dead'"
+                [class.combat-stage__tile--hit]="fighter.isHit"
+                [ngClass]="getTeamClass(fighter.teamId)"
+                [attr.data-facing]="fighter.facing"
+                [attr.data-tile]="fighter.tileType"
+                [attr.data-door-open]="fighter.tileType === tileType.DOOR && fighter.isDoorOpen ? 'true' : null"
+                [attr.data-door-closed]="fighter.tileType === tileType.DOOR && !fighter.isDoorOpen ? 'true' : null"
+              >
+                <div class="combat-stage__sprite">
+                  <app-character-sprite
+                    [avatarId]="fighter.avatarId"
+                    [class.is-idle]="fighter.pose === 'idle'"
+                    [state]="fighter.pose"
+                    [direction]="fighter.facing"
+                    [fitToHost]="true"
+                    [smoothingEnabled]="true"
+                    [ariaLabel]="'Avatar de ' + fighter.name"
+                  />
+                </div>
+              </article>
+            }
+
+            @if (combat.endingNotice(); as ending) {
+              <div class="combat-stage__ending">
+                <p class="combat-stage__ending-eyebrow">Combat terminé</p>
+                <h3 class="combat-stage__ending-title">{{ getEndingTitle(ending) }}</h3>
+                <p class="combat-stage__ending-message">{{ getEndingMessage(ending) }}</p>
+              </div>
+            }
+          </div>
+
+          <div class="combat-stage-strip combat-stage-strip--bottom">
+            @for (fighter of panel.fighters; track fighter.id) {
+              <div class="combat-stage-strip__slot combat-stage-strip__slot--stats">
+                <div class="combat-stage__stat-grid" role="table" aria-label="Statistiques de {{ fighter.name }}">
+                  <span class="combat-stage__stat-pair" role="cell">
+                    <span class="combat-stage__stat-label">PV:</span>
+                    <span class="combat-stage__stat-value">{{ fighter.currentHealth }}/{{ fighter.maxHealth }}</span>
+                  </span>
+                  <span class="combat-stage__stat-pair" role="cell">
+                    <span class="combat-stage__stat-label">ATQ:</span>
+                    <span class="combat-stage__stat-value">
+                      {{ fighter.attack }} +
+                      <span class="combat-stage__die" [class.hint-d6]="fighter.attackDie === 'D6'" [class.hint-d4]="fighter.attackDie === 'D4'">
+                        {{ fighter.attackDie }}
+                      </span>
+                    </span>
+                  </span>
+                  <span class="combat-stage__stat-pair" role="cell">
+                    <span class="combat-stage__stat-label">DEF:</span>
+                    <span class="combat-stage__stat-value">
+                      {{ fighter.defense }} +
+                      <span class="combat-stage__die" [class.hint-d6]="fighter.defenseDie === 'D6'" [class.hint-d4]="fighter.defenseDie === 'D4'">
+                        {{ fighter.defenseDie }}
+                      </span>
+                    </span>
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <app-game-combat-dice
+          class="combat-stage-layout__dice"
+          [attackDie]="panel.fighters[1].attackDie"
+          [defenseDie]="panel.fighters[1].defenseDie"
+          [attackValue]="panel.fighters[1].attackRollValue"
+          [defenseValue]="panel.fighters[1].defenseRollValue"
+          [rollToken]="panel.fighters[1].rollToken"
+          side="right"
+        />
+      </div>
+
+      <app-game-combat-round-log class="combat-shell__round-log" [logs]="roundLogs()" />
+
+      <footer class="combat-shell__footer">
+        <p class="combat-shell__hint">{{ combat.footerMessage() }}</p>
+
+        <div class="combat-shell__actions">
+          <button
+            type="button"
+            class="combat-shell__button"
+            [class.combat-shell__button--active]="combat.localSelectedStance() === 'attack'"
+            [disabled]="!combat.canSelectStance()"
+            (click)="selectAttackStance()"
+          >
+            Posture offensive
+          </button>
+          <button
+            type="button"
+            class="combat-shell__button"
+            [class.combat-shell__button--active]="combat.localSelectedStance() === 'defense'"
+            [disabled]="!combat.canSelectStance()"
+            (click)="selectDefenseStance()"
+          >
+            Posture défensive
+          </button>
+        </div>
+      </footer>
+    </section>
+  </div>
+}

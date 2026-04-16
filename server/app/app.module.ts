@@ -8,11 +8,14 @@ import { MapService } from '@app/services/map/map.service';
 import { WaitingRoomService as MatchWaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MapGateway } from './gateways/map/map.gateway';
 import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
 import { MatchWaitingRoomGateway } from './gateways/waiting-room/match-waiting-room.gateway';
 import { ChatService } from './services/chat/chat.service';
+import { CombatTurnService } from './services/combat/combat-turn.service';
+import { CombatService } from './services/combat/combat.service';
 import { EndStatsService } from './services/end-stats.service';
 
 @Module({
@@ -28,6 +31,7 @@ import { EndStatsService } from './services/end-stats.service';
         MongooseModule.forFeature([
             { name: Map.name, schema: mapSchema },
         ]),
+        EventEmitterModule.forRoot(),
     ],
     controllers: [MapController, WaitingRoomController],
     providers: [
@@ -42,6 +46,8 @@ import { EndStatsService } from './services/end-stats.service';
         ChatGateway,
         ChatService,
         EndStatsService,
+        CombatService,
+        CombatTurnService,
     ],
 })
 export class AppModule {}

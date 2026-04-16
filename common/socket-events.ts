@@ -43,6 +43,10 @@ export enum SessionSocketEvents {
     GameSessionSnapshot = 'gameSessionSnapshot',
     GameSessionError = 'gameSessionError',
     EndGame = 'endGame',
+    CombatVictory = 'combatVictory',
+    CombatTie = 'combatTie',
+    CombatWaitingSnapshot = 'combatWaitingSnapshot',
+    ClientDisconnect = 'clientDisconnect',
 }
 
 export enum CombatSocketEvents {
@@ -54,6 +58,13 @@ export enum CombatSocketEvents {
     ToggleDoor = 'toggleDoor',
     RequestFlagTransfer = 'requestFlagTransfer',
     ResolveFlagTransfer = 'resolveFlagTransfer',
+    SetStance = 'setStance',
+    Victory = 'victory', 
+    Tie = 'tie', 
+    TurnSnapshot = 'TurnSnapshot', 
+    AttackSnapshot = 'AttackSnapshot', 
+    HandleDisconnect = 'handleDisconnect',
+    CombatSessionError = 'combatSessionError',
 }
 
 export enum WaitingRoomEvents {
