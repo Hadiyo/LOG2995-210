@@ -1,17 +1,21 @@
 import { EndStatsService } from '@app/services/end-stats.service';
 import { MapService } from '@app/services/map/map.service';
+import { canStartCombat } from '@app/services/game-session/game-session.runtime';
 import { clearTimers } from '@app/services/timer/turn.timers';
 import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
+import { ATTACK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
+import { CombatPlayerStatistics } from '@common/combat/combat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
-import { MatchTurnState } from '@common/game/turn.interface';
-import { SessionSocketEvents } from '@common/socket-events';
+import { PlayerPose } from '@common/player/player.interface';
+import { GameSessionSnapshotPayload, SessionSocketEvents } from '@common/socket-events';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventEmitter } from 'events';
 import { GameSessionActions } from './game-session.actions';
 import { GameSessionLifecycle } from './game-session.lifecycle';
+import { applyFacingTowardPosition, setTransientPose } from './game-session.render';
 import { buildSession } from './game-session.runtime';
 import { GameSessionSessionActions } from './game-session.session-actions';
 
@@ -61,7 +65,7 @@ export class GameSessionService {
         sessionId: string,
         playerId: string,
         socketId: string,
-    ): { match: InitializedMatch; turnState: MatchTurnState; messages: ChatMessage[]; previousSessionId: string | null } {
+    ): { snapshot: GameSessionSnapshotPayload; previousSessionId: string | null } {
         const session = this.sessions.get(sessionId);
         if (!session) {
             throw new NotFoundException('Game session not found');
@@ -82,22 +86,36 @@ export class GameSessionService {
 
         session.socketToPlayerId.set(socketId, playerId);
         return {
-            match: session.match,
-            turnState: session.turnState,
-            messages: session.messages,
+            snapshot: this.buildSnapshot(session, playerId),
             previousSessionId: previousSessionId && previousSessionId !== sessionId ? previousSessionId : null,
         };
     }
 
-    getSessionById(id: string): GameSessionRuntime {
+    getSocketIdsForSession(sessionId: string): string[] {
+        return [...(this.sessions.get(sessionId)?.socketToPlayerId.keys() ?? [])];
+    }
+
+    getSnapshotForSocket(sessionId: string, socketId: string): GameSessionSnapshotPayload | null {
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return null;
+        }
+
+        const playerId = session.socketToPlayerId.get(socketId);
+        if (!playerId) {
+            return null;
+        }
+
+        return this.buildSnapshot(session, playerId);
+    }
+    
+    getSessionById(id: string): GameSessionRuntime | undefined {
         return this.sessions.get(id);
     }
 
     getMatchFromSessionId(id: string): InitializedMatch | null {
         return this.sessions.get(id)?.match ?? null;
     }
-
-
     getPlayerIdForSocket(socketId: string, sessionId: string): string | null {
         return this.sessions.get(sessionId)?.socketToPlayerId.get(socketId) ?? null;
     }
@@ -199,6 +217,46 @@ export class GameSessionService {
         return this.actions.movePlayer(sessionId, playerId, direction);
     }
 
+    startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
+        const session = this.sessions.get(sessionId);
+        if (!session ||
+            session.turnState.phase !== 'active' ||
+            session.turnState.activePlayerId !== attackerId ||
+            session.turnState.actionTaken ||
+            session.match.pendingSanctuaryChoice ||
+            session.match.endState) {
+            return false;
+        }
+
+        const attacker = session.match.players.find((player) => player.id === attackerId);
+        const defender = session.match.players.find((player) => player.id === defenderId);
+        if (!attacker || !defender || !canStartCombat(attacker, defender)) {
+            return false;
+        }
+
+        session.match = {
+            ...session.match,
+            players: session.match.players.map((player) =>
+                player.id === attackerId
+                    ? {
+                        ...player,
+                        render: setTransientPose(
+                            applyFacingTowardPosition(player, defender.position),
+                            PlayerPose.Attack,
+                            ATTACK_POSE_DURATION_MS,
+                        ).render,
+                    }
+                    : player,
+            ),
+        };
+        session.turnState = {
+            ...session.turnState,
+            actionTaken: true,
+        };
+        this.sessionActions.resolveCombatEnd(sessionId, attackerId, defenderId);
+        return true;
+    }
+
     useSanctuary(sessionId: string, playerId: string, sanctuaryId: number): boolean {
         return this.actions.useSanctuary(sessionId, playerId, sanctuaryId);
     }
@@ -213,8 +271,9 @@ export class GameSessionService {
 
     resumeSessionTurns(sessionId: string): void {
         const session = this.sessions.get(sessionId);
-        if(session)
-            this.lifecycle.advanceToNextTurn(session);
+        if (session) {
+            this.lifecycle.resumeGameSessionTurn(session);
+        }
     }
 
     stopSessionTimers(session: GameSessionRuntime): void {
@@ -227,5 +286,30 @@ export class GameSessionService {
 
     resolveCombatTie(sessionId: string, winnerId: string, loserId: string): void {
         this.sessionActions.resolveCombatTie(sessionId, winnerId, loserId);
+    }
+
+    appendCombatRoundLogs(sessionId: string, statistics: CombatPlayerStatistics[]): void {
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return;
+        }
+
+        this.lifecycle.appendCombatRoundLogEntries(session, statistics);
+        this.lifecycle.emitSnapshot(session);
+    }
+
+    private buildSnapshot(
+        session: GameSessionRuntime,
+        playerId: string,
+    ): GameSessionSnapshotPayload {
+        return {
+            sessionId: session.sessionId,
+            match: session.match,
+            turnState: session.turnState,
+            messages: session.messages,
+            logEntries: session.logEntries
+                .filter((entry) => !entry.visibleToPlayerIds || entry.visibleToPlayerIds.includes(playerId))
+                .map((entry) => ({ ...entry.entry, involvedPlayers: [...entry.entry.involvedPlayers] })),
+        };
     }
 }

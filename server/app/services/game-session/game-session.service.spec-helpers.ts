@@ -1,7 +1,7 @@
 import * as runtimeModule from '@app/services/game-session/game-session.runtime';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
-import { InitializedMatch, MatchEndState, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { InitializedMatch, MatchEndState, MatchLobbyPlayer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMapDetails, MapObject } from '@common/maps/map.interface';
@@ -65,6 +65,32 @@ export const makeObject = (overrides: Partial<MapObject> = {}): MapObject => ({
     size: ObjectSize.S,
     ...overrides,
 });
+
+export const makeStartObjects = (...positions: { x: number; y: number }[]): MapObject[] =>
+    positions.map((position, index) => makeObject({ id: index + 1, type: ObjectType.START, position }));
+
+export const makeSessionObjects = (
+    startPositions: { x: number; y: number }[],
+    ...extras: MapObject[]
+): Pick<InitializedMatch, 'objects' | 'allObjects'> => {
+    const starts = makeStartObjects(...startPositions);
+    const objects = [...starts, ...extras];
+
+    return {
+        objects,
+        allObjects: objects,
+    };
+};
+
+export const makeCtfPlayer = (
+    id: string,
+    teamId: MatchTeamId,
+    position: { x: number; y: number },
+    overrides: Partial<MatchPlayer> = {},
+): MatchPlayer => makeMatchPlayer({ id, teamId, position, startingPosition: position, ...overrides });
+
+export const findPlayer = (runtime: GameSessionRuntime, playerId: string): MatchPlayer | undefined =>
+    runtime.match.players.find((player) => player.id === playerId);
 
 export const makeMapDetails = (): EditorMapDetails => ({
     id: 'map-1',
@@ -154,6 +180,7 @@ export const makeRuntime = (overrides: Partial<GameSessionRuntime> = {}): GameSe
     match: makeMatch(),
     turnState: makeTurnState(),
     messages: [],
+    logEntries: [],
     socketToPlayerId: new Map(),
     transitionTimeoutId: null,
     activeTurnTimeoutId: null,

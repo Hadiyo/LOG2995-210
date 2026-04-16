@@ -142,17 +142,17 @@ export class CombatService {
         const otherPlayer = session.players.find(p => p.stats.id === attacks[1].attacker.id);
 
         if(currentPlayer.stats.health > NO_BONUS && otherPlayer.stats.health === NO_BONUS){
-            this.emitCombatStatistics(session.id, attacks);
+            this.emitCombatStatistics(session, attacks);
             this.emitCombatResultSnapshot(CombatEvents.Victory, session, currentPlayer.stats.id, otherPlayer.stats.id);
             this.gameSessionService.endCombat(session.gameSessionId, currentPlayer.stats.id, otherPlayer.stats.id);
             this.endCombat(session.id);
         } else if (otherPlayer.stats.health > NO_BONUS && currentPlayer.stats.health === NO_BONUS){
-            this.emitCombatStatistics(session.id, attacks);
+            this.emitCombatStatistics(session, attacks);
             this.emitCombatResultSnapshot(CombatEvents.Victory, session, otherPlayer.stats.id, currentPlayer.stats.id);
             this.gameSessionService.endCombat(session.gameSessionId, otherPlayer.stats.id, currentPlayer.stats.id);
             this.endCombat(session.id);
         } else if (otherPlayer.stats.health === NO_BONUS && currentPlayer.stats.health === NO_BONUS){
-            this.emitCombatStatistics(session.id, attacks);
+            this.emitCombatStatistics(session, attacks);
             this.emitCombatResultSnapshot(CombatEvents.Tie, session, currentPlayer.stats.id, otherPlayer.stats.id);
             this.gameSessionService.resolveCombatTie(session.gameSessionId, currentPlayer.stats.id, otherPlayer.stats.id);
             this.endCombat(session.id);
@@ -164,7 +164,7 @@ export class CombatService {
                 return false;
 
             session.round += 1;
-            this.emitCombatStatistics(session.id, attacks);
+            this.emitCombatStatistics(session, attacks);
             return this.switchCombatTurn(session, currentPlayer.stats.id);
         }
         return true;
@@ -227,6 +227,15 @@ export class CombatService {
             defenseRoll,
             attack: totalAttack,
             defense: totalDefense,
+            attackBaseValue: attacker.stats.baseAttack,
+            attackPostureBonus: stanceAttackBonus,
+            attackSanctuaryBonus: sanctuaryAttackBonus,
+            attackPenalty: attackerIcePenalty,
+            defenseBaseValue: defender.stats.baseDefense,
+            defensePostureBonus: stanceDefenseBonus,
+            defenseSanctuaryBonus: sanctuaryDefenseBonus,
+            defensePenalty: defenderIcePenalty,
+            damageDealt: Math.max(damage, NO_BONUS),
         };
     }
 
@@ -263,8 +272,9 @@ export class CombatService {
         });
     }
 
-    private emitCombatStatistics(combatId: string, statistics: CombatPlayerStatistics[]): void {
-        this.event.emit(CombatEvents.Statistics, { combatId, statistics });
+    private emitCombatStatistics(session: CombatSession, statistics: CombatPlayerStatistics[]): void {
+        this.gameSessionService.appendCombatRoundLogs(session.gameSessionId, statistics);
+        this.event.emit(CombatEvents.Statistics, { combatId: session.id, statistics });
     }
 
     private rollDie(die: Die): number {
