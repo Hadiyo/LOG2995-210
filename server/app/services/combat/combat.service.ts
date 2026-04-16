@@ -195,8 +195,8 @@ export class CombatService {
         defender: Fighter,
         isDefenderOnIce: boolean,
     ): CombatPlayerStatistics {
-        const attackRoll = this.getDieRoll(session, attacker);
-        const defenseRoll = this.getDieRoll(session, defender);
+        const attackRoll = this.getDieRoll(session, attacker, attacker.stats.attackDie);
+        const defenseRoll = this.getDieRoll(session, defender, defender.stats.defenseDie);
 
         const stanceAttackBonus = attacker.combatStance === 'attack' ? BONUS : NO_BONUS;
         const stanceDefenseBonus = defender.combatStance === 'defense' ? BONUS : NO_BONUS;
@@ -274,12 +274,12 @@ export class CombatService {
             return Math.floor(Math.random() * DIE_D6_SIDES) + 1;
     }
 
-    private getDieRoll(session: CombatSession, player: Fighter): number {
+    private getDieRoll(session: CombatSession, player: Fighter, die: Die): number {
         if (!this.isDebugModeEnabled(session)) {
-            return this.rollDie(player.stats.attackDie);
+            return this.rollDie(die);
         }
 
-        return this.isCombatInstigator(session, player.stats.id) ? this.getMaxRoll(player.stats.attackDie) : MIN_DIE_VALUE;
+        return this.isCombatInstigator(session, player.stats.id) ? this.getMaxRoll(die) : MIN_DIE_VALUE;
     }
 
     private isDebugModeEnabled(session: CombatSession): boolean {
