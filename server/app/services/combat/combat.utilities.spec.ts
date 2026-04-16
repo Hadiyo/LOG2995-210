@@ -327,7 +327,7 @@ describe('CombatService Helpers', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rollSpy = jest.spyOn(service as any, 'rollDie').mockReturnValue(DIE_D4_SIDES);
 
-        const result = service['getDieRoll'](session, player);
+        const result = service['getDieRoll'](session, player, 'D6');
 
         expect(rollSpy).toHaveBeenCalledWith('D6');
         expect(result).toBe(DIE_D4_SIDES);
@@ -347,7 +347,7 @@ describe('CombatService Helpers', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const maxSpy = jest.spyOn(service as any, 'getMaxRoll').mockReturnValue(DIE_D6_SIDES);
 
-        const result = service['getDieRoll'](session, player);
+        const result = service['getDieRoll'](session, player, 'D6');
 
         expect(maxSpy).toHaveBeenCalledWith('D6');
         expect(result).toBe(DIE_D6_SIDES);
@@ -364,7 +364,7 @@ describe('CombatService Helpers', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'isCombatInstigator').mockReturnValue(false);
 
-        const result = service['getDieRoll'](session, player);
+        const result = service['getDieRoll'](session, player, 'D6');
 
         expect(result).toBe(MIN_DIE_VALUE);
     });
