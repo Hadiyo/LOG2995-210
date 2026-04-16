@@ -1,4 +1,5 @@
 import { EndStatsService } from '@app/services/end-stats.service';
+import { CombatService } from '@app/services/combat/combat.service';
 import { MapService } from '@app/services/map/map.service';
 import { canStartCombat } from '@app/services/game-session/game-session.runtime';
 import { clearTimers } from '@app/services/timer/turn.timers';
@@ -10,7 +11,7 @@ import { CombatPlayerStatistics } from '@common/combat/combat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
 import { PlayerPose } from '@common/player/player.interface';
 import { GameSessionSnapshotPayload, SessionSocketEvents } from '@common/socket-events';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventEmitter } from 'events';
 import { GameSessionActions } from './game-session.actions';
@@ -22,7 +23,6 @@ import { planVirtualPlayerDecision } from './game-session.virtual-player';
 
 const VIRTUAL_PLAYER_MIN_DELAY_MS = 450;
 const VIRTUAL_PLAYER_DELAY_VARIANCE_MS = 450;
-
 @Injectable()
 export class GameSessionService {
     private readonly sessions = new Map<string, GameSessionRuntime>();
@@ -34,6 +34,7 @@ export class GameSessionService {
 
     constructor(
         private readonly mapService: MapService,
+        @Inject(forwardRef(() => CombatService)) private readonly combatService: CombatService,
         private readonly endStatsService: EndStatsService,
     ) {
         this.lifecycle = new GameSessionLifecycle(this.sessions, this.events, this.endStatsService, (session) => this.scheduleVirtualDecision(session));
@@ -254,6 +255,11 @@ export class GameSessionService {
             return false;
         }
 
+        const combatStart = this.combatService.createCombatSession(attackerId, defenderId, sessionId);
+        if (!combatStart) {
+            return false;
+        }
+
         session.match = {
             ...session.match,
             players: session.match.players.map((player) =>
@@ -273,7 +279,9 @@ export class GameSessionService {
             ...session.turnState,
             actionTaken: true,
         };
-        this.sessionActions.resolveCombatEnd(sessionId, attackerId, defenderId);
+        this.lifecycle.emitSnapshot(session);
+        this.lifecycle.stopSessionTimers(session);
+        this.combatService.startCombat(combatStart.combat);
         return true;
     }
 
@@ -291,9 +299,7 @@ export class GameSessionService {
 
     resumeSessionTurns(sessionId: string): void {
         const session = this.sessions.get(sessionId);
-        if (session) {
-            this.lifecycle.resumeGameSessionTurn(session);
-        }
+        if (session) this.lifecycle.resumeGameSessionTurn(session);
     }
 
     stopSessionTimers(session: GameSessionRuntime): void {
@@ -380,33 +386,7 @@ export class GameSessionService {
         }
 
         const decision = planVirtualPlayerDecision(session.match, session.turnState, activeVirtualPlayer);
-        switch (decision.kind) {
-            case 'combat':
-                if (!this.startCombat(sessionId, playerId, decision.targetId)) {
-                    this.endTurn(sessionId, playerId);
-                }
-                return;
-            case 'move':
-                if (!this.movePlayer(sessionId, playerId, decision.direction)) {
-                    this.endTurn(sessionId, playerId);
-                }
-                return;
-            case 'toggle-door':
-                if (!this.toggleDoor(sessionId, playerId, decision.position)) {
-                    this.endTurn(sessionId, playerId);
-                }
-                return;
-            case 'use-sanctuary':
-                if (!this.useSanctuary(sessionId, playerId, decision.sanctuaryId)) {
-                    this.endTurn(sessionId, playerId);
-                }
-                return;
-            case 'end-turn':
-                this.endTurn(sessionId, playerId);
-                return;
-            default:
-                return;
-        }
+        this.executeVirtualDecision(sessionId, playerId, decision);
     }
 
     private getActiveVirtualPlayer(session: GameSessionRuntime): MatchPlayer | null {
@@ -416,5 +396,35 @@ export class GameSessionService {
 
         const activePlayer = session.match.players.find((player) => player.id === session.turnState.activePlayerId) ?? null;
         return activePlayer?.controller === 'virtual' ? activePlayer : null;
+    }
+
+    private executeVirtualDecision(
+        sessionId: string,
+        playerId: string,
+        decision: ReturnType<typeof planVirtualPlayerDecision>,
+    ): void {
+        switch (decision.kind) {
+            case 'combat':
+                this.runVirtualDecisionAction(() => this.startCombat(sessionId, playerId, decision.targetId), sessionId, playerId);
+                return;
+            case 'move':
+                this.runVirtualDecisionAction(() => this.movePlayer(sessionId, playerId, decision.direction), sessionId, playerId);
+                return;
+            case 'toggle-door':
+                this.runVirtualDecisionAction(() => this.toggleDoor(sessionId, playerId, decision.position), sessionId, playerId);
+                return;
+            case 'use-sanctuary':
+                this.runVirtualDecisionAction(() => this.useSanctuary(sessionId, playerId, decision.sanctuaryId), sessionId, playerId);
+                return;
+            case 'end-turn':
+                this.endTurn(sessionId, playerId);
+                return;
+            default:
+                return;
+        }
+    }
+
+    private runVirtualDecisionAction(action: () => boolean, sessionId: string, playerId: string): void {
+        if (!action()) this.endTurn(sessionId, playerId);
     }
 }
