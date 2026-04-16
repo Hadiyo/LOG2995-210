@@ -1,3 +1,17 @@
+import {
+    advanceToNextTurn as advanceSessionTurn,
+    clearTimers,
+    clearTurnState,
+    pauseTimer,
+    resumeTimers,
+    startTimerTransition,
+    tickTimers,
+} from '@app/services/timer/turn.timers';
+import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
+import { ACTIVE_TURN_DURATION_MS, SNAPSHOT_TICK_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
+import { GameSessionLogEntry, GameSessionRuntime } from '@app/utilities/game/game.interface';
+import { createActiveTurnState } from '@app/services/game-session/game-session.runtime';
+import { TimerConfig } from '@app/utilities/turn/turn.type';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { GameLogEntry } from '@common/game/game-log-entry.interface';
 import {
@@ -7,48 +21,31 @@ import {
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SessionSocketEvents } from '@common/socket-events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventEmitter } from 'events';
 import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
-import {
-    ACTIVE_TURN_DURATION_MS,
-    createActiveTurnState,
-    createTransitionTurnState,
-    GameSessionLogEntry,
-    GameSessionRuntime,
-    SNAPSHOT_TICK_MS,
-    TRANSITION_DURATION_MS,
-} from './game-session.runtime';
-import { clearGameSessionTimers, tickGameSessionTimers } from './game-session.timers';
 
 export class GameSessionLifecycle {
+    private readonly events2 = new EventEmitter2();
+    private readonly startTimerConfig: TimerConfig<GameSessionRuntime> = {
+        emitSnapshot: (session) => this.emitSnapshot(session),
+        onTransitionEnd: (session) => this.activateTurn(session),
+        transitionDuration: TRANSITION_DURATION_MS,
+    };
+
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly events: EventEmitter,
-    ) {}
-
-    startTransition(session: GameSessionRuntime): void {
-        clearGameSessionTimers(session);
-        session.turnState = createTransitionTurnState(session.turnState);
-        this.emitSnapshot(session);
-        session.timerIntervalId = setInterval(() => tickGameSessionTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
-        session.transitionTimeoutId = setTimeout(() => this.activateTurn(session), TRANSITION_DURATION_MS);
+    ) {
+        this.emitSnapshot = this.emitSnapshot.bind(this);
+        this.setNextMatch = this.setNextMatch.bind(this);
     }
 
-    advanceToNextTurn(session: GameSessionRuntime): void {
-        clearGameSessionTimers(session);
-        if (session.turnState.order.length === 0) {
-            return;
-        }
-
+    setNextMatch(session: GameSessionRuntime): void {
         const nextMatch = session.match.pendingFlagTransfer
             ? { ...session.match, pendingFlagTransfer: null }
             : session.match;
         session.match = progressGameSessionSanctuaryEffects(nextMatch, session.turnState.activePlayerId);
-        session.turnState = {
-            ...session.turnState,
-            currentTurnIndex: (session.turnState.currentTurnIndex + 1) % session.turnState.order.length,
-        };
-        this.startTransition(session);
     }
 
     finishSurrenderAfterRosterChange(
@@ -57,7 +54,7 @@ export class GameSessionLifecycle {
         nextPlayers: MatchPlayer[],
     ): boolean {
         if (nextPlayers.length === 0) {
-            clearGameSessionTimers(session);
+            clearTimers(session);
             this.sessions.delete(sessionId);
             return true;
         }
@@ -100,26 +97,14 @@ export class GameSessionLifecycle {
     }
 
     finishMatch(session: GameSessionRuntime): void {
-        clearGameSessionTimers(session);
-        session.turnState = {
-            ...session.turnState,
-            phase: 'transition',
-            activePlayerId: null,
-            transitionTargetPlayerId: null,
-            transitionEndsAt: null,
-            transitionRemainingMs: 0,
-            activeTurnEndsAt: null,
-            activeTurnRemainingMs: 0,
-            movementPointsRemaining: 0,
-            actionTaken: true,
-            playerStates: session.turnState.playerStates.map((playerState) => ({ ...playerState, state: 'waiting' })),
-        };
+        clearTurnState(session);
         session.match = {
             ...session.match,
             pendingSanctuaryChoice: null,
         };
         this.emitSnapshot(session);
         this.sessions.delete(session.sessionId);
+        this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
     }
 
     emitSnapshot(session: GameSessionRuntime): void {
@@ -175,30 +160,6 @@ export class GameSessionLifecycle {
         }
 
         return { session, player };
-    }
-
-    getCombatContext(
-        sessionId: string,
-        attackerId: string,
-        defenderId: string,
-    ): { session: GameSessionRuntime; attacker: MatchPlayer; defender: MatchPlayer } | null {
-        const session = this.sessions.get(sessionId);
-        if (!session ||
-            session.turnState.phase !== 'active' ||
-            session.turnState.activePlayerId !== attackerId ||
-            session.turnState.actionTaken ||
-            session.match.pendingSanctuaryChoice ||
-            session.match.endState) {
-            return null;
-        }
-
-        const attacker = session.match.players.find((player) => player.id === attackerId);
-        const defender = session.match.players.find((player) => player.id === defenderId);
-        if (!attacker || !defender || !this.canStartCombat(session.match, attacker, defender)) {
-            return null;
-        }
-
-        return { session, attacker, defender };
     }
 
     isCurrentTurnPlayer(playerId: string, turnState: MatchTurnState): boolean {
@@ -323,6 +284,18 @@ export class GameSessionLifecycle {
         return true;
     }
 
+    finishMatchOnCombatVictories(session: GameSessionRuntime, winner: MatchPlayer): void {
+        session.match.endState = {
+            id: crypto.randomUUID(),
+            winnerKind: 'player',
+            winnerPlayerId: winner.id,
+            winnerTeamId: session.match.mode === GameMode.CTF ? winner.teamId : null,
+            message: `${winner.name} remporte la partie avec ${winner.combatWins} victoires de combat.`,
+            resolvedAt: Date.now(),
+        };
+        this.finishMatch(session);
+    }
+
     createSystemMessage(content: string): ChatMessage {
         return {
             id: crypto.randomUUID(),
@@ -355,31 +328,54 @@ export class GameSessionLifecycle {
     ): void {
         session.logEntries.push(this.createLogEntry(content, involvedPlayers, visibleToPlayerIds));
     }
+    
+    getActivePlayer(session: GameSessionRuntime): MatchPlayer | null {
+        const activePlayerId = session.turnState.order[session.turnState.currentTurnIndex]?.playerId ?? null;
+        if (!activePlayerId) {
+            return null;
+        }
+        const activePlayer = session.match.players.find((player) => player.id === activePlayerId) ?? null;
+        if (!activePlayer) {
+            return null;
+        }
+        return activePlayer;
+    }
+
+    startTransition(session: GameSessionRuntime): void {
+        startTimerTransition(session, this.startTimerConfig);
+    }
+
+    advanceToNextTurn(session: GameSessionRuntime): void {
+        advanceSessionTurn(session, (candidate) => this.setNextMatch(candidate));
+        startTimerTransition(session, this.startTimerConfig);
+    }
+
+    resumeGameSessionTurn(session: GameSessionRuntime): void {
+        resumeTimers(
+            session,
+            this.emitSnapshot.bind(this),
+            (s) => this.activateTurn(s),
+            (s) => this.advanceToNextTurn(s),
+        );
+    }
+
+    stopSessionTimers(session: GameSessionRuntime): void {
+        pauseTimer(session);
+        this.emitSnapshot(session);
+    }
 
     private activateTurn(session: GameSessionRuntime): void {
-        const activePlayerId = session.turnState.order[session.turnState.currentTurnIndex]?.playerId ?? null;
-        const activePlayer = session.match.players.find((player) => player.id === activePlayerId) ?? null;
-        if (!activePlayerId || !activePlayer) {
+        const activePlayer = this.getActivePlayer(session);
+        if (!activePlayer) {
             return;
         }
 
-        clearGameSessionTimers(session);
-        session.turnState = createActiveTurnState(session.turnState, activePlayer);
+        clearTimers(session);
+        session.turnState = createActiveTurnState(session.turnState, activePlayer, ACTIVE_TURN_DURATION_MS);
         this.appendLogEntry(session, `Debut du tour de ${activePlayer.name}.`, [activePlayer.name]);
         this.emitSnapshot(session);
-        session.timerIntervalId = setInterval(() => tickGameSessionTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
+        session.timerIntervalId = setInterval(() => tickTimers(session, (candidate) => this.emitSnapshot(candidate)), SNAPSHOT_TICK_MS);
         session.activeTurnTimeoutId = setTimeout(() => this.advanceToNextTurn(session), ACTIVE_TURN_DURATION_MS);
-    }
-
-    private canStartCombat(match: InitializedMatch, attacker: MatchPlayer, defender: MatchPlayer): boolean {
-        if (Math.abs(attacker.position.x - defender.position.x) + Math.abs(attacker.position.y - defender.position.y) !== 1) {
-            return false;
-        }
-
-        return match.mode !== GameMode.CTF ||
-            attacker.teamId === null ||
-            attacker.teamId === undefined ||
-            attacker.teamId !== defender.teamId;
     }
 
     private getMissingCtfTeamId(mode: GameMode, players: MatchPlayer[]): MatchTeamId | null {

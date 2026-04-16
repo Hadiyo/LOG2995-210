@@ -1,4 +1,6 @@
+import { CombatService } from '@app/services/combat/combat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
+import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
 import {
     CombatSocketEvents,
     DebugTeleportPlayerPayload,
@@ -13,13 +15,13 @@ import {
     ResolveFlagTransferPayload,
     ResolveSanctuaryChoicePayload,
     SessionSocketEvents,
-    StartCombatPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
     ToggleDoorPayload,
     UseSanctuaryPayload,
 } from '@common/socket-events';
-import { Logger, OnModuleDestroy } from '@nestjs/common';
+import { OnModuleDestroy } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import {
     ConnectedSocket,
     MessageBody,
@@ -38,7 +40,7 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
 
     constructor(
         private readonly gameSessionService: GameSessionService,
-        private readonly logger: Logger = new Logger(GameSessionGateway.name),
+        private readonly combatSession: CombatService,
     ) {
         this.onSnapshot = (payload) => {
             for (const socketId of this.gameSessionService.getSocketIdsForSession(payload.sessionId)) {
@@ -56,11 +58,16 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
     }
 
     handleDisconnect(client: Socket): void {
-        this.logger.log(`Client ${client.id} disconnected.`);
         const membership = this.gameSessionService.removeSocket(client.id);
         if (membership) {
+            this.combatSession.handleDisconnect(membership.playerId);
             this.gameSessionService.surrender(membership.sessionId, membership.playerId);
         }
+    }
+
+    @OnEvent(GameSessionEvents.OnGameEnd)
+    onGameSessionEnd(id: string): void {
+        this.server.in(id).socketsLeave(id);
     }
 
     @SubscribeMessage(SessionSocketEvents.JoinGameSession)
@@ -159,21 +166,6 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
         }
     }
 
-    @SubscribeMessage(CombatSocketEvents.StartCombat)
-    startCombat(
-        @ConnectedSocket() client: Socket,
-        @MessageBody() payload: StartCombatPayload,
-    ): void {
-        if (this.gameSessionService.getPlayerIdForSocket(client.id, payload.sessionId) !== payload.playerId) {
-            client.emit(SessionSocketEvents.GameSessionError, { message: 'Combat refuse.' } satisfies GameSessionErrorPayload);
-            return;
-        }
-
-        if (!this.gameSessionService.startCombat(payload.sessionId, payload.playerId, payload.defenderId)) {
-            client.emit(SessionSocketEvents.GameSessionError, { message: 'Combat refuse.' } satisfies GameSessionErrorPayload);
-        }
-    }
-
     @SubscribeMessage(CombatSocketEvents.UseSanctuary)
     useSanctuary(
         @ConnectedSocket() client: Socket,
@@ -258,7 +250,7 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
             client.emit(SessionSocketEvents.GameSessionError, { message: 'Abandon refuse.' } satisfies GameSessionErrorPayload);
             return;
         }
-
+        this.combatSession.handleDisconnect(payload.playerId);
         if (!this.gameSessionService.surrender(payload.sessionId, payload.playerId)) {
             client.emit(SessionSocketEvents.GameSessionError, { message: 'Abandon refuse.' } satisfies GameSessionErrorPayload);
             return;

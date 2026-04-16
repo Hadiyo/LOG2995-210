@@ -9,7 +9,7 @@ import {
     makeRuntime,
     MOVEMENT_POINTS_AFTER_MOVE,
 } from './game-session.service.spec-helpers';
-import { ARENA_BUFF_TURNS, SANCTUARY_COOLDOWN_TURNS } from './game-session.match';
+import { ARENA_BUFF_TURNS, SANCTUARY_COOLDOWN_TURNS } from '@app/utilities/game/game.constants';
 
 describe('GameSessionService actions', () => {
     const harness = createGameSessionServiceHarness();
@@ -250,49 +250,6 @@ describe('GameSessionService actions', () => {
         expect(advanceSpy).toHaveBeenCalledWith(transferRuntime);
         expect(transferRuntime.match.pendingFlagTransfer).toBeNull();
         expect(emitSnapshotSpy).toHaveBeenCalled();
-    });
-
-    it('starts combat only for adjacent active players and finishes the match on the win threshold', () => {
-        const serviceInternals = harness.getServiceInternals();
-        const privateState = harness.getPrivateState();
-        const emitSnapshotSpy = jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
-
-        const runtime = makeRuntime({
-            match: makeMatch({
-                players: [
-                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, combatWins: 1, isOrganizer: true }),
-                    makeMatchPlayer({ id: 'player-2', name: 'Bob', position: { x: 1, y: 0 }, avatarId: 1 }),
-                ],
-            }),
-        });
-        privateState.sessions.set(runtime.sessionId, runtime);
-
-        expect(harness.service.startCombat('missing', 'player-1', 'player-2')).toBe(false);
-        expect(harness.service.startCombat('session-1', 'player-2', 'player-1')).toBe(false);
-        expect(harness.service.startCombat('session-1', 'player-1', 'player-2')).toBe(true);
-        expect(runtime.match.players.find((player) => player.id === 'player-1')?.combatWins).toBe(2);
-        expect(runtime.logEntries.at(-1)?.visibleToPlayerIds).toEqual(['player-1', 'player-2']);
-        expect(runtime.logEntries.at(-1)?.entry.involvedPlayers).toEqual(['Alice', 'Bob']);
-        expect(runtime.match.players.find((player) => player.id === 'player-1')?.render).toMatchObject({
-            facing: 'right',
-            pose: 'attack',
-            poseDurationMs: 220,
-        });
-        expect(runtime.turnState.actionTaken).toBe(true);
-        expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
-
-        const winnerRuntime = makeRuntime({
-            sessionId: 'winner',
-            match: makeMatch({
-                players: [
-                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, combatWins: 2, isOrganizer: true }),
-                    makeMatchPlayer({ id: 'player-2', name: 'Bob', position: { x: 1, y: 0 }, avatarId: 1 }),
-                ],
-            }),
-        });
-        privateState.sessions.set('winner', winnerRuntime);
-        expect(harness.service.startCombat('winner', 'player-1', 'player-2')).toBe(true);
-        expect(privateState.sessions.has('winner')).toBe(false);
     });
 
     it('declares a team victory when the flag carrier returns to the starting tile', () => {

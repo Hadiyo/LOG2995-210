@@ -1,4 +1,6 @@
 import { GameSessionGateway } from '@app/gateways/game-session/game-session.gateway';
+import { CombatService } from '@app/services/combat/combat.service';
+import { createMockSocket } from '@app/utilities/mocks/mocks';
 import {
     DebugTeleportPlayerPayload,
     EndGameTurnPayload,
@@ -8,31 +10,26 @@ import {
     MoveGamePlayerPayload,
     ResolveSanctuaryChoicePayload,
     SessionSocketEvents,
-    StartCombatPayload,
     SurrenderGamePayload,
     ToggleDebugModePayload,
     ToggleDoorPayload,
     UseSanctuaryPayload,
     getGameSessionRoom,
 } from '@common/socket-events';
-import { Server, Socket } from 'socket.io';
-
-const makeSocket = (id: string): Socket => ({
-    id,
-    join: jest.fn(),
-    leave: jest.fn(),
-    emit: jest.fn(),
-} as unknown as Socket);
+import { Server } from 'socket.io';
 
 describe('GameSessionGateway', () => {
     let gateway: GameSessionGateway;
     let gameSessionService: Record<string, jest.Mock>;
-    let logger: { log: jest.Mock };
+    let mockCombatService: Partial<CombatService>;
     let serverToEmit: jest.Mock;
     let handlers: Record<string, ((payload: unknown) => void) | undefined>;
 
     beforeEach(() => {
         handlers = {};
+        mockCombatService = {
+            handleDisconnect: jest.fn(),
+        };
         gameSessionService = {
             on: jest.fn((event: string, handler: (payload: unknown) => void) => {
                 handlers[event] = handler;
@@ -55,13 +52,12 @@ describe('GameSessionGateway', () => {
             startCombat: jest.fn(),
             toggleDoor: jest.fn(),
         };
-        logger = { log: jest.fn() };
         serverToEmit = jest.fn();
         const server = {
             to: jest.fn().mockReturnValue({ emit: serverToEmit }),
         } as unknown as Server;
 
-        gateway = new GameSessionGateway(gameSessionService as never, logger as never);
+        gateway = new GameSessionGateway(gameSessionService as never, mockCombatService as never);
         (gateway as unknown as { server: Server }).server = server;
     });
 
@@ -96,15 +92,14 @@ describe('GameSessionGateway', () => {
             playerId: 'player-1',
         });
 
-        gateway.handleDisconnect(makeSocket('socket-1'));
-        gateway.handleDisconnect(makeSocket('socket-2'));
+        gateway.handleDisconnect(createMockSocket('socket-1'));
+        gateway.handleDisconnect(createMockSocket('socket-2'));
 
-        expect(logger.log).toHaveBeenCalledWith('Client socket-1 disconnected.');
         expect(gameSessionService.surrender).toHaveBeenCalledWith('session-1', 'player-1');
     });
 
     it('joins a game session and emits an initial snapshot', () => {
-        const client = makeSocket('socket-1');
+        const client = createMockSocket('socket-1');
         const payload: JoinGameSessionPayload = { sessionId: 'session-1', playerId: 'player-1' };
         gameSessionService.registerSocket.mockReturnValue({
             snapshot: {
@@ -140,7 +135,7 @@ describe('GameSessionGateway', () => {
     });
 
     it('leaves the previous game room when migrating a socket to another session', () => {
-        const client = makeSocket('socket-1');
+        const client = createMockSocket('socket-1');
         gameSessionService.registerSocket.mockReturnValue({
             snapshot: {
                 sessionId: 'session-1',
@@ -159,14 +154,13 @@ describe('GameSessionGateway', () => {
     });
 
     it('guards every player action behind socket ownership and service success', () => {
-        const client = makeSocket('socket-1');
+        const client = createMockSocket('socket-1');
         const actions = {
             debugTeleportPlayer: gateway.debugTeleportPlayer.bind(gateway),
             endTurn: gateway.endTurn.bind(gateway),
             forceEndDebugTurn: gateway.forceEndDebugTurn.bind(gateway),
             movePlayer: gateway.movePlayer.bind(gateway),
             resolveSanctuaryChoice: gateway.resolveSanctuaryChoice.bind(gateway),
-            startCombat: gateway.startCombat.bind(gateway),
             toggleDebugMode: gateway.toggleDebugMode.bind(gateway),
             toggleDoor: gateway.toggleDoor.bind(gateway),
             useSanctuary: gateway.useSanctuary.bind(gateway),
@@ -201,12 +195,6 @@ describe('GameSessionGateway', () => {
                 serviceMethod: 'endTurn',
                 payload: { sessionId: 'session-1', playerId: 'player-1' } satisfies EndGameTurnPayload,
                 error: 'Fin de tour refusee.',
-            },
-            {
-                action: actions.startCombat,
-                serviceMethod: 'startCombat',
-                payload: { sessionId: 'session-1', playerId: 'player-1', defenderId: 'player-2' } satisfies StartCombatPayload,
-                error: 'Combat refuse.',
             },
             {
                 action: actions.useSanctuary,
@@ -250,7 +238,7 @@ describe('GameSessionGateway', () => {
     });
 
     it('only lets the owning player surrender and leaves the room on success', () => {
-        const client = makeSocket('socket-1');
+        const client = createMockSocket('socket-1');
         const payload: SurrenderGamePayload = { sessionId: 'session-1', playerId: 'player-1' };
 
         gameSessionService.getPlayerIdForSocket.mockReturnValue('other-player');

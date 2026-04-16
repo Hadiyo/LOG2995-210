@@ -1,25 +1,13 @@
 import { PageRoom } from '@app/gateways/rooms.record';
+import { createMockLogger, createMockSocket } from '@app/utilities/mocks/mocks';
 import { PageContext } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Socket } from 'socket.io';
 import { PageRoomGateway } from './page-room.gateway';
 
 describe('PageRoomGateway', () => {
   let gateway: PageRoomGateway;
-
-  function createMockSocket(id: string) {
-    const rooms = new Set<string>();
-    return {
-      id,
-      rooms,
-      join: jest.fn((room: string) => rooms.add(room)),
-      leave: jest.fn((room: string) => rooms.delete(room)),
-    } as unknown as Socket;
-  }
-  const loggerMock = {
-    log: jest.fn(),
-  };
+  const loggerMock = createMockLogger();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -27,6 +15,8 @@ describe('PageRoomGateway', () => {
     }).compile();
 
     gateway = module.get<PageRoomGateway>(PageRoomGateway);
+
+    jest.clearAllMocks();
   });
 
 
@@ -52,11 +42,7 @@ describe('PageRoomGateway', () => {
   it('joinPage should not log when room is still not present after join', () => {
     const room = PageRoom.MapManagementRoom;
     const payload = { page: PageContext.MapManagement };
-    const client = {
-      id: 'socket2',
-      rooms: new Set<string>(), // stays empty
-      join: jest.fn(), // does not add room
-    } as unknown as Socket;
+    const client = createMockSocket('1234');
 
     gateway.joinPage(client, payload);
 
@@ -69,11 +55,8 @@ describe('PageRoomGateway', () => {
   it('leavePage should not log when room is still present after leave', () => {
     const room = PageRoom.MapManagementRoom;
     const payload = { page: PageContext.MapManagement };
-    const client = {
-      id: 'socket3',
-      rooms: new Set<string>([room]), // remains in room
-      leave: jest.fn(), // does not remove room
-    } as unknown as Socket;
+    const client = createMockSocket('1234');
+    client.join(room);
 
     gateway.leavePage(client, payload);
 
