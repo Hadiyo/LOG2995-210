@@ -1,5 +1,6 @@
 import { GameSessionGateway } from '@app/gateways/game-session/game-session.gateway';
 import { CombatService } from '@app/services/combat/combat.service';
+import { EndStatsService } from '@app/services/end-stats.service';
 import { createMockSocket } from '@app/utilities/mocks/mocks';
 import {
     DebugTeleportPlayerPayload,
@@ -22,6 +23,7 @@ describe('GameSessionGateway', () => {
     let gateway: GameSessionGateway;
     let gameSessionService: Record<string, jest.Mock>;
     let mockCombatService: Partial<CombatService>;
+    let mockEndStatsService: Partial<EndStatsService>;
     let serverToEmit: jest.Mock;
     let handlers: Record<string, ((payload: unknown) => void) | undefined>;
 
@@ -29,6 +31,9 @@ describe('GameSessionGateway', () => {
         handlers = {};
         mockCombatService = {
             handleDisconnect: jest.fn(),
+        };
+        mockEndStatsService = {
+            endGame: jest.fn(),
         };
         gameSessionService = {
             on: jest.fn((event: string, handler: (payload: unknown) => void) => {
@@ -55,7 +60,7 @@ describe('GameSessionGateway', () => {
             to: jest.fn().mockReturnValue({ emit: serverToEmit }),
         } as unknown as Server;
 
-        gateway = new GameSessionGateway(gameSessionService as never, mockCombatService as never);
+        gateway = new GameSessionGateway(gameSessionService as never, mockEndStatsService as never, mockCombatService as never);
         (gateway as unknown as { server: Server }).server = server;
     });
 

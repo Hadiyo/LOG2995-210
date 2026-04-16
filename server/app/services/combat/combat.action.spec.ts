@@ -1,9 +1,11 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { makeMatch } from '@app/services/game-session/game-session.service.spec-helpers';
 import { BONUS, MIN_DIE_VALUE } from '@app/utilities/combat/combat.constants';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import {
   createCombatTurnServiceMock,
+  createEndStatsServiceMock,
   createEventEmitterMock,
   createGameSessionMock,
   makeCombatPlayerStatistics,
@@ -80,6 +82,7 @@ describe('CombatService', () => {
   let gameSessionMock: Partial<GameSessionService>;
   let turnServiceMock: Partial<CombatTurnService>;
   let eventEmitterMock: Partial<EventEmitter2>;
+  let endStatsServiceMock: Partial<EndStatsService>;
   let emitSpy: jest.SpyInstance;
 
   beforeEach(async () => {
@@ -87,12 +90,14 @@ describe('CombatService', () => {
     gameSessionMock = createGameSessionMock();
     turnServiceMock = createCombatTurnServiceMock();
     eventEmitterMock = createEventEmitterMock();
+    endStatsServiceMock = createEndStatsServiceMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [CombatService,
         { provide: GameSessionService, useValue: gameSessionMock },
         { provide: CombatTurnService, useValue: turnServiceMock },
         { provide: EventEmitter2, useValue: eventEmitterMock },
+        { provide: EndStatsService, useValue: endStatsServiceMock },
       ],
     }).compile();
 

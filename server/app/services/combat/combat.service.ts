@@ -1,4 +1,5 @@
 
+import { EndStatsService } from '@app/services/end-stats.service';
 import { isPlayerOnIce } from '@app/services/game-session/game-session.match';
 import { canStartCombat } from '@app/services/game-session/game-session.runtime';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
@@ -12,7 +13,6 @@ import { CombatPlayerStatistics, FighterStance } from '@common/combat/combat.int
 import { MatchPlayer } from '@common/game/match.interface';
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { EndStatsService } from '../end-stats.service';
 import { CombatTurnService } from './combat-turn.service';
 
 @Injectable()

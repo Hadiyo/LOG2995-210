@@ -11,6 +11,7 @@ import * as timerUtils from '@app/services/timer/turn.timers';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import {
     createCombatTurnServiceMock,
+    createEndStatsServiceMock,
     createEventEmitterMock,
     createGameSessionMock,
     makeCombatSession,
@@ -18,6 +19,7 @@ import {
 } from '@app/utilities/mocks/mocks';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test, TestingModule } from '@nestjs/testing';
+import { EndStatsService } from '../end-stats.service';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
 
@@ -80,18 +82,21 @@ describe('Combat Life Cycle', () => {
     let gameSessionMock: Partial<GameSessionService>;
     let turnServiceMock: Partial<CombatTurnService>;
     let eventEmitterMock: Partial<EventEmitter2>;
+    let endStatsService: Partial<EndStatsService>;
 
     beforeEach(async () => {
 
         gameSessionMock = createGameSessionMock();
         turnServiceMock = createCombatTurnServiceMock();
         eventEmitterMock = createEventEmitterMock();
+        endStatsService = createEndStatsServiceMock();
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [CombatService,
             { provide: GameSessionService, useValue: gameSessionMock },
             { provide: CombatTurnService, useValue: turnServiceMock },
             { provide: EventEmitter2, useValue: eventEmitterMock },
+            { provide: EndStatsService, useValue: endStatsService },
             ],
         }).compile();
 

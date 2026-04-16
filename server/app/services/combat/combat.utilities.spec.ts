@@ -7,6 +7,7 @@ import { MIN_DIE_VALUE } from '@app/utilities/combat/combat.constants';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
 import {
     createCombatTurnServiceMock,
+    createEndStatsServiceMock,
     createEventEmitterMock,
     createGameSessionMock,
     makeCombatSession,
@@ -16,6 +17,7 @@ import { DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test } from '@nestjs/testing';
 import { TestingModule } from '@nestjs/testing/testing-module';
+import { EndStatsService } from '../end-stats.service';
 
 /**
  * Test Strategy:
@@ -57,6 +59,7 @@ describe('CombatService Helpers', () => {
     let gameSessionMock: Partial<GameSessionService>;
     let turnServiceMock: Partial<CombatTurnService>;
     let eventEmitterMock: Partial<EventEmitter2>;
+    let endStatsServiceMock: Partial<EndStatsService>; 
     let emitSpy: jest.SpyInstance;
 
     beforeEach(async () => {
@@ -64,12 +67,14 @@ describe('CombatService Helpers', () => {
         gameSessionMock = createGameSessionMock();
         turnServiceMock = createCombatTurnServiceMock();
         eventEmitterMock = createEventEmitterMock();
+        endStatsServiceMock = createEndStatsServiceMock();
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [CombatService,
             { provide: GameSessionService, useValue: gameSessionMock },
             { provide: CombatTurnService, useValue: turnServiceMock },
             { provide: EventEmitter2, useValue: eventEmitterMock },
+            { provide: EndStatsService, useValue: endStatsServiceMock },
             ],
         }).compile();
 

@@ -10,7 +10,6 @@ import {
   StancePayload,
 } from '@common/combat/combat.interface';
 import { CombatSocketEvents, GameSessionErrorPayload, getGameSessionRoom, SessionSocketEvents, StartCombatPayload } from '@common/socket-events';
-import { Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
@@ -22,7 +21,6 @@ export class CombatGateway {
   constructor(
     private readonly combatService: CombatService, 
     private readonly gameSessionService: GameSessionService,
-    private readonly logger: Logger,
   ){}
 
   @SubscribeMessage(CombatSocketEvents.StartCombat)
