@@ -83,10 +83,6 @@ export class GameCombatRoundLogComponent implements OnChanges {
         return (this.getOpponentFighter(round, fighterIndex).attackDelta ?? NEUTRAL_COMBAT_VALUE) <= NEUTRAL_COMBAT_VALUE;
     }
 
-    protected dieClass(dieType: CombatRoundBreakdown['dieType']): string {
-        return dieType === 'D6' ? 'combat-round-log__die--d6' : 'combat-round-log__die--d4';
-    }
-
     protected signedValue(value: number): string {
         if (value > NEUTRAL_COMBAT_VALUE) {
             return `+${value}`;
