@@ -37,7 +37,12 @@ export class GameSessionService {
         @Inject(forwardRef(() => CombatService)) private readonly combatService: CombatService,
         private readonly endStatsService: EndStatsService,
     ) {
-        this.lifecycle = new GameSessionLifecycle(this.sessions, this.events, this.endStatsService, (session) => this.scheduleVirtualDecision(session));
+        this.lifecycle = new GameSessionLifecycle(
+            this.sessions,
+            this.events,
+            this.endStatsService,
+            (session) => this.scheduleVirtualDecision(session),
+        );
         this.sessionActions = new GameSessionSessionActions(this.sessions, this.lifecycle, this.endStatsService);
         this.actions = new GameSessionActions(this.sessions, this.lifecycle, this.endStatsService);
     }
@@ -45,27 +50,21 @@ export class GameSessionService {
     on<T>(event: SessionSocketEvents, callback: (payload: T) => void): void {
         this.events.on(event, callback);
     }
-
     off<T>(event: SessionSocketEvents, callback: (payload: T) => void): void {
         this.events.off(event, callback);
     }
-
     async createSessionFromWaitingRoom(mapId: string, players: MatchLobbyPlayer[], messages: ChatMessage[] = []): Promise<string> {
         const map = await this.mapService.getMapByIdForEditor(mapId);
         const session = buildSession(map, players, messages);
         this.sessions.set(session.sessionId, session);
         this.lifecycle.emitSnapshot(session);
         this.lifecycle.startTransition(session);
-
         await this.endStatsService.startGame(session.sessionId, mapId, players);
-
         for (const player of session.match.players) {
             this.endStatsService.visitTile(session.sessionId, player.startingPosition, player.id);
         }
-
         return session.sessionId;
     }
-
     registerSocket(
         sessionId: string,
         playerId: string,
@@ -80,7 +79,6 @@ export class GameSessionService {
         if (!player || player.controller === 'virtual') {
             throw new NotFoundException('Game player not found');
         }
-
         const previousSessionId = this.findSessionIdForSocket(socketId);
         if (previousSessionId && previousSessionId !== sessionId) {
             const previousMembership = this.removeSocket(socketId);
@@ -95,57 +93,39 @@ export class GameSessionService {
             previousSessionId: previousSessionId && previousSessionId !== sessionId ? previousSessionId : null,
         };
     }
-
     getSocketIdsForSession(sessionId: string): string[] {
         return [...(this.sessions.get(sessionId)?.socketToPlayerId.keys() ?? [])];
     }
-
     getSnapshotForSocket(sessionId: string, socketId: string): GameSessionSnapshotPayload | null {
         const session = this.sessions.get(sessionId);
-        if (!session) {
-            return null;
-        }
-
+        if (!session) return null;
         const playerId = session.socketToPlayerId.get(socketId);
-        if (!playerId) {
-            return null;
-        }
-
+        if (!playerId) return null;
         return this.buildSnapshot(session, playerId);
     }
-
     getSessionById(id: string): GameSessionRuntime | undefined {
         return this.sessions.get(id);
     }
-
     getMatchFromSessionId(id: string): InitializedMatch | null {
         return this.sessions.get(id)?.match ?? null;
     }
-
     getPlayerIdForSocket(socketId: string, sessionId: string): string | null {
         return this.sessions.get(sessionId)?.socketToPlayerId.get(socketId) ?? null;
     }
-
     getPlayerNameForSocket(socketId: string, sessionId: string): string | null {
         const session = this.sessions.get(sessionId);
-        if (!session) {
-            return null;
-        }
-
+        if (!session) return null;
         const playerId = session.socketToPlayerId.get(socketId);
         return session.match.players.find((player) => player.id === playerId)?.name ?? null;
     }
-
     findSessionIdForSocket(socketId: string): string | null {
         for (const session of this.sessions.values()) {
             if (session.socketToPlayerId.has(socketId)) {
                 return session.sessionId;
             }
         }
-
         return null;
     }
-
     getSocketFromPlayer(sessionId: string, playerId: string | undefined): string | null {
         const session = this.sessions.get(sessionId);
         if (!session || !playerId) {
@@ -158,30 +138,20 @@ export class GameSessionService {
         }
         return null;
     }
-
     removeSocket(socketId: string): { sessionId: string; playerId: string } | null {
         for (const session of this.sessions.values()) {
             const playerId = session.socketToPlayerId.get(socketId);
-            if (!playerId) {
-                continue;
-            }
+            if (!playerId) continue;
             session.socketToPlayerId.delete(socketId);
             const playerStillConnected = [...session.socketToPlayerId.values()].some((connectedPlayerId) => connectedPlayerId === playerId);
-            if (playerStillConnected) {
-                return null;
-            }
+            if (playerStillConnected) return null;
             return { sessionId: session.sessionId, playerId };
         }
-
         return null;
     }
-
     destroySession(sessionId: string): void {
         const session = this.sessions.get(sessionId);
-        if (!session) {
-            return;
-        }
-
+        if (!session) return;
         clearTimers(session);
         if (session.virtualDecisionTimeoutId) {
             clearTimeout(session.virtualDecisionTimeoutId);
@@ -190,54 +160,37 @@ export class GameSessionService {
         this.sessions.delete(sessionId);
         this.event2.emit(GameSessionEvents.OnGameEnd, { id: sessionId });
     }
-
     endTurn(sessionId: string, playerId: string): boolean {
         return this.runSessionAction(sessionId, () => this.sessionActions.endTurn(sessionId, playerId));
     }
-
     requestFlagTransfer(sessionId: string, requesterId: string, receiverId: string): boolean {
         const success = this.runSessionAction(sessionId, () => this.sessionActions.requestFlagTransfer(sessionId, requesterId, receiverId));
-        if (!success) {
-            return false;
-        }
-
+        if (!success) return false;
         const session = this.sessions.get(sessionId);
         const receiver = session?.match.players.find((player) => player.id === receiverId) ?? null;
-        if (receiver?.controller === 'virtual') {
-            return this.resolveFlagTransfer(sessionId, receiverId, true);
-        }
-
-        return true;
+        return receiver?.controller === 'virtual' ? this.resolveFlagTransfer(sessionId, receiverId, true) : true;
     }
-
     resolveFlagTransfer(sessionId: string, receiverId: string, accepted: boolean): boolean {
         return this.runSessionAction(sessionId, () => this.sessionActions.resolveFlagTransfer(sessionId, receiverId, accepted));
     }
-
     surrender(sessionId: string, playerId: string): boolean {
         return this.runSessionAction(sessionId, () => this.sessionActions.surrender(sessionId, playerId));
     }
-
     toggleDebugMode(sessionId: string, playerId: string): boolean {
         return this.runSessionAction(sessionId, () => this.sessionActions.toggleDebugMode(sessionId, playerId));
     }
-
     forceEndDebugTurn(sessionId: string, playerId: string): boolean {
         return this.runSessionAction(sessionId, () => this.sessionActions.forceEndDebugTurn(sessionId, playerId));
     }
-
     debugTeleportPlayer(sessionId: string, playerId: string, position: { x: number; y: number }): boolean {
         return this.runSessionAction(sessionId, () => this.sessionActions.debugTeleportPlayer(sessionId, playerId, position));
     }
-
     addChatMessage(sessionId: string, message: ChatMessage): ChatMessage | null {
         return this.sessionActions.addChatMessage(sessionId, message);
     }
-
     movePlayer(sessionId: string, playerId: string, direction: 'up' | 'down' | 'left' | 'right'): boolean {
         return this.runSessionAction(sessionId, () => this.actions.movePlayer(sessionId, playerId, direction));
     }
-
     startCombat(sessionId: string, attackerId: string, defenderId: string): boolean {
         const session = this.sessions.get(sessionId);
         if (!session ||
@@ -254,12 +207,10 @@ export class GameSessionService {
         if (!attacker || !defender || !canStartCombat(attacker, defender)) {
             return false;
         }
-
         const combatStart = this.combatService.createCombatSession(attackerId, defenderId, sessionId);
         if (!combatStart) {
             return false;
         }
-
         session.match = {
             ...session.match,
             players: session.match.players.map((player) =>
@@ -284,78 +235,56 @@ export class GameSessionService {
         this.combatService.startCombat(combatStart.combat);
         return true;
     }
-
     useSanctuary(sessionId: string, playerId: string, sanctuaryId: number): boolean {
         return this.runSessionAction(sessionId, () => this.actions.useSanctuary(sessionId, playerId, sanctuaryId));
     }
-
     resolveSanctuaryChoice(sessionId: string, playerId: string, choice: MatchSanctuaryChoice): boolean {
         return this.runSessionAction(sessionId, () => this.actions.resolveSanctuaryChoice(sessionId, playerId, choice));
     }
-
     toggleDoor(sessionId: string, playerId: string, position: { x: number; y: number }): boolean {
         return this.runSessionAction(sessionId, () => this.actions.toggleDoor(sessionId, playerId, position));
     }
-
     resumeSessionTurns(sessionId: string): void {
         const session = this.sessions.get(sessionId);
         if (session) this.lifecycle.resumeGameSessionTurn(session);
     }
-
     stopSessionTimers(session: GameSessionRuntime): void {
         this.lifecycle.stopSessionTimers(session);
     }
-
     endCombat(sessionId: string, winnerId: string, loserId: string): void {
         this.sessionActions.resolveCombatEnd(sessionId, winnerId, loserId);
     }
-
     resolveCombatTie(sessionId: string, winnerId: string, loserId: string): void {
         this.sessionActions.resolveCombatTie(sessionId, winnerId, loserId);
     }
-
     private runSessionAction(sessionId: string, action: () => boolean): boolean {
         const success = action();
-        if (!success) {
-            return false;
-        }
-
+        if (!success) return false;
         const session = this.sessions.get(sessionId);
-        if (session) {
-            this.scheduleVirtualDecision(session);
-        }
-
+        if (session) this.scheduleVirtualDecision(session);
         return true;
     }
-
     private scheduleVirtualDecision(session: GameSessionRuntime): void {
         if (session.virtualDecisionTimeoutId) {
             clearTimeout(session.virtualDecisionTimeoutId);
             session.virtualDecisionTimeoutId = null;
         }
-
         const activeVirtualPlayer = this.getActiveVirtualPlayer(session);
         if (!activeVirtualPlayer || session.match.endState) {
             return;
         }
-
         const delayMs = VIRTUAL_PLAYER_MIN_DELAY_MS + Math.floor(Math.random() * VIRTUAL_PLAYER_DELAY_VARIANCE_MS);
         session.virtualDecisionTimeoutId = setTimeout(() => {
             session.virtualDecisionTimeoutId = null;
             this.performVirtualDecision(session.sessionId, activeVirtualPlayer.id);
         }, delayMs);
     }
-
     appendCombatRoundLogs(sessionId: string, statistics: CombatPlayerStatistics[]): void {
         const session = this.sessions.get(sessionId);
-        if (!session) {
-            return;
-        }
-
+        if (!session) return;
         this.lifecycle.appendCombatRoundLogEntries(session, statistics);
         this.lifecycle.emitSnapshot(session);
     }
-
     private buildSnapshot(session: GameSessionRuntime, playerId: string): GameSessionSnapshotPayload {
         return {
             sessionId: session.sessionId,
@@ -367,37 +296,24 @@ export class GameSessionService {
                 .map((entry) => ({ ...entry.entry, involvedPlayers: [...entry.entry.involvedPlayers] })),
         };
     }
-
     private performVirtualDecision(sessionId: string, playerId: string): void {
         const session = this.sessions.get(sessionId);
-        if (!session) {
-            return;
-        }
-
+        if (!session) return;
         const activeVirtualPlayer = this.getActiveVirtualPlayer(session);
-        if (!activeVirtualPlayer || activeVirtualPlayer.id !== playerId) {
-            return;
-        }
-
+        if (!activeVirtualPlayer || activeVirtualPlayer.id !== playerId) return;
         if (session.match.pendingSanctuaryChoice?.playerId === playerId) {
             const choice = activeVirtualPlayer.virtualProfile === 'aggressive' ? 'double-or-nothing' : 'normal';
             this.resolveSanctuaryChoice(sessionId, playerId, choice);
             return;
         }
-
         const decision = planVirtualPlayerDecision(session.match, session.turnState, activeVirtualPlayer);
         this.executeVirtualDecision(sessionId, playerId, decision);
     }
-
     private getActiveVirtualPlayer(session: GameSessionRuntime): MatchPlayer | null {
-        if (session.turnState.phase !== 'active' || !session.turnState.activePlayerId) {
-            return null;
-        }
-
+        if (session.turnState.phase !== 'active' || !session.turnState.activePlayerId) return null;
         const activePlayer = session.match.players.find((player) => player.id === session.turnState.activePlayerId) ?? null;
         return activePlayer?.controller === 'virtual' ? activePlayer : null;
     }
-
     private executeVirtualDecision(
         sessionId: string,
         playerId: string,
@@ -423,7 +339,6 @@ export class GameSessionService {
                 return;
         }
     }
-
     private runVirtualDecisionAction(action: () => boolean, sessionId: string, playerId: string): void {
         if (!action()) this.endTurn(sessionId, playerId);
     }

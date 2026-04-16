@@ -109,4 +109,28 @@ describe('CombatGateway virtual players', () => {
 
     expect(combatServiceMock.combatTurn).toHaveBeenCalledWith(payload.combatId, 'player-2', 'defense');
   });
+
+  it('does not auto-submit a stance during a transition turn', () => {
+    const payload: CombatTurnSnapshot = createCombatTurnSnapshot({
+      combatId: '6745',
+      gameSessionId: 'game-1',
+      turnState: makeTurnState({ activePlayerId: 'player-2', phase: 'transition' }),
+    });
+
+    gateway.handleTurnSwitch(payload);
+
+    expect(combatServiceMock.combatTurn).not.toHaveBeenCalled();
+  });
+
+  it('does not auto-submit a stance when no combatant is active', () => {
+    const payload: CombatTurnSnapshot = createCombatTurnSnapshot({
+      combatId: '6745',
+      gameSessionId: 'game-1',
+      turnState: makeTurnState({ activePlayerId: null, phase: 'active' }),
+    });
+
+    gateway.handleTurnSwitch(payload);
+
+    expect(combatServiceMock.combatTurn).not.toHaveBeenCalled();
+  });
 });

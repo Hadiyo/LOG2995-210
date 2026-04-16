@@ -19,7 +19,6 @@ import {
     InitializedMatch,
     MatchPendingFlagTransfer,
     MatchPlayer,
-    MatchTeamId,
 } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
