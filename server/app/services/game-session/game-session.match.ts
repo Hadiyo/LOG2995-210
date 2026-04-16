@@ -1,4 +1,5 @@
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
+import { MovementDirection } from '@common/game/movement-direction';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer, MatchSanctuaryState } from '@common/game/match.interface';
 import { buildTeamAssignments, buildVisibleObjects } from '@common/game/match.utils';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
@@ -49,7 +50,7 @@ export function buildInitializedMatchFromEditor(
     };
 }
 
-export function getGameSessionDestination(position: Vec2, direction: 'up' | 'down' | 'left' | 'right'): Vec2 {
+export function getGameSessionDestination(position: Vec2, direction: MovementDirection): Vec2 {
     const offsets = {
         up: { x: 0, y: -1 },
         down: { x: 0, y: 1 },
@@ -176,4 +177,3 @@ export function dropFlag(session: GameSessionRuntime, loser: MatchPlayer): void 
         allObjects: buildVisibleObjects(nextAllObjects, session.match.players, null),   
     };
 }
-

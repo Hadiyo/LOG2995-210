@@ -1,10 +1,11 @@
 import { inject, Injectable } from '@angular/core';
+import { MovementDirection } from '@common/game/movement-direction';
 import { MatchPlayer } from '@common/game/match.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { positionKey } from '@app/services/match/match-geometry';
 import { MatchBoardService } from '@app/services/match/match-board.service';
 import { MatchInteractionService } from '@app/services/match/match-interaction.service';
-import { MatchMovementService, MovementDirection } from '@app/services/match/match-movement.service';
+import { MatchMovementService } from '@app/services/match/match-movement.service';
 import { MOVEMENT_DIRECTIONS } from '@app/config/game-session.config';
 import { GameSessionDisplayService } from './game-session-display.service';
 

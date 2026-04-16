@@ -64,7 +64,7 @@ function buildPlayerInformation(player: MatchPlayer): Player['information'] {
             attack: player.attackDie,
             defense: player.defenseDie,
         },
-        bonus: player.speed > CHARACTER_BASE_ATTRIBUTES.rapidite ? 'speed' : 'life',
+        bonus: player.speed > CHARACTER_BASE_ATTRIBUTES.speed ? 'speed' : 'health',
     };
 }
 

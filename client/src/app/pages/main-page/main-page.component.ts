@@ -2,8 +2,16 @@ import { AfterViewInit, Component, ElementRef, ViewChild, signal } from '@angula
 import { Router } from '@angular/router';
 import { AppButtonComponent } from '@app/components/app-button/app-button.component';
 import { NameSliderComponent } from '@app/components/name-slider/name-slider.component';
+import { ButtonVariant } from '@app/shared/ui/button.types';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
+
+interface MainPageAction {
+  id: 'create-game' | 'join-game' | 'admin-map';
+  label: string;
+  link?: string;
+  variant: ButtonVariant;
+}
 
 @Component({
   selector: 'app-main-page',
@@ -17,30 +25,24 @@ export class MainPageComponent implements AfterViewInit {
   readonly backgroundVideoUrl = resolveAssetUrl('assets/videos/video.mp4');
   readonly heroLogoUrl = resolveAssetUrl('assets/images/logo.png');
 
-  readonly title: string = 'LOG2995';
-  readonly actions: readonly {
-    id: 'create-game' | 'join-game' | 'admin-map';
-    label: string;
-    variant: 'primary' | 'secondary' | 'tertiary' | 'ghost';
-    link?: string;
-  }[] = [
+  readonly actions: readonly MainPageAction[] = [
       {
         id: 'create-game',
         label: 'CREER UNE PARTIE',
         link: '/game',
-        variant: 'primary',
+        variant: ButtonVariant.Primary,
       },
       {
         id: 'join-game',
         label: 'JOINDRE UNE PARTIE',
         link: '/join-room',
-        variant: 'secondary',
+        variant: ButtonVariant.Secondary,
       },
       {
         id: 'admin-map',
         label: 'ADMINISTRER LES CARTES',
         link: '/admin',
-        variant: 'tertiary',
+        variant: ButtonVariant.Tertiary,
       },
     ];
 

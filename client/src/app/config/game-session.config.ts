@@ -1,6 +1,11 @@
-import { MovementDirection } from '@app/services/match/match-movement.service';
+import { MovementDirection } from '@common/game/movement-direction';
 
-export type GameSessionActionContext = 'combat' | 'door' | 'flag-transfer' | 'sanctuary';
+export enum GameSessionActionContext {
+    Combat = 'combat',
+    Door = 'door',
+    FlagTransfer = 'flag-transfer',
+    Sanctuary = 'sanctuary',
+}
 
 export interface GameSessionActionOption {
     context: GameSessionActionContext;

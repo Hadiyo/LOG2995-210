@@ -9,9 +9,9 @@ export type AvatarProfile = {
 
 // The base attributes that every character starts with before applying bonuses
 export const CHARACTER_BASE_ATTRIBUTES = {
-  vie: 6,
-  rapidite: 6,
-  attaque: 4,
+  health: 6,
+  speed: 6,
+  attack: 4,
   defense: 4,
 } as const;
 
@@ -20,13 +20,13 @@ export const CHARACTER_NAME_MAX_LENGTH = 25 as const;
 
 // The value added to the chosen attribute when applying the +2 bonus
 export const CHARACTER_PLUS_TWO_VALUE = 2 as const;
-export const PLUS_TWO_ATTRIBUTE_NAMES = ['vie', 'rapidite'] as const;
+export const PLUS_TWO_ATTRIBUTE_NAMES = ['health', 'speed'] as const;
 
 // The list of dice options for attack and defense bonuses
 export const DICE = ['D4', 'D6'] as const;
 export const DIE_D4_SIDES = 4 as const;
 export const DIE_D6_SIDES = 6 as const;
-export const DIE_TARGET_ATTRIBUTE_NAMES = ['attaque', 'defense'] as const;
+export const DIE_TARGET_ATTRIBUTE_NAMES = ['attack', 'defense'] as const;
 
 // The list of 12 avatar IDs available for character creation
 export const AVATAR_IDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
@@ -105,4 +105,3 @@ export const AVATAR_PROFILES: Record<AvatarId, AvatarProfile> = {
     description: 'Chasseur de fragments d’astrolabe. Veille aux frontières du royaume céleste.',
   },
 };
-
