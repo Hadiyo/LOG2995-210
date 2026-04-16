@@ -1,5 +1,6 @@
 import { GameSessionGateway } from '@app/gateways/game-session/game-session.gateway';
-import { createMockSocket } from '@app/gateways/mocks';
+import { CombatService } from '@app/services/combat/combat.service';
+import { createMockSocket } from '@app/utilities/mocks/mocks';
 import {
     DebugTeleportPlayerPayload,
     EndGameTurnPayload,
@@ -20,12 +21,15 @@ import { Server } from 'socket.io';
 describe('GameSessionGateway', () => {
     let gateway: GameSessionGateway;
     let gameSessionService: Record<string, jest.Mock>;
-    let logger: { log: jest.Mock };
+    let mockCombatService: Partial<CombatService>;
     let serverToEmit: jest.Mock;
     let handlers: Record<string, ((payload: unknown) => void) | undefined>;
 
     beforeEach(() => {
         handlers = {};
+        mockCombatService = {
+            handleDisconnect: jest.fn(),
+        };
         gameSessionService = {
             on: jest.fn((event: string, handler: (payload: unknown) => void) => {
                 handlers[event] = handler;
@@ -46,13 +50,12 @@ describe('GameSessionGateway', () => {
             startCombat: jest.fn(),
             toggleDoor: jest.fn(),
         };
-        logger = { log: jest.fn() };
         serverToEmit = jest.fn();
         const server = {
             to: jest.fn().mockReturnValue({ emit: serverToEmit }),
         } as unknown as Server;
 
-        gateway = new GameSessionGateway(gameSessionService as never, logger as never);
+        gateway = new GameSessionGateway(gameSessionService as never, mockCombatService as never);
         (gateway as unknown as { server: Server }).server = server;
     });
 
@@ -84,7 +87,6 @@ describe('GameSessionGateway', () => {
         gateway.handleDisconnect(createMockSocket('socket-1'));
         gateway.handleDisconnect(createMockSocket('socket-2'));
 
-        expect(logger.log).toHaveBeenCalledWith('Client socket-1 disconnected.');
         expect(gameSessionService.surrender).toHaveBeenCalledWith('session-1', 'player-1');
     });
 

@@ -10,7 +10,6 @@ import { CombatTimeoutPayload } from '@app/utilities/combat/combat.types';
 import { Die, DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { CombatPlayerStatistics, FighterStance } from '@common/combat/combat.interface';
 import { MatchPlayer } from '@common/game/match.interface';
-import { SessionSocketEvents } from '@common/socket-events';
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { CombatTurnService } from './combat-turn.service';
@@ -26,20 +25,23 @@ export class CombatService {
 
     @OnEvent(CombatEvents.Timeout)
     handleTurnTimeout(payload: CombatTimeoutPayload): void {
+        const session = this.combatSessions.get(payload.combatId);
+        if (!session) return;
         this.combatTurn(payload.combatId, payload.playerId, null);
     };
 
-    @OnEvent(SessionSocketEvents.ClientDisconnect)
     handleDisconnect(playerId: string): void {
         const combat = this.getCombatFromPlayer(playerId);
         if(!combat)
             return;
-        const opponent = combat.players.find((player) => player.stats.id !== playerId);
-        if(opponent){
-            this.gameSessionService.endCombat(combat.gameSessionId, opponent.stats.id, null);
-            this.emitCombatResultSnapshot(CombatEvents.ClientDisconnect, combat, opponent.stats.id, playerId);
-        }
         this.endCombat(combat.id);
+        const opponent = combat.players.find((player) => player.stats.id !== playerId);
+        const session = this.gameSessionService.getSessionById(combat.gameSessionId);
+        if(!session || !opponent)
+            return ;
+        const gameOpponent = session.match.players.find((fighter) => fighter.id === opponent.stats.id);
+        gameOpponent.combatWins += 1;
+        this.emitCombatResultSnapshot(CombatEvents.ClientDisconnect, combat, opponent.stats.id, playerId);
     };
 
     getCombatIdByRooms(rooms: string[]): string | undefined {
@@ -108,7 +110,8 @@ export class CombatService {
 
     combatTurn(sessionId: string, playerId: string, stance: FighterStance): boolean {
         const session = this.combatSessions.get(sessionId);
-
+        if(!session)
+            return false;
         if(!this.setCombatStance(session, playerId, stance))
             return false;
 
@@ -158,8 +161,8 @@ export class CombatService {
                 return false;
 
             session.round += 1;
-            this.switchCombatTurn(session, currentPlayer.stats.id);
             this.emitCombatStatistics(session.id, attacks);
+            return this.switchCombatTurn(session, currentPlayer.stats.id);
         }
         return true;
     }

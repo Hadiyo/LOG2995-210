@@ -1,7 +1,7 @@
 import { MapGateway } from '@app/gateways/map/map.gateway';
-import { createMockLogger, createMockServer, createMockSocket } from '@app/gateways/mocks';
 import { PageRoom } from '@app/gateways/rooms.record';
 import { MapService } from '@app/services/map/map.service';
+import { createMockLogger, createMockServer, createMockSocket } from '@app/utilities/mocks/mocks';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import type { EditorMap, MapSummary } from '@common/maps/map.interface';
 import { MapSocketEvents, MapVisibilityEventPayload } from '@common/socket-events';

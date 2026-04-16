@@ -7,6 +7,7 @@ import {
     resumeTimers,
     startTimerTransition,
 } from '@app/services/timer/turn.timers';
+import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
 import { ACTIVE_TURN_DURATION_MS, TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { TimerConfig } from '@app/utilities/turn/turn.type';
@@ -20,10 +21,12 @@ import {
 import { MatchTurnState } from '@common/game/turn.interface';
 import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { SessionSocketEvents } from '@common/socket-events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventEmitter } from 'events';
 import { progressGameSessionSanctuaryEffects } from './game-session.sanctuary';
 
 export class GameSessionLifecycle {
+    private readonly events2 = new EventEmitter2();
     private readonly startTimerConfig: TimerConfig<GameSessionRuntime> = {
         emitSnapshot: (session) => this.emitSnapshot(session),
         onTransitionEnd: (session) => this.activateTurn(session),
@@ -107,6 +110,7 @@ export class GameSessionLifecycle {
         };
         this.emitSnapshot(session);
         this.sessions.delete(session.sessionId);
+        this.events2.emit(GameSessionEvents.OnGameEnd, { id: session.sessionId });
     }
 
     emitSnapshot(session: GameSessionRuntime): void {
@@ -293,10 +297,6 @@ export class GameSessionLifecycle {
             winnerTeamId: session.match.mode === GameMode.CTF ? winner.teamId : null,
             message: `${winner.name} remporte la partie avec ${winner.combatWins} victoires de combat.`,
             resolvedAt: Date.now(),
-        };
-        session.turnState = {
-            ...session.turnState,
-            actionTaken: true,
         };
         this.finishMatch(session);
         this.emitSnapshot(session);

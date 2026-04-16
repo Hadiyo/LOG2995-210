@@ -21,13 +21,6 @@ export class CombatGateway {
   constructor(
     private readonly combatService: CombatService, 
     private readonly gameSessionService: GameSessionService){}
-  
-  handleDisconnect(client: Socket): void {
-    const rooms = Array.from(client.rooms);
-    const combatId = this.combatService.getCombatIdByRooms(rooms);
-    if(combatId)
-      client.leave(combatId);
-  }
 
   @SubscribeMessage(CombatSocketEvents.StartCombat)
   async startCombat(@ConnectedSocket() client: Socket, @MessageBody() payload: StartCombatPayload): Promise<void> {
@@ -83,6 +76,7 @@ export class CombatGateway {
       const newPayload = { winner: payload.winner, loser: payload.loser };
       this.server.to(payload.combatId).emit(CombatSocketEvents.Victory, newPayload);
       this.server.to(getGameSessionRoom(payload.gameSessionId)).emit(SessionSocketEvents.CombatVictory, newPayload);
+      this.server.in(payload.combatId).socketsLeave(payload.combatId);
     }
   }
 
@@ -92,6 +86,7 @@ export class CombatGateway {
       const newPayload = { player1: payload.winner, player2: payload.loser };
       this.server.to(payload.combatId).emit(CombatSocketEvents.Tie, newPayload);
       this.server.to(getGameSessionRoom(payload.gameSessionId)).emit(SessionSocketEvents.CombatTie, newPayload);
+      this.server.in(payload.combatId).socketsLeave(payload.combatId);
     }
   }
 
@@ -99,10 +94,9 @@ export class CombatGateway {
   handleOpponentDisconnect(payload: CombatResultSnapshot): void {
     if(payload.combatId && payload.gameSessionId){
       const newPayload = { winner: payload.winner, loser: payload.loser };
-      this.server.to(payload.combatId).emit(CombatSocketEvents.Disconnect, newPayload);
-      const socket = this.getOpponentSocket(payload.gameSessionId, payload.winner);
-      if(socket)
-        socket.leave(payload.combatId);
+      this.server.to(payload.combatId).emit(CombatSocketEvents.HandleDisconnect, newPayload);
+      this.server.to(payload.gameSessionId).emit(SessionSocketEvents.ClientDisconnect, newPayload);
+      this.server.in(payload.combatId).socketsLeave(payload.combatId);
     }
   }
 

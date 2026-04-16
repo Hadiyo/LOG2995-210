@@ -9,9 +9,15 @@ import {
 } from '@app/services/game-session/game-session.service.spec-helpers';
 import * as timerUtils from '@app/services/timer/turn.timers';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
+import {
+    createCombatTurnServiceMock,
+    createEventEmitterMock,
+    createGameSessionMock,
+    makeCombatSession,
+    makeFighter,
+} from '@app/utilities/mocks/mocks';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test, TestingModule } from '@nestjs/testing';
-import { createCombatTurnServiceMock, createEventEmitterMock, createGameSessionMock, makeCombatSession, makeFighter } from './combat-service.helper';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
 
@@ -208,7 +214,13 @@ describe('Combat Life Cycle', () => {
         const timerSpy = jest.spyOn(timerUtils, 'clearTurnState').mockImplementation();
         service.endCombat('5678');
         expect(timerSpy).not.toHaveBeenCalled();;
-      });
+    });
+
+    it('should return false if the session is undefined - combatTurn', () => {
+        const session = makeCombatSession();
+        const result = service.combatTurn(session.id, 'player1', 'attack');
+        expect(result).toBe(false);
+    });
     
     it('should return false if the players stance was not set correctly - combatTurn', () => {
         const session = makeCombatSession();
@@ -329,39 +341,47 @@ describe('Combat Life Cycle', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'getCombatFromPlayer').mockReturnValue(combat);
         const spy = jest.spyOn(service, 'endCombat').mockImplementation();
-        const spy2 = jest.spyOn(gameSessionMock, 'endCombat').mockImplementation();
 
         service['handleDisconnect'](player.stats.id);
 
         expect(spy).toHaveBeenCalledWith(combat.id);
-        expect(spy2).not.toHaveBeenCalled();
     });
 
     it('should set the winner and emit the combat results if the opponent is still in the combat session', () => {
         const player1 = makeFighter({}, {id:'player1'});
         const player2 = makeFighter({}, {id: 'player2'});
         const combat = makeCombatSession({players: [player1, player2]});
+        const gameSession = makeRuntime({ match: makeMatch({players: [player2.stats]})});
+        jest.spyOn(gameSessionMock, 'getSessionById').mockReturnValue(gameSession);
         // To mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         jest.spyOn(service as any, 'getCombatFromPlayer').mockReturnValue(combat);
         const spy = jest.spyOn(service, 'endCombat').mockImplementation();
-        const spy2 = jest.spyOn(gameSessionMock, 'endCombat').mockImplementation();
         // To spy and mock a private method
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const spy3 = jest.spyOn(service as any, 'emitCombatResultSnapshot').mockImplementation();
 
         service['handleDisconnect'](player1.stats.id);
 
-        expect(spy2).toHaveBeenCalledWith(combat.gameSessionId, player2.stats.id, null);
         expect(spy3).toHaveBeenCalledWith(CombatEvents.ClientDisconnect, combat, player2.stats.id, player1.stats.id);
         expect(spy).toHaveBeenCalledWith(combat.id);
     });
 
     it('should submit a null stance when the active combat turn times out', () => {
+        const session = makeCombatSession({ id: 'combat-1'});
+        service['combatSessions'].set(session.id, session);
         const combatTurnSpy = jest.spyOn(service, 'combatTurn').mockReturnValue(false);
 
         service['handleTurnTimeout']({ combatId: 'combat-1', playerId: 'player-1' });
 
         expect(combatTurnSpy).toHaveBeenCalledWith('combat-1', 'player-1', null);
+    });
+
+    it('should return undefined if the session does not exist - handleTurnTimeout', () => {
+        const combatTurnSpy = jest.spyOn(service, 'combatTurn').mockImplementation();
+
+        service['handleTurnTimeout']({ combatId: 'combat-1', playerId: 'player-1' });
+
+        expect(combatTurnSpy).not.toHaveBeenCalled();
     });
 });

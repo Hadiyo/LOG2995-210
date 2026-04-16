@@ -3,8 +3,6 @@ import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { buildVisibleObjects } from '@common/game/match.utils';
 import { ObjectType } from '@common/maps/map.enums';
-import { SessionSocketEvents } from '@common/socket-events';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { canUseDebugTeleport, isDebugTeleportDestinationAvailable } from './game-session.debug';
 import { GameSessionLifecycle } from './game-session.lifecycle';
 import { dropFlag } from './game-session.match';
@@ -12,7 +10,7 @@ import { applyFacingTowardPosition } from './game-session.render';
 import { rebuildTurnStateAfterRosterChange, resolveRespawnPosition } from './game-session.runtime';
 
 export class GameSessionSessionActions {
-    private readonly event = new EventEmitter2();
+    
     constructor(
         private readonly sessions: Map<string, GameSessionRuntime>,
         private readonly lifecycle: GameSessionLifecycle,
@@ -93,7 +91,6 @@ export class GameSessionSessionActions {
         if (!session) {
             return false;
         }
-
         const departingPlayer = session.match.players.find((player) => player.id === playerId);
         const organizerLeftWhileDebugEnabled = !!departingPlayer?.isOrganizer && session.match.debugMode;
         const nextPlayers = session.match.players.filter((player) => player.id !== playerId);
@@ -130,7 +127,6 @@ export class GameSessionSessionActions {
             this.lifecycle.startTransition(session);
             return true;
         }
-        this.event.emit(SessionSocketEvents.ClientDisconnect, playerId);
         this.lifecycle.emitSnapshot(session);
         return true;
     }
@@ -201,29 +197,29 @@ export class GameSessionSessionActions {
 
     resolveCombatEnd(sessionId: string, winnerId: string, loserId: string | null): void {
         const session = this.sessions.get(sessionId);
+        if(!session) return;
         const currentPlayer = this.lifecycle.getActivePlayer(session);
-        if(!session)
-            return;
+        if(!currentPlayer) return;
 
         const winner = session.match.players.find((player) => player.id === winnerId);
-        if(winner)
-            winner.combatWins += 1;
         if(loserId){
             const loser = session.match.players.find((player) => player.id === loserId);
             if(loser){
                 loser.health = loser.maxHealth;
-                loser.position = resolveRespawnPosition(session.match, loser.id);
                 if (session.match.flagCarrierId === loserId)
                     dropFlag(session, loser);
+                loser.position = resolveRespawnPosition(session.match, loser.id);
             }
         }
-        if(winner.combatWins < MAXIMUM_WINS){
+        if(winner)
+            winner.combatWins += 1;
+        if(winner.combatWins === MAXIMUM_WINS){
+            this.lifecycle.finishMatchOnCombatVictories(session, winner);
+        } else {
             if(currentPlayer.id === winnerId && session.turnState.movementPointsRemaining > 0)
                 this.lifecycle.resumeGameSessionTurn(session);
             else
                 this.lifecycle.advanceToNextTurn(session);
-        } else {
-            this.lifecycle.finishMatchOnCombatVictories(session, winner);
         }
     }
 
@@ -232,7 +228,7 @@ export class GameSessionSessionActions {
         const winner = session.match.players.find((player) => player.id === winnerId);
         const loser = session.match.players.find((player) => player.id === loserId);
 
-        if(!winner || !loser)
+        if(!session || !winner || !loser)
             return;
 
         loser.health = loser.maxHealth;

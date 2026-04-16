@@ -2,9 +2,6 @@ import { GameSessionService } from '@app/services/game-session/game-session.serv
 import { makeMatch } from '@app/services/game-session/game-session.service.spec-helpers';
 import { BONUS, MIN_DIE_VALUE } from '@app/utilities/combat/combat.constants';
 import { CombatEvents } from '@app/utilities/combat/combat.enums';
-import { DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Test, TestingModule } from '@nestjs/testing';
 import {
   createCombatTurnServiceMock,
   createEventEmitterMock,
@@ -13,7 +10,10 @@ import {
   makeCombatSession,
   makeFighter,
   makeFighterPayload,
-} from './combat-service.helper';
+} from '@app/utilities/mocks/mocks';
+import { DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Test, TestingModule } from '@nestjs/testing';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
 

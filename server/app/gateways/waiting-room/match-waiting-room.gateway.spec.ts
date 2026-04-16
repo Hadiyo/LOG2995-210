@@ -1,9 +1,9 @@
-import { createMockSocket } from '@app/gateways/mocks';
 import { MatchWaitingRoomGateway } from '@app/gateways/waiting-room/match-waiting-room.gateway';
+import { createMockSocket } from '@app/utilities/mocks/mocks';
 import {
-    CreateWaitingRoomPayload,
-    getWaitingRoomRoom,
-    WaitingRoomEvents,
+  CreateWaitingRoomPayload,
+  getWaitingRoomRoom,
+  WaitingRoomEvents,
 } from '@common/socket-events';
 import { Server } from 'socket.io';
 

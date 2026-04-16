@@ -1,11 +1,13 @@
 import { MapService } from '@app/services/map/map.service';
 import { clearTimers } from '@app/services/timer/turn.timers';
+import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
 import { SessionSocketEvents } from '@common/socket-events';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventEmitter } from 'events';
 import { GameSessionActions } from './game-session.actions';
 import { GameSessionLifecycle } from './game-session.lifecycle';
@@ -16,6 +18,7 @@ import { GameSessionSessionActions } from './game-session.session-actions';
 export class GameSessionService {
     private readonly sessions = new Map<string, GameSessionRuntime>();
     private readonly events = new EventEmitter();
+    private readonly event2 = new EventEmitter2();
     private readonly lifecycle = new GameSessionLifecycle(this.sessions, this.events);
     private readonly sessionActions = new GameSessionSessionActions(this.sessions, this.lifecycle);
     private readonly actions = new GameSessionActions(this.sessions, this.lifecycle);
@@ -122,7 +125,6 @@ export class GameSessionService {
             if (!playerId) {
                 continue;
             }
-
             session.socketToPlayerId.delete(socketId);
             const playerStillConnected = [...session.socketToPlayerId.values()].some((connectedPlayerId) => connectedPlayerId === playerId);
             if (playerStillConnected) {
@@ -143,6 +145,7 @@ export class GameSessionService {
 
         clearTimers(session);
         this.sessions.delete(sessionId);
+        this.event2.emit(GameSessionEvents.OnGameEnd, { id: sessionId });
     }
 
     endTurn(sessionId: string, playerId: string): boolean {

@@ -1,5 +1,5 @@
-import { createMockLogger, createMockSocket } from '@app/gateways/mocks';
 import { PageRoom } from '@app/gateways/rooms.record';
+import { createMockLogger, createMockSocket } from '@app/utilities/mocks/mocks';
 import { PageContext } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';

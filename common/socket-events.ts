@@ -46,7 +46,6 @@ export enum SessionSocketEvents {
     CombatTie = 'combatTie',
     CombatWaitingSnapshot = 'combatWaitingSnapshot',
     ClientDisconnect = 'clientDisconnect',
-
 }
 
 export enum CombatSocketEvents {
@@ -63,7 +62,7 @@ export enum CombatSocketEvents {
     Tie = 'tie', 
     TurnSnapshot = 'TurnSnapshot', 
     AttackSnapshot = 'AttackSnapshot', 
-    Disconnect = 'disconnect',
+    HandleDisconnect = 'handleDisconnect',
     CombatSessionError = 'combatSessionError',
 }
 

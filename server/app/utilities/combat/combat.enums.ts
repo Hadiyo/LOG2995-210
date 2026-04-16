@@ -7,3 +7,8 @@ export enum CombatEvents {
     Tie = 'tie',
     ClientDisconnect = 'clientDisconnect'
 }
+
+export enum GameSessionEvents {
+    ClientDisconnect = 'clientDisconnect',
+    OnGameEnd = 'onGameEnd',
+}
