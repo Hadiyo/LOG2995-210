@@ -1,3 +1,4 @@
+import { CombatService } from '@app/services/combat/combat.service';
 import { MapService } from '@app/services/map/map.service';
 import { ATTACK_POSE_DURATION_MS, TRANSITION_DURATION_MS, WALK_POSE_DURATION_MS } from '@app/utilities/game/game.constants';
 import { InitializedMatch, MatchLobbyPlayer } from '@common/game/match.interface';
@@ -88,6 +89,7 @@ const createDoorMap = (): EditorMapDetails => ({
 describe('GameSessionService', () => {
     let service: GameSessionService;
     let mapService: jest.Mocked<Pick<MapService, 'getMapByIdForEditor'>>;
+    let combatService: jest.Mocked<Pick<CombatService, 'createCombatSession' | 'startCombat'>>;
     let snapshots: { sessionId: string; match: InitializedMatch }[];
 
     beforeEach(() => {
@@ -96,7 +98,11 @@ describe('GameSessionService', () => {
         mapService = {
             getMapByIdForEditor: jest.fn().mockResolvedValue(createMap()),
         };
-        service = new GameSessionService(mapService as unknown as MapService);
+        combatService = {
+            createCombatSession: jest.fn(),
+            startCombat: jest.fn(),
+        };
+        service = new GameSessionService(mapService as unknown as MapService, combatService as unknown as CombatService);
         snapshots = [];
         service.on<GameSessionSnapshotPayload>(SessionSocketEvents.GameSessionSnapshot, (payload) => {
             snapshots.push({ sessionId: payload.sessionId, match: payload.match });
