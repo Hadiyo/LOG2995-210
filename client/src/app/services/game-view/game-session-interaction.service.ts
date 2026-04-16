@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { MovementDirection } from '@common/game/movement-direction';
 import {
     EDITABLE_TARGET_TAGS,
     GameSessionActionContext,
@@ -6,15 +7,22 @@ import {
     MOVEMENT_KEY_BINDINGS,
 } from '@app/config/game-session.config';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
-import { positionKey } from '@app/services/match/match-geometry';
-import { MatchMovementService, MovementDirection } from '@app/services/match/match-movement.service';
+import { MatchMovementService } from '@app/services/match/match-movement.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { TurnStateService } from '@app/services/match/turn-state.service';
 import { MatchPlayer, MatchSanctuaryChoice, MatchTileInspection } from '@common/game/match.interface';
-import { ObjectType, TileType } from '@common/maps/map.enums';
+import { ObjectType } from '@common/maps/map.enums';
 import { EditorCell } from '@common/maps/map.interface';
 import { GameSessionDisplayService } from './game-session-display.service';
-import { collectActionTargetKeys, createActionTargetSets, resolveActionContextFromTile } from './game-session-interaction-selection.utils';
+import {
+    GameSessionInteractionActionContext,
+    getLocalMatchPlayer,
+    getPendingSanctuaryObject,
+    handlePrimaryActionTile,
+    hasActiveInteractionUi,
+    tryDebugTeleport,
+} from './game-session-interaction.actions';
+import { collectActionTargetKeys, createActionTargetSets } from './game-session-interaction-selection.utils';
 import { GameSessionTargetsService } from './game-session-targets.service';
 
 @Injectable()
@@ -231,17 +239,7 @@ export class GameSessionInteractionService {
     }
 
     handleCellPrimaryAction(tile: EditorCell): void {
-        if (this.actionContext() === GameSessionActionContext.Sanctuary) {
-            this.handleSanctuaryAction(tile);
-        } else if (this.actionContext() === GameSessionActionContext.Combat) {
-            this.handleCombatAction(tile);
-        } else if (this.actionContext() === GameSessionActionContext.FlagTransfer) {
-            this.handleFlagTransferAction(tile);
-        } else if (this.actionContext() === GameSessionActionContext.Door) {
-            this.handleDoorAction(tile);
-        } else if (this.actionSelectionOpen()) {
-            this.handleHighlightedAction(tile);
-        }
+        handlePrimaryActionTile(this.createActionContext(), tile);
     }
 
     handleMovementKeyup(event: KeyboardEvent): void {
@@ -254,78 +252,6 @@ export class GameSessionInteractionService {
         this.moveLocal(direction);
     }
 
-    private handleCombatAction(tile: EditorCell): void {
-        const localPlayer = this.getLocalMatchPlayer();
-        const targetPlayer = this.display.playerAt(tile);
-        if (!localPlayer || !targetPlayer) {
-            this.movementFeedback.set('Action ignoree: cible invalide.');
-            return;
-        }
-
-        this.gameSessionSocket.startCombat(localPlayer.id, targetPlayer.id);
-        this.clearActionSelection();
-        this.closeInspection();
-        this.movementFeedback.set(`Combat engage contre ${targetPlayer.name}.`);
-    }
-
-    private handleSanctuaryAction(tile: EditorCell): void {
-        const localPlayer = this.getLocalMatchPlayer();
-        const sanctuary = this.display.objectAt(tile.position);
-        const isValidSanctuary = sanctuary && (sanctuary.type === ObjectType.REGEN || sanctuary.type === ObjectType.ARENA);
-        if (!localPlayer || !this.isActionTarget(tile) || !isValidSanctuary) {
-            this.movementFeedback.set('Action ignoree: cible invalide.');
-            return;
-        }
-
-        this.gameSessionSocket.useSanctuary(localPlayer.id, sanctuary.id);
-        this.clearActionSelection();
-        this.closeInspection();
-        this.movementFeedback.set('Choisissez comment utiliser ce sanctuaire.');
-    }
-
-    private handleDoorAction(tile: EditorCell): void {
-        const localPlayer = this.getLocalMatchPlayer();
-        if (!localPlayer || !this.isActionTarget(tile)) {
-            this.movementFeedback.set('Action ignoree: cible invalide.');
-            return;
-        }
-
-        this.gameSessionSocket.toggleDoor(localPlayer.id, tile.position);
-        this.clearActionSelection();
-        this.closeInspection();
-        this.movementFeedback.set(`Porte en (${tile.position.x}, ${tile.position.y}) actionnee.`);
-    }
-
-    private handleFlagTransferAction(tile: EditorCell): void {
-        const localPlayer = this.getLocalMatchPlayer();
-        const targetPlayer = this.display.playerAt(tile);
-        if (!localPlayer || !this.isActionTarget(tile) || !targetPlayer) {
-            this.movementFeedback.set('Action ignoree: transfert de drapeau impossible.');
-            return;
-        }
-
-        this.gameSessionSocket.requestFlagTransfer(localPlayer.id, targetPlayer.id);
-        this.clearActionSelection();
-        this.closeInspection();
-        this.movementFeedback.set(`Demande de transfert envoyee a ${targetPlayer.name}.`);
-    }
-
-    private handleHighlightedAction(tile: EditorCell): void {
-        const actionContext = resolveActionContextFromTile(positionKey(tile.position), createActionTargetSets(this.targets));
-        if (!actionContext) {
-            this.movementFeedback.set('Action ignoree: cible invalide.');
-            return;
-        }
-
-        const actionHandlers = new Map<GameSessionActionContext, () => void>([
-            [GameSessionActionContext.Sanctuary, () => this.handleSanctuaryAction(tile)],
-            [GameSessionActionContext.Combat, () => this.handleCombatAction(tile)],
-            [GameSessionActionContext.FlagTransfer, () => this.handleFlagTransferAction(tile)],
-            [GameSessionActionContext.Door, () => this.handleDoorAction(tile)],
-        ]);
-        actionHandlers.get(actionContext)?.();
-    }
-
     private shouldIgnoreMovementShortcut(event: KeyboardEvent): boolean {
         if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) {
             return true;
@@ -336,56 +262,34 @@ export class GameSessionInteractionService {
     }
 
     private tryDebugTeleport(tile: EditorCell): boolean {
-        const currentMatch = this.display.match();
-        const localPlayer = this.getLocalMatchPlayer();
-        if (!currentMatch ||
-            !localPlayer ||
-            !currentMatch.debugMode ||
-            this.display.matchEndState() ||
-            this.display.turnState()?.phase !== 'active' ||
-            this.display.turnState()?.activePlayerId !== localPlayer.id) {
-            return false;
-        }
-
-        if (tile.tileType === TileType.WALL || (tile.tileType === TileType.DOOR && !tile.isWalkable)) {
-            this.movementFeedback.set('Teleportation debug refusee: tuile invalide.');
-            return true;
-        }
-
-        const occupiedByPlayer = currentMatch.players.some(
-            (player) => player.id !== localPlayer.id && player.position.x === tile.position.x && player.position.y === tile.position.y,
-        );
-        const occupiedByObject = !!this.matchState.getObjectCovering(tile.position);
-        if (occupiedByPlayer || occupiedByObject) {
-            this.movementFeedback.set('Teleportation debug refusee: case occupee.');
-            return true;
-        }
-
-        this.gameSessionSocket.debugTeleportPlayer(localPlayer.id, tile.position);
-        this.closeInspection();
-        this.movementFeedback.set(`Teleportation debug envoyee au serveur vers (${tile.position.x}, ${tile.position.y}).`);
-        return true;
+        return tryDebugTeleport(this.createActionContext(), tile);
     }
 
     private getLocalMatchPlayer(): MatchPlayer | null {
-        return this.display.findPlayerById(this.display.localPlayer()?.id ?? null);
+        return getLocalMatchPlayer(this.display);
     }
 
     private getPendingSanctuaryObject() {
-        const pendingChoice = this.display.match()?.pendingSanctuaryChoice;
-        if (!pendingChoice) {
-            return null;
-        }
-
-        const object = this.display.match()?.allObjects.find((candidate) => candidate.id === pendingChoice.objectId) ?? null;
-        if (!object || (object.type !== ObjectType.REGEN && object.type !== ObjectType.ARENA)) {
-            return null;
-        }
-
-        return object;
+        return getPendingSanctuaryObject(this.display);
     }
 
     private hasActiveInteractionUi(): boolean {
-        return this.actionSelectionOpen() || !!this.actionContext() || this.sanctuaryPromptUiHold();
+        return hasActiveInteractionUi(this.actionSelectionOpen(), this.actionContext(), this.sanctuaryPromptUiHold());
+    }
+
+    private createActionContext(): GameSessionInteractionActionContext {
+        return {
+            actionContext: this.actionContext,
+            actionSelectionOpen: this.actionSelectionOpen,
+            clearActionSelection: () => this.clearActionSelection(),
+            closeInspection: () => this.closeInspection(),
+            display: this.display,
+            gameSessionSocket: this.gameSessionSocket,
+            isActionTarget: (tile) => this.isActionTarget(tile),
+            matchState: this.matchState,
+            movementFeedback: this.movementFeedback,
+            sanctuaryPromptUiHold: this.sanctuaryPromptUiHold,
+            targets: this.targets,
+        };
     }
 }

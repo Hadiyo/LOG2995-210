@@ -1,14 +1,8 @@
 import { ChatMessage } from './chat/chat.interface';
+import { MovementDirection } from './game/movement-direction';
 import { GameLogEntry } from './game/game-log-entry.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchSanctuaryChoice, VirtualPlayerProfile } from './game/match.interface';
 import { MatchTurnState } from './game/turn.interface';
-
-export enum SocketEvents {
-    MapCreated = 'mapCreated',
-    MapUpdated = 'mapUpdated',
-    MapDeleted = 'mapDeleted',
-    ToggleMapVisibility = 'toggleMapVisibility',
-}
 
 export enum ChatSocketEvents {
     SendMessage = 'sendMessage',
@@ -161,7 +155,7 @@ export interface JoinGameSessionPayload {
 export interface MoveGamePlayerPayload {
     sessionId: string;
     playerId: string;
-    direction: 'up' | 'down' | 'left' | 'right';
+    direction: MovementDirection;
 }
 
 export interface EndGameTurnPayload {

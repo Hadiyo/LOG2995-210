@@ -1,8 +1,9 @@
+import { MovementDirection } from '@common/game/movement-direction';
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { Vec2 } from '@common/maps/map.interface';
 import { getGameSessionDestination, getGameSessionMovementCost } from './game-session.match';
 
-export type MovementDirection = 'up' | 'down' | 'left' | 'right';
+export type { MovementDirection } from '@common/game/movement-direction';
 
 export interface MoveCandidate {
     cost: number;

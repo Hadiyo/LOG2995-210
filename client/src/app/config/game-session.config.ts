@@ -1,4 +1,4 @@
-import { MovementDirection } from '@app/services/match/match-movement.service';
+import { MovementDirection } from '@common/game/movement-direction';
 
 export enum GameSessionActionContext {
     Combat = 'combat',
