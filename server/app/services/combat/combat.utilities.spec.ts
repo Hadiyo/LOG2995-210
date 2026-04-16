@@ -129,7 +129,7 @@ describe('CombatService Helpers', () => {
     });
 
     it('should create a fighter if player is defined - createFighter', () => {
-        const player = makeMatchPlayer({id: 'player1'});
+        const player = makeMatchPlayer({id: 'player1', controller: 'human'});
         const players = [player];
 
         const fighter = service['createFighter'](players, player.id);
@@ -142,16 +142,11 @@ describe('CombatService Helpers', () => {
         });
     });
 
-    it('should create a fighter if the player is undefined - createFighter', () => {
+    it('should not create a fighter if the player is undefined - createFighter', () => {
         const players = [];
         const fighter = service['createFighter'](players, 'player1');
 
-        expect(fighter).toEqual({
-            stats: undefined,
-            combatStance: null,
-            hasSelectedStance: false,
-            hasPenalty: false,
-        });
+        expect(fighter).toEqual(null);
     });
 
     it('should return false if session is undefined - setCombatStance ', () => {
