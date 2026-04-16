@@ -314,8 +314,7 @@ describe('CombatService', () => {
   });
 
   it('should set a random dice roll if debug mode is off - attack', () => {
-    const ROLL1 = 3;
-    const ROLL2 = 2;
+    const ROLL1 = 3; const ROLL2 = 2;
     const session = makeCombatSession();
     const match = makeMatch({ debugMode: false });
 
@@ -338,8 +337,7 @@ describe('CombatService', () => {
   });
 
   it('should add the bonuses if the combatStance matches the player and the players are on ice - attack', () => {
-    const ROLL1 = 2;
-    const ROLL2 = 2;
+    const ROLL1 = 2; const ROLL2 = 2;
     const session = makeCombatSession();
     const match = makeMatch({ debugMode: false });
 
@@ -367,8 +365,7 @@ describe('CombatService', () => {
   });
 
   it('should include sanctuary bonuses and default missing ones to zero - attack', () => {
-    const bonusRoll1 = 3;
-    const bonusRoll2 = 2;
+    const bonusRoll1 = 3; const bonusRoll2 = 2;
     const fallbackRoll1 = 2;
     const fallbackRoll2 = 1;
     const match = makeMatch({ debugMode: false });

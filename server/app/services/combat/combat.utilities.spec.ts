@@ -1,5 +1,6 @@
 import { CombatTurnService } from '@app/services/combat/combat-turn.service';
 import { CombatService } from '@app/services/combat/combat.service';
+import { EndStatsService } from '@app/services/end-stats.service';
 import * as matchutils from '@app/services/game-session/game-session.match';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { makeMatch, makeMatchPlayer, makeTurnState } from '@app/services/game-session/game-session.service.spec-helpers';
@@ -17,7 +18,6 @@ import { DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test } from '@nestjs/testing';
 import { TestingModule } from '@nestjs/testing/testing-module';
-import { EndStatsService } from '../end-stats.service';
 
 /**
  * Test Strategy:

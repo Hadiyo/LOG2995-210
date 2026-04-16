@@ -1,3 +1,4 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import * as combatUtils from '@app/services/game-session/game-session.runtime';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import {
@@ -19,7 +20,6 @@ import {
 } from '@app/utilities/mocks/mocks';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test, TestingModule } from '@nestjs/testing';
-import { EndStatsService } from '../end-stats.service';
 import { CombatTurnService } from './combat-turn.service';
 import { CombatService } from './combat.service';
 
