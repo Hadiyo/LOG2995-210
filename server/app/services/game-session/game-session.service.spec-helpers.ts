@@ -66,6 +66,32 @@ export const makeObject = (overrides: Partial<MapObject> = {}): MapObject => ({
     ...overrides,
 });
 
+export const makeStartObjects = (...positions: { x: number; y: number }[]): MapObject[] =>
+    positions.map((position, index) => makeObject({ id: index + 1, type: ObjectType.START, position }));
+
+export const makeSessionObjects = (
+    startPositions: { x: number; y: number }[],
+    ...extras: MapObject[]
+): Pick<InitializedMatch, 'objects' | 'allObjects'> => {
+    const starts = makeStartObjects(...startPositions);
+    const objects = [...starts, ...extras];
+
+    return {
+        objects,
+        allObjects: objects,
+    };
+};
+
+export const makeCtfPlayer = (
+    id: string,
+    teamId: string,
+    position: { x: number; y: number },
+    overrides: Partial<MatchPlayer> = {},
+): MatchPlayer => makeMatchPlayer({ id, teamId, position, startingPosition: position, ...overrides });
+
+export const findPlayer = (runtime: GameSessionRuntime, playerId: string): MatchPlayer | undefined =>
+    runtime.match.players.find((player) => player.id === playerId);
+
 export const makeMapDetails = (): EditorMapDetails => ({
     id: 'map-1',
     name: 'Arena',
