@@ -5,85 +5,27 @@
     </section>
   } @else if (match()) {
     @let currentMatch = match();
-    <aside class="side-panel side-panel--left">
-      <section class="panel panel--game-title">
-        @if (currentMatch) {
-          <h2 class="game-title">{{ currentMatch.mapName }}</h2>
-        }
-      </section>
-
-      <section class="panel">
-        <app-game-session-info-panel
-          [cols]="cols()"
-          [rows]="rows()"
-          [currentPlayers]="activePlayersCount()"
-          [maxPlayers]="maxPlayers()"
-          [activePlayerName]="activePanelName()"
-          [remainingSeconds]="remainingSeconds()"
-          [totalSeconds]="totalSeconds()"
-          [highlightTimer]="highlightTimer()"
-          [defaultPanelTitle]="constants.defaultPanelTitle"
-        />
-      </section>
-
-      <section class="panel panel--player-info">
-        <div class="panel__tabs" role="tablist" aria-label="Panneaux lateraux gauches">
-          <div class="panel__tab-list">
-            <button
-              type="button"
-              class="panel__tab"
-              [class.panel__tab--active]="leftPanelTab() === 'player'"
-              role="tab"
-              [attr.aria-selected]="leftPanelTab() === 'player'"
-              (click)="leftPanelTab.set('player')"
-            >
-              Joueur
-            </button>
-            <button
-              type="button"
-              class="panel__tab"
-              [class.panel__tab--active]="leftPanelTab() === 'turn-order'"
-              role="tab"
-              [attr.aria-selected]="leftPanelTab() === 'turn-order'"
-              (click)="leftPanelTab.set('turn-order')"
-            >
-              Ordre
-            </button>
-          </div>
-        </div>
-
-        <div class="panel--player-info__content">
-          @if (leftPanelTab() === 'player') {
-            <app-game-current-player-panel
-              [player]="currentPlayer()"
-              [avatarId]="panelAvatarId()"
-              [avatarState]="panelAvatarState()"
-              [avatarDirection]="panelAvatarDirection()"
-              [avatarSpriteSize]="constants.avatarSpriteSize"
-              [defaultPanelTitle]="constants.defaultPanelTitle"
-              [debugModeEnabled]="debugModeEnabled()"
-            />
-          } @else {
-            <div class="turn-order-tab">
-              <h3>Ordre et departs</h3>
-              <ul class="turn-order__details turn-order__details--panel">
-                @for (player of turnDetails(); track player.id) {
-                  <li class="turn-order__detail">
-                    <strong class="turn-order__name">{{ player.name }}</strong>
-                    <div class="turn-order__summary">
-                      <span class="turn-order__meta-item">Depart ({{ player.startingPosition.x }}, {{ player.startingPosition.y }})</span>
-                      <span class="turn-order__meta-item">Rapidite {{ player.speed }}</span>
-                      <span class="turn-order__meta-item">Victoires {{ player.combatWins }}</span>
-                    </div>
-                  </li>
-                }
-              </ul>
-            </div>
-          }
-        </div>
-      </section>
-
-    </aside>
+    <app-game-view-left-sidebar
+      [mapName]="currentMatch?.mapName ?? null"
+      [cols]="cols()"
+      [rows]="rows()"
+      [activePlayersCount]="activePlayersCount()"
+      [maxPlayers]="maxPlayers()"
+      [activePanelName]="activePanelName()"
+      [remainingSeconds]="remainingSeconds()"
+      [totalSeconds]="totalSeconds()"
+      [highlightTimer]="highlightTimer()"
+      [defaultPanelTitle]="constants.defaultPanelTitle"
+      [leftPanelTab]="leftPanelTab()"
+      [currentPlayer]="currentPlayer()"
+      [avatarId]="panelAvatarId()"
+      [avatarState]="panelAvatarState()"
+      [avatarDirection]="panelAvatarDirection()"
+      [avatarSpriteSize]="constants.avatarSpriteSize"
+      [debugModeEnabled]="debugModeEnabled()"
+      [turnDetails]="turnDetails()"
+      (leftPanelTabChange)="leftPanelTab.set($event)"
+    />
 
     <div class="map-column">
       <section class="map-panel panel">
@@ -121,31 +63,16 @@
           />
 
           @if (showTurnStatusOverlay() && !selectedTileInfo()) {
-            <section class="map-turn-status panel" role="status" aria-live="polite">
-              <div class="map-turn-status__header">
-                <p class="map-turn-status__eyebrow">Etat du tour</p>
-                @if (canCloseTurnStatusOverlay()) {
-                  <button
-                    type="button"
-                    class="map-turn-status__close"
-                    aria-label="Fermer l'état du tour"
-                    (click)="isTurnStatusPanelOpen.set(false)"
-                  >
-                    X
-                  </button>
-                }
-              </div>
-              <p class="turn-status__headline">{{ phaseHeadline() }}</p>
-              <p class="turn-status__copy">{{ phaseDescription() }}</p>
-              <div class="turn-status__meta">
-                <span>Etat local: {{ display.localPlayerStateLabel() }}</span>
-                <span>Mouvements: {{ display.localMovementCount() }}</span>
-                <span>Action: {{ display.localActionAvailable() ? 'Disponible' : 'Utilisee' }}</span>
-              </div>
-              @if (interaction.movementFeedback()) {
-                <p class="turn-status__feedback">{{ interaction.movementFeedback() }}</p>
-              }
-            </section>
+            <app-game-view-turn-status-overlay
+              [canClose]="canCloseTurnStatusOverlay()"
+              [headline]="phaseHeadline()"
+              [description]="phaseDescription()"
+              [localPlayerStateLabel]="display.localPlayerStateLabel()"
+              [localMovementCount]="display.localMovementCount()"
+              [localActionAvailable]="display.localActionAvailable()"
+              [movementFeedback]="interaction.movementFeedback()"
+              (close)="isTurnStatusPanelOpen.set(false)"
+            />
           }
 
           @if (selectedTileInfo(); as tileInfo) {
@@ -182,100 +109,32 @@
       <app-game-combat-panel />
     </div>
 
-    <aside class="side-panel side-panel--right">
-      <section class="panel panel--players">
-        <div class="panel__header">
-          <h3>Liste des joueurs</h3>
-          @if (players().length > 2) {
-            <button
-              type="button"
-              class="panel__toggle-btn"
-              [attr.aria-expanded]="isPlayerListExpanded()"
-              (click)="onTogglePlayerListExpanded()"
-            >
-              {{ isPlayerListExpanded() ? 'Reduire' : players().length + ' Total' }}
-            </button>
-          }
-        </div>
-        <app-game-player-list
-          [players]="players()"
-          [turnOrder]="turnOrder()"
-          [activePlayerId]="activePlayerId()"
-          [currentPlayerId]="localPlayerId()"
-          [maxPlayers]="maxPlayers()"
-          [expanded]="isPlayerListExpanded()"
-          [winnerKind]="winnerKind()"
-          [winnerTeamId]="winningTeamId()"
-        />
-      </section>
-
-      <section class="panel messages">
-        <div class="panel__header panel__header--messages">
-          <h3>Zone des messages</h3>
-        </div>
-        <div class="messages--tabs">
-          <div class="panel__tabs" role="tablist" aria-label="Zone des messages">
-            <div class="panel__tab-list">
-              <button
-                type="button"
-                class="panel__tab"
-                [class.panel__tab--active]="messageTab() === 'chat'"
-                role="tab"
-                [attr.aria-selected]="messageTab() === 'chat'"
-                (click)="onMessageTabChange('chat')"
-              >
-                Clavardage
-              </button>
-              <button
-                type="button"
-                class="panel__tab"
-                [class.panel__tab--active]="messageTab() === 'journal'"
-                [disabled]="!journalAvailable()"
-                role="tab"
-                [attr.aria-selected]="messageTab() === 'journal'"
-                (click)="onMessageTabChange('journal')"
-              >
-                Journal de jeu
-              </button>
-            </div>
-          </div>
-
-          @if (messageTab() === 'chat') {
-            <app-game-chat-panel
-              [messages]="chatMessages()"
-              [notification]="null"
-              [currentPlayerName]="currentPlayer()?.information?.name ?? null"
-              [messageMaxLength]="constants.messageMaxLength"
-              [title]="'Clavardage'"
-              [showTitle]="false"
-              [readOnly]="false"
-              (messageSubmit)="onChatMessageSubmit($event)"
-            />
-          } @else {
-            <app-game-chat-panel
-              [messages]="journalEntries()"
-              [notification]="null"
-              [currentPlayerName]="null"
-              [title]="'Journal de jeu'"
-              [showTitle]="false"
-              [readOnly]="true"
-            />
-          }
-        </div>
-      </section>
-
-      <section class="panel panel--action-bar">
-        <app-game-action-bar
-          [actionModeEnabled]="actionModeEnabled()"
-          [canAct]="canAct()"
-          [canEndTurn]="canEndTurn()"
-          [canUseActionMode]="canUseActionMode()"
-          (endTurn)="onEndTurn()"
-          (toggleActionMode)="onToggleActionMode()"
-          (surrender)="quitGame()"
-        />
-      </section>
-    </aside>
+    <app-game-view-right-sidebar
+      [players]="players()"
+      [turnOrder]="turnOrder()"
+      [activePlayerId]="activePlayerId()"
+      [currentPlayerId]="localPlayerId()"
+      [maxPlayers]="maxPlayers()"
+      [expanded]="isPlayerListExpanded()"
+      [winnerKind]="winnerKind()"
+      [winnerTeamId]="winningTeamId()"
+      [messageTab]="messageTab()"
+      [journalAvailable]="journalAvailable()"
+      [chatMessages]="chatMessages()"
+      [journalEntries]="journalEntries()"
+      [currentPlayerName]="currentPlayer()?.information?.name ?? null"
+      [messageMaxLength]="constants.messageMaxLength"
+      [actionModeEnabled]="actionModeEnabled()"
+      [canAct]="canAct()"
+      [canEndTurn]="canEndTurn()"
+      [canUseActionMode]="canUseActionMode()"
+      (togglePlayerListExpanded)="onTogglePlayerListExpanded()"
+      (messageTabChange)="onMessageTabChange($event)"
+      (chatMessageSubmit)="onChatMessageSubmit($event)"
+      (endTurn)="onEndTurn()"
+      (toggleActionMode)="onToggleActionMode()"
+      (surrender)="quitGame()"
+    />
   } @else {
     <section class="panel">
       <p>Chargement de la session de jeu...</p>
@@ -283,43 +142,12 @@
   }
 </main>
 
-@if (display.matchEndState(); as endState) {
-  <div class="match-end-overlay">
-    <section class="match-end-modal" role="dialog" aria-modal="true">
-      <p class="match-end-modal__eyebrow">Partie terminee</p>
-      <h2>{{ endState.message }}</h2>
-      <p>Retour a l'accueil dans {{ endRedirectCountdownSeconds() }} secondes.</p>
-    </section>
-  </div>
-}
-
-@if (incomingFlagTransfer(); as transfer) {
-  <div class="match-end-overlay">
-    <section class="match-end-modal" role="dialog" aria-modal="true">
-      <p class="match-end-modal__eyebrow">Transfert du drapeau</p>
-      <h2>
-        {{
-          transfer.kind === 'offer'
-            ? transfer.requesterName + ' vous propose le drapeau.'
-            : transfer.requesterName + ' souhaite recevoir votre drapeau.'
-        }}
-      </h2>
-      <p>La demande sera refusee automatiquement a la fin du tour.</p>
-      <div class="match-end-modal__actions">
-        <button type="button" class="panel__toggle-btn" (click)="refuseIncomingFlagTransfer()">Refuser</button>
-        <button type="button" class="panel__toggle-btn panel__toggle-btn--active" (click)="acceptIncomingFlagTransfer()">Accepter</button>
-      </div>
-    </section>
-  </div>
-}
-
-@if (effects.combatNotifications().length > 0) {
-  <div class="combat-toast-stack" aria-live="polite" aria-atomic="false">
-    @for (notification of effects.combatNotifications(); track notification.id) {
-      <section class="combat-toast" role="status">
-        <p>{{ notification.message }}</p>
-        <button type="button" class="combat-toast__close" (click)="effects.dismissCombatNotification(notification.id)">Fermer</button>
-      </section>
-    }
-  </div>
-}
+<app-game-view-overlays
+  [matchEndMessage]="display.matchEndState()?.message ?? null"
+  [endRedirectCountdownSeconds]="endRedirectCountdownSeconds()"
+  [incomingFlagTransfer]="incomingFlagTransfer()"
+  [combatNotifications]="effects.combatNotifications()"
+  (acceptTransfer)="acceptIncomingFlagTransfer()"
+  (refuseTransfer)="refuseIncomingFlagTransfer()"
+  (dismissCombatNotification)="effects.dismissCombatNotification($event)"
+/>

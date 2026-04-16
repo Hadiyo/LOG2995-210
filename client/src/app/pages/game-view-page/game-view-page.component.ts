@@ -2,16 +2,15 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, effect, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { GameActionBarComponent } from '@app/components/game/game-action-bar/game-action-bar.component';
-import { GameChatPanelComponent } from '@app/components/game/game-chat-panel/game-chat-panel.component';
 import { GameCombatPanelComponent } from '@app/components/game/game-combat-panel/game-combat-panel.component';
 import { GameCombatWaitingPanelComponent } from '@app/components/game/game-combat-waiting-panel/game-combat-waiting-panel.component';
-import { GameCurrentPlayerPanelComponent } from '@app/components/game/game-current-player-panel/game-current-player-panel.component';
 import { GameMapActionPromptComponent } from '@app/components/game/game-map-action-prompt/game-map-action-prompt.component';
 import { GameMapGridComponent } from '@app/components/game/game-map-grid/game-map-grid.component';
-import { GamePlayerListComponent } from '@app/components/game/game-player-list/game-player-list.component';
-import { GameSessionInfoPanelComponent } from '@app/components/game/game-session-info-panel/game-session-info-panel.component';
 import { GameTileInfoModalComponent } from '@app/components/game/game-tile-info-modal/game-tile-info-modal.component';
+import { GameViewLeftSidebarComponent } from '@app/components/game/game-view-left-sidebar/game-view-left-sidebar.component';
+import { GameViewOverlaysComponent } from '@app/components/game/game-view-overlays/game-view-overlays.component';
+import { GameViewRightSidebarComponent } from '@app/components/game/game-view-right-sidebar/game-view-right-sidebar.component';
+import { GameViewTurnStatusOverlayComponent } from '@app/components/game/game-view-turn-status-overlay/game-view-turn-status-overlay.component';
 import { ACTIVE_TURN_DURATION_MS, MILLISECONDS_PER_SECOND, TRANSITION_DURATION_MS } from '@app/config/game-session.config';
 import { GAME_VIEW_CONSTANTS } from '@app/config/game-view.config';
 import { MAP_SIZE_CONFIG } from '@app/config/map.config';
@@ -61,12 +60,11 @@ import { GameViewCellContextMenuPayload, MatchEndRedirectState } from './game-vi
         GameCombatPanelComponent,
         GameCombatWaitingPanelComponent,
         GameMapActionPromptComponent,
-        GamePlayerListComponent,
-        GameActionBarComponent,
-        GameChatPanelComponent,
-        GameSessionInfoPanelComponent,
-        GameCurrentPlayerPanelComponent,
         GameTileInfoModalComponent,
+        GameViewLeftSidebarComponent,
+        GameViewOverlaysComponent,
+        GameViewRightSidebarComponent,
+        GameViewTurnStatusOverlayComponent,
     ],
     templateUrl: './game-view-page.component.html',
     styleUrls: ['./game-view-page.component.scss'],

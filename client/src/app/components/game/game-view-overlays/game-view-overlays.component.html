@@ -1,0 +1,40 @@
+@if (matchEndMessage) {
+  <div class="match-end-overlay">
+    <section class="match-end-modal" role="dialog" aria-modal="true">
+      <p class="match-end-modal__eyebrow">Partie terminee</p>
+      <h2>{{ matchEndMessage }}</h2>
+      <p>Retour a l'accueil dans {{ endRedirectCountdownSeconds }} secondes.</p>
+    </section>
+  </div>
+}
+
+@if (incomingFlagTransfer; as transfer) {
+  <div class="match-end-overlay">
+    <section class="match-end-modal" role="dialog" aria-modal="true">
+      <p class="match-end-modal__eyebrow">Transfert du drapeau</p>
+      <h2>
+        {{
+          transfer.kind === 'offer'
+            ? transfer.requesterName + ' vous propose le drapeau.'
+            : transfer.requesterName + ' souhaite recevoir votre drapeau.'
+        }}
+      </h2>
+      <p>La demande sera refusee automatiquement a la fin du tour.</p>
+      <div class="match-end-modal__actions">
+        <button type="button" class="overlay-action" (click)="refuseTransfer.emit()">Refuser</button>
+        <button type="button" class="overlay-action overlay-action--primary" (click)="acceptTransfer.emit()">Accepter</button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (combatNotifications.length > 0) {
+  <div class="combat-toast-stack" aria-live="polite" aria-atomic="false">
+    @for (notification of combatNotifications; track notification.id) {
+      <section class="combat-toast" role="status">
+        <p>{{ notification.message }}</p>
+        <button type="button" class="combat-toast__close" (click)="dismissCombatNotification.emit(notification.id)">Fermer</button>
+      </section>
+    }
+  </div>
+}
