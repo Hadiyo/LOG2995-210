@@ -20,7 +20,7 @@ import {
     ToggleDoorPayload,
     UseSanctuaryPayload,
 } from '@common/socket-events';
-import { OnModuleDestroy } from '@nestjs/common';
+import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
     ConnectedSocket,
@@ -33,7 +33,7 @@ import {
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({ namespace: '/api' })
-export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy {
+export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy, OnModuleInit {
     @WebSocketServer() private server: Server;
 
     private onSnapshot!: (payload: GameSessionSnapshotPayload) => void;
@@ -50,6 +50,9 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
                 }
             }
         };
+    }
+
+    onModuleInit(): void {
         this.gameSessionService.on(SessionSocketEvents.GameSessionSnapshot, this.onSnapshot);
     }
 

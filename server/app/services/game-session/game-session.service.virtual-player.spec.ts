@@ -229,4 +229,53 @@ describe('GameSessionService virtual players', () => {
         expect(runtime.match.players.find((player) => player.id === 'player-1')?.position).toEqual({ x: 1, y: 0 });
         randomSpy.mockRestore();
     });
+
+    it('starts combat when an aggressive virtual player is adjacent to an enemy', () => {
+        const serviceInternals = harness.getServiceInternals();
+        const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+        const runtime = makeRuntime({
+            match: makeMatch({
+                players: [
+                    makeMatchPlayer({
+                        id: 'player-1',
+                        name: 'Bot agressif',
+                        controller: 'virtual',
+                        virtualProfile: 'aggressive',
+                        position: { x: 0, y: 0 },
+                        startingPosition: { x: 0, y: 0 },
+                    }),
+                    makeMatchPlayer({
+                        id: 'player-2',
+                        name: 'Alice',
+                        avatarId: 1,
+                        position: { x: 1, y: 0 },
+                        startingPosition: { x: 1, y: 0 },
+                    }),
+                ],
+            }),
+            turnState: makeTurnState({
+                activePlayerId: null,
+                currentTurnIndex: 0,
+                order: [
+                    { playerId: 'player-1', speed: 4 },
+                    { playerId: 'player-2', speed: 3 },
+                ],
+                phase: 'transition',
+                playerStates: [
+                    { playerId: 'player-1', state: 'waiting' },
+                    { playerId: 'player-2', state: 'waiting' },
+                ],
+            }),
+        });
+
+        harness.getPrivateState().sessions.set(runtime.sessionId, runtime);
+        jest.spyOn(serviceInternals, 'emitSnapshot').mockImplementation((() => undefined) as never);
+        const startCombatSpy = jest.spyOn(harness.service, 'startCombat');
+
+        serviceInternals.activateTurn(runtime);
+        jest.advanceTimersByTime(VIRTUAL_DECISION_WAIT_MS);
+
+        expect(startCombatSpy).toHaveBeenCalledWith(runtime.sessionId, 'player-1', 'player-2');
+        randomSpy.mockRestore();
+    });
 });

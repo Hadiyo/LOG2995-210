@@ -1,4 +1,5 @@
 import * as runtimeModule from '@app/services/game-session/game-session.runtime';
+import { CombatService } from '@app/services/combat/combat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { InitializedMatch, MatchEndState, MatchLobbyPlayer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
@@ -204,13 +205,18 @@ export const makeEndState = (overrides: Partial<MatchEndState> = {}): MatchEndSt
 export function createGameSessionServiceHarness() {
     let service: GameSessionService;
     let mapService: { getMapByIdForEditor: jest.Mock };
+    let combatService: { createCombatSession: jest.Mock; startCombat: jest.Mock };
 
     beforeEach(() => {
         jest.useFakeTimers();
         mapService = {
             getMapByIdForEditor: jest.fn(),
         };
-        service = new GameSessionService(mapService as never);
+        combatService = {
+            createCombatSession: jest.fn(),
+            startCombat: jest.fn(),
+        };
+        service = new GameSessionService(mapService as never, combatService as unknown as CombatService);
     });
 
     afterEach(() => {
@@ -225,6 +231,9 @@ export function createGameSessionServiceHarness() {
         },
         get mapService() {
             return mapService;
+        },
+        get combatService() {
+            return combatService;
         },
         getPrivateState(): GameSessionServicePrivateState {
             return service as unknown as GameSessionServicePrivateState;

@@ -10,7 +10,7 @@ import { CombatTimeoutPayload } from '@app/utilities/combat/combat.types';
 import { Die, DIE_D4_SIDES, DIE_D6_SIDES } from '@common/character/character.model';
 import { CombatPlayerStatistics, FighterStance } from '@common/combat/combat.interface';
 import { MatchPlayer } from '@common/game/match.interface';
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { CombatTurnService } from './combat-turn.service';
 import { setVirtualStance } from './combat.helpers';
@@ -19,7 +19,7 @@ import { setVirtualStance } from './combat.helpers';
 export class CombatService {
     private readonly combatSessions = new Map<string, CombatSession>();
     constructor(
-        private readonly gameSessionService: GameSessionService,
+        @Inject(forwardRef(() => GameSessionService)) private readonly gameSessionService: GameSessionService,
         private readonly turnService: CombatTurnService,
         private readonly event: EventEmitter2,
     ){}

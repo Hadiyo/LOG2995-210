@@ -241,8 +241,7 @@ describe('GameSessionService actions', () => {
         expect(emitSnapshotSpy).toHaveBeenCalled();
     });
 
-    it('starts combat only for adjacent active players and finishes the match on the win threshold', () => {
-        const privateState = harness.getPrivateState();
+    it('starts combat only for adjacent active players and delegates to the combat service', () => {
         const emitSnapshotSpy = spyOnEmitSnapshot(harness);
         const runtime = registerRuntime(makeRuntime({
             match: makeMatch({
@@ -252,28 +251,16 @@ describe('GameSessionService actions', () => {
                 ],
             }),
         }), harness);
+        const combatSession = { id: 'combat-1' };
+        harness.combatService.createCombatSession.mockReturnValue({ combat: combatSession, game: runtime });
 
         expect(harness.service.startCombat('missing', 'player-1', 'player-2')).toBe(false);
         expect(harness.service.startCombat('session-1', 'player-2', 'player-1')).toBe(false);
         expect(harness.service.startCombat('session-1', 'player-1', 'player-2')).toBe(true);
-        expect(findPlayer(runtime, 'player-1')?.combatWins).toBe(2);
-        expect(runtime.logEntries.at(-1)?.visibleToPlayerIds).toEqual(['player-1', 'player-2']);
-        expect(runtime.logEntries.at(-1)?.entry.involvedPlayers).toEqual(['Alice', 'Bob']);
+        expect(harness.combatService.createCombatSession).toHaveBeenCalledWith('player-1', 'player-2', 'session-1');
+        expect(harness.combatService.startCombat).toHaveBeenCalledWith(combatSession);
         expect(findPlayer(runtime, 'player-1')?.render).toMatchObject({ facing: 'right', pose: 'attack', poseDurationMs: 220 });
         expect(runtime.turnState.actionTaken).toBe(true);
         expect(emitSnapshotSpy).toHaveBeenCalledWith(runtime);
-
-        registerRuntime(makeRuntime({
-            sessionId: 'winner',
-            match: makeMatch({
-                players: [
-                    makeMatchPlayer({ id: 'player-1', position: { x: 0, y: 0 }, combatWins: 2, isOrganizer: true }),
-                    makeMatchPlayer({ id: 'player-2', name: 'Bob', position: { x: 1, y: 0 }, avatarId: 1 }),
-                ],
-            }),
-        }), harness);
-
-        expect(harness.service.startCombat('winner', 'player-1', 'player-2')).toBe(true);
-        expect(privateState.sessions.has('winner')).toBe(false);
     });
 });
