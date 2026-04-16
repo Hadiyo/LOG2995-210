@@ -317,6 +317,20 @@ describe('CombatStateService', () => {
         expect(service.waitingState()).toBeNull();
     });
 
+    it('clears the waiting combat panel when the combat is cancelled by a player disconnect', () => {
+        matchStateService.match.set(createSpectatorMatch());
+        matchStateService.localPlayer.set(createSpectatorLocalPlayer());
+
+        emitSocketEvent(SessionSocketEvents.CombatWaitingSnapshot, createCombatWaitingSnapshot({ round: 3, countdownSeconds: 6 }));
+
+        expect(service.hasWaitingCombat()).toBeTrue();
+
+        emitSocketEvent(SessionSocketEvents.ClientDisconnect, createCombatVictoryPayload());
+
+        expect(service.hasWaitingCombat()).toBeFalse();
+        expect(service.waitingState()).toBeNull();
+    });
+
     it('accepts waiting snapshots without a local player but ignores them when no current match is loaded', () => {
         matchStateService.match.set(createSpectatorMatch());
         matchStateService.localPlayer.set(null);

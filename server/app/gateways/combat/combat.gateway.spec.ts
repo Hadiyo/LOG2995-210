@@ -269,8 +269,10 @@ describe('CombatGateway', () => {
 
     gateway.handleOpponentDisconnect(payload);
 
-    expect(server.to).toHaveBeenCalledWith(payload.combatId);
-    expect(server.emit).toHaveBeenCalledWith(CombatSocketEvents.HandleDisconnect, newPayload);
+    expect(server.to).toHaveBeenNthCalledWith(1, payload.combatId);
+    expect(server.to).toHaveBeenNthCalledWith(2, getGameSessionRoom(payload.gameSessionId));
+    expect(server.emit).toHaveBeenNthCalledWith(1, CombatSocketEvents.HandleDisconnect, newPayload);
+    expect(server.emit).toHaveBeenNthCalledWith(2, SessionSocketEvents.ClientDisconnect, newPayload);
     expect(server.in).toHaveBeenCalledWith(payload.combatId);
   });
 

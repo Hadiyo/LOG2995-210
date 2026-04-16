@@ -132,6 +132,7 @@ export class CombatStateService {
         this.socketManager.on<CombatResultPayload>(CombatSocketEvents.Victory, (payload) => this.handleVictory(payload));
         this.socketManager.on<CombatTiePayload>(CombatSocketEvents.Tie, (payload) => this.handleTie(payload));
         this.socketManager.on<CombatWaitingSnapshot>(SessionSocketEvents.CombatWaitingSnapshot, (snapshot) => this.handleWaitingSnapshot(snapshot));
+        this.socketManager.on<CombatResultPayload>(SessionSocketEvents.ClientDisconnect, () => this.clearWaitingCombat());
         this.socketManager.on<CombatResultPayload>(SessionSocketEvents.CombatVictory, () => this.clearWaitingCombat());
         this.socketManager.on<CombatTiePayload>(SessionSocketEvents.CombatTie, () => this.clearWaitingCombat());
     }
@@ -165,7 +166,7 @@ export class CombatStateService {
         }
 
         this.combatTurnState.set(turnState);
-        this.waitingState.set(null);
+        this.clearWaitingCombat();
         this.panelState.set(nextPanelState);
         if (!this.isResolvingRound()) {
             this.syncPendingRoundLog();
@@ -262,7 +263,7 @@ export class CombatStateService {
     private resetCombatState(): void {
         this.clearAnimationTimers();
         this.pendingOutcomeNotice = null;
-        this.waitingState.set(null);
+        this.clearWaitingCombat();
         this.endingNotice.set(null);
         this.isResolvingRound.set(false);
         this.combatTurnState.set(null);

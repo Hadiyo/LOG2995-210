@@ -95,7 +95,7 @@ export class CombatGateway {
     if(payload.combatId && payload.gameSessionId){
       const newPayload = { winner: payload.winner, loser: payload.loser };
       this.server.to(payload.combatId).emit(CombatSocketEvents.HandleDisconnect, newPayload);
-      this.server.to(payload.gameSessionId).emit(SessionSocketEvents.ClientDisconnect, newPayload);
+      this.server.to(getGameSessionRoom(payload.gameSessionId)).emit(SessionSocketEvents.ClientDisconnect, newPayload);
       this.server.in(payload.combatId).socketsLeave(payload.combatId);
     }
   }
