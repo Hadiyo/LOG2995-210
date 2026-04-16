@@ -101,7 +101,6 @@ describe('GameSessionService action outcomes', () => {
     });
 
     it('declares a team victory when the flag carrier returns to the starting tile', () => {
-        const privateState = harness.getPrivateState();
         const runtime = registerRuntime(makeRuntime({
             sessionId: 'ctf-win',
             match: makeMatch({
