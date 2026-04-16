@@ -1,3 +1,4 @@
+import { EndStatsService } from '@app/services/end-stats.service';
 import { MapService } from '@app/services/map/map.service';
 import { canStartCombat } from '@app/services/game-session/game-session.runtime';
 import { clearTimers } from '@app/services/timer/turn.timers';
@@ -22,12 +23,19 @@ import { GameSessionSessionActions } from './game-session.session-actions';
 export class GameSessionService {
     private readonly sessions = new Map<string, GameSessionRuntime>();
     private readonly events = new EventEmitter();
+    private readonly lifecycle: GameSessionLifecycle;
+    private readonly sessionActions: GameSessionSessionActions;
+    private readonly actions: GameSessionActions;
     private readonly event2 = new EventEmitter2();
-    private readonly lifecycle = new GameSessionLifecycle(this.sessions, this.events);
-    private readonly sessionActions = new GameSessionSessionActions(this.sessions, this.lifecycle);
-    private readonly actions = new GameSessionActions(this.sessions, this.lifecycle);
 
-    constructor(private readonly mapService: MapService) {}
+    constructor(
+        private readonly mapService: MapService,
+        private readonly endStatsService: EndStatsService,
+    ) {
+        this.lifecycle = new GameSessionLifecycle(this.sessions, this.events, this.endStatsService);
+        this.sessionActions = new GameSessionSessionActions(this.sessions, this.lifecycle, this.endStatsService);
+        this.actions = new GameSessionActions(this.sessions, this.lifecycle, this.endStatsService);
+    }
 
     on<T>(event: SessionSocketEvents, callback: (payload: T) => void): void {
         this.events.on(event, callback);
@@ -43,6 +51,13 @@ export class GameSessionService {
         this.sessions.set(session.sessionId, session);
         this.lifecycle.emitSnapshot(session);
         this.lifecycle.startTransition(session);
+
+        await this.endStatsService.startGame(session.sessionId, mapId, players);
+
+        for (const player of session.match.players) {
+            this.endStatsService.visitTile(session.sessionId, player.startingPosition, player.id);
+        }
+
         return session.sessionId;
     }
 

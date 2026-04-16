@@ -1,4 +1,5 @@
 import { CombatService } from '@app/services/combat/combat.service';
+import { EndStatsService } from '@app/services/end-stats.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { GameSessionEvents } from '@app/utilities/combat/combat.enums';
 import {
@@ -37,9 +38,11 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
     @WebSocketServer() private server: Server;
 
     private onSnapshot!: (payload: GameSessionSnapshotPayload) => void;
+    private onEndGame!: (sessionId: string) => void;
 
     constructor(
         private readonly gameSessionService: GameSessionService,
+        private readonly endStatsService: EndStatsService,
         private readonly combatSession: CombatService,
     ) {
         this.onSnapshot = (payload) => {
@@ -51,10 +54,16 @@ export class GameSessionGateway implements OnGatewayDisconnect, OnModuleDestroy 
             }
         };
         this.gameSessionService.on(SessionSocketEvents.GameSessionSnapshot, this.onSnapshot);
+
+        this.onEndGame = (sessionId) => {
+            this.server.to(getGameSessionRoom(sessionId)).emit(SessionSocketEvents.EndGame, this.endStatsService.endGame(sessionId));
+        };
+        this.gameSessionService.on(SessionSocketEvents.EndGame, this.onEndGame);
     }
 
     onModuleDestroy(): void {
         this.gameSessionService.off(SessionSocketEvents.GameSessionSnapshot, this.onSnapshot);
+        this.gameSessionService.off(SessionSocketEvents.EndGame, this.onEndGame);
     }
 
     handleDisconnect(client: Socket): void {

@@ -1,6 +1,7 @@
 import { WritableSignal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ChatService } from '@app/services/chat/chat.service';
+import { EndStatsService } from '@app/services/end-stats/end-stats.service';
 import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
 import { GameSessionDisplayService } from '@app/services/game-view/game-session-display.service';
 import { GameSessionInteractionService } from '@app/services/game-view/game-session-interaction.service';
@@ -31,6 +32,7 @@ export interface MatchEndRedirectContext {
 
 export interface GameViewPageInitContext {
     chatService: ChatService;
+    endStatsService: EndStatsService,
     display: GameSessionDisplayService;
     gameSessionSocket: GameSessionSocketService;
     localPoseRefreshMs: number;
@@ -42,6 +44,7 @@ export interface GameViewPageInitContext {
 
 export interface GameViewPageDestroyContext {
     chatService: ChatService;
+    endStatsService: EndStatsService,
     combat: CombatStateService;
     effects: GameSessionTurnEffectsService;
     endRedirectRemainingMs: WritableSignal<number>;

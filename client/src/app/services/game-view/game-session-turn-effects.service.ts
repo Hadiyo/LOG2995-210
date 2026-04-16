@@ -1,9 +1,9 @@
 import { effect, inject, Injectable, signal } from '@angular/core';
-import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
 import {
     COMBAT_NOTIFICATION_DURATION_MS,
     LocalCombatNotification,
 } from '@app/config/game-session.config';
+import { GameSessionSocketService } from '@app/services/game-session/game-session-socket.service';
 import { CombatOutcomeNotice } from '@app/services/match/combat-state.models';
 import { CombatStateService } from '@app/services/match/combat-state.service';
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
