@@ -1,8 +1,8 @@
-import { Router, provideRouter } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { Router, provideRouter } from '@angular/router';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
+import { of } from 'rxjs';
 import { WaitingRoomComponent } from './waiting-room.component';
 
 describe('WaitingRoomComponent', () => {
@@ -41,7 +41,7 @@ describe('WaitingRoomComponent', () => {
       isLocked$: of(false),
       maxPlayers$: of(4),
       statusMessage$: of(''),
-      me: null,
+      me: makePlayer({ id: 'p1', name: 'Host', isOrganizer: true }),
     });
 
     await TestBed.configureTestingModule({
