@@ -270,8 +270,8 @@ describe('GameSessionService virtual players', () => {
                 ],
                 phase: 'transition',
                 playerStates: [
-                    { playerId: 'player-1', state: 'waiting' },
-                    { playerId: 'player-2', state: 'waiting' },
+                    { playerId: 'player-1', state: PlayerTurnInteractionState.Waiting },
+                    { playerId: 'player-2', state: PlayerTurnInteractionState.Waiting },
                 ],
             }),
         });
