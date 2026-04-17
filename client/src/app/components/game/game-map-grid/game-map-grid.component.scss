@@ -196,18 +196,22 @@
   position: absolute;
   top: 5px;
   right: 5px;
+  display: grid;
+  place-items: center;
   z-index: 3;
   width: 15px;
   height: 15px;
   border: 1px solid rgba(148, 163, 184, 0.38);
   border-radius: 999px;
+  color: #e2e8f0;
   background-color: rgba(15, 23, 42, 0.82);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='%23e2e8f0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.2'%3E%3Cpath d='M6.5 2.2h3'/%3E%3Cpath d='M8 2.2V4'/%3E%3Crect x='3.2' y='4.3' width='9.6' height='7.8' rx='2.2'/%3E%3Cpath d='M5.5 13.1v-1.1'/%3E%3Cpath d='M10.5 13.1v-1.1'/%3E%3Cpath d='M3.2 8H2'/%3E%3Cpath d='M14 8h-1.2'/%3E%3Cpath d='M6.2 8h.01'/%3E%3Cpath d='M9.8 8h.01'/%3E%3Cpath d='M6 10h4'/%3E%3C/g%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 10px 10px;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
   pointer-events: none;
+}
+
+.player-bot-icon svg {
+  width: 10px;
+  height: 10px;
 }
 
 .player-bot-icon[data-virtual-profile='aggressive'] {
@@ -226,7 +230,11 @@
     right: 3px;
     width: 13px;
     height: 13px;
-    background-size: 8px 8px;
+  }
+
+  .player-bot-icon svg {
+    width: 8px;
+    height: 8px;
   }
 }
 
