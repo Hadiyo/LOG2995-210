@@ -188,108 +188,8 @@
   pointer-events: none;
 }
 
-.avatar:disabled img,
-.preview-avatar img:disabled { // for your preview, if needed
-  animation: none;              // stop breathing
-}
-
-.preview-identity {
-  @extend %soft-card;
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 16px;
-  align-items: start;
-  padding: 10px 12px;
-}
-
-.preview-avatar {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  height: auto;
-  border-radius: 10px;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-panel);
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
-.preview-placeholder {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.preview-meta {
-  display: grid;
-  gap: 6px;
-}
-
-.preview-name {
-  font-size: 18px;
-  font-weight: 600;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-}
-
-.preview-description {
-  margin: 6px 0 0;
-  line-height: 1.4;
-  color: var(--text-muted);
-}
-
-.stats {
-  display: grid;
-}
-
-.stat {
-  @extend %soft-card;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: start;
-  padding: 10px 12px;
-  margin: 20px 0 0;
-}
-
-.stat-label {
-  display: grid;
-  gap: 2px;
-
-  small {
-    color: var(--text-muted);
-    font-size: 12px;
-  }
-}
-
-.stat-values {
-  display: grid;
-  justify-items: end;
-  gap: 2px;
-
-  small {
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  .stat-hint {
-    color: var(--accent-success);
-  }
-
-  .stat-hint.hint-d4 {
-    color: var(--accent-secondary);
-  }
+.avatar:disabled img {
+  animation: none;
 }
 
 .input-with-actions {
@@ -365,8 +265,7 @@ h3 {
 }
 
 /* Apply breathing animation to avatars with staggered delays for a natural effect */
-.avatar img,
-.preview-avatar img {
+.avatar img {
   transform-origin: bottom center;
   animation: breathe 3s ease-in-out infinite;
   filter: drop-shadow(0 7px 13px rgba(0, 0, 0, 0.35));
@@ -377,14 +276,12 @@ h3 {
 .avatar:nth-child(5n) img {animation-delay: 0.8s;}
 
 /* Add a subtle grid overlay to avatar and preview sections for visual interest */
-.avatar,
-.preview-avatar {
+.avatar {
   position: relative;
   overflow: hidden;
 }
 
-.avatar::before,
-.preview-avatar::before {
+.avatar::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -395,26 +292,6 @@ h3 {
 
 .avatar::before {
   background-size: 11.5px 11.5px;
-}
-
-.preview-avatar::before {
-  background-size: 11px 11px;
-}
-
-.join-error-container {
-  background-color: rgba(239, 68, 68, 0.14);
-}
-
-.join-error {
-  background-color: transparent;
-  padding: 8px 12px;
-  border-radius: 8px;
-  text-align: center;
-  width: fit-content;
-}
-
-.join-error-btn {
-  width: 100%;
 }
 
 

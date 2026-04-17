@@ -95,113 +95,17 @@
         <div class="header-row">
             <h3>Aperçu</h3>
         </div>
-
-        <div class="preview-identity">
-            <div
-                class="preview-avatar"
-                [style.background]="
-                    form.controls.avatarId.value !== null
-                    ? avatarFallbackColors[form.controls.avatarId.value]
-                    : null
-                "
-                >
-                @if (form.controls.avatarId.value !== null) {
-                    <img
-                    [src]="getAvatarThumbPath(form.controls.avatarId.value)"
-                    [alt]="'Avatar ' + form.controls.avatarId.value"
-                    />
-                } @else {
-                    <div class="preview-placeholder">
-                    Aucun avatar
-                    </div>
-                }
-                </div>
-
-            <div class="preview-meta">
-                <div class="preview-name">{{ form.controls.name.value || 'Sans nom' }}</div>
-                <div class="preview-subtitle">
-                    {{ selectedAvatarProfile()?.subtitle || 'Ordre inconnu' }}
-                </div>
-                <p class="preview-description">
-                    {{ selectedAvatarProfile()?.description || 'Serment non révélé.' }}
-                </p>
-            </div>
-        </div>
-
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-label">
-                    <span>Vie</span>
-                    <small>Points de survie (base 6, peut recevoir +2).</small>
-                </div>
-                <div class="stat-values">
-                    <strong>{{ previewStats().health }}</strong>
-                    <small class="stat-hint">
-                        {{ form.controls.plusTwo.value === 'health' ? '+2' : ' ' }}
-                    </small>
-                </div>
-            </div>
-
-            <div class="stat">
-                <div class="stat-label">
-                    <span>Rapidité</span>
-                    <small>Agilité et vitesse (base 6, peut recevoir +2).</small>
-                </div>
-                <div class="stat-values">
-                    <strong>{{ previewStats().speed }}</strong>
-                    <small class="stat-hint">
-                        {{ form.controls.plusTwo.value === 'speed' ? '+2' : ' ' }}
-                    </small>
-                </div>
-            </div>
-
-            <div class="stat">
-                <div class="stat-label">
-                    <span>Attaque</span>
-                    <small>Puissance offensive (base 4, reçoit D4 ou D6).</small>
-                </div>
-                <div class="stat-values">
-                    <strong>
-                        {{ form.controls.d6GoesTo.value === 'attack' ? '10 Max' : '8 Max' }}
-                    </strong>
-
-                    <small
-                        class="stat-hint"
-                        [class.hint-d6]="form.controls.d6GoesTo.value === 'attack'"
-                        [class.hint-d4]="form.controls.d6GoesTo.value !== 'attack'">
-                        {{ form.controls.d6GoesTo.value === 'attack' ? '4 + D6' : '4 + D4' }}
-                    </small>
-                </div>
-            </div>
-
-            <div class="stat">
-                <div class="stat-label">
-                    <span>Défense</span>
-                    <small>Résistance aux dégâts (base 4, reçoit D4 ou D6).</small>
-                </div>
-                <div class="stat-values">
-                    <strong>
-                        {{ form.controls.d6GoesTo.value === 'defense' ? '10 Max' : '8 Max' }}
-                    </strong>
-
-                    <small
-                        class="stat-hint"
-                        [class.hint-d6]="form.controls.d6GoesTo.value === 'defense'"
-                        [class.hint-d4]="form.controls.d6GoesTo.value !== 'defense'">
-                        {{ form.controls.d6GoesTo.value === 'defense' ? '4 + D6' : '4 + D4' }}
-                    </small>
-                </div>
-            </div>
-            @if((isLocked$ | async)) {
-                <div class="join-error-container stat">
-                    <span class="join-error">
-                        La session que vous tentez de joindre est vérouillée
-                    </span>
-                    <button class="join-error-btn mini-btn btn-clear-name" type="button" title="Retour à la page principal" (click)="onLeavingCharacterCreation()">
-                        Retour
-                    </button>
-                </div>
-            }
-        </div>
+        <app-character-creation-preview
+            [avatarId]="form.controls.avatarId.value"
+            [avatarBackground]="form.controls.avatarId.value !== null ? avatarFallbackColors[form.controls.avatarId.value] : null"
+            [avatarThumbPath]="form.controls.avatarId.value !== null ? getAvatarThumbPath(form.controls.avatarId.value) : null"
+            [displayName]="form.controls.name.value || 'Sans nom'"
+            [subtitle]="selectedAvatarProfile()?.subtitle ?? null"
+            [description]="selectedAvatarProfile()?.description ?? null"
+            [plusTwo]="form.controls.plusTwo.value ?? 'health'"
+            [d6GoesTo]="form.controls.d6GoesTo.value ?? 'attack'"
+            [isLocked]="(isLocked$ | async) === true"
+            (leave)="onLeavingCharacterCreation()"
+        />
     </div>
 </div>

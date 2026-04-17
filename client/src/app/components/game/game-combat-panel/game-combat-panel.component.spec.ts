@@ -29,6 +29,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { GameCombatStageArenaComponent } from '@app/components/game/game-combat-stage-arena/game-combat-stage-arena.component';
+import { GameCombatStageFrameComponent } from '@app/components/game/game-combat-stage-frame/game-combat-stage-frame.component';
 import { CombatOutcomeNotice, CombatPanelState, CombatRoundLog, CombatStanceChoice } from '@app/services/match/combat-state.models';
 import { CombatStateService } from '@app/services/match/combat-state.service';
 import { TileType } from '@common/maps/map.enums';
@@ -154,9 +156,21 @@ describe('GameCombatPanelComponent', () => {
             selectStance: jasmine.createSpy('selectStance'),
         };
 
+        TestBed.overrideComponent(GameCombatStageArenaComponent, {
+            set: {
+                imports: [CommonModule, MockCharacterSpriteComponent],
+            },
+        });
+
+        TestBed.overrideComponent(GameCombatStageFrameComponent, {
+            set: {
+                imports: [CommonModule, MockGameCombatDiceComponent, GameCombatStageArenaComponent],
+            },
+        });
+
         TestBed.overrideComponent(GameCombatPanelComponent, {
             set: {
-                imports: [CommonModule, MockCharacterSpriteComponent, MockGameCombatDiceComponent, MockGameCombatRoundLogComponent],
+                imports: [CommonModule, MockGameCombatRoundLogComponent, GameCombatStageFrameComponent],
             },
         });
 
@@ -216,11 +230,19 @@ describe('GameCombatPanelComponent', () => {
         expect(combatStub.selectStance).toHaveBeenCalledWith('defense');
     });
 
-    it('should expose helper methods for team classes', () => {
-        expect((fixture.componentInstance as unknown as { getTeamClass: (teamId: string | null) => string | null }).getTeamClass('A'))
-            .toBe('combat-stage__tile--team-a');
-        expect((fixture.componentInstance as unknown as { getTeamClass: (teamId: string | null) => string | null }).getTeamClass(null))
-            .toBeNull();
+    it('should render team-specific tile classes through the extracted stage arena', () => {
+        combatStub.panelState.set({
+            ...createPanelState(),
+            fighters: [
+                { ...createPanelState().fighters[0], teamId: 'A' },
+                { ...createPanelState().fighters[1], teamId: 'B' },
+            ],
+        });
+        fixture.detectChanges();
+
+        const host = fixture.nativeElement as HTMLElement;
+        expect(host.querySelector('.combat-stage__tile--team-a')).not.toBeNull();
+        expect(host.querySelector('.combat-stage__tile--team-b')).not.toBeNull();
     });
 
     it('should render the local victory ending notice inside the combat stage', () => {
@@ -262,7 +284,7 @@ describe('GameCombatPanelComponent', () => {
         expect(text).toContain('Égalité contre Attacker.');
     });
 
-    it('should return a defeat title when the local fighter is the defender and the ending is not a tie', () => {
+    it('should render a defeat title when the local fighter is the defender and the ending is not a tie', () => {
         combatStub.panelState.set({
             ...createPanelState(),
             fighters: [
@@ -270,19 +292,19 @@ describe('GameCombatPanelComponent', () => {
                 { ...createPanelState().fighters[1], isLocal: true },
             ],
         });
-        const ending: CombatOutcomeNotice = {
+        combatStub.endingNotice.set({
             id: 'notice-4',
             attackerId: 'attacker',
             defenderId: 'defender',
             attackerMessage: 'Victoire contre Defender.',
             defenderMessage: 'Défaite contre Attacker.',
             logMessage: 'Combat terminé.',
-        };
+        });
+        fixture.detectChanges();
 
-        expect((fixture.componentInstance as unknown as { getEndingTitle: (value: CombatOutcomeNotice) => string }).getEndingTitle(ending))
-            .toBe('Défaite');
-        expect((fixture.componentInstance as unknown as { getEndingMessage: (value: CombatOutcomeNotice) => string }).getEndingMessage(ending))
-            .toBe('Défaite contre Attacker.');
+        const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+        expect(text).toContain('Défaite');
+        expect(text).toContain('Défaite contre Attacker.');
     });
 
     it('should fall back to generic ending title and log message when no local fighter is present', () => {
@@ -300,11 +322,8 @@ describe('GameCombatPanelComponent', () => {
         });
         fixture.detectChanges();
 
-        expect((fixture.componentInstance as unknown as { getEndingTitle: (ending: CombatOutcomeNotice) => string }).getEndingTitle(
-            combatStub.endingNotice() as CombatOutcomeNotice,
-        )).toBe('Fin du combat');
-        expect((fixture.componentInstance as unknown as { getEndingMessage: (ending: CombatOutcomeNotice) => string }).getEndingMessage(
-            combatStub.endingNotice() as CombatOutcomeNotice,
-        )).toBe('Combat terminé.');
+        const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+        expect(text).toContain('Fin du combat');
+        expect(text).toContain('Combat terminé.');
     });
 });

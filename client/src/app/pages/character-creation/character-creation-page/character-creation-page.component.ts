@@ -5,29 +5,28 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import {
-  generateCharacterFormValues,
-  normalizeCharacterName,
-  sanitizeCharacterName,
-  validatePlayerName,
+    generateCharacterFormValues,
+    normalizeCharacterName,
+    sanitizeCharacterName,
+    validatePlayerName,
 } from '@app/services/character/character-generator';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { Character } from '@common/character/character.interface';
 import {
-  AVATAR_IDS,
-  AVATAR_PROFILES,
-  AvatarId,
-  CHARACTER_BASE_ATTRIBUTES,
-  CHARACTER_NAME_MAX_LENGTH,
-  CHARACTER_PLUS_TWO_VALUE,
-  DIE_TARGET_ATTRIBUTE_NAMES,
-  Die,
-  DieTargetAttributeName,
-  PLUS_TWO_ATTRIBUTE_NAMES,
-  PlusTwoAttributeName,
+    AVATAR_IDS,
+    AVATAR_PROFILES,
+    AvatarId,
+    CHARACTER_NAME_MAX_LENGTH,
+    Die,
+    DIE_TARGET_ATTRIBUTE_NAMES,
+    DieTargetAttributeName,
+    PLUS_TWO_ATTRIBUTE_NAMES,
+    PlusTwoAttributeName,
 } from '@common/character/character.model';
 import { map, startWith } from 'rxjs';
+import { CharacterCreationPreviewComponent } from './character-creation-preview.component';
 
 const DEFAULT_PLUS_TWO: PlusTwoAttributeName = PLUS_TWO_ATTRIBUTE_NAMES[0];
 const DEFAULT_D6_TARGET: DieTargetAttributeName = DIE_TARGET_ATTRIBUTE_NAMES[0];
@@ -45,11 +44,10 @@ const AVATAR_FALLBACK_COLORS = [
   '#6A8FA3',
   '#6B5A6B',
 ] as const;
-type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
 
 @Component({
   selector: 'app-character-creation-page',
-  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent, AsyncPipe, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent, AsyncPipe, RouterModule, CharacterCreationPreviewComponent],
   templateUrl: './character-creation-page.component.html',
   styleUrls: ['./character-creation-page.component.scss'],
 })
@@ -107,28 +105,6 @@ export class CharacterCreationPageComponent implements OnInit {
     const id = this.avatarIdValue();
     return id === null ? null : AVATAR_PROFILES[id];
   });
-
-  readonly previewStats = computed(() => {
-    const plusTwo = this.plusTwoValue() as BaseAttrKey;
-    const d6Target = this.d6TargetValue() as BaseAttrKey;
-    return {
-      ...CHARACTER_BASE_ATTRIBUTES,
-      [plusTwo]: CHARACTER_BASE_ATTRIBUTES[plusTwo] + CHARACTER_PLUS_TWO_VALUE,
-      attack: `${CHARACTER_BASE_ATTRIBUTES.attack} + ${d6Target === 'attack' ? 'D6' : 'D4'}`,
-      defense: `${CHARACTER_BASE_ATTRIBUTES.defense} + ${d6Target === 'defense' ? 'D6' : 'D4'}`,
-    };
-  });
-
-  private readonly plusTwoValue = toSignal(
-    this.form.controls.plusTwo.valueChanges.pipe(startWith(this.form.controls.plusTwo.value ?? DEFAULT_PLUS_TWO)),
-    { initialValue: DEFAULT_PLUS_TWO },
-  );
-
-  private readonly d6TargetValue = toSignal(
-    this.form.controls.d6GoesTo.valueChanges.pipe(startWith(this.form.controls.d6GoesTo.value ?? DEFAULT_D6_TARGET)),
-    { initialValue: DEFAULT_D6_TARGET },
-  );
-
   onSelectAvatar(id: AvatarId): void {
     if (this.waitingRoomService.getPlayerSnapshot().some((player) => player.avatarId === id)) {
       return;
