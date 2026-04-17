@@ -1,6 +1,6 @@
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
-import { GameMode, ObjectType } from '@common/maps/map.enums';
+import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
 import { Vec2 } from '@common/maps/map.interface';
 import {
     DIRECTIONS,
@@ -10,6 +10,7 @@ import {
     StrategicTarget,
     buildDoorCandidate,
     findNearestEnterableTile,
+    findPath,
     getBestAffordableMoveTowardTarget,
     getReachableTiles,
     reconstructPath,
@@ -28,6 +29,7 @@ import {
 } from './game-session.virtual-player.strategy';
 import {
     getGameSessionDestination,
+    getGameSessionMovementCost,
     getGameSessionObjectFootprint,
     isGameSessionSanctuaryActive,
     isGameSessionSanctuaryObject,
@@ -73,6 +75,10 @@ function planAggressiveDecision(
     if (chaseMove) {
         return chaseMove;
     }
+    const doorMove = buildMoveTowardBlockedDoor(match, turnState, player, getAggressiveTargets(match, player));
+    if (doorMove) {
+        return doorMove;
+    }
     const doorAction = buildDoorAction(match, turnState, player, getAggressiveTargets(match, player));
     if (doorAction) {
         return doorAction;
@@ -101,6 +107,10 @@ function planDefensiveDecision(
     if (!turnState.actionTaken && adjacentEnemy) {
         return { kind: 'combat', targetId: adjacentEnemy.id };
     }
+    const doorMove = buildMoveTowardBlockedDoor(match, turnState, player, getDefensiveTargets(match, player));
+    if (doorMove) {
+        return doorMove;
+    }
     const doorAction = buildDoorAction(match, turnState, player, getDefensiveTargets(match, player));
     if (doorAction) {
         return doorAction;
@@ -119,9 +129,9 @@ function buildSanctuaryAction(
 
     const sanctuary = match.allObjects
         .filter((object) => isGameSessionSanctuaryObject(object) && isGameSessionSanctuaryActive(match, object.id))
-        .filter((object) => object.type === ObjectType.REGEN
-            ? player.health < player.maxHealth
-            : (player.arenaBuffTurnsRemaining ?? 0) === 0)
+        .filter((object) =>
+            object.type === ObjectType.REGEN ? player.health < player.maxHealth : (player.arenaBuffTurnsRemaining ?? 0) === 0,
+        )
         .find((object) => getGameSessionObjectFootprint(object).some((tile) => areAdjacent(player.position, tile)));
 
     return sanctuary ? { kind: 'use-sanctuary', sanctuaryId: sanctuary.id } : null;
@@ -163,12 +173,18 @@ function buildCtfMovement(
     return null;
 }
 
-function buildMoveTowardClosestEnemy(match: InitializedMatch, turnState: MatchTurnState, player: MatchPlayer): VirtualPlayerDecision | null {
+function buildMoveTowardClosestEnemy(
+    match: InitializedMatch,
+    turnState: MatchTurnState,
+    player: MatchPlayer,
+): VirtualPlayerDecision | null {
     const enemies = getPrioritizedEnemies(match, player);
     const paths = enemies
         .map((enemy) => ({
             enemy,
-            candidate: getBestAffordableMoveTowardTarget(match, player, enemy.position, turnState.movementPointsRemaining, { stopAdjacent: true }),
+            candidate: getBestAffordableMoveTowardTarget(match, player, enemy.position, turnState.movementPointsRemaining, {
+                stopAdjacent: true,
+            }),
         }))
         .filter((candidate): candidate is { enemy: MatchPlayer; candidate: MoveCandidate } => candidate.candidate !== null)
         .sort((left, right) => left.candidate.remainingPathLength - right.candidate.remainingPathLength);
@@ -200,6 +216,70 @@ function buildDoorAction(
         });
 
     return candidates[0] ? { kind: 'toggle-door', position: candidates[0].position } : null;
+}
+
+function buildMoveTowardBlockedDoor(
+    match: InitializedMatch,
+    turnState: MatchTurnState,
+    player: MatchPlayer,
+    targets: StrategicTarget[],
+): VirtualPlayerDecision | null {
+    if (turnState.movementPointsRemaining <= 0) {
+        return null;
+    }
+
+    const candidates = getClosedDoors(match)
+        .flatMap((doorPosition) =>
+            targets.map((target) => {
+                const openDoorPath = findPath(buildMatchWithOpenDoor(match, doorPosition), player.id, target.position, target.options);
+                if (openDoorPath.length === 0 || !openDoorPath.some((step) => samePosition(step, doorPosition))) {
+                    return null;
+                }
+
+                const nextStep = openDoorPath[0];
+                if (!nextStep || samePosition(nextStep, doorPosition)) {
+                    return null;
+                }
+
+                const move = buildMoveDecision(player.position, nextStep);
+                if (!move || move.kind !== 'move') {
+                    return null;
+                }
+
+                const stepCost = getGameSessionMovementCost(match, nextStep, player.id);
+                if (stepCost === null || stepCost > turnState.movementPointsRemaining) {
+                    return null;
+                }
+
+                return {
+                    direction: move.direction,
+                    doorPosition,
+                    nextStep,
+                    pathLength: openDoorPath.length,
+                };
+            }),
+        )
+        .filter(
+            (
+                candidate,
+            ): candidate is {
+                direction: MovementDirection;
+                doorPosition: Vec2;
+                nextStep: Vec2;
+                pathLength: number;
+            } => candidate !== null,
+        )
+        .sort((left, right) => {
+            if (left.pathLength !== right.pathLength) {
+                return left.pathLength - right.pathLength;
+            }
+            if (left.nextStep.y !== right.nextStep.y) {
+                return left.nextStep.y - right.nextStep.y;
+            }
+            return left.nextStep.x - right.nextStep.x;
+        });
+
+    return candidates[0] ? { kind: 'move', direction: candidates[0].direction } : null;
 }
 
 function buildRetreatMove(
@@ -270,4 +350,19 @@ function buildMoveDecision(from: Vec2, nextStep: Vec2 | null): VirtualPlayerDeci
     }
 
     return null;
+}
+
+function buildMatchWithOpenDoor(match: InitializedMatch, doorPosition: Vec2): InitializedMatch {
+    return {
+        ...match,
+        map: match.map.map((cell) =>
+            samePosition(cell.position, doorPosition) ? { ...cell, isWalkable: true } : cell,
+        ),
+    };
+}
+
+function getClosedDoors(match: InitializedMatch): Vec2[] {
+    return match.map
+        .filter((cell) => cell.tileType === TileType.DOOR && !cell.isWalkable)
+        .map((cell) => ({ ...cell.position }));
 }
