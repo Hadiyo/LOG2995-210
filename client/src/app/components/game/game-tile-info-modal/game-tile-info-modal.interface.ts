@@ -1,4 +1,5 @@
 import { ObjectType, TileType } from '@common/maps/map.enums';
+import { MatchPlayerController, VirtualPlayerProfile } from '@common/game/match.interface';
 
 // Payload consumed by the tile info modal component.
 export interface GameTileInfoModalData {
@@ -9,8 +10,11 @@ export interface GameTileInfoModalData {
   tileCharacteristics: readonly string[];
   tileBlockingReason: string | null;
   objectType: ObjectType | null;
+  objectUsed: boolean;
   objectLabel: string | null;
   objectDescription: string | null;
   playerName: string | null;
   playerAvatarId: number | null;
+  playerController: MatchPlayerController | null;
+  playerVirtualProfile: VirtualPlayerProfile | null;
 }

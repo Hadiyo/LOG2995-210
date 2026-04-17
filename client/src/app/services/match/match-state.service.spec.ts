@@ -40,8 +40,8 @@ describe('MatchStateService', () => {
             name: 'Runner',
             avatarId: 0,
             bonuses: {
-                plusTwo: 'rapidite',
-                attaqueDie: 'D6',
+                plusTwo: 'speed',
+                attackDie: 'D6',
                 defenseDie: 'D4',
             },
         };
@@ -57,8 +57,8 @@ describe('MatchStateService', () => {
             name: 'Guest',
             avatarId: 1,
             bonuses: {
-                plusTwo: 'vie',
-                attaqueDie: 'D4',
+                plusTwo: 'health',
+                attackDie: 'D4',
                 defenseDie: 'D6',
             },
         };
@@ -73,8 +73,8 @@ describe('MatchStateService', () => {
             name: 'Organizer',
             avatarId: 0,
             bonuses: {
-                plusTwo: 'rapidite',
-                attaqueDie: 'D6',
+                plusTwo: 'speed',
+                attackDie: 'D6',
                 defenseDie: 'D4',
             },
         };
@@ -82,8 +82,8 @@ describe('MatchStateService', () => {
             name: 'Guest',
             avatarId: 1,
             bonuses: {
-                plusTwo: 'vie',
-                attaqueDie: 'D4',
+                plusTwo: 'health',
+                attackDie: 'D4',
                 defenseDie: 'D6',
             },
         };
@@ -186,12 +186,12 @@ describe('MatchStateService', () => {
         localStorage.setItem('pendingMatchLocalPlayer', JSON.stringify(organizer));
         localStorage.setItem('pendingMatchTurnState', JSON.stringify(createTurnState(persistedMatch.players)));
 
-        service.endLocalSession('Retour a l accueil avec explication.');
+        service.endLocalSession("Retour à l'accueil avec explication.");
 
         expect(service.localPlayer()).toBeNull();
         expect(service.match()).toBeNull();
         expect(turnStateService.turnState()).toBeNull();
-        expect(service.consumeHomeReturnMessage()).toBe('Retour a l accueil avec explication.');
+        expect(service.consumeHomeReturnMessage()).toBe("Retour à l'accueil avec explication.");
         expect(service.consumeHomeReturnMessage()).toBeNull();
     });
 

@@ -1,0 +1,45 @@
+<section class="combat-round-log" aria-label="Détails du combat">
+  <header class="combat-round-log__header">
+    <div>
+      <p class="combat-round-log__eyebrow">Historique</p>
+      <h3>Détails du combat</h3>
+    </div>
+    <p class="combat-round-log__copy">Les tours les plus récents apparaissent en premier.</p>
+  </header>
+
+  <div class="combat-round-log__viewport">
+    @if (!logs.length) {
+      <div class="combat-round-log__empty">Aucun détail de tour pour le moment.</div>
+    } @else {
+      @for (round of displayedLogs; track round.id) {
+        <article class="combat-round-log__round">
+          <header class="combat-round-log__round-header">
+            <span class="combat-round-log__round-chip">Tour {{ round.round }}</span>
+            <span
+              class="combat-round-log__round-state"
+              [class.combat-round-log__round-state--pending]="round.status === 'pending'"
+              [class.combat-round-log__round-state--revealing]="round.status === 'revealing'"
+            >
+              {{ round.status === 'pending' ? 'En attente' : round.status === 'revealing' ? 'Résolution' : 'Résolue' }}
+            </span>
+          </header>
+
+          <div class="combat-round-log__fighters">
+            @for (fighter of round.fighters; track fighter.fighterId) {
+              @let fighterIndex = combatFighterIndex($index);
+              <app-game-combat-round-log-fighter
+                [fighter]="fighter"
+                [outcome]="fighterOutcome(round, fighterIndex)"
+                [attackSucceeded]="attackSucceeded(round, fighterIndex)"
+                [defenseSucceeded]="defenseSucceeded(round, fighterIndex)"
+                [stanceLabel]="stanceLabel(fighter.stance)"
+                [resultLabel]="resultLabel(round, fighterIndex)"
+                [damageLabel]="damageLabel(round, fighterIndex)"
+              />
+            }
+          </div>
+        </article>
+      }
+    }
+  </div>
+</section>

@@ -81,7 +81,7 @@ export class TurnStateService {
             return false;
         }
 
-        return currentState.activePlayerId === playerId && playerState === 'active';
+        return currentState.activePlayerId === playerId && playerState === PlayerTurnInteractionState.Active;
     }
 
     canPerformMovement(playerId: string, cost: number = 0): boolean {

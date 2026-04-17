@@ -5,12 +5,13 @@ import { SocketManagerService } from '@app/services/socket-manager/socket-manage
 import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
 import {
+  AddWaitingRoomVirtualPlayerPayload,
   CreateWaitingRoomPayload,
   JoinWaitingRoomPayload,
   KickWaitingRoomPlayerPayload,
   SendWaitingRoomMessagePayload,
-  SocketEvents,
   WaitingRoomErrorPayload,
+  WaitingRoomEvents,
   WaitingRoomGameStartedPayload,
   WaitingRoomStatePayload,
 } from '@common/socket-events';
@@ -87,9 +88,10 @@ export class WaitingRoomService {
       ...player,
       isOrganizer: true,
       controller: 'human',
+      virtualProfile: null,
     };
 
-    this.socketManager.send<CreateWaitingRoomPayload>(SocketEvents.CreateWaitingRoom, {
+    this.socketManager.send<CreateWaitingRoomPayload>(WaitingRoomEvents.CreateWaitingRoom, {
       mapId,
       player: this.mePlayer,
     });
@@ -105,9 +107,10 @@ export class WaitingRoomService {
       ...player,
       isOrganizer: false,
       controller: 'human',
+      virtualProfile: null,
     };
 
-    this.socketManager.send<JoinWaitingRoomPayload>(SocketEvents.JoinWaitingRoom, {
+    this.socketManager.send<JoinWaitingRoomPayload>(WaitingRoomEvents.JoinWaitingRoom, {
       accessCode,
       player: this.mePlayer,
     });
@@ -123,12 +126,12 @@ export class WaitingRoomService {
       return;
     }
 
-    this.socketManager.off<WaitingRoomStatePayload>(SocketEvents.WaitingRoomUpdated, this.handleWaitingRoomUpdated);
-    this.socketManager.off<ChatMessage>(SocketEvents.WaitingRoomMessageSent, this.handleWaitingRoomMessageSent);
-    this.socketManager.off<WaitingRoomErrorPayload>(SocketEvents.WaitingRoomError, this.handleWaitingRoomError);
-    this.socketManager.off<{ message: string }>(SocketEvents.WaitingRoomPlayerKicked, this.handleWaitingRoomCancelled);
-    this.socketManager.off<{ message: string }>(SocketEvents.WaitingRoomCancelled, this.handleWaitingRoomCancelled);
-    this.socketManager.off<WaitingRoomGameStartedPayload>(SocketEvents.WaitingRoomGameStarted, this.handleGameStarted);
+    this.socketManager.off<WaitingRoomStatePayload>(WaitingRoomEvents.WaitingRoomUpdated, this.handleWaitingRoomUpdated);
+    this.socketManager.off<ChatMessage>(WaitingRoomEvents.WaitingRoomMessageSent, this.handleWaitingRoomMessageSent);
+    this.socketManager.off<WaitingRoomErrorPayload>(WaitingRoomEvents.WaitingRoomError, this.handleWaitingRoomError);
+    this.socketManager.off<{ message: string }>(WaitingRoomEvents.WaitingRoomPlayerKicked, this.handleWaitingRoomCancelled);
+    this.socketManager.off<{ message: string }>(WaitingRoomEvents.WaitingRoomCancelled, this.handleWaitingRoomCancelled);
+    this.socketManager.off<WaitingRoomGameStartedPayload>(WaitingRoomEvents.WaitingRoomGameStarted, this.handleGameStarted);
     this.listenersRegistered = false;
   }
 
@@ -157,9 +160,20 @@ export class WaitingRoomService {
       return;
     }
 
-    this.socketManager.send<KickWaitingRoomPlayerPayload>(SocketEvents.KickWaitingRoomPlayer, {
+    this.socketManager.send<KickWaitingRoomPlayerPayload>(WaitingRoomEvents.KickWaitingRoomPlayer, {
       accessCode: this.code,
       playerId: player.id,
+    });
+  }
+
+  addVirtualPlayer(profile: 'aggressive' | 'defensive'): void {
+    if (!this.code || !this.mePlayer?.isOrganizer) {
+      return;
+    }
+
+    this.socketManager.send<AddWaitingRoomVirtualPlayerPayload>(WaitingRoomEvents.AddWaitingRoomVirtualPlayer, {
+      accessCode: this.code,
+      profile,
     });
   }
 
@@ -168,7 +182,7 @@ export class WaitingRoomService {
       return;
     }
 
-    this.socketManager.send<SendWaitingRoomMessagePayload>(SocketEvents.SendWaitingRoomMessage, {
+    this.socketManager.send<SendWaitingRoomMessagePayload>(WaitingRoomEvents.SendWaitingRoomMessage, {
       accessCode: this.code,
       content,
     });
@@ -179,7 +193,7 @@ export class WaitingRoomService {
       return;
     }
 
-    this.socketManager.send(SocketEvents.StartWaitingRoomGame, { accessCode: this.code });
+    this.socketManager.send(WaitingRoomEvents.StartWaitingRoomGame, { accessCode: this.code });
   }
 
   private fetchWaitingRoomPreview(accessCode: string, resetBeforeLoad: boolean): void {
@@ -193,7 +207,7 @@ export class WaitingRoomService {
       },
       error: () => {
         this.resetState();
-        this.errorSubject.next('Impossible de charger la salle d attente.');
+        this.errorSubject.next("Impossible de charger la salle d'attente.");
       },
     });
   }
@@ -210,12 +224,12 @@ export class WaitingRoomService {
     }
 
     this.listenersRegistered = true;
-    this.socketManager.on<WaitingRoomStatePayload>(SocketEvents.WaitingRoomUpdated, this.handleWaitingRoomUpdated);
-    this.socketManager.on<ChatMessage>(SocketEvents.WaitingRoomMessageSent, this.handleWaitingRoomMessageSent);
-    this.socketManager.on<WaitingRoomErrorPayload>(SocketEvents.WaitingRoomError, this.handleWaitingRoomError);
-    this.socketManager.on<{ message: string }>(SocketEvents.WaitingRoomPlayerKicked, this.handleWaitingRoomCancelled);
-    this.socketManager.on<{ message: string }>(SocketEvents.WaitingRoomCancelled, this.handleWaitingRoomCancelled);
-    this.socketManager.on<WaitingRoomGameStartedPayload>(SocketEvents.WaitingRoomGameStarted, this.handleGameStarted);
+    this.socketManager.on<WaitingRoomStatePayload>(WaitingRoomEvents.WaitingRoomUpdated, this.handleWaitingRoomUpdated);
+    this.socketManager.on<ChatMessage>(WaitingRoomEvents.WaitingRoomMessageSent, this.handleWaitingRoomMessageSent);
+    this.socketManager.on<WaitingRoomErrorPayload>(WaitingRoomEvents.WaitingRoomError, this.handleWaitingRoomError);
+    this.socketManager.on<{ message: string }>(WaitingRoomEvents.WaitingRoomPlayerKicked, this.handleWaitingRoomCancelled);
+    this.socketManager.on<{ message: string }>(WaitingRoomEvents.WaitingRoomCancelled, this.handleWaitingRoomCancelled);
+    this.socketManager.on<WaitingRoomGameStartedPayload>(WaitingRoomEvents.WaitingRoomGameStarted, this.handleGameStarted);
   }
 
   private registerPreviewUpdates(): void {
@@ -224,7 +238,7 @@ export class WaitingRoomService {
     }
 
     this.previewUpdatesRegistered = true;
-    this.socketManager.on(SocketEvents.WaitingRoomDirectoryUpdated, this.handlePreviewDirectoryUpdated);
+    this.socketManager.on(WaitingRoomEvents.WaitingRoomDirectoryUpdated, this.handlePreviewDirectoryUpdated);
   }
 
   private unregisterPreviewUpdates(): void {
@@ -234,7 +248,7 @@ export class WaitingRoomService {
 
     this.previewUpdatesRegistered = false;
     this.previewAccessCode = null;
-    this.socketManager.off(SocketEvents.WaitingRoomDirectoryUpdated, this.handlePreviewDirectoryUpdated);
+    this.socketManager.off(WaitingRoomEvents.WaitingRoomDirectoryUpdated, this.handlePreviewDirectoryUpdated);
   }
 
   private readonly handleWaitingRoomUpdated = (payload: WaitingRoomStatePayload): void => {
@@ -289,7 +303,7 @@ export class WaitingRoomService {
       return;
     }
 
-    this.socketManager.send(SocketEvents.LeaveWaitingRoom, {
+    this.socketManager.send(WaitingRoomEvents.LeaveWaitingRoom, {
       accessCode: this.code,
       playerId: this.mePlayer.id,
     });

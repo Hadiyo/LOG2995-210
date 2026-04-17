@@ -1,4 +1,5 @@
 import { Map, MapDocument } from '@app/model/database/map';
+import { PersistedMap, PersistedMapRecord } from '@app/services/map/map.types';
 import { createNameUniquenessChecker, validateMapOnServer } from '@app/validators/server-map-validation';
 import { MAX_PREVIEW_IMAGE_BASE64_LENGTH } from '@common/constants';
 import { PreviewImageFormat } from '@common/enum';
@@ -10,17 +11,6 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { EventEmitter } from 'events';
 import type { Model } from 'mongoose';
-
-type PersistedCell = Omit<EditorCell, 'position' | 'isWalkable' | 'isOccupied'> & { doorOpen?: boolean };
-type PersistedMap = Omit<EditorMap, 'id' | 'map'> & { map: PersistedCell[] };
-
-type PersistedMapRecord = Omit<EditorMap, 'id' | 'map'> & {
-    _id: string;
-    map: PersistedCell[];
-    objects: MapObject[];
-    createdAt?: Date;
-    updatedAt?: Date;
-};
 
 @Injectable()
 export class MapService {
@@ -134,7 +124,7 @@ export class MapService {
             date: now,
             map: map.map.map((cell) => ({
                 tileType: cell.tileType,
-                ...(cell.tileType === TileType.DOOR ? { doorOpen: cell.isWalkable === true } : {}),
+                ...(cell.tileType === TileType.DOOR ? { doorOpen: cell.isWalkable } : {}),
             })),
             objects: map.objects,
             visibility: map.visibility,
@@ -225,7 +215,7 @@ export class MapService {
 
     private isTileWalkable(tileType: TileType, doorOpen?: boolean): boolean {
         if (tileType === TileType.WALL) return false;
-        if (tileType === TileType.DOOR) return doorOpen === true;
+        if (tileType === TileType.DOOR) return !!doorOpen;
         return true;
     }
 

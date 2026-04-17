@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MapConfig } from '@app/config/map.config';
 import { MapApiService } from '@app/services/map/map-api.service';
+import { getCoveredPositions, getIndexFromPosition } from '@common/maps/map-utils';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import type { EditorCell, EditorMap, EditorMapDetails, MapObject, ObjectCountAndLimit } from '@common/maps/map.interface';
 import { MouseButton } from '@common/mouse-events.enum';
@@ -9,7 +10,6 @@ import { EditorMapFactoryService } from './editor-map-factory.service';
 import { EditorOccupancyService } from './editor-occupancy.service';
 import { EditorPlacementRulesService } from './editor-placement-rules.service';
 import type { SelectedCellInfo } from './types/selected-cell-info.type';
-import { getCoveredPositions } from './utils/editor-geometry.util';
 
 @Injectable({ providedIn: 'root' })
 export class EditorStateService {
@@ -56,6 +56,19 @@ export class EditorStateService {
     // Convenience computed signals for template usage
     readonly cells = computed(() => this.editorMap().map);
     readonly objects = computed(() => this.editorMap().objects);
+    readonly objectLookUp = computed(() => {
+        const editorMap = this.editorMap();
+        const lookup = new Map<number, MapObject | null>();
+
+        for (const object of editorMap.objects) {
+            const coveredPositions = getCoveredPositions(object.position, object.size);
+            for (const position of coveredPositions) {
+                lookup.set(getIndexFromPosition(position, editorMap.size), object);
+            }
+        }
+
+        return lookup;
+    });
 
     /* =========================================================
        Public API — palette selection
@@ -73,10 +86,15 @@ export class EditorStateService {
 
     /**
      * Select an object to place:
+     * - FLAG is only available in CTF
      * - clears tile selection
      * - switches tool to applicator
      */
     selectObject(objectType: ObjectType): void {
+        if (objectType === ObjectType.FLAG && this.editorMap().mode !== GameMode.CTF) {
+            return;
+        }
+
         this.selectedObjectType.set(objectType);
         this.selectedTileType.set(null);
     }
@@ -106,7 +124,22 @@ export class EditorStateService {
      * Change game mode.
      */
     setMode(mode: GameMode): void {
-        this.editorMap.update((currentMap) => ({ ...currentMap, mode }));
+        this.editorMap.update((currentMap) => {
+            const nextObjects = mode === GameMode.CTF
+                ? currentMap.objects
+                : currentMap.objects.filter((object) => object.type !== ObjectType.FLAG);
+
+            return {
+                ...currentMap,
+                mode,
+                objects: nextObjects,
+                map: this.occupancy.refreshOccupied(currentMap.map, nextObjects, currentMap.size),
+            };
+        });
+
+        if (mode !== GameMode.CTF) {
+            this.selectedObjectType.update((type) => (type === ObjectType.FLAG ? null : type));
+        }
     }
 
     /**
@@ -333,17 +366,22 @@ export class EditorStateService {
      * - placing overwrites intersecting objects (by design)
      */
     private placeObjectAtIndex(index: number, type: ObjectType): void {
+        if (type === ObjectType.FLAG && this.editorMap().mode !== GameMode.CTF) {
+            return;
+        }
+
         this.editorMap.update((currentMap) => {
             const cell = currentMap.map[index];
             if (!cell) return currentMap;
 
             // Objects only on walkable tiles
             if (!cell.isWalkable) return currentMap;
-            if (type === ObjectType.START && cell.tileType === TileType.DOOR) return currentMap;
+            if ((type === ObjectType.START || type === ObjectType.FLAG) && cell.tileType === TileType.DOOR) return currentMap;
 
             const anchor = cell.position;
 
-            const size: ObjectSize = ObjectSize.S;
+            const size: ObjectSize =
+                type === ObjectType.REGEN || type === ObjectType.ARENA ? ObjectSize.L : ObjectSize.S;
 
             // Enforce per-type limits based on map size + mode
             const limit = this.rules.getObjectLimit(type, currentMap.size, currentMap.mode);
@@ -362,7 +400,7 @@ export class EditorStateService {
             if (!this.rules.arePositionsInBounds(covered, currentMap.size)) return currentMap;
 
             // Must be walkable everywhere + no collisions
-            if (!this.rules.canPlaceObject(covered, objectsFiltered, currentMap)) return currentMap;
+            if (!this.rules.canPlaceObject(covered, objectsFiltered, currentMap, type)) return currentMap;
 
             // Collision policy: placement is rejected if it intersects an existing object.
             const newObj: MapObject = {

@@ -1,0 +1,127 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding: 2rem;
+    overflow: hidden;
+    color: var(--text-main);
+    background: var(--bg-main);
+}
+
+:host > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    flex: 1;
+    min-height: 0;
+}
+
+.game-stats,
+.player-stats {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 16px;
+}
+
+.game-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+.game-stats p {
+    margin: 0;
+    padding: 1rem;
+    background: var(--bg-panel-soft);
+    border-radius: 12px;
+    color: var(--text-main);
+}
+
+.player-stats {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.player-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.player-table thead {
+    background: var(--bg-panel-soft);
+}
+
+.player-table tbody {
+    display: block;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.player-table thead,
+.player-table tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.player-table th,
+.player-table td {
+    padding: 1rem 0.75rem;
+    text-align: left;
+    border-top: 1px solid var(--border-soft);
+    color: var(--text-main);
+}
+
+.player-table th {
+    color: var(--text-muted);
+    border-top: none;
+}
+
+.player-table th button {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+}
+
+.player-table th button:hover {
+    color: var(--accent-primary);
+}
+
+.bar-container {
+    position: relative;
+    height: 24px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--text-dim);
+}
+
+.bar {
+    height: 100%;
+}
+
+.bar.red {
+    background: var(--accent-danger);
+}
+
+.bar.green {
+    background: var(--accent-success);
+}
+
+.bar.blue {
+    background: var(--accent-primary);
+}
+
+.bar-container span {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    padding-left: 0.5rem;
+    color: var(--text-main);
+    font-size: 0.85rem;
+}

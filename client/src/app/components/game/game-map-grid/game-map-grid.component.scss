@@ -16,9 +16,11 @@
   --cols: 10;
   --rows: 10;
 
-  /* Keep full map visible: constrained by container, max size, and viewport height */
-  width: min(100%, var(--grid-max-size), calc(100dvh - var(--grid-viewport-offset)));
+  /* Maps are square in the shared model, so size from width first and cap against viewport height. */
+  width: min(100%, calc(100dvh - var(--grid-viewport-offset)), var(--grid-max-size));
+  height: auto;
   max-height: 100%;
+  max-width: 100%;
   aspect-ratio: 1 / 1;
   margin: 0 auto;
 
@@ -58,6 +60,7 @@
   position: absolute;
   inset: 0;
   opacity: 0;
+  z-index: 3;
   pointer-events: none;
   transition: opacity 120ms ease;
 }
@@ -65,22 +68,28 @@
 .cell--reachable::after {
   opacity: 1;
   background:
-    radial-gradient(circle at center, rgba(94, 234, 212, 0.18), rgba(94, 234, 212, 0.04) 60%, transparent 75%);
-  box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.4);
+    radial-gradient(circle at center, rgba(34, 139, 84, 0.38), rgba(34, 139, 84, 0.16) 58%, transparent 78%);
+  box-shadow:
+    inset 0 0 0 2px rgba(34, 139, 84, 0.92),
+    inset 0 0 14px rgba(34, 139, 84, 0.38);
 }
 
 .cell--reachable-origin::after {
   opacity: 1;
   background:
-    radial-gradient(circle at center, rgba(250, 204, 21, 0.2), rgba(250, 204, 21, 0.06) 58%, transparent 75%);
-  box-shadow: inset 0 0 0 2px rgba(250, 204, 21, 0.55);
+    radial-gradient(circle at center, rgba(250, 204, 21, 0.36), rgba(250, 204, 21, 0.12) 58%, transparent 78%);
+  box-shadow:
+    inset 0 0 0 2px rgba(250, 204, 21, 0.9),
+    inset 0 0 14px rgba(250, 204, 21, 0.35);
 }
 
 .cell--action-target::after {
   opacity: 1;
   background:
-    linear-gradient(135deg, rgba(248, 113, 113, 0.12), rgba(248, 113, 113, 0.22));
-  box-shadow: inset 0 0 0 2px rgba(248, 113, 113, 0.65);
+    linear-gradient(135deg, rgba(248, 113, 113, 0.18), rgba(248, 113, 113, 0.3));
+  box-shadow:
+    inset 0 0 0 2px rgba(248, 113, 113, 0.9),
+    inset 0 0 14px rgba(248, 113, 113, 0.28);
 }
 
 /* Base tile image layer */
@@ -101,6 +110,7 @@
 
 /* Player sprite layer above objects */
 .player-layer {
+  --team-color: transparent;
   position: absolute;
   inset: 0;
   display: block;
@@ -108,8 +118,63 @@
   z-index: 2;
 }
 
+.player-layer__avatar-frame {
+  position: absolute;
+  left: 12%;
+  top: 8%;
+  width: 76%;
+  height: 84%;
+  pointer-events: none;
+}
+
+.player-layer__avatar-frame::after {
+  content: '';
+  position: absolute;
+  inset: 4% 8% 12%;
+  border-radius: 999px 999px 18px 18px;
+  box-shadow:
+    inset 0 0 0 2px var(--team-color),
+    0 0 0 1px color-mix(in srgb, var(--team-color) 32%, transparent);
+  opacity: 0;
+}
+
+.player-layer__flag-badge {
+  position: absolute;
+  right: -6%;
+  top: 10%;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding-inline: 0;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  color: #2f1d00;
+  background: #ffbf69;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(255, 159, 28, 0.85);
+  font-size: 0.72rem;
+  line-height: 1;
+  z-index: 1;
+}
+
+.player-layer--team-a {
+  --team-color: #2f80ed;
+}
+
+.player-layer--team-b {
+  --team-color: #eb5757;
+}
+
+.player-layer--team-a .player-layer__avatar-frame::after,
+.player-layer--team-b .player-layer__avatar-frame::after {
+  opacity: 1;
+}
+
 /* Sprite fills tile */
-.player-layer app-character-sprite {
+.player-layer__avatar-frame app-character-sprite {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   display: block;
@@ -122,9 +187,55 @@
   100% { transform: scaleY(1); }
 }
 
-.player-layer app-character-sprite.is-idle {
+.player-layer__avatar-frame app-character-sprite.is-idle {
   transform-origin: bottom center;
   animation: game-avatar-breathe 3s ease-in-out infinite;
+}
+
+.player-bot-icon {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: grid;
+  place-items: center;
+  z-index: 3;
+  width: 15px;
+  height: 15px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 999px;
+  color: #e2e8f0;
+  background-color: rgba(15, 23, 42, 0.82);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+  pointer-events: none;
+}
+
+.player-bot-icon svg {
+  width: 10px;
+  height: 10px;
+}
+
+.player-bot-icon[data-virtual-profile='aggressive'] {
+  border-color: rgba(251, 146, 60, 0.52);
+  background-color: rgba(124, 45, 18, 0.82);
+}
+
+.player-bot-icon[data-virtual-profile='defensive'] {
+  border-color: rgba(45, 212, 191, 0.5);
+  background-color: rgba(17, 94, 89, 0.82);
+}
+
+@media (max-width: 960px) {
+  .player-bot-icon {
+    top: 3px;
+    right: 3px;
+    width: 13px;
+    height: 13px;
+  }
+
+  .player-bot-icon svg {
+    width: 8px;
+    height: 8px;
+  }
 }
 
 /* Tile image bindings by tile type */
@@ -148,8 +259,31 @@
   background-image: var(--object-flag-img);
 }
 
-.obj[data-obj='REGEN'] { background-image: var(--object-heal-img); }
-.obj[data-obj='ARENA'] { background-image: var(--object-fight-img); }
+.obj[data-obj='REGEN'] {
+  background-image: var(--object-heal-img);
+  animation: obj-ready-glow 2.5s infinite alternate ease-in-out;
+}
+.obj[data-obj='ARENA'] {
+  background-image: var(--object-fight-img);
+  animation: obj-ready-glow 2.5s infinite alternate ease-in-out;
+}
+.obj[data-obj='REGEN'][data-used='true'] {
+  background-image: var(--object-heal-used-img);
+  animation: none;
+}
+.obj[data-obj='ARENA'][data-used='true'] {
+  background-image: var(--object-fight-used-img);
+  animation: none;
+}
+
+@keyframes obj-ready-glow {
+  0% {
+    filter: drop-shadow(0 0 1px var(--accent-secondary));
+  }
+  100% {
+    filter: drop-shadow(0 0 5px var(--accent-secondary));
+  }
+}
 
 /* 2x2 objects span 4 tiles visually from top-left anchor */
 .obj[data-size='2x2'] {

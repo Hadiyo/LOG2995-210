@@ -32,18 +32,18 @@ export class EditorCanvasComponent {
 
   // Track state of shift key
   @HostListener('document:keydown.shift')
-  onShiftDown(): void {
+  protected onShiftDown(): void {
     this.editorState.isShiftPressed.set(true);
   }
 
   @HostListener('document:keyup.shift')
-  onShiftUp(): void {
+  protected onShiftUp(): void {
     this.editorState.isShiftPressed.set(false);
   }
 
   // Assume all keys are released when window loses focus
   @HostListener('window:blur')
-  onBlur() {
+  protected onBlur(): void {
     this.editorState.isShiftPressed.set(false);
   }
 
@@ -86,7 +86,7 @@ export class EditorCanvasComponent {
     }
   }
 
-  handleTileEvent(event: TileEvent) {
+  protected handleTileEvent(event: TileEvent): void {
     switch (event.type) {
       case MouseEventType.UP:
         this.onCellMouseUp();
@@ -117,7 +117,7 @@ export class EditorCanvasComponent {
   }
 
   // Disables context menu on right click
-  onContextMenu(event: MouseEvent): void {
+  protected onContextMenu(event: MouseEvent): void {
     event.preventDefault();
   }
 
@@ -179,7 +179,7 @@ export class EditorCanvasComponent {
   }
 
   private updateTooltip(index: number) {
-    const object = this.editorState.getObjectAtIndex(index);
+    const object = this.editorState.objectLookUp().get(index) ?? null;
     if (!object) {
       this.tooltipText.set(null);
       return;
@@ -190,7 +190,7 @@ export class EditorCanvasComponent {
 
   // Global mouseup listener to catch releases outside the grid
   @HostListener('document:mouseup')
-  onDocumentMouseUp(): void {
+  protected onDocumentMouseUp(): void {
     this.onCellMouseUp();
   }
 }

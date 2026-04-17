@@ -1,0 +1,169 @@
+:host {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+}
+
+.combat-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(8, 12, 20, 0.2), rgba(8, 12, 20, 0.46));
+  border-radius: inherit;
+  pointer-events: auto;
+}
+
+.combat-shell {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 24%, var(--border-soft));
+  border-radius: var(--panel-radius);
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--accent-primary) 12%, transparent), transparent 48%),
+    color-mix(in srgb, var(--bg-panel) 94%, var(--bg-main));
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(12px);
+  animation: combat-shell-enter 180ms ease-out;
+}
+
+.combat-shell__header,
+.combat-shell__meta,
+.combat-shell__footer,
+.combat-shell__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.combat-shell__header,
+.combat-shell__footer {
+  flex-wrap: wrap;
+}
+
+.combat-shell__footer {
+  margin-top: auto;
+}
+
+.combat-shell__round-log {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.combat-shell__title h2,
+.combat-shell__eyebrow,
+.combat-shell__hint {
+  margin: 0;
+}
+
+.combat-shell__eyebrow {
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent-primary) 72%, var(--text-main));
+}
+
+.combat-shell__title h2 {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.combat-shell__chip,
+.combat-shell__close,
+.combat-stage-strip__tag {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 88%, transparent);
+  border-radius: var(--panel-radius);
+  background: color-mix(in srgb, var(--bg-main) 78%, transparent);
+  color: var(--text-main);
+}
+
+.combat-shell__chip {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.combat-shell__chip--timer {
+  color: color-mix(in srgb, var(--accent-primary) 72%, var(--text-main));
+}
+
+.combat-shell__close {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.combat-shell__hint {
+  color: color-mix(in srgb, var(--text-main) 84%, transparent);
+  font-size: 0.94rem;
+}
+
+.combat-shell__actions {
+  flex-wrap: wrap;
+}
+
+.combat-shell__button {
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 42%, var(--border-soft));
+  border-radius: var(--panel-radius);
+  padding: 9px 14px;
+  background: color-mix(in srgb, var(--bg-main) 72%, transparent);
+  color: var(--text-main);
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.combat-shell__button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--accent-primary) 16%, var(--bg-panel));
+}
+
+.combat-shell__button--active {
+  border-color: color-mix(in srgb, #7bf2c3 68%, var(--accent-primary));
+  background: color-mix(in srgb, #7bf2c3 16%, var(--bg-panel));
+}
+
+.combat-shell__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes combat-shell-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 820px) {
+  .combat-overlay {
+    inset: 0;
+  }
+
+  .combat-shell {
+    width: 100%;
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .combat-shell__title h2 {
+    font-size: 1.55rem;
+  }
+}

@@ -1,5 +1,6 @@
 import { AVATAR_IDS } from '@common/character/character.model';
 import { MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
+import { PlayerTurnInteractionState } from '@common/game/turn.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMapDetails, MapObject, MapSummary } from '@common/maps/map.interface';
 
@@ -106,6 +107,6 @@ export const createTurnState = (players: MatchPlayer[]) => ({
     movementCount: 0,
     playerStates: players.map((player, index) => ({
         playerId: player.id,
-        state: index === 0 ? 'active' as const : 'waiting' as const,
+        state: index === 0 ? PlayerTurnInteractionState.Active : PlayerTurnInteractionState.Waiting,
     })),
 });

@@ -1,59 +1,33 @@
+import { buildTurnOrderFromPlayers } from '@app/services/game-session/game-session.turn';
+import { TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
+import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
-import { MatchTurnState } from '@common/game/turn.interface';
-import { TileType } from '@common/maps/map.enums';
+import { MatchTurnOrderEntry, MatchTurnState, PlayerTurnInteractionState } from '@common/game/turn.interface';
+import { ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMapDetails, Vec2 } from '@common/maps/map.interface';
-import { buildTurnOrderFromPlayers } from '@app/services/game-session/game-session.turn';
-import { buildInitializedMatchFromEditor } from './game-session.match';
+import { buildInitializedMatchFromEditor, getGameSessionObjectCovering } from './game-session.match';
 
-export const TRANSITION_DURATION_MS = 3000;
-export const ACTIVE_TURN_DURATION_MS = 30000;
-export const SNAPSHOT_TICK_MS = 1000;
-export const CLASSIC_WIN_THRESHOLD = 3;
-
-export interface GameSessionRuntime {
-    sessionId: string;
-    match: InitializedMatch;
-    turnState: MatchTurnState;
-    messages: ChatMessage[];
-    socketToPlayerId: Map<string, string>;
-    transitionTimeoutId: NodeJS.Timeout | null;
-    activeTurnTimeoutId: NodeJS.Timeout | null;
-    timerIntervalId: NodeJS.Timeout | null;
-}
+export { TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 
 export function buildSession(map: EditorMapDetails, players: MatchLobbyPlayer[], messages: ChatMessage[] = []): GameSessionRuntime {
     const sessionId = crypto.randomUUID();
     const match = buildInitializedMatchFromEditor(map, players, Math.random);
     const order = buildTurnOrderFromPlayers(match.players, Math.random);
     const firstPlayerId = order[0]?.playerId ?? null;
-    const turnState: MatchTurnState = {
-        matchId: match.mapId,
-        hasStarted: false,
-        order,
-        currentTurnIndex: 0,
-        phase: 'transition',
-        activePlayerId: null,
-        transitionTargetPlayerId: firstPlayerId,
-        transitionEndsAt: Date.now() + TRANSITION_DURATION_MS,
-        transitionRemainingMs: TRANSITION_DURATION_MS,
-        activeTurnEndsAt: null,
-        activeTurnRemainingMs: 0,
-        movementPointsRemaining: 0,
-        actionTaken: false,
-        movementCount: 0,
-        playerStates: order.map((entry) => ({ playerId: entry.playerId, state: 'waiting' })),
-    };
+    const turnState = initTurnState(match.mapId,firstPlayerId, TRANSITION_DURATION_MS, order);
 
     return {
         sessionId,
         match,
         turnState,
         messages: messages.map((message) => ({ ...message })),
+        logEntries: [],
         socketToPlayerId: new Map(),
         transitionTimeoutId: null,
         activeTurnTimeoutId: null,
         timerIntervalId: null,
+        virtualDecisionTimeoutId: null,
     };
 }
 
@@ -71,11 +45,11 @@ export function createTransitionTurnState(current: MatchTurnState): MatchTurnSta
         movementPointsRemaining: 0,
         actionTaken: false,
         movementCount: 0,
-        playerStates: current.order.map((entry) => ({ playerId: entry.playerId, state: 'waiting' })),
+        playerStates: current.order.map((entry) => ({ playerId: entry.playerId, state: PlayerTurnInteractionState.Waiting })),
     };
 }
 
-export function createActiveTurnState(current: MatchTurnState, activePlayer: MatchPlayer): MatchTurnState {
+export function createActiveTurnState(current: MatchTurnState, activePlayer: MatchPlayer, duration: number): MatchTurnState {
     const activePlayerId = current.order[current.currentTurnIndex]?.playerId ?? null;
     return {
         ...current,
@@ -85,17 +59,38 @@ export function createActiveTurnState(current: MatchTurnState, activePlayer: Mat
         transitionTargetPlayerId: null,
         transitionEndsAt: null,
         transitionRemainingMs: 0,
-        activeTurnEndsAt: Date.now() + ACTIVE_TURN_DURATION_MS,
-        activeTurnRemainingMs: ACTIVE_TURN_DURATION_MS,
+        activeTurnEndsAt: Date.now() + duration,
+        activeTurnRemainingMs: duration,
         movementPointsRemaining: activePlayer.speed,
         actionTaken: false,
         movementCount: 0,
         playerStates: current.order.map((entry) => ({
             playerId: entry.playerId,
-            state: entry.playerId === activePlayerId ? 'active' : 'waiting',
+            state: entry.playerId === activePlayerId ? PlayerTurnInteractionState.Active : PlayerTurnInteractionState.Waiting,
         })),
     };
 }
+
+export function initTurnState(id: string, firstPlayerId: string, duration: number, order: MatchTurnOrderEntry[]): MatchTurnState {
+    return {
+        matchId: id,
+        hasStarted: false,
+        order,
+        currentTurnIndex: 0,
+        phase: 'transition',
+        activePlayerId: null,
+        transitionTargetPlayerId: firstPlayerId,
+        transitionEndsAt: Date.now() + duration,
+        transitionRemainingMs: duration,
+        activeTurnEndsAt: null,
+        activeTurnRemainingMs: 0,
+        movementPointsRemaining: 0,
+        actionTaken: false,
+        movementCount: 0,
+        playerStates: order.map((entry) => ({ playerId: entry.playerId, state: PlayerTurnInteractionState.Waiting })),
+    };
+}
+
 
 export function canStartCombat(attacker: MatchPlayer, defender: MatchPlayer): boolean {
     return Math.abs(attacker.position.x - defender.position.x) + Math.abs(attacker.position.y - defender.position.y) === 1;
@@ -114,7 +109,14 @@ export function resolveRespawnPosition(match: InitializedMatch, defeatedPlayerId
     );
 
     const origin = defeatedPlayer.startingPosition;
-    const isFree = (pos: Vec2): boolean => !occupiedKeys.has(`${pos.x}:${pos.y}`);
+    const isFree = (pos: Vec2): boolean => {
+        if (occupiedKeys.has(`${pos.x}:${pos.y}`)) {
+            return false;
+        }
+
+        const blockingObject = getGameSessionObjectCovering(match.allObjects, pos);
+        return !blockingObject || (blockingObject.type !== ObjectType.REGEN && blockingObject.type !== ObjectType.ARENA);
+    };
 
     if (isFree(origin)) {
         return { ...origin };
@@ -150,7 +152,9 @@ export function rebuildTurnStateAfterRosterChange(current: MatchTurnState, playe
         transitionTargetPlayerId: current.phase === 'transition' ? activePlayerId : null,
         playerStates: order.map((entry) => ({
             playerId: entry.playerId,
-            state: current.phase === 'active' && entry.playerId === activePlayerId ? 'active' : 'waiting',
+            state: current.phase === 'active' && entry.playerId === activePlayerId
+                ? PlayerTurnInteractionState.Active
+                : PlayerTurnInteractionState.Waiting,
         })),
     };
 }

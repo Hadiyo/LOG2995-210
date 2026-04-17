@@ -1,8 +1,8 @@
-import { ChatMessage } from '@common/chat/chat.interface';
-import { GameNotification } from '@common/game-notification';
-import { GameSessionSnapshot } from '@common/game-session';
-import { GameMode, MapSize } from '@common/maps/map.enums';
-import { PlayerInformation } from '@common/player/player.interface';
+import { ChatMessage } from '../chat/chat.interface';
+import { GameNotification } from '../game-notification';
+import { GameSessionSnapshot } from '../game-session';
+import { GameMode, MapSize } from '../maps/map.enums';
+import { PlayerInformation } from '../player/player.interface';
 
 export interface GameSession {
     id: string;

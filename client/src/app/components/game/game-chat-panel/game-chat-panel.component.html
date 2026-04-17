@@ -9,15 +9,18 @@
 <div class="messages__feed-wrap">
   <div #messagesFeed class="messages__feed">
     @for (message of messages; track message.id) {
-      <article
-        class="message"
-        [class.message--mine]="isOwnMessage(message)"
-        [class.message--system]="message.author === 'SYSTEM'"
-      >
+        <article
+          class="message"
+          [class.message--mine]="isOwnMessage(message)"
+          [class.message--system]="message.author === 'SYSTEM' || message.author === 'Journal'"
+        >
         <header class="message__meta">
           <strong class="message__author">{{ message.author }}</strong>
           <span class="message__time">{{ message.createdAt | date:'HH:mm:ss' }}</span>
         </header>
+        @if (hasInvolvedPlayers(message)) {
+          <p class="message__participants">Joueurs: {{ message.involvedPlayers.join(', ') }}</p>
+        }
         <p class="message__content">{{ message.content }}</p>
       </article>
     }

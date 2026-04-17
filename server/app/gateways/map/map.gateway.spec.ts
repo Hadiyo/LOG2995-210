@@ -1,56 +1,32 @@
 import { MapGateway } from '@app/gateways/map/map.gateway';
 import { PageRoom } from '@app/gateways/rooms.record';
 import { MapService } from '@app/services/map/map.service';
+import { createMockLogger, createMockServer, createMockSocket } from '@app/utilities/mocks/mocks';
 import { GameMode, MapSize } from '@common/maps/map.enums';
 import type { EditorMap, MapSummary } from '@common/maps/map.interface';
 import { MapSocketEvents, MapVisibilityEventPayload } from '@common/socket-events';
 import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 
 describe('MapGateway', () => {
   let gateway: MapGateway;
-  // Create a mock for MapService with jest.fn() for the 'on' and 'off' methods
   let mapServiceMock: { on: jest.Mock; off: jest.Mock };
-  // Handlers to capture the subscribed functions for later verification
   let mapDeletedHandler: ((id: string) => void) | undefined;
-  // Handlers to capture the subscribed functions for later verification
   let mapCreatedHandler: ((map: EditorMap) => void) | undefined;
   let mapVisibilityHandler: (payload: MapVisibilityEventPayload) => void;
   let mapEditHandler: ((map: EditorMap) => void) | undefined;
-  // Mock implementation for the 'on' method to capture event handlers
-  const emit = jest.fn();
-  const to = jest.fn().mockReturnValue({ emit });
-  const serverMock = { to } as unknown as Server;
-  // let logSpy: jest.SpyInstance;
+  const server = createMockServer();
+  const loggerMock = createMockLogger();
 
-  function createMockSocket(id: string) {
-    const rooms = new Set<string>();
-
-    return {
-      id,
-      rooms,
-      join: jest.fn((room: string) => rooms.add(room)),
-      leave: jest.fn((room: string) => rooms.delete(room)),
-    } as unknown as Socket;
-  }
-
-  const loggerMock = {
-    log: jest.fn(),       // ✅ must be a function
-  };
-
-
-  // Set up the testing module before each test
   beforeEach(async () => {
+    jest.clearAllMocks();
     mapDeletedHandler = undefined;
     mapCreatedHandler = undefined;
     mapEditHandler = undefined;
 
-    // Create a mock for MapService that captures the handlers for the events
     mapServiceMock = {
-      // Mock the 'on' method to capture the handlers for the events
       on: jest.fn((event: MapSocketEvents, callback: (payload: unknown) => void) => {
-        // Capture the handlers for the events so we can call them in our tests
         if (event === MapSocketEvents.MapDeleted) {
           mapDeletedHandler = callback as (id: string) => void;
         }
@@ -64,11 +40,9 @@ describe('MapGateway', () => {
           mapEditHandler = callback as (map: EditorMap) => void;
         }
       }),
-      // Mock the 'off' method as a jest.fn() to verify that it's called on destroy
       off: jest.fn(),
     };
 
-    // Create the testing module and inject the MapGateway with the mocked MapService
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MapGateway,
@@ -77,21 +51,15 @@ describe('MapGateway', () => {
       ],
     }).compile();
 
-    // Get the instance of the MapGateway from the testing module
     gateway = module.get<MapGateway>(MapGateway);
-    // Inject the server mock into the gateway instance
-    (gateway as unknown as { server: Server }).server = serverMock;
+    gateway['server'] = server as unknown as Server;
 
-    // Clear mocks before each test to ensure clean state
-    emit.mockClear();
-    to.mockClear();
   });
 
   it('should be defined', () => {
     expect(gateway).toBeDefined();
   });
 
-  // Test that the gateway subscribes to map events on initialization
   it('subscribes to map events on init', () => {
     expect(mapServiceMock.on).toHaveBeenCalledWith(MapSocketEvents.MapDeleted, expect.any(Function));
     expect(mapServiceMock.on).toHaveBeenCalledWith(MapSocketEvents.MapCreated, expect.any(Function));
@@ -99,19 +67,14 @@ describe('MapGateway', () => {
     expect(mapServiceMock.on).toHaveBeenCalledWith(MapSocketEvents.ToggleMapVisibility, expect.any(Function));
   });
 
-  // Test that the gateway unsubscribes from map events on destroy
   it('forwards mapDeleted to mapManagementRoom', () => {
     expect(mapDeletedHandler).toBeDefined();
-    // Simulate a map deletion event by calling the captured handler
     mapDeletedHandler?.('id-123');
-    // Verify that the gateway emits the MapDeleted event to the MapManagementRoom with the correct payload
-    expect(to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
-    expect(emit).toHaveBeenCalledWith(MapSocketEvents.MapDeleted, 'id-123');
+    expect(server.to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
+    expect(server.emit).toHaveBeenCalledWith(MapSocketEvents.MapDeleted, 'id-123');
   });
 
-  // Test that the gateway forwards mapCreated events to the MapManagementRoom
   it('forwards mapCreated to mapManagementRoom', () => {
-    // Simulate a map creation event by calling the captured handler
     const createdMap: EditorMap = {
       id: 'map-1',
       name: 'Created map',
@@ -137,8 +100,8 @@ describe('MapGateway', () => {
     expect(mapCreatedHandler).toBeDefined();
     mapCreatedHandler?.(createdMap);
 
-    expect(to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
-    expect(emit).toHaveBeenCalledWith(MapSocketEvents.MapCreated, expectedSummary);
+    expect(server.to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
+    expect(server.emit).toHaveBeenCalledWith(MapSocketEvents.MapCreated, expectedSummary);
   });
 
   it('forward ToggleMapVisibility to MapManagement', () => {
@@ -148,8 +111,8 @@ describe('MapGateway', () => {
     };
     expect(mapVisibilityHandler).toBeDefined();
     mapVisibilityHandler?.(payload);
-    expect(to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
-    expect(emit).toHaveBeenCalledWith(MapSocketEvents.ToggleMapVisibility, payload);
+    expect(server.to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
+    expect(server.emit).toHaveBeenCalledWith(MapSocketEvents.ToggleMapVisibility, payload);
   });
 
   it('should forward updated Map to map management', () => {
@@ -178,8 +141,8 @@ describe('MapGateway', () => {
     expect(mapEditHandler).toBeDefined();
     mapEditHandler?.(updatedMap);
 
-    expect(to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
-    expect(emit).toHaveBeenCalledWith(MapSocketEvents.MapUpdated, expectedSummary);
+    expect(server.to).toHaveBeenCalledWith(PageRoom.MapManagementRoom);
+    expect(server.emit).toHaveBeenCalledWith(MapSocketEvents.MapUpdated, expectedSummary);
   });
 
   it('should unsubscribe to all handlers if the gateway is destroyed', () => {

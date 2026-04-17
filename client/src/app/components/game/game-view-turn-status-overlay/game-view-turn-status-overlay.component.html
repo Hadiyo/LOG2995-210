@@ -1,0 +1,25 @@
+<section class="map-turn-status" role="status" aria-live="polite">
+  <div class="map-turn-status__header">
+    <p class="map-turn-status__eyebrow">Etat du tour</p>
+    @if (canClose) {
+      <button
+        type="button"
+        class="map-turn-status__close"
+        aria-label="Fermer l'état du tour"
+        (click)="close.emit()"
+      >
+        X
+      </button>
+    }
+  </div>
+  <p class="turn-status__headline">{{ headline }}</p>
+  <p class="turn-status__copy">{{ description }}</p>
+  <div class="turn-status__meta">
+    <span>Etat local: {{ localPlayerStateLabel }}</span>
+    <span>Mouvements: {{ localMovementCount }}</span>
+    <span>Action: {{ localActionAvailable ? 'Disponible' : 'Utilisee' }}</span>
+  </div>
+  @if (movementFeedback) {
+    <p class="turn-status__feedback">{{ movementFeedback }}</p>
+  }
+</section>

@@ -1,8 +1,13 @@
 import { AvatarId, Die } from '../character/character.model';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '../maps/map.enums';
 import { EditorCell, MapObject, Vec2 } from '../maps/map.interface';
+import { PlayerRenderState } from '../player/player.interface';
 
-export type MatchPlayerController = 'human';
+export type MatchTeamId = 'A' | 'B';
+export type MatchPlayerController = 'human' | 'virtual';
+export type VirtualPlayerProfile = 'aggressive' | 'defensive';
+export type MatchFlagTransferKind = 'offer' | 'request';
+export type MatchSanctuaryChoice = 'normal' | 'double-or-nothing' | 'cancel';
 
 export interface MatchLobbyPlayer {
     id: string;
@@ -16,13 +21,19 @@ export interface MatchLobbyPlayer {
     attackDie: Die;
     defenseDie: Die;
     controller: MatchPlayerController;
+    virtualProfile?: VirtualPlayerProfile | null;
 }
 
 export interface MatchPlayer extends MatchLobbyPlayer {
     position: Vec2;
     startingPosition: Vec2;
+    teamId?: MatchTeamId | null;
     health: number;
     combatWins: number;
+    attackBonus?: number;
+    defenseBonus?: number;
+    arenaBuffTurnsRemaining?: number;
+    render?: PlayerRenderState;
 }
 
 export interface MatchObjectDetails {
@@ -35,6 +46,7 @@ export interface MatchPlayerDetails {
     id: string;
     name: string;
     avatarId: AvatarId;
+    teamId?: MatchTeamId | null;
 }
 
 export interface MatchTileInspection {
@@ -46,12 +58,29 @@ export interface MatchTileInspection {
     player: MatchPlayerDetails | null;
 }
 
+export interface MatchPendingFlagTransfer {
+    requesterId: string;
+    receiverId: string;
+    kind: MatchFlagTransferKind;
+}
+
 export interface MatchEndState {
     id: string;
-    winnerKind: 'player' | 'none';
+    winnerKind: 'player' | 'team' | 'none';
     winnerPlayerId: string | null;
+    winnerTeamId?: MatchTeamId | null;
     message: string;
     resolvedAt: number;
+}
+
+export interface MatchSanctuaryState {
+    objectId: number;
+    cooldownTurnsRemaining: number;
+}
+
+export interface MatchPendingSanctuaryChoice {
+    playerId: string;
+    objectId: number;
 }
 
 export interface InitializedMatch {
@@ -65,5 +94,9 @@ export interface InitializedMatch {
     allObjects: MapObject[];
     allStartingPoints: Vec2[];
     players: MatchPlayer[];
+    flagCarrierId?: string | null;
+    pendingFlagTransfer?: MatchPendingFlagTransfer | null;
+    sanctuaryStates?: MatchSanctuaryState[];
+    pendingSanctuaryChoice?: MatchPendingSanctuaryChoice | null;
     endState?: MatchEndState | null;
 }

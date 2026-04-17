@@ -11,7 +11,7 @@ import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/maps/map-validation';
-import { GameMode, MapSize } from '@common/maps/map.enums';
+import { type EditorMap } from '@common/maps/map.interface';
 
 import { MouseButton } from '@common/mouse-events.enum';
 import { take } from 'rxjs';
@@ -31,13 +31,6 @@ import { take } from 'rxjs';
 })
 export class EditorTopbarComponent {
   /* =========================================================
-     Template helpers
-     ========================================================= */
-  // Expose enums so the template can compare values safely
-  readonly gameMode = GameMode;
-  readonly mapSize = MapSize;
-
-  /* =========================================================
      Dependencies
      ========================================================= */
   // Central editor state (single source of truth)
@@ -56,22 +49,8 @@ export class EditorTopbarComponent {
 
   readonly isShiftPressed = computed(() => this.editorState.isShiftPressed());
 
-  /* =========================================================
-     Mode & size options
-     ========================================================= */
-  // Game mode selection (mutually exclusive)
-  readonly modeOptions = [
-    { value: GameMode.CLASSIC, label: 'Classic' },
-  ] as const;
-
-  // Map size selection
-  readonly sizeOptions = [
-    { value: MapSize.S, label: '10×10' },
-    { value: MapSize.M, label: '15×15' },
-    { value: MapSize.L, label: '20×20' },
-  ] as const;
-
   readonly hasAttemptedSave = signal(false);
+  readonly isValidationDismissed = signal(false);
   readonly serverIssues = signal<MapValidationIssue[]>([]);
   readonly localValidation = computed(() => validateMap(this.editorState.editorMap()));
   readonly activeIssues = computed(() => {
@@ -79,7 +58,7 @@ export class EditorTopbarComponent {
     if (!localValidation.isValid) return localValidation.issues;
     return this.serverIssues();
   });
-  readonly shouldShowIssues = computed(() => this.hasAttemptedSave() && this.activeIssues().length > 0);
+  readonly shouldShowIssues = computed(() => !this.isValidationDismissed() && this.hasAttemptedSave() && this.activeIssues().length > 0);
   readonly isSaveActionValid = computed(() => this.localValidation().isValid && this.serverIssues().length === 0);
 
   /* =========================================================
@@ -123,11 +102,21 @@ export class EditorTopbarComponent {
     this.editorState.clearSelection();
   }
 
+  dismissValidationIssues(): void {
+    this.isValidationDismissed.set(true);
+  }
+
   /**
    * Save action.
    */
   async onSave(): Promise<void> {
+    if (!this.isSaveActionValid() && this.shouldShowIssues()) {
+      this.dismissValidationIssues();
+      return;
+    }
+
     this.hasAttemptedSave.set(true);
+    this.isValidationDismissed.set(false);
     this.serverIssues.set([]);
 
     const localValidation = this.localValidation();
@@ -138,7 +127,7 @@ export class EditorTopbarComponent {
       const currentMap = this.editorState.editorMap();
       const preview = await this.mapThumbnail.generatePreview(currentMap);
       // Save the map along with its preview image
-      const mapWithPreview = {
+      const mapWithPreview: EditorMap = {
         ...currentMap,
         visibility: false,
         previewImage: preview?.data ?? undefined,

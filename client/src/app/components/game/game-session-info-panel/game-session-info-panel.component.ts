@@ -20,6 +20,7 @@ export class GameSessionInfoPanelComponent {
   @Input() totalSeconds = 30;
   @Input() highlightTimer = true;
   @Input() activePlayerName: string | null = null;
+  @Input() activePlayerBadge: string | null = null;
   @Input() defaultPanelTitle = 'N/A';
 
   // Computes timer color based on remaining time ratio, transitioning from green to red.

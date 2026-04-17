@@ -43,7 +43,11 @@
     <section class="dialog-section">
       <div class="section-layout" [class.section-layout--text-only]="!tileInfo.objectType">
         @if (tileInfo.objectType) {
-          <span class="section-preview section-preview--object" [attr.data-obj]="tileInfo.objectType"></span>
+          <span
+            class="section-preview section-preview--object"
+            [attr.data-obj]="tileInfo.objectType"
+            [attr.data-used]="tileInfo.objectUsed ? 'true' : null"
+          ></span>
         }
         <div class="section-content">
           <h3>Objet</h3>
@@ -71,7 +75,12 @@
         <div class="section-content">
           <h3>Joueur</h3>
           @if (tileInfo.playerName && tileInfo.playerAvatarId !== null) {
-            <p class="primary-value">{{ tileInfo.playerName }}</p>
+            <div class="player-heading">
+              <p class="primary-value">{{ tileInfo.playerName }}</p>
+              @if (getVirtualPlayerLabel(); as virtualPlayerLabel) {
+                <span class="player-badge" [attr.title]="virtualPlayerLabel">{{ virtualPlayerLabel }}</span>
+              }
+            </div>
           } @else {
             <p class="secondary-value">Aucun joueur sur cette tuile.</p>
           }
