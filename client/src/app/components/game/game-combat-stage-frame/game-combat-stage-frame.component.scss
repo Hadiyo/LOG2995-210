@@ -1,0 +1,141 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.combat-stage-layout {
+  width: min(100%, 760px);
+  display: grid;
+  grid-template-columns: clamp(64px, 8vw, 92px) minmax(0, 496px) clamp(64px, 8vw, 92px);
+  gap: 18px;
+  align-items: stretch;
+  justify-content: center;
+  align-self: center;
+}
+
+.combat-stage-layout__dice {
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+.combat-stage-frame {
+  width: min(100%, 496px);
+  display: grid;
+  gap: 4px;
+  align-self: center;
+}
+
+.combat-stage-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.combat-stage-strip__slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.combat-stage-strip__slot--stats {
+  display: block;
+}
+
+.combat-stage-strip__name {
+  margin: 0;
+  min-width: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.05;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.combat-stage-strip__tag {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 88%, transparent);
+  border-radius: var(--panel-radius);
+  background: color-mix(in srgb, var(--bg-main) 78%, transparent);
+  color: var(--text-main);
+}
+
+.combat-stage__stat-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 8px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 88%, transparent);
+  border-radius: var(--panel-radius);
+  background: color-mix(in srgb, var(--bg-main) 78%, transparent);
+  box-sizing: border-box;
+}
+
+.combat-stage__stat-pair {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 4px;
+  min-width: max-content;
+  white-space: nowrap;
+}
+
+.combat-stage__stat-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent-primary) 72%, var(--text-main));
+}
+
+.combat-stage__stat-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.combat-stage__die {
+  margin-left: 1px;
+  font-weight: 700;
+}
+
+.combat-stage__die.hint-d6 {
+  color: var(--accent-success);
+}
+
+.combat-stage__die.hint-d4 {
+  color: var(--accent-secondary);
+}
+
+@media (max-width: 820px) {
+  .combat-stage-frame {
+    width: 100%;
+    gap: 4px;
+  }
+
+  .combat-stage-layout {
+    width: 100%;
+    grid-template-columns: clamp(48px, 9vw, 72px) minmax(0, 1fr) clamp(48px, 9vw, 72px);
+    gap: 10px;
+  }
+
+  .combat-stage-strip {
+    gap: 10px;
+  }
+
+  .combat-stage__stat-grid {
+    gap: 10px;
+    padding-inline: 10px;
+  }
+
+  .combat-stage-strip__name {
+    font-size: 1rem;
+  }
+}

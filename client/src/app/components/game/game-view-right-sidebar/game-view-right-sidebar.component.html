@@ -1,0 +1,94 @@
+<aside class="side-panel">
+  <section class="panel panel--players">
+    <div class="panel__header">
+      <h3>Liste des joueurs</h3>
+      @if (players.length > 2) {
+        <button
+          type="button"
+          class="panel__toggle-btn"
+          [attr.aria-expanded]="expanded"
+          (click)="onTogglePlayerListExpanded()"
+        >
+          {{ expanded ? 'Reduire' : players.length + ' Total' }}
+        </button>
+      }
+    </div>
+    <app-game-player-list
+      [players]="players"
+      [turnOrder]="turnOrder"
+      [activePlayerId]="activePlayerId"
+      [currentPlayerId]="currentPlayerId"
+      [maxPlayers]="maxPlayers"
+      [expanded]="expanded"
+      [winnerKind]="winnerKind"
+      [winnerTeamId]="winnerTeamId"
+    />
+  </section>
+
+  <section class="panel messages">
+    <div class="panel__header">
+      <h3>Zone des messages</h3>
+    </div>
+    <div class="messages--tabs">
+      <div class="panel__tabs" role="tablist" aria-label="Zone des messages">
+        <div class="panel__tab-list">
+          <button
+            type="button"
+            class="panel__tab"
+            [class.panel__tab--active]="messageTab === 'chat'"
+            role="tab"
+            [attr.aria-selected]="messageTab === 'chat'"
+            (click)="onMessageTabChange('chat')"
+          >
+            Clavardage
+          </button>
+          <button
+            type="button"
+            class="panel__tab"
+            [class.panel__tab--active]="messageTab === 'journal'"
+            [disabled]="!journalAvailable"
+            role="tab"
+            [attr.aria-selected]="messageTab === 'journal'"
+            (click)="onMessageTabChange('journal')"
+          >
+            Journal de jeu
+          </button>
+        </div>
+      </div>
+
+      @if (messageTab === 'chat') {
+        <app-game-chat-panel
+          [messages]="chatMessages"
+          [notification]="null"
+          [currentPlayerName]="currentPlayerName"
+          [messageMaxLength]="messageMaxLength"
+          [title]="'Clavardage'"
+          [showTitle]="false"
+          [readOnly]="false"
+          (messageSubmit)="chatMessageSubmit.emit($event)"
+        />
+      } @else {
+        <app-game-chat-panel
+          [messages]="journalEntries"
+          [notification]="null"
+          [currentPlayerName]="null"
+          [title]="'Journal de jeu'"
+          [showTitle]="false"
+          [readOnly]="true"
+        />
+      }
+    </div>
+  </section>
+
+  <section class="panel panel--action-bar">
+    <app-game-action-bar
+      [actionModeEnabled]="actionModeEnabled"
+      [canAct]="canAct"
+      [canEndTurn]="canEndTurn"
+      [canUseActionMode]="canUseActionMode"
+      (endTurn)="endTurn.emit()"
+      (toggleActionMode)="toggleActionMode.emit()"
+      (surrender)="surrender.emit()"
+    />
+  </section>
+</aside>

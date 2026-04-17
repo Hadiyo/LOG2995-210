@@ -165,8 +165,11 @@ describe('GameCombatRoundLogComponent', () => {
         expect((component as unknown as { signedValue: (value: number) => string }).signedValue(2)).toBe('+2');
         expect((component as unknown as { signedValue: (value: number) => string }).signedValue(0)).toBe('0');
         expect((component as unknown as { displayValue: (value: number | null) => string }).displayValue(null)).toBe('--');
+        expect((component as unknown as { displayValue: (value: number | null) => string }).displayValue(4)).toBe('4');
         expect((component as unknown as { breakdownTotal: (breakdown: CombatRoundLog['fighters'][0]['attack']) => string })
             .breakdownTotal({ ...drawRound.fighters[0].attack, total: null })).toBe('--');
+        expect((component as unknown as { breakdownTotal: (breakdown: CombatRoundLog['fighters'][0]['attack']) => string })
+            .breakdownTotal(createRoundLog().fighters[0].attack)).toBe('11');
         expect(
             (component as unknown as { stanceLabel: (stance: CombatRoundLog['fighters'][0]['stance']) => string }).stanceLabel(null),
         ).toBe('Aucune');

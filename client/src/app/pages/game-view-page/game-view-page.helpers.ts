@@ -78,7 +78,6 @@ export function initializeGameViewPage(context: GameViewPageInitContext): number
 export function destroyGameViewPage(context: GameViewPageDestroyContext): MatchEndRedirectState {
     context.chatService.unsubscribeToSocketEvents();
     context.combat.closeCombat();
-    context.effects.destroy();
     context.endStatsService.unsubscribeToSocketEvents();
     stopLocalPoseRefreshClock(context.localPoseIntervalId);
     return clearMatchEndRedirect(context.matchEndRedirectState, context.endRedirectRemainingMs);
