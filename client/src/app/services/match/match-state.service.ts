@@ -10,6 +10,7 @@ import { EditorMapDetails, MapObject, Vec2 } from '@common/maps/map.interface';
 import {
     HOME_RETURN_MESSAGE_STORAGE_KEY,
 } from './match-defaults';
+import { resolveFlagCarrier } from '@common/game/match.utils';
 import { MatchBoardService, CombatAftermathResult } from './match-board.service';
 import { MatchSessionStore } from './match-session.store';
 
@@ -94,16 +95,17 @@ export class MatchStateService extends MatchSessionStore {
         const nextPlayers = currentMatch.players.map((player) =>
             player.id === playerId ? { ...player, position } : player,
         );
+        const nextFlagCarrierId = resolveFlagCarrier(currentMatch, playerId, position);
         const nextMatch = {
             ...currentMatch,
             players: nextPlayers,
-            objects: this.matchBoardService.buildVisibleObjects(currentMatch.allObjects, nextPlayers),
+            flagCarrierId: nextFlagCarrierId,
+            objects: this.matchBoardService.buildVisibleObjects(currentMatch.allObjects, nextPlayers, nextFlagCarrierId),
         };
 
         this.setPersistedMatch(nextMatch);
         return nextPlayers.find((player) => player.id === playerId) ?? null;
     }
-
     applyCombatAftermath(defeatedPlayerIds: string[]): CombatAftermathResult | null {
         const currentMatch = this.match();
         if (!currentMatch) {
@@ -190,13 +192,31 @@ export class MatchStateService extends MatchSessionStore {
             return null;
         }
 
+        const nextFlagCarrierId = currentMatch.flagCarrierId === playerId ? null : (currentMatch.flagCarrierId ?? null);
+        const nextPendingFlagTransfer = this.getPendingFlagTransferAfterPlayerRemoval(currentMatch, playerId);
         return {
             ...currentMatch,
             players: remainingPlayers,
-            objects: this.matchBoardService.buildVisibleObjects(currentMatch.allObjects, remainingPlayers),
-            endState: remainingPlayers.length === 1 && !currentMatch.endState
-                ? this.matchSetupService.createNoWinnerEndState(remainingPlayers[0])
-                : currentMatch.endState ?? null,
+            flagCarrierId: nextFlagCarrierId,
+            objects: this.matchBoardService.buildVisibleObjects(currentMatch.allObjects, remainingPlayers, nextFlagCarrierId),
+            pendingFlagTransfer: nextPendingFlagTransfer,
+            pendingSanctuaryChoice: this.getPendingSanctuaryChoiceAfterPlayerRemoval(currentMatch, playerId),
+            endState: this.getEndStateAfterPlayerRemoval(currentMatch, remainingPlayers),
         };
+    }
+
+    private getPendingFlagTransferAfterPlayerRemoval(currentMatch: InitializedMatch, playerId: string) {
+        const pendingTransfer = currentMatch.pendingFlagTransfer ?? null;
+        return pendingTransfer?.requesterId === playerId || pendingTransfer?.receiverId === playerId ? null : pendingTransfer;
+    }
+
+    private getPendingSanctuaryChoiceAfterPlayerRemoval(currentMatch: InitializedMatch, playerId: string) {
+        return currentMatch.pendingSanctuaryChoice?.playerId === playerId ? null : (currentMatch.pendingSanctuaryChoice ?? null);
+    }
+
+    private getEndStateAfterPlayerRemoval(currentMatch: InitializedMatch, remainingPlayers: MatchPlayer[]) {
+        return remainingPlayers.length === 1 && !currentMatch.endState
+            ? this.matchSetupService.createNoWinnerEndState(remainingPlayers[0])
+            : currentMatch.endState ?? null;
     }
 }

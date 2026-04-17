@@ -2,7 +2,8 @@ import { AppModule } from '@app/app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
+import { EventEmitter } from 'events';
+EventEmitter.defaultMaxListeners = 20;
 const bootstrap = async () => {
     const app = await NestFactory.create(AppModule);
     app.setGlobalPrefix('api');

@@ -1,0 +1,127 @@
+<div class="waiting-room-container">
+  <header class="waiting-room-header">
+    <div>
+      <p class="eyebrow">Avant-partie multijoueur</p>
+      <h1 class="title">Salle d'attente</h1>
+    </div>
+    <div class="header-badges">
+      @if (isLocked$ | async) {
+        <span class="lock-badge">Salle verrouillee</span>
+      } @else {
+        <span class="lock-badge lock-badge--open">Salle ouverte</span>
+      }
+      <span class="count-badge">
+        {{ (players$ | async)?.length ?? 0 }} / {{ maxPlayers$ | async }}
+      </span>
+    </div>
+  </header>
+
+  @if (statusMessage$ | async; as statusMessage) {
+    @if (statusMessage) {
+      <div class="status-banner" role="status">{{ statusMessage }}</div>
+    }
+  }
+
+  @if (errorMessage$ | async; as errorMessage) {
+    @if (errorMessage) {
+      <div class="status-banner" role="alert">{{ errorMessage }}</div>
+    }
+  }
+
+  <div class="content-grid">
+    <section class="panel players-panel">
+      <h2 class="panel-title">
+        Joueurs
+      </h2>
+
+      @if (isOrganizer) {
+        <div class="virtual-actions">
+          <button
+            class="btn-secondary btn-secondary--compact"
+            type="button"
+            title="Ajouter un joueur virtuel agressif"
+            [disabled]="!(canAddVirtualPlayers$ | async)"
+            (click)="addVirtualPlayer('aggressive')"
+          >
+            Ajouter bot agressif
+          </button>
+          <button
+            class="btn-secondary btn-secondary--compact"
+            type="button"
+            title="Ajouter un joueur virtuel defensif"
+            [disabled]="!(canAddVirtualPlayers$ | async)"
+            (click)="addVirtualPlayer('defensive')"
+          >
+            Ajouter bot defensif
+          </button>
+        </div>
+        @if (virtualPlayerHelpText$ | async; as virtualPlayerHelpText) {
+          @if (virtualPlayerHelpText) {
+            <p class="section-help">{{ virtualPlayerHelpText }}</p>
+          }
+        }
+      }
+
+      <ul class="players-list">
+        @for (player of players$ | async; track player.name) {
+          <li class="player-item" [class.organizer]="player.isOrganizer" [class.virtual]="player.controller === 'virtual'">
+
+            <img
+              class="avatar"
+              [src]="getAvatarThumbPath(player.avatarId)"
+              [alt]="player.name"
+            />
+
+            <div class="player-info">
+              <span class="player-name">{{ player.name }}</span>
+              <span class="player-badges">
+                @if (player.isOrganizer) {
+                  <span class="badge badge--organizer" title="Organisateur">Organisateur</span>
+                }
+                @if (player.controller === 'virtual') {
+                  <span class="badge badge--virtual" [attr.title]="getVirtualPlayerLabel(player)">{{ getVirtualPlayerLabel(player) }}</span>
+                }
+              </span>
+            </div>
+
+            @if (isOrganizer && !player.isOrganizer) {
+              <button
+                class="btn-kick"
+                type="button"
+                title="Retirer {{ player.name }} de la salle"
+                aria-label="Exclure {{ player.name }}"
+                (click)="kickPlayer(player)"
+              >
+                ✕
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="panel chat-panel">
+      <app-game-chat-panel
+        [messages]="(messages$ | async) ?? []"
+        [currentPlayerName]="me?.name ?? null"
+        [title]="'Clavardage de la salle'"
+        (messageSubmit)="onMessageSubmit($event)"
+      />
+    </section>
+  </div>
+
+  <footer class="waiting-room-actions">
+    <button class="btn-secondary" (click)="leaveSession()">
+      Quitter la partie
+    </button>
+
+    @if (isOrganizer) {
+      <button class="btn-primary"
+              type="button"
+              [disabled]="((players$ | async)?.length ?? 0) <= 1"
+              (click)="startGame()">
+        Lancer la partie
+      </button>
+    }
+  </footer>
+</div>

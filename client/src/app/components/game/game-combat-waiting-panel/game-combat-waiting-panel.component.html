@@ -1,0 +1,11 @@
+<section class="combat-waiting" role="status" aria-live="polite">
+  <p class="combat-waiting__eyebrow">Combat en cours</p>
+  <h3 class="combat-waiting__title">{{ waitingState.attackerName }} vs {{ waitingState.defenderName }}</h3>
+
+  <div class="combat-waiting__meta">
+    <span class="combat-waiting__pill">Tour {{ waitingState.round }}</span>
+    <span class="combat-waiting__pill combat-waiting__pill--label">{{ getTimerLabel() }}: {{ waitingState.countdownSeconds }}s</span>
+  </div>
+
+  <p class="combat-waiting__copy">Veuillez patienter pendant la résolution du combat.</p>
+</section>

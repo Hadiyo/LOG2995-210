@@ -1,13 +1,20 @@
 import { Injectable } from '@angular/core';
+import { getCoveredPositions } from '@common/maps/map-utils';
 import { GameMode, MapSize, ObjectType, TileType } from '@common/maps/map.enums';
 import type { EditorMap, MapObject, Vec2 } from '@common/maps/map.interface';
 
 import {
+    FLAG_LIMIT,
+    SANCTUARY_LIMITS_BY_SIZE,
     START_LIMITS_BY_SIZE,
 } from './constants/editor.constants';
 
 import { EditorMapFactoryService } from './editor-map-factory.service';
-import { getCoveredPositions, positionsIntersect } from './utils/editor-geometry.util';
+
+const positionsIntersect = (a: Vec2[], b: Vec2[]): boolean => {
+    const bKey = new Set(b.map((position) => `${position.x},${position.y}`));
+    return a.some((position) => bKey.has(`${position.x},${position.y}`));
+};
 
 
 @Injectable({ providedIn: 'root' })
@@ -39,12 +46,20 @@ export class EditorPlacementRulesService {
 
     /**
      * Object limits (editor-time validation)
+     * - FLAG: only in CTF, singleton
      * - START: depends on map size
      */
     getObjectLimit(type: ObjectType, size: MapSize, mode: GameMode): number {
-        void mode;
+        if (type === ObjectType.FLAG) {
+            return mode === GameMode.CTF ? FLAG_LIMIT : 0;
+        }
+
         if (type === ObjectType.START) {
             return START_LIMITS_BY_SIZE[size];
+        }
+
+        if (type === ObjectType.REGEN || type === ObjectType.ARENA) {
+            return SANCTUARY_LIMITS_BY_SIZE[size];
         }
 
         return 0;
@@ -63,17 +78,20 @@ export class EditorPlacementRulesService {
      * - all covered tiles must exist and be walkable
      * - must not collide with existing objects
      */
-    canPlaceObject(covered: Vec2[], objects: MapObject[], editorMap: EditorMap): boolean {
+    canPlaceObject(covered: Vec2[], objects: MapObject[], editorMap: EditorMap, type?: ObjectType): boolean {
         // Map cell lookup by "x,y" for fast access
         const cellByKey = new Map(
             editorMap.map.map((cell, index) => [`${index % editorMap.size},${Math.floor(index / editorMap.size)}`, cell] as const),
         );
+        const requiresTerrainPlacement =
+            type === ObjectType.FLAG || type === ObjectType.REGEN || type === ObjectType.ARENA;
 
         // Check walkable
         for (const position of covered) {
             const cell = cellByKey.get(`${position.x},${position.y}`);
             if (!cell) return false;
             if (!cell.isWalkable) return false;
+            if (requiresTerrainPlacement && !this.isTerrainTile(cell.tileType)) return false;
         }
 
         // Check collision with existing objects
@@ -83,5 +101,9 @@ export class EditorPlacementRulesService {
         }
 
         return true;
+    }
+
+    private isTerrainTile(tileType: TileType): boolean {
+        return tileType === TileType.DIRT || tileType === TileType.WATER || tileType === TileType.ICE;
     }
 }

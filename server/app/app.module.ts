@@ -8,13 +8,16 @@ import { MapService } from '@app/services/map/map.service';
 import { WaitingRoomService as MatchWaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MongooseModule } from '@nestjs/mongoose';
-import { GameMapController } from './controllers/game-map/game-map.controller';
+import { CombatGateway } from './gateways/combat/combat.gateway';
 import { MapGateway } from './gateways/map/map.gateway';
 import { PageRoomGateway } from './gateways/page-room/page-room.gateway';
 import { MatchWaitingRoomGateway } from './gateways/waiting-room/match-waiting-room.gateway';
 import { ChatService } from './services/chat/chat.service';
-import { GameMapService } from './services/game-map/game-map.service';
+import { CombatTurnService } from './services/combat/combat-turn.service';
+import { CombatService } from './services/combat/combat.service';
+import { EndStatsService } from './services/end-stats.service';
 
 @Module({
     imports: [
@@ -29,19 +32,24 @@ import { GameMapService } from './services/game-map/game-map.service';
         MongooseModule.forFeature([
             { name: Map.name, schema: mapSchema },
         ]),
+        EventEmitterModule.forRoot(),
     ],
-    controllers: [MapController, GameMapController, WaitingRoomController],
+    controllers: [MapController, WaitingRoomController],
     providers: [
         Logger,
         MapGateway,
         PageRoomGateway,
         MapService,
-        GameMapService,
         MatchWaitingRoomGateway,
         MatchGameSessionService,
         MatchWaitingRoomService,
         GameSessionGateway,
         ChatGateway,
-        ChatService],
+        ChatService,
+        EndStatsService,
+        CombatService,
+        CombatTurnService,
+        CombatGateway,
+    ],
 })
 export class AppModule {}

@@ -1,0 +1,11 @@
+export const TRANSITION_DURATION_MS = 3000;
+export const ACTIVE_TURN_DURATION_MS = 30000;
+export const SNAPSHOT_TICK_MS = 1000;
+export const CLASSIC_WIN_THRESHOLD = 3;
+export const WALK_POSE_DURATION_MS = 180;
+export const ATTACK_POSE_DURATION_MS = 220;
+export const SANCTUARY_COOLDOWN_TURNS = 3;
+export const SANCTUARY_DOUBLE_OR_NOTHING_THRESHOLD = 0.5;
+export const ARENA_BUFF_TURNS = 2;
+export const SANCTUARY_HEAL_VALUE = 2;
+export const MAXIMUM_WINS = 3;

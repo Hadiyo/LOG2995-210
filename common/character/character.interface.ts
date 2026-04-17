@@ -3,7 +3,7 @@ import { AvatarId, Die, PlusTwoAttributeName } from './character.model';
 // Bonuses that a character receives based on their choices during creation
 export interface CharacterBonuses {
   plusTwo: PlusTwoAttributeName;
-  attaqueDie: Die;
+  attackDie: Die;
   defenseDie: Die;
 }
 

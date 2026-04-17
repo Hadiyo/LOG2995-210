@@ -1,4 +1,5 @@
 import { AvatarId, Die } from '../character/character.model';
+import type { MatchPlayerController, MatchTeamId, VirtualPlayerProfile } from '../game/match.interface';
 import { Vec2 } from '../maps/map.interface';
 
 // Represents the status of a player in the game session
@@ -9,12 +10,22 @@ export enum PlayerStatus {
 }
 
 // Facing orientation used by the renderer.
-export type PlayerFacing = 'front' | 'right' | 'back' | 'left';
+export enum PlayerFacing {
+    Front = 'front',
+    Right = 'right',
+    Back = 'back',
+    Left = 'left',
+}
 
 // Pose/state used by the renderer.
-export type PlayerPose = 'idle' | 'walk' | 'attack' | 'dead';
+export enum PlayerPose {
+    Idle = 'idle',
+    Walk = 'walk',
+    Attack = 'attack',
+    Dead = 'dead',
+}
 
-export type Bonus = 'speed' | 'life';
+export type Bonus = 'speed' | 'health';
 
 // Health values for a player, split into current and maximum
 export interface PlayerHealth {
@@ -49,6 +60,9 @@ export interface PlayerInformation {
     name: string;
     avatarId: AvatarId;
     isOrganizer: boolean;
+    controller?: MatchPlayerController;
+    virtualProfile?: VirtualPlayerProfile | null;
+    teamId?: MatchTeamId | null;
     dices: PlayerDice;
     bonus: Bonus;
 }
@@ -58,6 +72,7 @@ export interface PlayerState {
     status: PlayerStatus;
     attributes: PlayerAttributes;
     wins: number;
+    hasFlag?: boolean;
     remainingActions: number;
     remainingMovements: number;
 }

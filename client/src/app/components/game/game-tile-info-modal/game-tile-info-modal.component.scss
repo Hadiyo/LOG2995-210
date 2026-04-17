@@ -102,6 +102,13 @@
   font-weight: 700;
 }
 
+.player-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .secondary-value {
   color: var(--text-muted);
 }
@@ -158,6 +165,19 @@
   object-fit: cover;
 }
 
+.player-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(148, 198, 255, 0.6);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(32, 74, 128, 0.16);
+  color: #cfe7ff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .section-preview--tile[data-tile='DIRT'] { background-image: var(--tile-dirt-img); }
 .section-preview--tile[data-tile='WALL'] { background-image: var(--tile-wall-img); }
 .section-preview--tile[data-tile='WATER'] { background-image: var(--tile-water-img); }
@@ -167,8 +187,31 @@
 
 .section-preview--object[data-obj='START'] { background-image: var(--object-spawn-img); }
 .section-preview--object[data-obj='FLAG'] { background-image: var(--object-flag-img); }
-.section-preview--object[data-obj='REGEN'] { background-image: var(--object-heal-img); }
-.section-preview--object[data-obj='ARENA'] { background-image: var(--object-fight-img); }
+.section-preview--object[data-obj='REGEN'] {
+  background-image: var(--object-heal-img);
+  animation: obj-ready-glow 2.5s infinite alternate ease-in-out;
+}
+.section-preview--object[data-obj='ARENA'] {
+  background-image: var(--object-fight-img);
+  animation: obj-ready-glow 2.5s infinite alternate ease-in-out;
+}
+.section-preview--object[data-obj='REGEN'][data-used='true'] {
+  background-image: var(--object-heal-used-img);
+  animation: none;
+}
+.section-preview--object[data-obj='ARENA'][data-used='true'] {
+  background-image: var(--object-fight-used-img);
+  animation: none;
+}
+
+@keyframes obj-ready-glow {
+  0% {
+    filter: drop-shadow(0 0 1px var(--accent-secondary));
+  }
+  100% {
+    filter: drop-shadow(0 0 5px var(--accent-secondary));
+  }
+}
 
 @media (max-width: 720px) {
   .section-layout {

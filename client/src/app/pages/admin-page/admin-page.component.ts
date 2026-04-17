@@ -8,6 +8,7 @@ import { GameCardComponent } from '@app/components/game-card/game-card.component
 import { MapConfig } from '@app/config/map.config';
 import { AdminService } from '@app/services/admin.service';
 import { MapStateService } from '@app/services/map/map-state.service';
+import { ButtonVariant } from '@app/shared/ui/button.types';
 import type { MapSummary } from '@common/maps/map.interface';
 import { ServiceState } from '@app/services/service-state.enum';
 import { Observable, take } from 'rxjs';
@@ -19,6 +20,7 @@ import { Observable, take } from 'rxjs';
   styleUrl: './admin-page.component.scss',
 })
 export class AdminPageComponent implements OnInit, OnDestroy {
+  protected readonly buttonVariant = ButtonVariant;
   protected maps$: Observable<MapSummary[]> = this.mapStateService.maps$;
   protected errorMessage: string = '';
   protected isCreateDialogOpen: boolean = false;
@@ -53,8 +55,8 @@ export class AdminPageComponent implements OnInit, OnDestroy {
    * @param result GameMode and MapSize
    */
   protected onCreateGameDialogConfirm(result: MapConfig): void {
-    const ok = this.adminService.setMapProperties(result);
-    if (ok) {
+    const mapPropertiesSet = this.adminService.setMapProperties(result);
+    if (mapPropertiesSet) {
       this.toggleGameDialog();
       this.router.navigate(['/editor']);
     } else {
@@ -71,8 +73,8 @@ export class AdminPageComponent implements OnInit, OnDestroy {
     this.adminService
       .fetchExistingMapForEditor(map.id)
       .pipe(take(1))
-      .subscribe(ok => {
-        if (ok) this.router.navigate(['/editor']);
+      .subscribe((editorMapLoaded) => {
+        if (editorMapLoaded) this.router.navigate(['/editor']);
         else this.errorMessage = "Impossible d'aller rechercher la carte.";
       });
   }

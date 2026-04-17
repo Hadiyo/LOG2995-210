@@ -62,6 +62,14 @@ describe('GameCardComponent', () => {
     expect(time.textContent?.trim().length).toBeGreaterThan(0);
   });
 
+  it('should render the CTF mode label when needed', () => {
+    component.map = makeMap({ mode: GameMode.CTF });
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.textContent).toContain('CTF');
+  });
+
   it('should show a placeholder when thumbnailUrl is missing', () => {
     component.map = makeMap({ previewImage: undefined });
     fixture.detectChanges();

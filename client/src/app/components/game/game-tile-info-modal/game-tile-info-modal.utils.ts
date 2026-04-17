@@ -14,11 +14,13 @@ export function buildTileInfoModalData(
   cell: GameCell,
   objects: readonly MapObject[],
   players: readonly Player[],
+  inactiveSanctuaryObjectIds: ReadonlySet<number> = new Set<number>(),
 ): GameTileInfoModalData {
   const object = getObjectAtCell(cell.position, objects);
   const player = getPlayerAtCell(cell.position, players);
   const tileBlockingReason = getTileBlockingReason(object, player);
   const tileCharacteristics = buildTileCharacteristics(cell, tileBlockingReason !== null);
+  const objectUsed = !!object && inactiveSanctuaryObjectIds.has(object.id);
 
   return {
     positionLabel: `Tuile (${cell.position.x}, ${cell.position.y})`,
@@ -28,10 +30,10 @@ export function buildTileInfoModalData(
     tileCharacteristics,
     tileBlockingReason,
     objectType: object?.type ?? null,
+    objectUsed,
     objectLabel: object ? OBJECT_LABELS[object.type] ?? null : null,
-    objectDescription: object ? OBJECT_DESCRIPTIONS[object.type] ?? null : null,
-    playerName: player?.information.name ?? null,
-    playerAvatarId: player?.information.avatarId ?? null,
+    objectDescription: object ? buildObjectDescription(object, objectUsed) : null,
+    ...buildPlayerPreview(player),
   };
 }
 
@@ -63,10 +65,29 @@ function getTileBlockingReason(object: MapObject | null, player: Player | null):
   return null;
 }
 
+function buildPlayerPreview(player: Player | null): Pick<
+  GameTileInfoModalData,
+  'playerName' | 'playerAvatarId' | 'playerController' | 'playerVirtualProfile'
+> {
+  return {
+    playerName: player?.information.name ?? null,
+    playerAvatarId: player?.information.avatarId ?? null,
+    playerController: player?.information.controller ?? null,
+    playerVirtualProfile: player?.information.virtualProfile ?? null,
+  };
+}
+
 // Describe the current door state only for door tiles.
 function getDoorStateDescription(cell: GameCell): string | null {
   if (cell.tileType !== TileType.DOOR) return null;
   return cell.isWalkable ? "La porte est ouverte. Cout d'un point de mouvement." : 'La porte est fermee.';
+}
+
+function buildObjectDescription(object: MapObject, objectUsed: boolean): string | null {
+  if (!objectUsed || (object.type !== ObjectType.REGEN && object.type !== ObjectType.ARENA)) {
+    return OBJECT_DESCRIPTIONS[object.type] ?? null;
+  }
+  return 'En recharge. Attendez qu’un tour complet de tous les joueurs se termine pour pouvoir l’activer à nouveau.';
 }
 
 // Resolve the object covering a cell.

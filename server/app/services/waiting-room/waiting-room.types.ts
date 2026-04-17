@@ -1,15 +1,18 @@
 import { ChatMessage } from '@common/chat/chat.interface';
 import { MatchLobbyPlayer } from '@common/game/match.interface';
+import { GameMode } from '@common/maps/map.enums';
 import { WaitingRoomErrorPayload, WaitingRoomStatePayload } from '@common/socket-events';
 
 export interface WaitingRoom {
     accessCode: string;
     mapId: string;
+    mapMode: GameMode;
     organizerSocketId: string;
     players: MatchLobbyPlayer[];
     messages: ChatMessage[];
     socketToPlayerId: Map<string, string>;
     isLocked: boolean;
+    isStarting: boolean;
     maxPlayers: number;
 }
 

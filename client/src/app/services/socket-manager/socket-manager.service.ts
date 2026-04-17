@@ -3,6 +3,7 @@ import { BEFORE_UNLOAD } from '@common/socket-events';
 import { io, Socket } from 'socket.io-client';
 import { environment } from 'src/environments/environment';
 
+type SocketAck = (...args: unknown[]) => void;
 
 @Injectable({
   providedIn: 'root',
@@ -59,9 +60,15 @@ export class SocketManagerService {
    * @param callback 
    */
   // To prevent socket emission repetitive methods
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  send<T>(event: string, data?: T, callback?: Function): void {
-    this.socket.emit(event, ...([data, callback].filter(x => x != null)));
+  send<T>(event: string, data?: T, callback?: SocketAck): void {
+    const emitArgs: (T | SocketAck)[] = [];
+    if (data != null) {
+      emitArgs.push(data);
+    }
+    if (callback) {
+      emitArgs.push(callback);
+    }
+    this.socket.emit(event, ...emitArgs);
   }
 
   /**

@@ -1,0 +1,50 @@
+@if (panelState(); as panel) {
+  <div class="combat-overlay">
+    <section class="combat-shell" role="dialog" aria-modal="true" aria-labelledby="combat-title">
+      <header class="combat-shell__header">
+        <div class="combat-shell__title">
+          <p class="combat-shell__eyebrow">Combat</p>
+          <h2 id="combat-title">Duel rapproché</h2>
+        </div>
+
+        <div class="combat-shell__meta">
+          <span class="combat-shell__chip">Tour {{ panel.round }}</span>
+          <span class="combat-shell__chip combat-shell__chip--timer">{{ timerLabel() }}: {{ panel.countdownSeconds }}s</span>
+        </div>
+      </header>
+
+      <app-game-combat-stage-frame
+        [fighters]="panel.fighters"
+        [isHorizontal]="panel.orientation === 'horizontal'"
+        [endingNotice]="combat.endingNotice()"
+      />
+
+      <app-game-combat-round-log class="combat-shell__round-log" [logs]="roundLogs()" />
+
+      <footer class="combat-shell__footer">
+        <p class="combat-shell__hint">{{ combat.footerMessage() }}</p>
+
+        <div class="combat-shell__actions">
+          <button
+            type="button"
+            class="combat-shell__button"
+            [class.combat-shell__button--active]="combat.localSelectedStance() === 'attack'"
+            [disabled]="!combat.canSelectStance()"
+            (click)="selectAttackStance()"
+          >
+            Posture offensive
+          </button>
+          <button
+            type="button"
+            class="combat-shell__button"
+            [class.combat-shell__button--active]="combat.localSelectedStance() === 'defense'"
+            [disabled]="!combat.canSelectStance()"
+            (click)="selectDefenseStance()"
+          >
+            Posture défensive
+          </button>
+        </div>
+      </footer>
+    </section>
+  </div>
+}
