@@ -62,6 +62,14 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    if (!this.me) {
+      this.waitingRoomService.clearPreviewState();
+      void this.router.navigate(['/home'], {
+        state: { message: "Vous devez rejoindre ou créer une salle d'attente avant d'accéder à cette page." },
+      });
+      return;
+    }
+
     this.waitingRoomService.initWaitingRoom();
   }
 
