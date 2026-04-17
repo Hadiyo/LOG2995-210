@@ -1,5 +1,5 @@
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
-import { MatchPlayerTurnState, MatchTurnOrderEntry, MatchTurnState } from '@common/game/turn.interface';
+import { MatchPlayerTurnState, MatchTurnOrderEntry, MatchTurnState, PlayerTurnInteractionState } from '@common/game/turn.interface';
 import { shuffle } from './match-geometry';
 
 export const buildTurnOrderFromPlayers = (players: MatchPlayer[], random: () => number): MatchTurnOrderEntry[] => {
@@ -27,7 +27,7 @@ export const buildPlayerStates = (
 ): MatchPlayerTurnState[] =>
     order.map((entry) => ({
         playerId: entry.playerId,
-        state: entry.playerId === activePlayerId ? 'active' : 'waiting',
+        state: entry.playerId === activePlayerId ? PlayerTurnInteractionState.Active : PlayerTurnInteractionState.Waiting,
     }));
 
 export const isReusableTurnState = (persistedState: MatchTurnState, match: InitializedMatch): boolean => {

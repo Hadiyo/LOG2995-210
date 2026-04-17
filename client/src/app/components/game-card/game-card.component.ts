@@ -1,7 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-
-import { GameMode } from '@common/maps/map.enums';
+import { getGameModeLabel } from '@app/config/map.config';
 import type { MapSummary } from '@common/maps/map.interface';
 
 @Component({
@@ -18,13 +17,8 @@ export class GameCardComponent {
   @Output() remove = new EventEmitter<MapSummary>();
   @Output() toggleVisibility = new EventEmitter<MapSummary>();
 
-  protected readonly modeLabels: Record<GameMode, string> = {
-    [GameMode.CLASSIC]: 'Classique',
-    [GameMode.CTF]: 'CTF',
-  };
-
   protected get modeLabel(): string {
-    return this.modeLabels[this.map.mode] ?? this.map.mode;
+    return getGameModeLabel(this.map.mode);
   }
 
   protected onEdit(): void {

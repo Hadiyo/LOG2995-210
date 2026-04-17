@@ -3,7 +3,7 @@ import { TRANSITION_DURATION_MS } from '@app/utilities/game/game.constants';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { ChatMessage } from '@common/chat/chat.interface';
 import { InitializedMatch, MatchLobbyPlayer, MatchPlayer } from '@common/game/match.interface';
-import { MatchTurnOrderEntry, MatchTurnState } from '@common/game/turn.interface';
+import { MatchTurnOrderEntry, MatchTurnState, PlayerTurnInteractionState } from '@common/game/turn.interface';
 import { ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorMapDetails, Vec2 } from '@common/maps/map.interface';
 import { buildInitializedMatchFromEditor, getGameSessionObjectCovering } from './game-session.match';
@@ -45,7 +45,7 @@ export function createTransitionTurnState(current: MatchTurnState): MatchTurnSta
         movementPointsRemaining: 0,
         actionTaken: false,
         movementCount: 0,
-        playerStates: current.order.map((entry) => ({ playerId: entry.playerId, state: 'waiting' })),
+        playerStates: current.order.map((entry) => ({ playerId: entry.playerId, state: PlayerTurnInteractionState.Waiting })),
     };
 }
 
@@ -66,7 +66,7 @@ export function createActiveTurnState(current: MatchTurnState, activePlayer: Mat
         movementCount: 0,
         playerStates: current.order.map((entry) => ({
             playerId: entry.playerId,
-            state: entry.playerId === activePlayerId ? 'active' : 'waiting',
+            state: entry.playerId === activePlayerId ? PlayerTurnInteractionState.Active : PlayerTurnInteractionState.Waiting,
         })),
     };
 }
@@ -87,7 +87,7 @@ export function initTurnState(id: string, firstPlayerId: string, duration: numbe
         movementPointsRemaining: 0,
         actionTaken: false,
         movementCount: 0,
-        playerStates: order.map((entry) => ({ playerId: entry.playerId, state: 'waiting' })),
+        playerStates: order.map((entry) => ({ playerId: entry.playerId, state: PlayerTurnInteractionState.Waiting })),
     };
 }
 
@@ -152,7 +152,9 @@ export function rebuildTurnStateAfterRosterChange(current: MatchTurnState, playe
         transitionTargetPlayerId: current.phase === 'transition' ? activePlayerId : null,
         playerStates: order.map((entry) => ({
             playerId: entry.playerId,
-            state: current.phase === 'active' && entry.playerId === activePlayerId ? 'active' : 'waiting',
+            state: current.phase === 'active' && entry.playerId === activePlayerId
+                ? PlayerTurnInteractionState.Active
+                : PlayerTurnInteractionState.Waiting,
         })),
     };
 }

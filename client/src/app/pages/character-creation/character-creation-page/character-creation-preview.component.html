@@ -21,8 +21,8 @@
       <small>Points de survie (base 6, peut recevoir +2).</small>
     </div>
     <div class="stat-values">
-      <strong>{{ plusTwo === 'vie' ? 8 : 6 }}</strong>
-      <small class="stat-hint">{{ plusTwo === 'vie' ? '+2' : ' ' }}</small>
+      <strong>{{ plusTwo === 'health' ? 8 : 6 }}</strong>
+      <small class="stat-hint">{{ plusTwo === 'health' ? '+2' : ' ' }}</small>
     </div>
   </div>
 
@@ -32,8 +32,8 @@
       <small>Agilité et vitesse (base 6, peut recevoir +2).</small>
     </div>
     <div class="stat-values">
-      <strong>{{ plusTwo === 'rapidite' ? 8 : 6 }}</strong>
-      <small class="stat-hint">{{ plusTwo === 'rapidite' ? '+2' : ' ' }}</small>
+      <strong>{{ plusTwo === 'speed' ? 8 : 6 }}</strong>
+      <small class="stat-hint">{{ plusTwo === 'speed' ? '+2' : ' ' }}</small>
     </div>
   </div>
 
@@ -44,7 +44,7 @@
     </div>
     <div class="stat-values">
       <strong>{{ attackMaxLabel() }}</strong>
-      <small class="stat-hint" [class.hint-d4]="d6GoesTo !== 'attaque'">{{ attackHint() }}</small>
+      <small class="stat-hint" [class.hint-d4]="d6GoesTo !== 'attack'">{{ attackHint() }}</small>
     </div>
   </div>
 

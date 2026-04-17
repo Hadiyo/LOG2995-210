@@ -25,8 +25,8 @@ export class EditorSidebarComponent {
      Template helpers
      - Expose enums so HTML can compare modes/types safely
      ========================================================= */
-  readonly gameMode = GameMode;
-  readonly objectType = ObjectType;
+  protected readonly gameMode = GameMode;
+  protected readonly objectType = ObjectType;
 
   /* =========================================================
      Form constraints (used for maxlength + counters)

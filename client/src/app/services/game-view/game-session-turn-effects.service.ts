@@ -41,7 +41,6 @@ export class GameSessionTurnEffectsService {
             this.handleAutoTurnEnd();
         });
     }
-
     private observeTurnProgression(currentTurnState: MatchTurnState | null): void {
         const sameActiveTurn = currentTurnState?.phase === 'active' &&
             currentTurnState.activePlayerId === this.previousObservedActivePlayerId &&

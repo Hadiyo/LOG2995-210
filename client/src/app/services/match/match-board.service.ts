@@ -188,7 +188,7 @@ export class MatchBoardService {
     }
 
     isSameTeam(left: MatchPlayer, right: MatchPlayer): boolean {
-        return left.teamId !== null && left.teamId !== undefined && left.teamId === right.teamId;
+        return left.teamId != null && left.teamId === right.teamId;
     }
 
     private describeTile(cell: EditorCell): string[] {

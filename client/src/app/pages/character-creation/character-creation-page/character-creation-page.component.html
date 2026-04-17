@@ -32,18 +32,18 @@
             <div class="section">
                 <h3>Bonus +2</h3>
                 <div class="option-group">
-                    <button type="button" class="option" [class.active]="form.controls.plusTwo.value === 'vie'"
-                        (click)="form.controls.plusTwo.setValue('vie')">
+                    <button type="button" class="option" [class.active]="form.controls.plusTwo.value === 'health'"
+                        (click)="form.controls.plusTwo.setValue('health')">
                         <span>Vie</span>
-                        @if (form.controls.plusTwo.value === 'vie') {
+                        @if (form.controls.plusTwo.value === 'health') {
                         <span class="option-hint">Vie +2</span>
                         }
                     </button>
 
-                    <button type="button" class="option" [class.active]="form.controls.plusTwo.value === 'rapidite'"
-                        (click)="form.controls.plusTwo.setValue('rapidite')">
+                    <button type="button" class="option" [class.active]="form.controls.plusTwo.value === 'speed'"
+                        (click)="form.controls.plusTwo.setValue('speed')">
                         <span>Rapidité</span>
-                        @if (form.controls.plusTwo.value === 'rapidite') {
+                        @if (form.controls.plusTwo.value === 'speed') {
                         <span class="option-hint">Rapidité +2</span>
                         }
                     </button>
@@ -53,11 +53,11 @@
             <div class="section">
                 <h3>Dé D6 attribué à</h3>
                 <div class="option-group">
-                    <button type="button" class="option" [class.active]="form.controls.d6GoesTo.value === 'attaque'"
-                        (click)="form.controls.d6GoesTo.setValue('attaque')">
+                    <button type="button" class="option" [class.active]="form.controls.d6GoesTo.value === 'attack'"
+                        (click)="form.controls.d6GoesTo.setValue('attack')">
                         <span>Attaque <small>(Défense reçoit D4)</small></span>
-                        <span class="option-hint" [class.hint-dim]="form.controls.d6GoesTo.value !== 'attaque'">
-                            {{ form.controls.d6GoesTo.value === 'attaque' ? 'Attaque + D6' : 'Attaque + D4' }}
+                        <span class="option-hint" [class.hint-dim]="form.controls.d6GoesTo.value !== 'attack'">
+                            {{ form.controls.d6GoesTo.value === 'attack' ? 'Attaque + D6' : 'Attaque + D4' }}
                         </span>
                     </button>
 
@@ -95,7 +95,6 @@
         <div class="header-row">
             <h3>Aperçu</h3>
         </div>
-
         <app-character-creation-preview
             [avatarId]="form.controls.avatarId.value"
             [avatarBackground]="form.controls.avatarId.value !== null ? avatarFallbackColors[form.controls.avatarId.value] : null"
@@ -103,8 +102,8 @@
             [displayName]="form.controls.name.value || 'Sans nom'"
             [subtitle]="selectedAvatarProfile()?.subtitle ?? null"
             [description]="selectedAvatarProfile()?.description ?? null"
-            [plusTwo]="form.controls.plusTwo.value ?? 'vie'"
-            [d6GoesTo]="form.controls.d6GoesTo.value ?? 'attaque'"
+            [plusTwo]="form.controls.plusTwo.value ?? 'health'"
+            [d6GoesTo]="form.controls.d6GoesTo.value ?? 'attack'"
             [isLocked]="(isLocked$ | async) === true"
             (leave)="onLeavingCharacterCreation()"
         />

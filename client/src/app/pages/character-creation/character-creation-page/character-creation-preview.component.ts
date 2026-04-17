@@ -16,18 +16,18 @@ export class CharacterCreationPreviewComponent {
   @Input() displayName = 'Sans nom';
   @Input() subtitle: string | null = null;
   @Input() description: string | null = null;
-  @Input() plusTwo: PlusTwoAttributeName = 'vie';
-  @Input() d6GoesTo: DieTargetAttributeName = 'attaque';
+  @Input() plusTwo: PlusTwoAttributeName = 'health';
+  @Input() d6GoesTo: DieTargetAttributeName = 'attack';
   @Input() isLocked = false;
 
   @Output() leave = new EventEmitter<void>();
 
   protected attackMaxLabel(): string {
-    return this.d6GoesTo === 'attaque' ? '10 Max' : '8 Max';
+    return this.d6GoesTo === 'attack' ? '10 Max' : '8 Max';
   }
 
   protected attackHint(): string {
-    return this.d6GoesTo === 'attaque' ? '4 + D6' : '4 + D4';
+    return this.d6GoesTo === 'attack' ? '4 + D6' : '4 + D4';
   }
 
   protected defenseMaxLabel(): string {
