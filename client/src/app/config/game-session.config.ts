@@ -1,15 +1,15 @@
-import { MovementDirection } from '@app/services/match/match-movement.service';
+import { MovementDirection } from '@common/game/movement-direction';
 
-export type GameSessionActionContext = 'combat' | 'door' | 'flag-transfer' | 'sanctuary';
+export enum GameSessionActionContext {
+    Combat = 'combat',
+    Door = 'door',
+    FlagTransfer = 'flag-transfer',
+    Sanctuary = 'sanctuary',
+}
 
 export interface GameSessionActionOption {
     context: GameSessionActionContext;
     label: string;
-}
-
-export interface LocalCombatNotification {
-    id: string;
-    message: string;
 }
 
 export const MOVEMENT_KEY_BINDINGS = new Map<string, MovementDirection>([
@@ -22,7 +22,6 @@ export const MOVEMENT_KEY_BINDINGS = new Map<string, MovementDirection>([
 export const MOVEMENT_DIRECTIONS: MovementDirection[] = ['up', 'left', 'down', 'right'];
 export const EDITABLE_TARGET_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 
-export const COMBAT_NOTIFICATION_DURATION_MS = 3000;
 export const MATCH_END_REDIRECT_DURATION_MS = 5000;
 export const CLOCK_TICK_MS = 100;
 export const MILLISECONDS_PER_SECOND = 1000;

@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ButtonVariant } from '@app/shared/ui/button.types';
 
 @Component({
   selector: 'app-button',
@@ -10,5 +11,7 @@ import { RouterLink } from '@angular/router';
 export class AppButtonComponent {
   @Input({ required: true }) label!: string;
   @Input() link?: string;
-  @Input() variant: 'primary' | 'secondary' | 'tertiary' | 'ghost' = 'primary';
+  @Input() variant: ButtonVariant = ButtonVariant.Primary;
+
+  protected readonly buttonVariant = ButtonVariant;
 }

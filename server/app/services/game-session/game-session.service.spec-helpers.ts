@@ -3,7 +3,7 @@ import { CombatService } from '@app/services/combat/combat.service';
 import { GameSessionService } from '@app/services/game-session/game-session.service';
 import { GameSessionRuntime } from '@app/utilities/game/game.interface';
 import { InitializedMatch, MatchEndState, MatchLobbyPlayer, MatchPlayer, MatchTeamId } from '@common/game/match.interface';
-import { MatchTurnState } from '@common/game/turn.interface';
+import { MatchTurnState, PlayerTurnInteractionState } from '@common/game/turn.interface';
 import { GameMode, MapSize, ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, EditorMapDetails, MapObject } from '@common/maps/map.interface';
 import { PlayerFacing, PlayerPose } from '@common/player/player.interface';
@@ -172,8 +172,8 @@ export const makeTurnState = (overrides: Partial<MatchTurnState> = {}): MatchTur
     actionTaken: false,
     movementCount: 0,
     playerStates: [
-        { playerId: 'player-1', state: 'active' },
-        { playerId: 'player-2', state: 'waiting' },
+        { playerId: 'player-1', state: PlayerTurnInteractionState.Active },
+        { playerId: 'player-2', state: PlayerTurnInteractionState.Waiting },
     ],
     ...overrides,
 });

@@ -1,10 +1,9 @@
 import { Injectable } from '@angular/core';
+import { MovementDirection } from '@common/game/movement-direction';
 import { InitializedMatch } from '@common/game/match.interface';
 import { ObjectSize, ObjectType, TileType } from '@common/maps/map.enums';
 import { EditorCell, Vec2 } from '@common/maps/map.interface';
 import { positionKey, samePosition } from './match-geometry';
-
-export type MovementDirection = 'up' | 'down' | 'left' | 'right';
 
 export interface MovementAttemptResult {
     success: boolean;

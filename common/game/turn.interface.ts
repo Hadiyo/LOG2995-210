@@ -1,5 +1,8 @@
 export type TurnPhase = 'transition' | 'active';
-export type PlayerTurnInteractionState = 'waiting' | 'active';
+export enum PlayerTurnInteractionState {
+    Waiting = 'waiting',
+    Active = 'active',
+}
 
 export interface MatchTurnOrderEntry {
     playerId: string;

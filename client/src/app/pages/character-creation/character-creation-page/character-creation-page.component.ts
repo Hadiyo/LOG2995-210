@@ -5,37 +5,49 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { BackButtonComponent } from '@app/components/back-button/back-button.component';
 import {
-  generateCharacterFormValues,
-  normalizeCharacterName,
-  sanitizeCharacterName,
-  validatePlayerName,
+    generateCharacterFormValues,
+    normalizeCharacterName,
+    sanitizeCharacterName,
+    validatePlayerName,
 } from '@app/services/character/character-generator';
 import { MatchStateService } from '@app/services/match/match-state.service';
 import { WaitingRoomService } from '@app/services/waiting-room/waiting-room.service';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { Character } from '@common/character/character.interface';
 import {
-  AVATAR_IDS,
-  AVATAR_PROFILES,
-  AvatarId,
-  CHARACTER_BASE_ATTRIBUTES,
-  CHARACTER_NAME_MAX_LENGTH,
-  CHARACTER_PLUS_TWO_VALUE,
-  DIE_TARGET_ATTRIBUTE_NAMES,
-  Die,
-  DieTargetAttributeName,
-  PLUS_TWO_ATTRIBUTE_NAMES,
-  PlusTwoAttributeName,
+    AVATAR_IDS,
+    AVATAR_PROFILES,
+    AvatarId,
+    CHARACTER_NAME_MAX_LENGTH,
+    Die,
+    DIE_TARGET_ATTRIBUTE_NAMES,
+    DieTargetAttributeName,
+    PLUS_TWO_ATTRIBUTE_NAMES,
+    PlusTwoAttributeName,
 } from '@common/character/character.model';
 import { map, startWith } from 'rxjs';
+import { CharacterCreationPreviewComponent } from './character-creation-preview.component';
 
 const DEFAULT_PLUS_TWO: PlusTwoAttributeName = PLUS_TWO_ATTRIBUTE_NAMES[0];
 const DEFAULT_D6_TARGET: DieTargetAttributeName = DIE_TARGET_ATTRIBUTE_NAMES[0];
-type BaseAttrKey = keyof typeof CHARACTER_BASE_ATTRIBUTES;
+const AVATAR_FALLBACK_COLORS = [
+  '#7A9EBF',
+  '#8A9BAA',
+  '#B8A76E',
+  '#8C6B5C',
+  '#6B5A7F',
+  '#6A8F6A',
+  '#7A75A3',
+  '#A67C5A',
+  '#A68A5A',
+  '#7A6B8F',
+  '#6A8FA3',
+  '#6B5A6B',
+] as const;
 
 @Component({
   selector: 'app-character-creation-page',
-  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent, AsyncPipe, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, BackButtonComponent, AsyncPipe, RouterModule, CharacterCreationPreviewComponent],
   templateUrl: './character-creation-page.component.html',
   styleUrls: ['./character-creation-page.component.scss'],
 })
@@ -82,9 +94,7 @@ export class CharacterCreationPageComponent implements OnInit {
     d6GoesTo: [DEFAULT_D6_TARGET as DieTargetAttributeName, Validators.required],
   });
 
-  readonly avatarFallbackColors = Array.from({ length: 12 }, (_, i) =>
-    getComputedStyle(document.documentElement).getPropertyValue(`--avatar-${i}`).trim(),
-  );
+  readonly avatarFallbackColors = [...AVATAR_FALLBACK_COLORS];
 
   private readonly avatarIdValue = toSignal(
     this.form.controls.avatarId.valueChanges.pipe(startWith(this.form.controls.avatarId.value)),
@@ -95,28 +105,6 @@ export class CharacterCreationPageComponent implements OnInit {
     const id = this.avatarIdValue();
     return id === null ? null : AVATAR_PROFILES[id];
   });
-
-  readonly previewStats = computed(() => {
-    const plusTwo = this.plusTwoValue() as BaseAttrKey;
-    const d6Target = this.d6TargetValue() as BaseAttrKey;
-    return {
-      ...CHARACTER_BASE_ATTRIBUTES,
-      [plusTwo]: CHARACTER_BASE_ATTRIBUTES[plusTwo] + CHARACTER_PLUS_TWO_VALUE,
-      attaque: `${CHARACTER_BASE_ATTRIBUTES.attaque} + ${d6Target === 'attaque' ? 'D6' : 'D4'}`,
-      defense: `${CHARACTER_BASE_ATTRIBUTES.defense} + ${d6Target === 'defense' ? 'D6' : 'D4'}`,
-    };
-  });
-
-  private readonly plusTwoValue = toSignal(
-    this.form.controls.plusTwo.valueChanges.pipe(startWith(this.form.controls.plusTwo.value ?? DEFAULT_PLUS_TWO)),
-    { initialValue: DEFAULT_PLUS_TWO },
-  );
-
-  private readonly d6TargetValue = toSignal(
-    this.form.controls.d6GoesTo.valueChanges.pipe(startWith(this.form.controls.d6GoesTo.value ?? DEFAULT_D6_TARGET)),
-    { initialValue: DEFAULT_D6_TARGET },
-  );
-
   onSelectAvatar(id: AvatarId): void {
     if (this.waitingRoomService.getPlayerSnapshot().some((player) => player.avatarId === id)) {
       return;
@@ -189,7 +177,7 @@ export class CharacterCreationPageComponent implements OnInit {
       throw new Error('Form invalid: missing required fields');
     }
 
-    const attaqueDie: Die = d6GoesTo === 'attaque' ? 'D6' : 'D4';
+    const attackDie: Die = d6GoesTo === 'attack' ? 'D6' : 'D4';
     const defenseDie: Die = d6GoesTo === 'defense' ? 'D6' : 'D4';
 
     return {
@@ -197,7 +185,7 @@ export class CharacterCreationPageComponent implements OnInit {
       avatarId,
       bonuses: {
         plusTwo,
-        attaqueDie,
+        attackDie,
         defenseDie,
       },
     };

@@ -1,4 +1,5 @@
 import { GameMode, ObjectType } from '@common/maps/map.enums';
+import { PlayerTurnInteractionState } from '@common/game/turn.interface';
 import { NotFoundException } from '@nestjs/common';
 import {
     createGameSessionServiceHarness,
@@ -194,7 +195,7 @@ describe('GameSessionService lifecycle', () => {
             match: makeMatch({ players: [makeMatchPlayer({ id: 'player-1' })] }),
             turnState: makeTurnState({
                 order: [{ playerId: 'player-1', speed: 4 }],
-                playerStates: [{ playerId: 'player-1', state: 'active' }],
+                playerStates: [{ playerId: 'player-1', state: PlayerTurnInteractionState.Active }],
             }),
         });
         privateState.sessions.set('empty', emptyRuntime);
@@ -243,9 +244,9 @@ describe('GameSessionService lifecycle', () => {
                     { playerId: 'player-3', speed: 2 },
                 ],
                 playerStates: [
-                    { playerId: 'player-1', state: 'active' },
-                    { playerId: 'player-2', state: 'waiting' },
-                    { playerId: 'player-3', state: 'waiting' },
+                    { playerId: 'player-1', state: PlayerTurnInteractionState.Active },
+                    { playerId: 'player-2', state: PlayerTurnInteractionState.Waiting },
+                    { playerId: 'player-3', state: PlayerTurnInteractionState.Waiting },
                 ],
             }),
         });
@@ -281,9 +282,9 @@ describe('GameSessionService lifecycle', () => {
                     { playerId: 'player-3', speed: 2 },
                 ],
                 playerStates: [
-                    { playerId: 'player-1', state: 'active' },
-                    { playerId: 'player-2', state: 'waiting' },
-                    { playerId: 'player-3', state: 'waiting' },
+                    { playerId: 'player-1', state: PlayerTurnInteractionState.Active },
+                    { playerId: 'player-2', state: PlayerTurnInteractionState.Waiting },
+                    { playerId: 'player-3', state: PlayerTurnInteractionState.Waiting },
                 ],
             }),
         });

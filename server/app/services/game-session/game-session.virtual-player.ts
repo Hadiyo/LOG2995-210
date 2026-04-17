@@ -1,17 +1,37 @@
-/* eslint-disable max-lines */
 import { InitializedMatch, MatchPlayer } from '@common/game/match.interface';
 import { MatchTurnState } from '@common/game/turn.interface';
-import { GameMode, ObjectType, TileType } from '@common/maps/map.enums';
+import { GameMode, ObjectType } from '@common/maps/map.enums';
 import { Vec2 } from '@common/maps/map.interface';
 import {
+    DIRECTIONS,
+    MovementDirection,
+    MoveCandidate,
+    PathOptions,
+    StrategicTarget,
+    buildDoorCandidate,
+    findNearestEnterableTile,
+    getBestAffordableMoveTowardTarget,
+    getReachableTiles,
+    reconstructPath,
+    samePosition,
+} from './game-session.virtual-player.pathfinding';
+import {
+    areAdjacent,
+    findAdjacentEnemy,
+    getAdjacentClosedDoors,
+    getAggressiveTargets,
+    getDefensiveTargets,
+    getEnemies,
+    getNearestEnemyDistance,
+    getPrioritizedEnemies,
+    isSameTeam,
+} from './game-session.virtual-player.strategy';
+import {
     getGameSessionDestination,
-    getGameSessionMovementCost,
     getGameSessionObjectFootprint,
     isGameSessionSanctuaryActive,
     isGameSessionSanctuaryObject,
 } from './game-session.match';
-
-export type MovementDirection = 'up' | 'down' | 'left' | 'right';
 
 export type VirtualPlayerDecision =
     | { kind: 'move'; direction: MovementDirection }
@@ -19,52 +39,6 @@ export type VirtualPlayerDecision =
     | { kind: 'toggle-door'; position: Vec2 }
     | { kind: 'use-sanctuary'; sanctuaryId: number }
     | { kind: 'end-turn' };
-
-interface MoveCandidate {
-    cost: number;
-    direction: MovementDirection;
-    remainingPathLength: number;
-}
-
-interface TraversalNode {
-    cost: number;
-    position: Vec2;
-}
-
-interface PathNode {
-    cost: number;
-    previous: string | null;
-    position: Vec2;
-}
-
-interface PathOptions {
-    startPosition?: Vec2;
-    stopAdjacent?: boolean;
-}
-
-interface NeighborVisitContext {
-    currentCost: number;
-    currentPosition: Vec2;
-    direction: MovementDirection;
-    frontier: TraversalNode[];
-    previousKey: string;
-    visited: Map<string, PathNode>;
-}
-
-interface AffordableMoveContext {
-    direction: MovementDirection;
-    movementPointsRemaining: number;
-    options: PathOptions;
-    player: MatchPlayer;
-    target: Vec2;
-}
-
-interface StrategicTarget {
-    options?: PathOptions;
-    position: Vec2;
-}
-
-const DIRECTIONS: MovementDirection[] = ['up', 'down', 'left', 'right'];
 
 export function planVirtualPlayerDecision(
     match: InitializedMatch,

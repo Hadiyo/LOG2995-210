@@ -1,6 +1,7 @@
 import { computed, inject, Injectable } from '@angular/core';
 import { resolveAssetUrl } from '@app/utils/asset-url.util';
 import { MatchPlayer, MatchTileInspection } from '@common/game/match.interface';
+import { PlayerTurnInteractionState } from '@common/game/turn.interface';
 import { EditorCell, MapObject, Vec2 } from '@common/maps/map.interface';
 import { MatchMovementService } from '@app/services/match/match-movement.service';
 import { MatchStateService } from '@app/services/match/match-state.service';
@@ -93,10 +94,11 @@ export class GameSessionDisplayService {
             return 'Choix sanctuaire';
         }
 
-        const playerState = this.turnState()?.playerStates.find((entry) => entry.playerId === localPlayer?.id)?.state ?? 'waiting';
+        const playerState = this.turnState()?.playerStates.find((entry) => entry.playerId === localPlayer?.id)?.state
+            ?? PlayerTurnInteractionState.Waiting;
 
         switch (playerState) {
-            case 'active':
+            case PlayerTurnInteractionState.Active:
                 return 'Actif';
             default:
                 return 'En attente';

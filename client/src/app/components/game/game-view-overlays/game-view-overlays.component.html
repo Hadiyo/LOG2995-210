@@ -1,0 +1,29 @@
+@if (matchEndMessage) {
+  <div class="match-end-overlay">
+    <section class="match-end-modal" role="dialog" aria-modal="true">
+      <p class="match-end-modal__eyebrow">Partie terminee</p>
+      <h2>{{ matchEndMessage }}</h2>
+      <p>Redirection vers la page de statistiques dans {{ endRedirectCountdownSeconds }} secondes.</p>
+    </section>
+  </div>
+}
+
+@if (incomingFlagTransfer; as transfer) {
+  <div class="match-end-overlay">
+    <section class="match-end-modal" role="dialog" aria-modal="true">
+      <p class="match-end-modal__eyebrow">Transfert du drapeau</p>
+      <h2>
+        {{
+          transfer.kind === 'offer'
+            ? transfer.requesterName + ' vous propose le drapeau.'
+            : transfer.requesterName + ' souhaite recevoir votre drapeau.'
+        }}
+      </h2>
+      <p>La demande sera refusee automatiquement a la fin du tour.</p>
+      <div class="match-end-modal__actions">
+        <button type="button" class="overlay-action" (click)="refuseTransfer.emit()">Refuser</button>
+        <button type="button" class="overlay-action overlay-action--primary" (click)="acceptTransfer.emit()">Accepter</button>
+      </div>
+    </section>
+  </div>
+}

@@ -30,7 +30,7 @@ export function createPendingFlagTransfer(
         return null;
     }
 
-    const sameTeam = requester.teamId !== null && requester.teamId !== undefined && requester.teamId === receiver.teamId;
+    const sameTeam = requester.teamId != null && requester.teamId === receiver.teamId;
     const adjacent = Math.abs(requester.position.x - receiver.position.x) + Math.abs(requester.position.y - receiver.position.y) === 1;
     if (!sameTeam || !adjacent) {
         return null;

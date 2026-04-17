@@ -18,9 +18,9 @@ export class EditorOccupancyService {
         const occupiedKey = new Set<string>();
 
         // Mark all covered tiles of all objects as occupied
-        for (const o of objects) {
-            for (const p of getCoveredPositions(o.position, o.size)) {
-                occupiedKey.add(`${p.x},${p.y}`);
+        for (const object of objects) {
+            for (const position of getCoveredPositions(object.position, object.size)) {
+                occupiedKey.add(`${position.x},${position.y}`);
             }
         }
 

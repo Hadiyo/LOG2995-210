@@ -2,6 +2,7 @@ import { createActiveTurnState, createTransitionTurnState } from '@app/services/
 import { SNAPSHOT_TICK_MS } from '@app/utilities/game/game.constants';
 import { Timers } from '@app/utilities/turn/turn.interface';
 import { ActivePlayerGetter, TimerConfig, TurnCapableSession } from '@app/utilities/turn/turn.type';
+import { PlayerTurnInteractionState } from '@common/game/turn.interface';
 
 export function startTimerTransition<TSession extends TurnCapableSession>(
     session: TSession,
@@ -91,7 +92,7 @@ export function clearTurnState<TSession extends TurnCapableSession>(
         activeTurnRemainingMs: 0,
         movementPointsRemaining: 0,
         actionTaken: true,
-        playerStates: session.turnState.playerStates.map((playerState) => ({ ...playerState, state: 'waiting' })),
+        playerStates: session.turnState.playerStates.map((playerState) => ({ ...playerState, state: PlayerTurnInteractionState.Waiting })),
     };
 }
 
@@ -131,7 +132,7 @@ export function pauseTimer<TSession extends TurnCapableSession>(session: TSessio
         ...session.turnState,
         playerStates: session.turnState.playerStates.map(player => ({
             ...player,
-            state: 'waiting',
+            state: PlayerTurnInteractionState.Waiting,
         })),
     };
 }
@@ -154,7 +155,7 @@ export function resumeTimers<TSession extends TurnCapableSession>(
 
     session.turnState.playerStates = session.turnState.order.map((entry) => ({
             playerId: entry.playerId,
-            state: entry.playerId === session.turnState.activePlayerId ? 'active' : 'waiting',
+            state: entry.playerId === session.turnState.activePlayerId ? PlayerTurnInteractionState.Active : PlayerTurnInteractionState.Waiting,
     }));
 
     emitSnapshot(session);
@@ -165,4 +166,3 @@ export function resumeTimers<TSession extends TurnCapableSession>(
     else if (session.turnState.phase === 'transition')
         session.transitionTimeoutId = setTimeout(() => onTransitionEnd(session), session.turnState.transitionRemainingMs);
 }
-

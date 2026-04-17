@@ -215,26 +215,26 @@ rows = map.size;
         imgByUrl: Map<string, HTMLImageElement>,
         objects: MapObject[],
     ): void {
-        for (const o of objects ?? []) {
+        for (const object of objects ?? []) {
             // Get object image URL
-            const url = this.objectUrl(o.type);
+            const url = this.objectUrl(object.type);
             if (!url) continue;
             // Get preloaded image
             const img = imgByUrl.get(url);
             if (!img) continue;
 
             // Determine span in cells (1x1 or 2x2)
-            const span = o.size === ObjectSize.L ? 2 : 1;
+            const span = object.size === ObjectSize.L ? 2 : 1;
 
             // Calculate pixel position and size
-            const px = o.position.x * geom.cellW;
-            const py = o.position.y * geom.cellH;
+            const px = object.position.x * geom.cellW;
+            const py = object.position.y * geom.cellH;
             const pw = span * geom.cellW;
             const ph = span * geom.cellH;
 
             // Apply padding for small objects only
             const padFactor =
-                o.size === ObjectSize.S ? this.objectPaddingByType[o.type] ?? 0 : 0;
+                object.size === ObjectSize.S ? this.objectPaddingByType[object.type] ?? 0 : 0;
             const padX = pw * padFactor;
             const padY = ph * padFactor;
 
@@ -284,8 +284,9 @@ rows = map.size;
      */
     private getCssImageVar(varName: string): string {
         // Check cache first, to avoid repeated DOM reads
-        const cached = this.cssImageVarCache.get(varName);
-        if (cached !== undefined) return cached;
+        if (this.cssImageVarCache.has(varName)) {
+            return this.cssImageVarCache.get(varName) ?? '';
+        }
 
         // Read the raw CSS variable value
         const raw = getComputedStyle(document.documentElement)

@@ -5,6 +5,7 @@ import {
     makeRuntime,
     makeTurnState,
 } from './game-session.service.spec-helpers';
+import { PlayerTurnInteractionState } from '@common/game/turn.interface';
 import { TileType } from '@common/maps/map.enums';
 
 const VIRTUAL_DECISION_WAIT_MS = 500;
@@ -44,8 +45,8 @@ describe('GameSessionService virtual players', () => {
                 ],
                 phase: 'transition',
                 playerStates: [
-                    { playerId: 'player-1', state: 'waiting' },
-                    { playerId: 'player-2', state: 'waiting' },
+                    { playerId: 'player-1', state: PlayerTurnInteractionState.Waiting },
+                    { playerId: 'player-2', state: PlayerTurnInteractionState.Waiting },
                 ],
             }),
         });
@@ -92,8 +93,8 @@ describe('GameSessionService virtual players', () => {
                 ],
                 phase: 'transition',
                 playerStates: [
-                    { playerId: 'player-1', state: 'waiting' },
-                    { playerId: 'player-2', state: 'waiting' },
+                    { playerId: 'player-1', state: PlayerTurnInteractionState.Waiting },
+                    { playerId: 'player-2', state: PlayerTurnInteractionState.Waiting },
                 ],
             }),
         });
@@ -153,8 +154,8 @@ describe('GameSessionService virtual players', () => {
                 ],
                 phase: 'transition',
                 playerStates: [
-                    { playerId: 'player-1', state: 'waiting' },
-                    { playerId: 'player-2', state: 'waiting' },
+                    { playerId: 'player-1', state: PlayerTurnInteractionState.Waiting },
+                    { playerId: 'player-2', state: PlayerTurnInteractionState.Waiting },
                 ],
             }),
         });
@@ -208,8 +209,8 @@ describe('GameSessionService virtual players', () => {
                 ],
                 phase: 'transition',
                 playerStates: [
-                    { playerId: 'player-1', state: 'waiting' },
-                    { playerId: 'player-2', state: 'waiting' },
+                    { playerId: 'player-1', state: PlayerTurnInteractionState.Waiting },
+                    { playerId: 'player-2', state: PlayerTurnInteractionState.Waiting },
                 ],
             }),
         });
@@ -319,8 +320,8 @@ describe('GameSessionService virtual players', () => {
                 ],
                 phase: 'transition',
                 playerStates: [
-                    { playerId: 'player-1', state: 'waiting' },
-                    { playerId: 'player-2', state: 'waiting' },
+                    { playerId: 'player-1', state: PlayerTurnInteractionState.Waiting },
+                    { playerId: 'player-2', state: PlayerTurnInteractionState.Waiting },
                 ],
             }),
         });

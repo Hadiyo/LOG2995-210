@@ -25,7 +25,7 @@ export enum PlayerPose {
     Dead = 'dead',
 }
 
-export type Bonus = 'speed' | 'life';
+export type Bonus = 'speed' | 'health';
 
 // Health values for a player, split into current and maximum
 export interface PlayerHealth {

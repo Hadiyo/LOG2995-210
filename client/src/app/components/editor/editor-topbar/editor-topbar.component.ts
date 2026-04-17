@@ -11,6 +11,7 @@ import { PopUpComponent } from '@app/components/editor/pop-up/pop-up.component';
 import { EditorStateService } from '@app/services/editor/editor-state.service';
 import { MapThumbnailService } from '@app/services/map/map-thumbnail.service';
 import { validateMap, type MapValidationIssue, type MapValidationResult } from '@common/maps/map-validation';
+import { type EditorMap } from '@common/maps/map.interface';
 
 import { MouseButton } from '@common/mouse-events.enum';
 import { take } from 'rxjs';
@@ -126,7 +127,7 @@ export class EditorTopbarComponent {
       const currentMap = this.editorState.editorMap();
       const preview = await this.mapThumbnail.generatePreview(currentMap);
       // Save the map along with its preview image
-      const mapWithPreview = {
+      const mapWithPreview: EditorMap = {
         ...currentMap,
         visibility: false,
         previewImage: preview?.data ?? undefined,
