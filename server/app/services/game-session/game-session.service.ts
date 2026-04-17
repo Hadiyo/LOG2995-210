@@ -159,6 +159,7 @@ export class GameSessionService {
         }
         this.sessions.delete(sessionId);
         this.event2.emit(GameSessionEvents.OnGameEnd, { id: sessionId });
+        this.endStatsService.endSession(sessionId);
     }
     endTurn(sessionId: string, playerId: string): boolean {
         return this.runSessionAction(sessionId, () => this.sessionActions.endTurn(sessionId, playerId));
