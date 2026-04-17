@@ -99,6 +99,10 @@ function planAggressiveDecision(
     if (chaseMove) {
         return chaseMove;
     }
+    const doorMove = buildMoveTowardBlockedDoor(match, turnState, player, getAggressiveTargets(match, player));
+    if (doorMove) {
+        return doorMove;
+    }
     const doorAction = buildDoorAction(match, turnState, player, getAggressiveTargets(match, player));
     if (doorAction) {
         return doorAction;
@@ -126,6 +130,10 @@ function planDefensiveDecision(
     }
     if (!turnState.actionTaken && adjacentEnemy) {
         return { kind: 'combat', targetId: adjacentEnemy.id };
+    }
+    const doorMove = buildMoveTowardBlockedDoor(match, turnState, player, getDefensiveTargets(match, player));
+    if (doorMove) {
+        return doorMove;
     }
     const doorAction = buildDoorAction(match, turnState, player, getDefensiveTargets(match, player));
     if (doorAction) {
@@ -226,6 +234,62 @@ function buildDoorAction(
         });
 
     return candidates[0] ? { kind: 'toggle-door', position: candidates[0].position } : null;
+}
+
+function buildMoveTowardBlockedDoor(
+    match: InitializedMatch,
+    turnState: MatchTurnState,
+    player: MatchPlayer,
+    targets: StrategicTarget[],
+): VirtualPlayerDecision | null {
+    if (turnState.movementPointsRemaining <= 0) {
+        return null;
+    }
+
+    const candidates = getClosedDoors(match)
+        .flatMap((doorPosition) =>
+            targets.map((target) => {
+                const openDoorPath = findPath(buildMatchWithOpenDoor(match, doorPosition), player.id, target.position, target.options);
+                if (openDoorPath.length === 0 || !openDoorPath.some((step) => samePosition(step, doorPosition))) {
+                    return null;
+                }
+
+                const nextStep = openDoorPath[0];
+                if (!nextStep || samePosition(nextStep, doorPosition)) {
+                    return null;
+                }
+
+                const move = buildMoveDecision(player.position, nextStep);
+                if (!move || move.kind !== 'move') {
+                    return null;
+                }
+
+                const stepCost = getGameSessionMovementCost(match, nextStep, player.id);
+                if (stepCost === null || stepCost > turnState.movementPointsRemaining) {
+                    return null;
+                }
+
+                return {
+                    direction: move.direction,
+                    doorPosition,
+                    nextStep,
+                    pathLength: openDoorPath.length,
+                };
+            }),
+        )
+        .filter((candidate): candidate is { direction: MovementDirection
+            ; doorPosition: Vec2; nextStep: Vec2; pathLength: number } => candidate !== null)
+        .sort((left, right) => {
+            if (left.pathLength !== right.pathLength) {
+                return left.pathLength - right.pathLength;
+            }
+            if (left.nextStep.y !== right.nextStep.y) {
+                return left.nextStep.y - right.nextStep.y;
+            }
+            return left.nextStep.x - right.nextStep.x;
+        });
+
+    return candidates[0] ? { kind: 'move', direction: candidates[0].direction } : null;
 }
 
 function buildRetreatMove(
@@ -637,6 +701,12 @@ function getAdjacentClosedDoors(match: InitializedMatch, origin: Vec2): Vec2[] {
             const cell = match.map.find((candidate) => samePosition(candidate.position, position)) ?? null;
             return !!cell && cell.tileType === TileType.DOOR && !cell.isWalkable;
         });
+}
+
+function getClosedDoors(match: InitializedMatch): Vec2[] {
+    return match.map
+        .filter((cell) => cell.tileType === TileType.DOOR && !cell.isWalkable)
+        .map((cell) => ({ ...cell.position }));
 }
 
 function getNearestEnemyDistance(position: Vec2, enemies: MatchPlayer[]): number {
